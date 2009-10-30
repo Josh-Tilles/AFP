@@ -804,9 +804,8 @@ apply (frule Group_Gp [of "H"],
        frule Group.sg_subset[of "\<natural>H" "H1"], assumption,
        frule Group.sg_subset[of "\<natural>H" "H \<inter> K"], assumption+,
        frule Group.smult_nsg_sg[of "\<natural>H" "H \<inter> K" "H1"], assumption+,
-       frule Group.s_top_sub[of "\<natural>H" "H1" "H \<inter> K"], assumption+,
-       simp add:Gp_carrier,
-       simp only:s_top_induced[of "H" "H1" "H \<inter> K"])
+       frule Group.s_top_sub[of "\<natural>H" "H1" "H \<inter> K"], assumption+)
+apply (simp only: Gp_carrier s_top_induced [of "H" "H1" "H \<inter> K"])
 apply (frule subg_sg_sg[of "H" "H1 \<struct>\<^bsub>G\<^esub> H \<inter> K"], assumption+,
        simp add:Gp_inherited[of "H1 \<struct>\<^bsub>G\<^esub> H \<inter> K" "H"])
 done
@@ -821,7 +820,7 @@ done
 lemma gHom_mem:"\<lbrakk>Group F; Group G; f \<in> gHom F G ; x \<in> carrier F\<rbrakk> \<Longrightarrow>
                              (f x) \<in> carrier G" 
 apply (simp add:gHom_def, (erule conjE)+)
-apply (simp add:funcset_mem)
+apply (simp add:Pi_def)
 done
 
 lemma gHom_func:"\<lbrakk>Group F; Group G; f \<in> gHom F G\<rbrakk> \<Longrightarrow>
@@ -840,7 +839,7 @@ apply (rule ballI)+
                                               assumption+) 
 apply (frule_tac x = y in funcset_mem [of "f" "carrier F" "carrier G"],
                                               assumption+)
-apply (simp add:Group.mult_closed[of "F"]) 
+apply (simp add:Group.mult_closed[of "F"])
 done
 
 lemma gHom_comp_gsurjec:"\<lbrakk>Group F; Group G; Group H; gsurj\<^bsub>F,G\<^esub> f; 
@@ -941,13 +940,10 @@ apply (rule conjI)
   apply (simp add:gsurjec_def)
       apply (rule conjI)
         apply (simp add:idmap_def gHom_def Group.mult_closed)
-      apply (rule univar_func_test, simp add:idmap_def)
-      apply (simp add:surj_to_def)
-      apply (simp add:image_def idmap_def)
+      apply (simp add:surj_to_def image_def idmap_def)
   (* ginjec *)
   apply (simp add:ginjec_def)
      apply (simp add:idmap_def gHom_def Group.mult_closed)
-     apply (rule univar_func_test, simp add:idmap_def)
 done
 
 lemma Id_l_unit:"\<lbrakk>Group G; gbij\<^bsub>G,G\<^esub> f\<rbrakk> \<Longrightarrow> I\<^bsub>G\<^esub> \<circ>\<^bsub>G\<^esub> f = f"
@@ -1251,10 +1247,7 @@ lemma Img_carrier:"\<lbrakk>Group F; Group G; f \<in> gHom F G \<rbrakk> \<Longr
 by (simp add:Gimage_def Gp_def)
 
 lemma hom_to_Img:"\<lbrakk>Group F; Group G; f \<in> gHom F G\<rbrakk> \<Longrightarrow> f \<in> gHom F (Img\<^bsub>F,G\<^esub> f)"
-apply (simp add:gHom_def Gimage_def Gp_def,
-       (erule conjE)+)
-apply (simp add:Pi_def restrict_def)
-done
+by (simp add:gHom_def Gimage_def Gp_def)
 
 lemma gker_hom_to_img:"\<lbrakk>Group F; Group G; f \<in> gHom F G \<rbrakk> \<Longrightarrow>
                                gker\<^bsub>F,(Img\<^bsub>F,G\<^esub> f)\<^esub> f = gker\<^bsub>F,G\<^esub> f" 
@@ -1349,15 +1342,15 @@ done
 
 lemma inducedHOMTr0_1:"\<lbrakk>Group F; Group G; f \<in> gHom F G\<rbrakk> \<Longrightarrow>
                         (f\<dieresis>\<^bsub>F,G\<^esub>) \<in>  set_rcs F (gker\<^bsub>F,G\<^esub> f) \<rightarrow> carrier G" 
-apply (rule univar_func_test)
- apply (rule ballI, simp add:set_rcs_def, erule bexE, simp)
+apply (rule Pi_I)
+ apply (simp add:set_rcs_def, erule bexE, simp)
  apply (subst inducedHOMTr0[of "F" "G" "f"], assumption+)
  apply (simp add:gHom_mem)
 done
 
 lemma inducedHOMTr0_2:"\<lbrakk>Group F; Group G; f \<in> gHom F G\<rbrakk> \<Longrightarrow>
     (f\<dieresis>\<^bsub>F,G\<^esub>) \<in> set_rcs F (gker\<^bsub>F,G\<^esub> f) \<rightarrow> f ` (carrier F)"
-apply (rule univar_func_test, rule ballI)
+apply (rule Pi_I)
  apply (simp add:set_rcs_def, erule bexE, simp)
  apply (subst inducedHOMTr0[of "F" "G" "f"], assumption+)
  apply (simp add:image_def, blast)
@@ -1409,7 +1402,6 @@ apply (simp add:inducedHom)
 apply (rule ballI)
  apply (simp add:surj_to_def[of "f" "carrier F" "carrier G"],
         frule sym, thin_tac "f ` carrier F = carrier G", simp,
-        thin_tac "f \<in> carrier F \<rightarrow> f ` carrier F",
         thin_tac "carrier G = f ` carrier F")
  apply (simp add:image_def, erule bexE, simp,
         thin_tac "b = f x")
@@ -1428,7 +1420,7 @@ apply (rule conjI)
 apply (simp add:induced_ghom_def extensional_def)
  apply (rule allI, (rule impI)+, simp add:Qg_def)
 apply (rule conjI)
- apply (rule univar_func_test, rule ballI)
+ apply (rule Pi_I)
  apply (simp add:Gimage_def Qg_def Gp_def, simp add:set_rcs_def, erule bexE)
  apply simp
  apply (simp add:inducedHOMTr0)
@@ -1704,7 +1696,7 @@ by (simp add:Qg_carrier[of "H"] set_rcs_def, erule bexE, simp add: QmpTr0,
 
 lemma (in Group) QmpTr2_1:"\<lbrakk>G \<guillemotright> H; G \<guillemotright> N; H \<subseteq> N \<rbrakk> \<Longrightarrow> 
                            Qmp G H N \<in> carrier (G/H) \<rightarrow> carrier (G/N)"
-by (rule univar_func_test, rule ballI, simp add:QmpTr2 [of "H" "N"])
+by (simp add:QmpTr2 [of "H" "N"])
 
 lemma (in Group) QmpTr3:"\<lbrakk>G \<triangleright> H; G \<triangleright> N; H \<subseteq> N; X \<in> carrier (G/H); 
        Y \<in> carrier (G/H)\<rbrakk> \<Longrightarrow> 
@@ -1900,24 +1892,18 @@ definition
   gcsrp_map::"_ \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> 'a" where
   "gcsrp_map G H == \<lambda>X\<in>(set_rcs G H). SOME x. x \<in> X"
 
-lemma (in Group) gcsrp_func:"G \<guillemotright> H \<Longrightarrow> gcsrp_map G H \<in> set_rcs G H \<rightarrow> UNIV"  
-apply (rule univar_func_test)
-apply (rule ballI)
-apply (simp add:set_rcs_def)
-done
+lemma (in Group) gcsrp_func:"G \<guillemotright> H \<Longrightarrow> gcsrp_map G H \<in> set_rcs G H \<rightarrow> UNIV"
+by (simp add:set_rcs_def)
 
 lemma (in Group) gcsrp_func1:"G \<guillemotright> H \<Longrightarrow> 
-       gcsrp_map G H \<in> set_rcs G H \<rightarrow> (gcsrp_map G H) ` (set_rcs G H)"  
-apply (rule univar_func_test)
-apply (rule ballI)
-apply (simp add:set_rcs_def)
-done
+       gcsrp_map G H \<in> set_rcs G H \<rightarrow> (gcsrp_map G H) ` (set_rcs G H)"
+by (simp add:set_rcs_def)
 
 lemma (in Group) gcsrp_map_bij:"G \<guillemotright> H \<Longrightarrow>
          bij_to (gcsrp_map G H) (set_rcs G H) ((gcsrp_map G H) `(set_rcs G H))"
 apply (simp add:bij_to_def, rule conjI)
  apply (rule surj_to_test)
- apply (rule univar_func_test, rule ballI)
+ apply (rule Pi_I)
  apply (simp add:image_def, blast)
 apply (rule ballI, simp add:image_def, erule bexE, simp, blast)
 
@@ -2021,10 +2007,7 @@ apply (frule nsg_sg[of "N"],
           "(gcsrp_map G N) ` (set_rcs G N)" "a"], assumption+)
 apply (simp add:gcsrp_top_def gcsrp_one_def)
  apply (frule Qg_unit_closed[of "N"])
- apply (simp add:funcset_mem)
- apply (simp add:invfun_l1)
- apply (simp add:Qg_unit)
- apply (simp add:invfun_r1)
+ apply (simp add:Pi_def invfun_l1 Qg_unit invfun_r1)
 done
 
 lemma (in Group) gcsrp_l_i:"\<lbrakk>G \<triangleright> N; a \<in> ((gcsrp_map G N) `(set_rcs G N))\<rbrakk> \<Longrightarrow>
@@ -2055,16 +2038,16 @@ done
 lemma (in Group) Group_Gcsrp:"G \<triangleright> N \<Longrightarrow> Group (Gcsrp G N)"
 apply (simp add:Group_def)
  apply (rule conjI)
- apply (rule univar_func_test, rule ballI)
+ apply (rule Pi_I)
  apply (simp add:Gcsrp_def)
- apply (rule univar_func_test, rule ballI)
+ apply (rule Pi_I)
  apply (rule_tac a = x and b = xa in gcsrp_top_closed[of "N"], rule Group_axioms, assumption+)
 apply (rule conjI)
  apply (rule allI, rule impI)+
  apply (simp add:Gcsrp_def)
  apply (rule_tac a = a and b = b and c = c in gcsrp_tassoc[of "N"], rule Group_axioms, assumption+)
 apply (rule conjI)
- apply (rule univar_func_test, rule ballI)
+ apply (rule Pi_I)
  apply (simp add:Gcsrp_def, rule gcsrp_i_closed[of "N"], assumption+)
 apply (rule conjI)
  apply (rule allI, rule impI)
@@ -2080,9 +2063,7 @@ done
 
 lemma (in Group) gcsrp_map_gbijec:"G \<triangleright> N \<Longrightarrow> 
                   gbij\<^bsub>(G/N), (Gcsrp G N)\<^esub> (gcsrp_map G N)"
-apply (simp add:gbijec_def)
-apply (simp add:gsurjec_def ginjec_def)
-apply (simp add:Qg_carrier Gcsrp_def) 
+apply (simp add:gbijec_def gsurjec_def ginjec_def Qg_carrier Gcsrp_def) 
 apply (frule nsg_sg[of "N"],
        frule gcsrp_map_bij[of "N"], simp add:bij_to_def)
 apply (fold Gcsrp_def)
@@ -2092,12 +2073,11 @@ apply (rule conjI)
  apply (simp add:Qg_carrier gcsrp_map_def)
 apply (rule conjI)
  apply (simp add:Qg_carrier Gcsrp_def) 
- apply (simp add:gcsrp_func1)
- apply (fold bij_to_def)
+apply (fold bij_to_def)
 apply (rule ballI)+
- apply (simp add:Qg_def Gcsrp_def gcsrp_top_def)
- apply (frule gcsrp_func1[of "N"])
- apply (simp add:invfun_l1[of "gcsrp_map G N" "set_rcs G N" 
+apply (simp add:Qg_def Gcsrp_def gcsrp_top_def)
+apply (frule gcsrp_func1[of "N"])
+apply (simp add:invfun_l1[of "gcsrp_map G N" "set_rcs G N" 
                                  "gcsrp_map G N ` set_rcs G N"])
 done
 
@@ -2508,7 +2488,7 @@ lemma (in Group) im_d_gchains1:"\<lbrakk>0 < n; d_gchain G n f; i \<le> n;
 apply (frule im_d_gchainTr1_0 [of "n" "f" "i"], assumption+,
        frule im_d_gchainsTr1_2 [of "n" "f" "i"], assumption+,
        frule Nset_nset_1 [of "n" "j - Suc 0"])
-apply simp;
+apply simp
 apply (subst im_set_un2, simp)
 apply (subst im_d_gchainsTr1_5[of "n" "f" "i" "j"]) 
 apply (simp, assumption, simp+)
@@ -2641,7 +2621,7 @@ apply (simp add:W_cmpser_def)
         simp add:D_gchain_def, erule conjE,
         rule d_gchain_pre, assumption+, simp)
 
-apply (frule D_gchain_pre, simp);
+apply (frule D_gchain_pre, simp)
 done
 
 lemma (in Group) td_gchain_n:"\<lbrakk>td_gchain G n f; carrier G \<noteq> {\<one>}\<rbrakk> \<Longrightarrow> 0 < n"
@@ -3325,7 +3305,7 @@ apply (frule_tac n = "card (f ` {i. i \<le> n}) - Suc 0" and f = g and
  apply (simp add:constmap_def Nset_inc_0,
         thin_tac "d_gchain G n f", simp add:d_gchain_def) 
  apply (cut_tac n = "Suc n" in n_in_Nsetn,
-        frule_tac a = "Suc n" in forall_spec1, simp,
+        frule_tac x = "Suc n" in spec, simp,
         simp add:psubset_eq)
  apply (cut_tac f = f and n = n in image_Nsetn_card_pos,
         cut_tac n = n in finite_Nset, 
@@ -3569,7 +3549,7 @@ done
 lemma isom_gch_units_transpTr5_2:"\<lbrakk>Ugp E; Gchain n g; Gchain n h; i \<le> n; 
       j \<le> n; i < j; isom_Gchains n (transpos i j) g h\<rbrakk> \<Longrightarrow> g j \<cong> h i"
 apply (simp add:isom_Gchains_def)
-apply (frule_tac a = j in forall_spec1,
+apply (frule_tac x = j in spec,
        thin_tac "\<forall>ia\<le> n. g ia \<cong> h (transpos i j ia)")
 apply (simp add:transpos_ij_2 [of "i" "n" "j"]) 
 done
@@ -3798,8 +3778,6 @@ apply (cut_tac transpos_inj [of "f (Suc n)" "Suc n" "Suc n"])
 apply (cut_tac cmp_inj_1 [of f "{i. i \<le> (Suc n)}" "{i. i \<le> (Suc n)}"
        "transpos (f (Suc n)) (Suc n)" "{i. i \<le> (Suc n)}"])
 apply simp+
-apply (rule univar_func_test, rule ballI, simp)
-apply assumption+ apply simp+
 done
 
 lemma isom_gch_unitsTr1_4:"\<lbrakk>Ugp E; f (Suc n) \<noteq> Suc n; inj_on f {i. i\<le>(Suc n)};
@@ -3848,7 +3826,7 @@ apply (cut_tac l = "f l" in transpos_mem[of "f (Suc n)" "Suc n" "Suc n"])
                cmp (transpos (f (Suc n)) (Suc n)) f y \<longrightarrow>
                x = y") apply (
         rotate_tac -1,
-        frule_tac a = l in forall_spec1) apply (
+        frule_tac x = l in spec) apply (
         thin_tac "\<forall>y\<le>Suc n.
             cmp (transpos (f (Suc n)) (Suc n)) f (Suc n) =
             cmp (transpos (f (Suc n)) (Suc n)) f y \<longrightarrow>
@@ -4058,23 +4036,13 @@ lemma isom_gch_unitsTr1:"Ugp E \<Longrightarrow> \<forall>g. \<forall>h. \<foral
       Gchain n h \<and> Gch_bridge n g h f \<longrightarrow>  card {i. i \<le> n \<and> g i \<cong> E} = 
            card {i. i \<le> n \<and> h i \<cong> E}"
 apply (induct_tac n)
- apply (rule allI)+ apply (rule impI) apply (erule conjE)+
- apply (rule card_eq)
- apply (simp add:Gch_bridge_def)
- apply (erule conjE)+
- apply (simp add:isom_Gchains_def)
-apply (rule equalityI)
-apply (rule subsetI) apply (simp add:CollectI) apply (erule conjE)
- apply simp
+ apply (clarify)
+ apply (simp add:Gch_bridge_def isom_Gchains_def Collect_conv_if)
+ apply rule
+  apply (simp add:Gchain_def)
+  apply(metis isom_gch_unitsTr4)
  apply (simp add:Gchain_def)
-apply (rule_tac F = "g 0" and G = "h 0" in isom_gch_unitsTr4 [of _ _ "E"],
-                                                  assumption+)
-apply (rule subsetI) apply (simp add:CollectI) apply (erule conjE)
- apply simp
-apply (simp add:Gchain_def)
-apply (frule_tac F = "g 0" and G = "h 0" in isomTr1, assumption+)
-apply (rule_tac F = "h 0" and G = "g 0" in isom_gch_unitsTr4 [of _ _ "E"],
-                                                  assumption+)
+ apply (metis Ugp_def isomTr2)
 (***** n ******)
  apply (rule allI)+  apply (rule impI)
  (** n ** case f (Suc n) = Suc n **)
@@ -4116,7 +4084,7 @@ apply simp
 apply (erule conjE)+
 apply (rule isom_gch_unitsTr1_7, assumption+)
 apply (simp add:Gch_bridge_def)
-done  
+done
  
 lemma isom_gch_units:"\<lbrakk>Ugp E; Gchain n g; Gchain n h; Gch_bridge n g h f\<rbrakk> \<Longrightarrow>  
       card {i. i \<le> n \<and> g i \<cong> E} = card {i. i \<le> n \<and> h i \<cong> E}"
@@ -4309,9 +4277,6 @@ apply (simp add:rtos_def)
 apply (simp add:rfn_tool11 [of "r * s" "i"])
  apply (frule rtos_hom0 [of "r" "s" "i"], assumption+)
  apply (simp add:mem_of_Nset)
- apply (subst add_commute)
- apply (subst mod_mult_self1 [of "i div s" "i mod s" "r"])
-apply (subst mod_less, assumption+) apply simp 
 done
 
 lemma rtos_hom5:"\<lbrakk>(0::nat) < r; (0::nat) < s; i \<le> (r *s - Suc 0); 
@@ -4518,7 +4483,7 @@ apply (frule compseriesTr0 [of "n" "f" "i"])
  apply (frule compseriesTr4[of "n" "f"])
  apply (frule w_cmpser_ns[of "n" "f" "i"], simp+) 
  apply (unfold compseries_def, frule conjunct2, fold compseries_def, simp)
- apply (frule_tac a = i in forall_spec1, 
+ apply (frule_tac x = i in spec, 
         thin_tac "\<forall>i\<le>n - Suc 0. simple_Group ((\<natural>f i) / f (Suc i))",
         simp)
  apply (frule Group.simple_grouptr0 [of "Gp G (f i)" "H" "f (Suc i)"])
@@ -4677,7 +4642,7 @@ apply (rule ZassenhausTr2_1[of "f i" "f (Suc i)" "g j"], simp,
        rule compseriesTr0[of "r" "f" "i"], assumption+,
        frule_tac le_less_trans[of i "r - Suc 0" r], simp+)
  apply (rule compseriesTr0[of "r" "f" "Suc i"], assumption+, arith) 
- apply(rule compseriesTr0[of "s" "g" "j"], assumption+, simp);
+ apply(rule compseriesTr0[of "s" "g" "j"], assumption+, simp)
 apply (frule compseries_is_tW_cmpser[of "r" "f"], assumption+,
        simp add:tW_cmpser_def)
 done
@@ -4807,7 +4772,7 @@ apply (rule allI, rule impI)
 apply (rule rfn_tool16 [of "r" "s" _], simp+,
        cut_tac x = "Suc i" and y = "s * r" and z = "Suc (s *r)" in 
        less_trans, assumption, simp,
-       thin_tac "Suc i < s * r", simp);
+       thin_tac "Suc i < s * r", simp)
 apply (rule compser_nsg[of r f], simp+) 
  apply (rule_tac  H = "f (i div s) \<inter> g (s - Suc 0)" and K = "f (i div s)" in 
         sg_sg, assumption+,
@@ -4823,7 +4788,7 @@ apply (rule compser_nsg[of r f], simp+)
         simp, 
         frule_tac m = "i mod s" in noteq_le_less [of _ "s - Suc 0"], 
         assumption+,
-        thin_tac "i mod s \<noteq> s - Suc 0", thin_tac "i mod s \<le> s - Suc 0");
+        thin_tac "i mod s \<noteq> s - Suc 0", thin_tac "i mod s \<le> s - Suc 0")
      apply (frule_tac x = "i mod s" and y = "s - Suc 0" and z = s in 
             less_trans, simp,
         frule_tac k = "i mod s" in nat_pos2 [of _ s],
@@ -4946,16 +4911,6 @@ done
 lemma Suc_rtos_mod_r_1:"\<lbrakk>0 < r; 0 < s; i \<le> r * s - Suc 0; Suc (rtos r s i) < r * s; i mod s = s - Suc 0; i  div s < r - Suc 0\<rbrakk>
          \<Longrightarrow> Suc (rtos r s i) mod r = Suc (i div s)"
 apply (simp add:rtos_def)
- apply (frule le_less_trans [of "i" "r * s - Suc 0" "r * s"], simp)
- apply simp
- apply (subgoal_tac "Suc ((s - Suc 0) * r + i div s) mod r =
-   ((s - Suc 0) * r + Suc (i div s)) mod r")
-  apply (simp del:add_Suc add_Suc_right)
-  apply (subgoal_tac "Suc (i div s) < r")
- apply (subst rfn_tool20 [of "r" _ "(s - Suc 0)" "Suc (i div s)"], assumption+)
- apply (simp, assumption, simp)
- apply (subgoal_tac "Suc (i div s) < Suc (r - Suc 0)", simp)
- apply (simp del:Suc_pred, simp)
 done
 
 lemma i_div_s_less:"\<lbrakk>0 < r; 0 < s; i \<le> r * s - Suc 0; Suc (rtos r s i) < r * s;
@@ -5027,13 +4982,6 @@ lemma Suc_rtos_i_mod_r_3:"\<lbrakk>0 < r; 0 < s; i \<le> r * s - Suc 0;
       i div s < r - Suc 0\<rbrakk> \<Longrightarrow> Suc (rtos r s i) mod r = Suc (i div s)"
 apply (frule le_less_trans [of "i" "r * s - Suc 0" "r * s"], simp)
 apply (simp add:rtos_def)
-apply (subst add_Suc_right[THEN sym, of "i mod s * r" "i div s"])
- apply (subst add_commute[of "i mod s * r" "Suc (i div s)"])
- apply (subst mod_mult_self1[of "Suc (i div s)" "i mod s" "r"])
- apply (cut_tac lessI[of "r - Suc 0"], simp only:Suc_pred)
- apply (frule less_Suc_le1[of "i div s" "r - Suc 0"])
- apply (frule le_less_trans[of "Suc (i div s)" "r - Suc 0" "r"], assumption+)
- apply (simp only:mod_less) 
 done
 
 lemma Suc_rtos_div_r_3:"\<lbrakk>0 < r; 0 < s; i mod s < s - Suc 0; i \<le> r * s - Suc 0; 
@@ -5045,7 +4993,7 @@ apply simp
 apply simp
 apply (subst add_Suc_right[THEN sym, of "i mod s * r" "i div s"])
  apply (subst add_commute[of "i mod s * r" "Suc (i div s)"])
- apply (frule less_Suc_le1[of "i div s" "r - Suc 0"])
+ apply (frule Suc_leI[of "i div s" "r - Suc 0"])
  apply (frule le_less_trans[of "Suc (i div s)" "r - Suc 0" "r"], simp)
  apply (subst div_mult_self1 [of "r" "Suc (i div s)" "i mod s"])
  apply auto
@@ -5449,30 +5397,10 @@ lemma length_wcmpser0_4:"\<lbrakk>Group G; Ugp E; w_cmpser G (Suc 0) f\<rbrakk> 
                                                 Qw_cmpser G f i \<cong> E}"
  (* card (f ` Nset (Suc 0)) - 1 =
            Suc 0 - card {i. i \<in> Nset 0 \<and> Qw_cmpser G f i \<cong> E}" *)
-apply (subst length_wcmpser0_0, assumption+)
-apply (case_tac "Qw_cmpser G f 0 \<cong> E")
+apply (auto simp add: length_wcmpser0_0 Collect_conv_if)
  apply (frule_tac n = 0 and f = f and i = 0 in length_wcmpser0_1 [of "G" "E"],         assumption+, simp+)
- apply (rule nonempty_card_pos1[of "{i. i = 0 \<and> Qw_cmpser G f i \<cong> E}"])
- apply (cut_tac finite1[of "(0::nat)"])
- apply (rule finite_subset[of "{i. i = 0 \<and> Qw_cmpser G f i \<cong> E}" "{0}"])
-  apply (rule subsetI) apply simp apply assumption
-  apply blast
-
- apply (frule_tac f = f and i = 0 in length_wcmpser0_2 [of "G" "E" "0"], 
-                                                        assumption+)
- apply (simp add:Nset_inc_0, assumption)
- apply (cut_tac finite1[of "f (Suc 0)"])
- apply (simp only:singleton_iff[THEN sym, of "f 0" "f (Suc 0)"])
- apply (simp add: card_insert_disjoint [of "{f (Suc 0)}" "f 0"])
- apply (rule diff_zero_eq[of "card {i. i = 0 \<and> Qw_cmpser G f i \<cong> E}" 
-        "Suc 0"]) 
- apply (rule sym)
- apply (subst card0[THEN sym])
- apply (rule_tac A = "{}" and B = "{i. i = 0 \<and> Qw_cmpser G f i \<cong> E}" in 
-        card_eq) 
- apply (rule equalityI, rule subsetI) 
- apply simp
-apply (rule subsetI, simp, erule conjE, simp)
+apply (frule_tac f = f and i = 0 in length_wcmpser0_2 [of "G" "E" "0"], 
+       (assumption | simp)+)
 done
 
 lemma length_wcmpser0_5:" \<lbrakk>Group G; Ugp E; w_cmpser G (Suc (Suc n)) f; 
