@@ -489,7 +489,7 @@ proof -
     qed
   qed
 qed
-  from P_at_0 P_at_Suc have main: "\<And> n. ?P n" by (rule Nat.nat.induct)
+  from P_at_0 P_at_Suc have main: "\<And> n. ?P n" by (rule nat.induct)
   def D_def: D \<equiv> "nat_to_set u"
   from D_def A have P1: "nat_to_set u = D" by auto
   from D_def A have P2: "nat_to_set v = D" by auto
@@ -634,7 +634,7 @@ proof -
       qed
     qed
   qed
-  from P_at_0 P_at_Suc have main: "\<And> n. ?P n" by (rule Nat.nat.induct)
+  from P_at_0 P_at_Suc have main: "\<And> n. ?P n" by (rule nat.induct)
   from A main show ?thesis by auto
 qed
 
@@ -918,7 +918,8 @@ proof -
 	from A h_def have S2: "h y (f y x) x = f y x" by auto
 	have S3: "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y}"
         proof -
-          have "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y} \<union> {z \<in> nat_to_set (c_snd x). z = y}" by auto
+          have "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y} \<union> {z \<in> nat_to_set (c_snd x). z = y}"
+	    by auto
 	  with S1 show ?thesis by auto
         qed
         from nat_to_set_is_finite have S4: "finite ((nat_to_set (c_fst x)) \<union> {z \<in> nat_to_set (c_snd x). z < y})" by auto
@@ -990,7 +991,8 @@ proof -
 	from A h_def have S2: "h y (f y x) x = f y x" by auto
 	have S3: "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y}"
         proof -
-          have "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y} \<union> {z \<in> nat_to_set (c_snd x). z = y}" by auto
+          have "{z \<in> nat_to_set (c_snd x). z < Suc y} = {z \<in> nat_to_set (c_snd x). z < y} \<union> {z \<in> nat_to_set (c_snd x). z = y}"
+	    by auto
 	  with S1 show ?thesis by auto
         qed
         from nat_to_set_is_finite have S4: "finite ((nat_to_set (c_fst x)) - {z \<in> nat_to_set (c_snd x). z < y})" by auto

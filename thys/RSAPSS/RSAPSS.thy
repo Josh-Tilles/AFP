@@ -1,5 +1,5 @@
 (*  Title:      RSAPSS/RSAPSS.thy
-    ID:         $Id: RSAPSS.thy,v 1.10 2008-11-13 16:52:51 fhaftmann Exp $
+    ID:         $Id: RSAPSS.thy,v 1.11 2009-08-29 12:36:18 nipkow Exp $
     Author:     Christina Lindenberg, Kai Wirt, Technische Universität Darmstadt
     Copyright:  2005 - Technische Universität Darmstadt 
 *)
@@ -58,10 +58,9 @@ lemma length_emsapss_encode:
   apply (simp add: length_generate_DB)
   apply (simp add: length_generate_PS)
   apply (simp add: BC)
-  apply (simp add: max_min)
   apply (insert roundup_ge_emBits [of x 8])
   apply safe
-  apply (simp)+
+  apply (simp add: min_max.sup_absorb1)
   done
 
 lemma bv_to_nat_emsapss_encode_le: "emsapss_encode m x \<noteq> [] \<Longrightarrow> bv_to_nat (emsapss_encode m x) < 2^(roundup x 8 * 8)" 
@@ -559,3 +558,4 @@ lemma rsa_pss_verify: "\<lbrakk> prime p; prime q; p \<noteq> q; n = p*q; e*d mo
 by (simp add: verify)
 
 end
+
