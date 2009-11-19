@@ -48,24 +48,24 @@ proof(cases "chosen s=NotAnInput")
       from ep2_maj Dmaj majorities_intersect
       have "\<exists>d\<in>D. d \<in> disksWritten s p
         \<and> (\<forall>q \<in> UNIV - {p}. hasRead s p d q)"
-	      by(auto simp add: MajoritySet_def, blast)
+        by(auto simp add: MajoritySet_def, blast)
       then obtain d 
 	where dinD: "d\<in>D" 
 	and ddisk: "d \<in> disksWritten s p"
 	and dhasR: "\<forall>q \<in> UNIV - {p}. hasRead s p d q"
-	      by auto
+        by auto
       from inv2b
       have "Inv2b_inner s p d"
-	      by(auto simp add: Inv2b_def)
+        by(auto simp add: Inv2b_def)
       with ddisk
       have "disk s d p = dblock s p"
-	      by(auto simp add: Inv2b_inner_def)
+        by(auto simp add: Inv2b_inner_def)
       with inv2c phase
       have "bal (dblock s p) = mbal(disk s d p)"
-	      by(auto simp add: Inv2c_def Inv2c_inner_def)
+        by(auto simp add: Inv2c_def Inv2c_inner_def)
       with dhasR dinD
       show "\<exists>d\<in>D. bal (dblock s p) < mbal (disk s d q) \<longrightarrow> hasRead s p d q"
-	      by auto
+        by auto
     qed
     with inv5R
     show ?thesis
@@ -82,10 +82,10 @@ proof(cases "chosen s=NotAnInput")
       assume pnq: "p\<noteq>q"
       from outpt' pnq
       have "outpt s' q= outpt s q"
-	      by(auto simp add: EndPhase2_def)
+        by(auto simp add: EndPhase2_def)
       with True inv2c
       show "outpt s' q= NotAnInput"
-	      by(auto simp add: Inv2c_def Inv2c_inner_def)
+        by(auto simp add: Inv2c_def Inv2c_inner_def)
     qed
     from True act chosen'
     have "chosen s' = inp (dblock s p)"
@@ -94,15 +94,15 @@ proof(cases "chosen s=NotAnInput")
       assume outpt'_pa: "outpt s' pa \<noteq> NotAnInput"
       from outpt'_q
       have someeq2: "\<And>pa. outpt s' pa \<noteq> NotAnInput \<Longrightarrow> pa=p"
-	      by auto
+        by auto
       with outpt'_pa
       have "outpt s' p \<noteq> NotAnInput"
-	      by auto
+        by auto
       from some_equality[of "\<lambda>p. outpt s' p \<noteq> NotAnInput", OF this someeq2]
       have "(SOME p. outpt s' p \<noteq> NotAnInput) = p" .
       with outpt'
       show  "outpt s' (SOME p. outpt s' p \<noteq> NotAnInput) = inp (dblock s p)"
-	      by auto
+        by auto
     qed
     moreover
     from act
@@ -248,8 +248,8 @@ qed
 lemma valueChosen_equal:
   assumes v: "valueChosen s v"
   and w: "valueChosen s w"
-  shows "v=w"
-proof (auto! simp add: valueChosen_def)
+  shows "v=w" using assms
+proof (auto simp add: valueChosen_def)
   fix a b aa ba p D pa Da
   assume max_v: "maxBalInp s b v"
     and Dmaj: "D \<in> MajoritySet"
@@ -370,18 +370,18 @@ next
     have "\<exists>bk\<in>allBlocks s. \<exists>b\<in>(UN p. Ballot p). (maxBalInp s b (chosen s)) \<and> b\<le> bal bk"
     proof -
       have disk_allblks: "\<forall>d p. disk s d p \<in> allBlocks s"
-	      by(auto simp add: allBlocks_def blocksOf_def)
+        by(auto simp add: allBlocks_def blocksOf_def)
       from p31
       have "\<exists>b\<in> (UN p. Ballot p). maxBalInp s b (chosen s) \<and> 
       (\<exists>p. \<exists>D\<in>MajoritySet.(\<forall>d\<in>D.  b \<le> bal(disk s d p)))"
-	      by(auto simp add: valueChosen_def, force)
+        by(auto simp add: valueChosen_def, force)
       with majority_nonempty obtain b p D d
 	where "IsMajority D \<and> b\<in> (UN p. Ballot p) \<and>  
 	       maxBalInp s b (chosen s) \<and> d\<in>D \<and> b \<le> bal(disk s d p)"
-	      by(auto simp add: MajoritySet_def, blast)
+        by(auto simp add: MajoritySet_def, blast)
       with disk_allblks
       show ?thesis
-	      by(auto)
+        by(auto)
     qed
     then obtain bk b
       where p45_bk: "bk\<in>allBlocks s \<and> b\<le> bal bk" 
@@ -391,18 +391,18 @@ next
     proof(cases "b \<le> bal(dblock s p)")
       case True
       have "dblock s p \<in> allBlocks s"
-	      by(auto simp add: allBlocks_def blocksOf_def)
+        by(auto simp add: allBlocks_def blocksOf_def)
       with p45_b True
       show ?thesis
-	      by(auto simp add: maxBalInp_def)
+        by(auto simp add: maxBalInp_def)
     next
       case False
       from p44 p45_bk False
       have "inp bk = inp(dblock s p)"
-	      by(auto simp add: maxBalInp_def)
+        by(auto simp add: maxBalInp_def)
       with p45_b p45_bk
       show ?thesis
-	      by(auto simp add: maxBalInp_def)
+        by(auto simp add: maxBalInp_def)
     qed
     with p41 p33 act
     show ?thesis
@@ -458,8 +458,8 @@ qed
 lemma outpt_Inv6: 
   "\<lbrakk> outpt s = outpt s'; \<forall>p. outpt s p \<in> {chosen s, NotAnInput};
      Inv2c s; HNextPart s s' \<rbrakk> \<Longrightarrow> \<forall>p. outpt s' p \<in> {chosen s', NotAnInput}"
-  using outpt_chosen
-  by (auto!)
+  using assms and outpt_chosen
+  by auto
 
 theorem HStartBallot_Inv6:
   assumes act: "HStartBallot s s' p"
@@ -536,8 +536,8 @@ theorem HPhase1or2ReadElse_Inv6:
   and inv: "HInv6 s"
   and inv2c: "Inv2c s"
   shows "HInv6 s'"
-  using HStartBallot_Inv6
-  by(auto! simp add: Phase1or2ReadElse_def)
+  using assms and HStartBallot_Inv6
+  by(auto simp add: Phase1or2ReadElse_def)
 
 theorem HEndPhase1_Inv6:
   assumes act: "HEndPhase1 s s' p"
@@ -671,8 +671,8 @@ text{*
 lemma I2f:
   assumes nxt: "HNext s s'"
   and inv: "HInv1 s \<and> HInv2 s \<and> HInv2 s' \<and> HInv3 s \<and> HInv4 s \<and> HInv5 s \<and> HInv6 s"
-  shows "HInv6 s'"
-  by(auto! simp add: HNext_def Next_def,
+  shows "HInv6 s'" using assms
+  by(auto simp add: HNext_def Next_def,
      auto simp add: HInv2_def intro: HStartBallot_Inv6,
      auto intro: HPhase0Read_Inv6,
      auto simp add: HInv4_def intro: HPhase1or2Write_Inv6,

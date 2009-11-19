@@ -1,5 +1,5 @@
 (*  Title:      LList2.thy
-    ID:         $Id: LList2.thy,v 1.13 2008-10-07 14:07:44 fhaftmann Exp $
+    ID:         $Id: LList2.thy,v 1.14 2009-06-10 09:58:19 makarius Exp $
     Author:     Stefan Friedrich
     Maintainer: Stefan Friedrich
     License:    LGPL
@@ -13,7 +13,7 @@ Safety and liveness.
 header{* More on llists *}
 
 theory LList2
-imports "~~/src/HOL/Induct/LList"
+imports LList
 begin
 
 section{*Preliminaries*}
@@ -44,19 +44,19 @@ consts
   poslsts :: "'a set \<Rightarrow> 'a llist set"
 
 syntax (xsymbols)
-  inflsts :: "'a set \<Rightarrow> 'a llist set" ("(_\\<^sup>\<omega>)" [1000] 999)
-  fpslsts :: "'a set \<Rightarrow> 'a llist set" ("(_\\<^sup>\<clubsuit>)" [1000] 999)
-  poslsts :: "'a set \<Rightarrow> 'a llist set" ("(_\\<^sup>\<spadesuit>)" [1000] 999)
+  inflsts :: "'a set \<Rightarrow> 'a llist set" ("(_\<^sup>\<omega>)" [1000] 999)
+  fpslsts :: "'a set \<Rightarrow> 'a llist set" ("(_\<^sup>\<clubsuit>)" [1000] 999)
+  poslsts :: "'a set \<Rightarrow> 'a llist set" ("(_\<^sup>\<spadesuit>)" [1000] 999)
 
 inductive_set
-  finlsts :: "'a set \<Rightarrow> 'a llist set" ("(_\\<^sup>\<star>)" [1000] 999)
+  finlsts :: "'a set \<Rightarrow> 'a llist set" ("(_\<^sup>\<star>)" [1000] 999)
   for A :: "'a set"
 where
   LNil_fin [iff]: "LNil \<in>  A\<^sup>\<star>"
 | LCons_fin [intro!]: "\<lbrakk> l \<in> A\<^sup>\<star>; a \<in> A \<rbrakk> \<Longrightarrow>  a ## l \<in> A\<^sup>\<star>"
 
 coinductive_set
-  alllsts :: "'a set \<Rightarrow> 'a llist set" ("(_\\<^sup>\<infinity>)" [1000] 999)
+  alllsts :: "'a set \<Rightarrow> 'a llist set" ("(_\<^sup>\<infinity>)" [1000] 999)
   for A :: "'a set"
 where
   LNil_all [iff]: "LNil \<in> A\<^sup>\<infinity>"
@@ -957,7 +957,7 @@ lemma llist_le_trans [trans]:
   shows "r \<le> s \<Longrightarrow> s \<le> t \<Longrightarrow> r \<le> t"
   by (auto simp: llist_le_def lappend_assoc)
 
-lemma llist_le_anti_sym:
+lemma llist_le_antisym:
   fixes s:: "'a llist"
   assumes st: "s \<le> t"
   and ts: "t \<le> s"
@@ -985,11 +985,11 @@ qed
 lemma llist_less_le_not_le:
   fixes s :: "'a llist"
   shows "(s < t) = (s \<le> t \<and> \<not> t \<le> s)"
-  by (auto simp add: llist_less_def dest: llist_le_anti_sym)
+  by (auto simp add: llist_less_def dest: llist_le_antisym)
 
 instance by default
   (assumption | rule llist_le_refl
-    llist_le_trans llist_le_anti_sym llist_less_le_not_le)+
+    llist_le_trans llist_le_antisym llist_less_le_not_le)+
 
 end
 

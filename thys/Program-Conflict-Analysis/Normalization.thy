@@ -439,7 +439,7 @@ lemma mon_ww_of_foldl[simp]: "mon_w fg (foldl (op @) [] ww) = mon_ww fg ww"
 done
 
 lemma mon_ww_ileq: "w\<preceq>w' \<Longrightarrow> mon_ww fg w \<subseteq> mon_ww fg w'"
-  by (induct rule: ileq_induct) auto
+  by (induct rule: less_eq_list.induct) auto
 
   (* TODO: Find some general statement about the property that monitors are computed element-wise and pslit this lemma and move the essential part to ConsInterleave.thy. Maybe the essential part is cil_set ?*)
 lemma mon_ww_cil: 
@@ -457,9 +457,9 @@ lemma mon_ww_of_le_rem:
   by (induct w) (auto split: el_step.split)
 
 lemma mon_env_ileq: "w\<preceq>w' \<Longrightarrow> mon_env fg w \<subseteq> mon_env fg w'"
-  by (induct rule: ileq_induct) auto
+  by (induct rule: less_eq_list.induct) auto
 lemma mon_loc_ileq: "w\<preceq>w' \<Longrightarrow> mon_loc fg w \<subseteq> mon_loc fg w'"
-  by (induct rule: ileq_induct) auto
+  by (induct rule: less_eq_list.induct) auto
 
 lemma mon_loc_map_loc[simp]: "mon_loc fg (map LOC w) = mon_ww fg w"
   by (unfold mon_loc_def) simp
@@ -814,12 +814,12 @@ lemma \<alpha>nl_simps[simp]:
   "\<alpha>nl fg (ENV x) = \<alpha>n fg x" 
   "\<alpha>nl fg (LOC x) = \<alpha>n fg x"
   by (unfold \<alpha>nl_def, auto)
-lemma \<alpha>nl_map_simps1[simp]: 
-  "map (\<alpha>nl fg) (map ENV x) = map (\<alpha>n fg) x" 
-  "map (\<alpha>nl fg) (map LOC x) = map (\<alpha>n fg) x"
-  by (unfold \<alpha>nl_def') (simp_all add: map_compose[symmetric])
-lemma \<alpha>n_map2_\<alpha>nl: "map (\<alpha>n fg) (map le_rem_s w)= map (\<alpha>nl fg) w"
-  by (simp add: map_compose[symmetric] \<alpha>nl_def)
+lemma \<alpha>nl_simps1[simp]:
+  "(\<alpha>nl fg) \<circ> ENV = \<alpha>n fg"
+  "(\<alpha>nl fg) \<circ> LOC = \<alpha>n fg"
+  by (unfold \<alpha>nl_def' comp_def) (simp_all)
+lemma \<alpha>n_\<alpha>nl: "(\<alpha>n fg) \<circ> le_rem_s = \<alpha>nl fg"
+  unfolding \<alpha>nl_def'[symmetric] ..
 lemma \<alpha>n_fst_snd[simp]: "fst (\<alpha>n fg w) \<union> snd (\<alpha>n fg w) = mon_w fg w"
   by (induct w) auto
 
@@ -839,7 +839,7 @@ lemma cil_\<alpha>n_cons_helper: "mon_pl (map (\<alpha>n fg) wb) = mon_ww fg wb"
 
 lemma cil_\<alpha>nl_cons_helper: 
   "mon_pl (map (\<alpha>nl fg) wb) = mon_ww fg (map le_rem_s wb)"
-  by (simp add: \<alpha>n_map2_\<alpha>nl[symmetric] cil_\<alpha>n_cons_helper)
+  by (simp add: \<alpha>n_\<alpha>nl cil_\<alpha>n_cons_helper[symmetric])
   
 lemma cil_\<alpha>n_cons1: "\<lbrakk>w\<in>wa\<otimes>\<^bsub>\<alpha>n fg\<^esub>wb; fst (\<alpha>n fg e) \<inter> mon_ww fg wb = {}\<rbrakk> 
   \<Longrightarrow> e#w \<in> e#wa \<otimes>\<^bsub>\<alpha>n fg\<^esub> wb" 
@@ -1015,9 +1015,9 @@ next
       from ntrp_mon_env_w_no_ctx[OF SPLIT(2), unfolded mon_env_def] have "mon_ww fg (map le_rem_s (env w)) \<inter> mon_s fg sh = {}" .
       moreover have "mon_ww fg w2 \<subseteq> mon_ww fg (map le_rem_s (env w))" proof - (* TODO: This proof should be shorter and more straightforward *)
         from cil_subset_il IHAPP(1) ileq_interleave have "map ENV w2 \<preceq> w" by blast
-        from ileq_filter[OF this] have "env (map ENV w2) \<preceq> env w" by (unfold env_def) blast
+        from le_list_filter[OF this] have "env (map ENV w2) \<preceq> env w" by (unfold env_def) blast
         hence "map ENV w2 \<preceq> env w" by (unfold env_def) simp
-        from ileq_map[OF this, of le_rem_s] have "w2 \<preceq> map le_rem_s (env w)" by simp
+        from le_list_map[OF this, of le_rem_s] have "w2 \<preceq> map le_rem_s (env w)" by simp
         thus ?thesis by (rule mon_ww_ileq)
       qed
       ultimately have "mon_ww fg w2 \<inter> mon_s fg sh = {}" by blast
@@ -1086,7 +1086,7 @@ next
         from IHAPP(5) have "mon_ww fg (map le_rem_s w1) \<inter> mon_s fg ssh = {}" by (auto simp add: mon_c_unconc)
         moreover from ntrs_mon_s[OF CASE(5)] CASE(1) have "fst (\<alpha>nl fg ee) \<subseteq> mon_s fg ssh" by auto
         ultimately have "fst (\<alpha>nl fg ee) \<inter> mon_ww fg (map le_rem_s w1) = {}" by auto
-        moreover have "mon_pl (map (\<alpha>nl fg) w1) = mon_ww fg (map le_rem_s w1)" by (unfold \<alpha>nl_def') (simp add: cil_\<alpha>n_cons_helper map_compose)
+        moreover have "mon_pl (map (\<alpha>nl fg) w1) = mon_ww fg (map le_rem_s w1)" by (unfold \<alpha>nl_def') (simp add: cil_\<alpha>n_cons_helper[symmetric])
         ultimately show "fst (\<alpha>nl fg (ENV e)) \<inter> mon_pl (map (\<alpha>nl fg) w1) = {}" using CASE(1) by auto
       qed (rule IHAPP(1))
       moreover 
