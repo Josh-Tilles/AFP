@@ -1,4 +1,4 @@
-(*  ID:         $Id: PresArith.thy,v 1.10 2009-02-27 17:46:41 nipkow Exp $
+(*  ID:         $Id: PresArith.thy,v 1.13 2009-07-15 09:26:53 makarius Exp $
     Author:     Tobias Nipkow, 2007
 *)
 
@@ -125,8 +125,8 @@ subsection{*LCM and lemmas*}
 lemma zdiv_eq_0_iff:
  "(i::int) div k = 0 \<longleftrightarrow> k=0 \<or> 0\<le>i \<and> i<k \<or> i\<le>0 \<and> k<i"
 apply(auto simp: div_pos_pos_trivial div_neg_neg_trivial)
-  apply (metis int_0_neq_1 linorder_not_less neg_imp_zdiv_nonneg_iff zdiv_mono1 zdiv_self zero_le_one zle_anti_sym zle_refl zless_linear)
-  apply (metis int_0_neq_1 linorder_not_less pos_imp_zdiv_nonneg_iff zdiv_mono1_neg zdiv_self zero_le_one zle_anti_sym zle_refl zless_linear)
+  apply (metis int_0_neq_1 linorder_not_less neg_imp_zdiv_nonneg_iff zdiv_mono1 zdiv_self zero_le_one zle_antisym zle_refl zless_linear)
+  apply (metis int_0_neq_1 linorder_not_less pos_imp_zdiv_nonneg_iff zdiv_mono1_neg zdiv_self zero_le_one zle_antisym zle_refl zless_linear)
 apply (metis int_0_neq_1 zdiv_self zless_linear)
 done
 
@@ -141,16 +141,13 @@ by(metis linorder_not_le mod_pos_pos_trivial neg_mod_conj pos_mod_conj zle_refl 
 
 fun zlcms :: "int list \<Rightarrow> int" where
 "zlcms [] = 1" |
-"zlcms (i#is) = zlcm i (zlcms is)"
+"zlcms (i#is) = lcm i (zlcms is)"
 
 lemma dvd_zlcms: "i : set is \<Longrightarrow> i dvd zlcms is"
-apply(induct "is")
- apply simp
-apply(auto simp add:dvd_imp_dvd_zlcm2)
-done
+by(induct "is") auto
 
 lemma zlcms_pos: "\<forall>i \<in> set is. i\<noteq>0 \<Longrightarrow> zlcms is > 0"
-by(induct "is")(auto simp:zlcm_pos)
+by(induct "is")(auto simp:lcm_pos_int)
 
 lemma zlcms0_iff[simp]: "(zlcms is = 0) = (0 : set is)"
 by (metis DIVISION_BY_ZERO dvd_eq_mod_eq_0 dvd_zlcms zlcms_pos zless_le)
