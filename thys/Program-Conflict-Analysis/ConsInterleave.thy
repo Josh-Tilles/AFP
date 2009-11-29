@@ -28,7 +28,7 @@ lemma mon_pl_unconc: "!!b. mon_pl (a@b) = mon_pl a \<union> mon_pl b"
   by (induct a) auto
 
 lemma mon_pl_ileq: "w\<preceq>w' \<Longrightarrow> mon_pl w \<subseteq> mon_pl w'"
-  by (induct rule: ileq_induct) auto
+  by (induct rule: less_eq_list.induct) auto
 
 lemma mon_pl_set: "mon_pl w = \<Union>{ fst e \<union> snd e | e. e\<in>set w }"
   by (unfold mon_pl_def) (safe, auto simp add: Bex_def foldl_set)
@@ -246,14 +246,14 @@ proof (induct rule: cil_set_induct_fix\<alpha>)
 next
   case (left e w' w1' w2) 
   have "f e # map f w' \<in> f e # map f w1' \<otimes>\<^bsub>\<alpha>\<^esub> map f w2" proof (rule cil_cons1)
-    from left(2) have "fst ((\<alpha>\<circ>f) e) \<inter> mon_pl (map \<alpha> (map f w2)) = {}" by (simp only: map_compose)
+    from left(2) have "fst ((\<alpha>\<circ>f) e) \<inter> mon_pl (map \<alpha> (map f w2)) = {}" by (simp only: map_map[symmetric])
     thus "fst (\<alpha> (f e)) \<inter> mon_pl (map \<alpha> (map f w2)) = {}" by (simp only: o_apply)
   qed (rule left(3))
   thus ?case by simp
 next
   case (right e w' w2' w1) 
   have "f e # map f w' \<in> map f w1 \<otimes>\<^bsub>\<alpha>\<^esub> f e # map f w2'" proof (rule cil_cons2)
-    from right(2) have "fst ((\<alpha>\<circ>f) e) \<inter> mon_pl (map \<alpha> (map f w1)) = {}" by (simp only: map_compose)
+    from right(2) have "fst ((\<alpha>\<circ>f) e) \<inter> mon_pl (map \<alpha> (map f w1)) = {}" by (simp only: map_map[symmetric])
     thus "fst (\<alpha> (f e)) \<inter> mon_pl (map \<alpha> (map f w1)) = {}" by (simp only: o_apply)
   qed (rule right(3))
   thus ?case by simp

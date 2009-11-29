@@ -19,8 +19,10 @@ lemma X_deX[simp]: "X (deX a) = a"
 
 definition "zeroX = X 0"
 
-consts nextX :: "vbl => vbl"
-primrec "nextX (X n) = X (Suc n)"
+
+primrec
+  nextX :: "vbl => vbl" where
+  "nextX (X n) = X (Suc n)"
 
 definition
   vblcase :: "['a,vbl => 'a,vbl] => 'a" where
@@ -369,9 +371,6 @@ lemma evalF_equiv[rule_format]: "! f g. (equalOn (freeVarsF A) f g) \<longrighta
 lemma evalF_subF_eq: "!phi theta. evalF M phi (subF theta A) = evalF M (phi o theta) A"
   apply(induct_tac A)
     apply(simp del: o_apply)
-    apply(intro allI)
-    apply(rule_tac f="sign signs" in arg_cong) 
-    apply(simp add: map_compose)
    apply(simp del: o_apply)
   apply(intro allI)
   apply(simp del: o_apply)

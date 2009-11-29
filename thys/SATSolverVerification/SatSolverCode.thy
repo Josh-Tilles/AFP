@@ -1,5 +1,5 @@
 (*    Title:              SatSolverVerification/SatSolverCode.thy
-      ID:                 $Id: SatSolverCode.thy,v 1.1 2008-11-13 16:09:44 filipmaric Exp $
+      ID:                 $Id: SatSolverCode.thy,v 1.2 2009-07-14 09:00:10 fhaftmann Exp $
       Author:             Filip Maric
       Maintainer:         Filip Maric <filip at matf.bg.ac.yu>
 *)
@@ -13,7 +13,7 @@ begin
 subsection{* Specification *}
 (******************************************************************************)
 
-lemma [code inline]:
+lemma [code_inline]:
 fixes
 literal :: Literal and clause :: Clause
 shows
@@ -56,7 +56,7 @@ where
            getWatchList := (getWatchList state)(literal := clause # (getWatchList state literal)) 
          \<rparr>
 "
-declare setWatch1_def[code inline]
+declare setWatch1_def[code_inline]
 
 definition
 setWatch2 :: "nat \<Rightarrow> Literal \<Rightarrow> State \<Rightarrow> State"
@@ -66,7 +66,7 @@ where
            getWatchList := (getWatchList state)(literal := clause # (getWatchList state literal)) 
          \<rparr>
 "
-declare setWatch2_def[code inline]
+declare setWatch2_def[code_inline]
 
 
 definition
@@ -77,11 +77,11 @@ where
            getWatch2 := (getWatch2 state)(clause := (getWatch1 state clause))
          \<rparr>
 "
-declare swapWatches_def[code inline]
+declare swapWatches_def[code_inline]
 
-consts getNonWatchedUnfalsifiedLiteral :: "Clause \<Rightarrow> Literal \<Rightarrow> Literal \<Rightarrow> LiteralTrail \<Rightarrow> Literal option"
-primrec
-"getNonWatchedUnfalsifiedLiteral [] w1 w2 M = None"
+primrec getNonWatchedUnfalsifiedLiteral :: "Clause \<Rightarrow> Literal \<Rightarrow> Literal \<Rightarrow> LiteralTrail \<Rightarrow> Literal option"
+where
+"getNonWatchedUnfalsifiedLiteral [] w1 w2 M = None" |
 "getNonWatchedUnfalsifiedLiteral (literal # clause) w1 w2 M = 
     (if literal \<noteq> w1 \<and> 
         literal \<noteq> w2 \<and> 
@@ -98,12 +98,11 @@ where
 "setReason literal clause state = 
     state\<lparr> getReason := (getReason state)(literal := Some clause) \<rparr>
 "
-declare setReason_def[code inline]
+declare setReason_def[code_inline]
 
-consts
-notifyWatches_loop::"Literal \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> State \<Rightarrow> State"
-primrec
-"notifyWatches_loop literal [] newWl state = state\<lparr> getWatchList := (getWatchList state)(literal := newWl) \<rparr>" 
+primrec notifyWatches_loop::"Literal \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> State \<Rightarrow> State"
+where
+"notifyWatches_loop literal [] newWl state = state\<lparr> getWatchList := (getWatchList state)(literal := newWl) \<rparr>" |
 "notifyWatches_loop literal (clause # list') newWl state = 
     (let state' = (if Some literal = (getWatch1 state clause) then 
                        (swapWatches clause state) 
@@ -147,7 +146,7 @@ where
 "notifyWatches literal state ==
     notifyWatches_loop literal (getWatchList state literal) [] state
 "
-declare notifyWatches_def[code inline]
+declare notifyWatches_def[code_inline]
 
 
 definition
@@ -227,10 +226,9 @@ where
     \<rparr>
 "
 
-consts
-initialize :: "Formula \<Rightarrow> State \<Rightarrow> State"
-primrec
-"initialize [] state = state"
+primrec initialize :: "Formula \<Rightarrow> State \<Rightarrow> State"
+where
+"initialize [] state = state" |
 "initialize (clause # formula) state = initialize formula (addClause clause state)"
 
 definition 
@@ -329,9 +327,8 @@ where
     )
 "
 
-consts
-selectLiteral :: "State \<Rightarrow> Variable set \<Rightarrow> Literal"
-axioms
+axiomatization selectLiteral :: "State \<Rightarrow> Variable set \<Rightarrow> Literal"
+where
 selectLiteral_def:
 "Vbl - vars (elements (getM state)) \<noteq> {} \<longrightarrow> 
     var (selectLiteral state Vbl) \<in> (Vbl - vars (elements (getM state)))"

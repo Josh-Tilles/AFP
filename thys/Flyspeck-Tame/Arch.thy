@@ -32,14 +32,14 @@ setup {*
         #> snd
       end;
   in
-    TheoryTarget.init NONE
+    Theory_Target.init NONE
     #> add_def ("Tri", Tri)
     #> add_def ("Quad", Quad)
     #> add_def ("Pent", Pent)
     #> add_def ("Hex", Hex)
     #> add_def ("Hept", Hept)
     #> add_def ("Oct", Oct)
-    #> LocalTheory.exit_global
+    #> Local_Theory.exit_global
   end
 *}
 
