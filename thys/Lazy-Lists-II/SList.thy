@@ -230,11 +230,11 @@ primrec
 
 
 no_translations
-  "[x\<leftarrow>xs . P]" == "filter (%x. P) xs"
+  "[x\<leftarrow>xs . P]" == "CONST filter (%x. P) xs"
 
 syntax
   (* Special syntax for list_all and filter *)
-  "@Alls"       :: "[idt, 'a list, bool] => bool"        ("(2Alls _:_./ _)" 10)
+  "_Alls"       :: "[idt, 'a list, bool] => bool"        ("(2Alls _:_./ _)" 10)
 
 translations
   "[x\<leftarrow>xs. P]" == "CONST filter(%x. P) xs"

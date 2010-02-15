@@ -1617,7 +1617,7 @@ lemma lhd_iterates [simp]: "lhd (iterates f x) = x"
 by(subst iterates) simp
 
 lemma lhd_llist_of [simp]: "lhd (llist_of xs) = hd xs"
-by(cases xs)(simp_all add: hd_list_def lhd_def)
+  by (cases xs) (simp_all add: hd_def lhd_def)
 
 lemma lhd_ldropn:
   "Fin n < llength xs \<Longrightarrow> lhd (ldropn n xs) = lnth xs n"
@@ -1761,7 +1761,7 @@ proof(rule antisymI)
       with r `r x y` have "x = y" by(auto elim: antisymD)
       with irrefl[of x] `r x y` show ?thesis by auto
     next
-      case (llexord_LNil ys')
+      case llexord_LNil
       with `llexord r ys xs` have ?EqLNil unfolding q by simp
       thus ?thesis ..
     qed
@@ -1870,7 +1870,7 @@ proof
 	case (llexord_LCons_less x y xs' ys')
 	with prefix[of LNil xs y ys'] show ?thesis by simp
       next
-	case (llexord_LNil ys')
+	case llexord_LNil
 	have ?EqLNil
 	proof(cases ys)
 	  case LNil thus ?thesis unfolding q llexord_LNil by simp
@@ -2243,8 +2243,9 @@ proof
       def k \<equiv> "length us'"
       from `\<not> lfinite xs` `xs = lappend us (LCons x vs)` `lfinite us`
       have "\<not> lfinite vs" by simp
-      hence "finite {n. Fin n < llength vs \<and> P (lnth vs n)}"
-	using `ys = lfilter P vs` by(rule lfinite_LConsI)
+      with `ys = lfilter P vs`
+      have "finite {n. Fin n < llength vs \<and> P (lnth vs n)}"
+	by(rule lfinite_LConsI)
       hence "finite ((\<lambda>m. Suc (m + k)) ` {n. Fin n < llength vs \<and> P (lnth vs n)})" by(rule finite_imageI)
       moreover {
 	have "{n. n \<le> k \<and> P (lnth xs n)} \<subseteq> {n. n \<le> k}" by auto
@@ -2298,7 +2299,7 @@ next
 	have "llength (ldropn (Suc n) xs) = \<infinity>"
 	  by(rule not_lfinite_llength)(simp add: `\<not> lfinite xs`)
 	hence [simp]: "llength ?xs = \<infinity>" using `llength xs = \<infinity>` xs by(simp)
-	moreover {
+	{
 	  fix m
 	  { assume "m \<noteq> n"
 	    have "lnth ?xs m = lnth xs m"
@@ -2318,7 +2319,7 @@ next
 	  unfolding A using `\<not> P a` by(auto simp add: lnth_lappend2)
 	hence "A = {n. Fin n < llength ?xs \<and> P (lnth ?xs n)}"
 	  unfolding `llength ?xs = \<infinity>` `llength xs = \<infinity>` . 
-	ultimately have "lfinite (lfilter P ?xs)" by(rule insert)
+	then have "lfinite (lfilter P ?xs)" using `llength ?xs = \<infinity>` by(rule insert)
 	thus ?case by(subst xs)(simp split: split_if_asm)
       qed
     qed }
