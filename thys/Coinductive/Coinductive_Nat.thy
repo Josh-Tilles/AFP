@@ -3,7 +3,6 @@
     Maintainer:  Andreas Lochbihler
 *)
 theory Coinductive_Nat imports
-  Main
   Nat_Infinity
 begin
 
@@ -11,7 +10,8 @@ section {* Coinductive natural numbers *}
 
 text {*
   Coinductive natural numbers are isomorphic to natural numbers with infinity:
-  View Nat\_Infinity @{typ "inat"} as codatatype with constructors @{term "0 :: inat"} and @{term "iSuc"}.
+  View Nat\_Infinity @{typ "inat"} as codatatype
+  with constructors @{term "0 :: inat"} and @{term "iSuc"}.
 *}
 
 lemma iSuc_plus: "iSuc n + m = iSuc (n + m)"
@@ -37,7 +37,8 @@ proof
       next
 	case False
 	then obtain n where "x = iSuc n"
-	  by(cases x)(fastsimp simp add: iSuc_def zero_inat_def gr0_conv_Suc split: inat.splits)+
+	  by(cases x)(fastsimp simp add: iSuc_def zero_inat_def gr0_conv_Suc
+                               split: inat.splits)+
 	thus ?thesis by auto
       qed
     qed
@@ -55,7 +56,9 @@ proof -
 qed
 
 definition inat_cocase :: "'a \<Rightarrow> (inat \<Rightarrow> 'a) \<Rightarrow> inat \<Rightarrow> 'a"
-where "inat_cocase z s n = (case n of Fin n' \<Rightarrow> (case n' of 0 \<Rightarrow> z | Suc n'' \<Rightarrow> s (Fin n'')) | Infty \<Rightarrow> s Infty)"
+where
+  "inat_cocase z s n = 
+   (case n of Fin n' \<Rightarrow> (case n' of 0 \<Rightarrow> z | Suc n'' \<Rightarrow> s (Fin n'')) | Infty \<Rightarrow> s Infty)"
 
 lemma inat_cocase_0 [simp]:
   "inat_cocase z s 0 = z"
@@ -79,33 +82,43 @@ lemma inat_cocase_cert:
   shows "(CASE 0 \<equiv> c) &&& (CASE (iSuc n) \<equiv> d n)"
   using assms by simp_all
 
-lemma inat_cosplit_asm: "P (inat_cocase c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = iSuc m \<and> \<not> P (d m))))"
+lemma inat_cosplit_asm: 
+  "P (inat_cocase c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = iSuc m \<and> \<not> P (d m))))"
 by(cases n rule: inat_coexhaust) simp_all
 
-lemma inat_cosplit: "P (inat_cocase c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = iSuc m \<longrightarrow> P (d m)))"
+lemma inat_cosplit:
+  "P (inat_cocase c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = iSuc m \<longrightarrow> P (d m)))"
 by(cases n rule: inat_coexhaust) simp_all
 
 subsection {* Corecursion for @{typ inat} *}
 
 definition inat_corec :: "'a \<Rightarrow> ('a \<Rightarrow> 'a option) \<Rightarrow> inat"
 where [code del]:
-  "inat_corec a f = (if \<exists>n. ((map_comp f) ^^ n) f a = None then Fin (LEAST n. ((map_comp f) ^^ n) f a = None) else Infty)"
+  "inat_corec a f = 
+  (if \<exists>n. ((map_comp f) ^^ n) f a = None
+   then Fin (LEAST n. ((map_comp f) ^^ n) f a = None) 
+   else Infty)"
 
-lemma funpow_Suc_tail_rec: "(f ^^ (Suc n)) a = (f ^^ n) (f a)"
+lemma funpow_Suc_tail_rec: 
+  "(f ^^ (Suc n)) a = (f ^^ n) (f a)"
 by(induct n) simp_all
 
 lemma funpow_map_comp_lem:
-  "map_comp f g a = g a' \<Longrightarrow> ((map_comp f) ^^ (Suc n)) g a = ((map_comp f) ^^ n) g a'"
+  "map_comp f g a = g a'
+  \<Longrightarrow> ((map_comp f) ^^ (Suc n)) g a = ((map_comp f) ^^ n) g a'"
 proof(induct n arbitrary: a a' g)
   case 0 thus ?case by simp
 next
   case (Suc n)
-  hence "(f \<circ>\<^sub>m (f \<circ>\<^sub>m g)) a = (f \<circ>\<^sub>m g) a'" by(simp add: map_comp_def)
-  hence "((op \<circ>\<^sub>m f) ^^ (Suc n)) (f \<circ>\<^sub>m g) a = ((op \<circ>\<^sub>m f) ^^ n) (f \<circ>\<^sub>m g) a'" by(rule Suc)
+  hence "(f \<circ>\<^sub>m (f \<circ>\<^sub>m g)) a = (f \<circ>\<^sub>m g) a'"
+    by(simp add: map_comp_def)
+  hence "((op \<circ>\<^sub>m f) ^^ (Suc n)) (f \<circ>\<^sub>m g) a = ((op \<circ>\<^sub>m f) ^^ n) (f \<circ>\<^sub>m g) a'" 
+    by(rule Suc)
   thus ?case by(simp only: funpow_Suc_tail_rec)
 qed
 
-lemma inat_corec [code]: "inat_corec a f = (case f a of None \<Rightarrow> 0 | Some a \<Rightarrow> iSuc (inat_corec a f))"
+lemma inat_corec [code]:
+  "inat_corec a f = (case f a of None \<Rightarrow> 0 | Some a \<Rightarrow> iSuc (inat_corec a f))"
 proof(cases "\<exists>n. ((map_comp f) ^^ n) f a = None")
   case True
   let ?m = "LEAST n. ((map_comp f) ^^ n) f a = None"
@@ -133,7 +146,8 @@ proof(cases "\<exists>n. ((map_comp f) ^^ n) f a = None")
     also note iSuc_Fin[symmetric]
     also from Some n have "n \<noteq> 0" by -(rule notI, simp)
     then obtain n' where n': "n = Suc n'" by(auto simp add: gr0_conv_Suc)
-    with Suc_n_a_n_a'[of n'] n have "((map_comp f) ^^ n') f a' = None" by(simp only:)
+    with Suc_n_a_n_a'[of n'] n have "((map_comp f) ^^ n') f a' = None"
+      by(simp only:)
     hence "Fin (LEAST n. ((op \<circ>\<^sub>m f) ^^ n) f a' = None) = inat_corec a' f"
       unfolding inat_corec_def by auto
     finally show ?thesis using Some by simp
@@ -177,7 +191,8 @@ proof -
     next
       case False
       with `m \<le> n` obtain m' n' where "m = iSuc m'" "n = n' + 1" "m' \<le> n'"
-	by(cases m rule: inat_coexhaust, simp)(cases n rule: inat_coexhaust, auto simp add: iSuc_plus_1[symmetric])
+	by(cases m rule: inat_coexhaust, simp)
+          (cases n rule: inat_coexhaust, auto simp add: iSuc_plus_1[symmetric])
       hence ?Le_inat_add by fastsimp
       thus ?thesis ..
     qed
@@ -223,7 +238,9 @@ by(blast intro: Le_inat_imp_ile ile_into_Le_inat)
 lemma inat_leI [consumes 1, case_names Leinat, case_conclusion Leinat zero iSuc]:
   assumes major [simplified mem_def]: "(m, n) \<in> X"
   and step [simplified mem_def]:
-    "\<And>m n. (m, n) \<in> X \<Longrightarrow> m = 0 \<or> (\<exists>m' n' k. m = iSuc m' \<and> n = n' + Fin k \<and> k \<noteq> 0 \<and> ((m', n') \<in> X \<or> m' = n'))"
+    "\<And>m n. (m, n) \<in> X 
+     \<Longrightarrow> m = 0 \<or> (\<exists>m' n' k. m = iSuc m' \<and> n = n' + Fin k \<and> k \<noteq> 0 \<and>
+                           ((m', n') \<in> X \<or> m' = n'))"
   shows "m \<le> n"
 apply(rule Le_inat.coinduct[unfolded Le_inat_eq_ile, where X="curry X"])
 apply(fastsimp simp add: mem_def zero_inat_def dest: step intro: major)+
@@ -231,13 +248,17 @@ done
 
 subsection {* Equality as greatest fixpoint *}
 
-lemma inat_equalityI [consumes 1, case_names Eqinat, case_conclusion Eqinat zero iSuc]:
+lemma inat_equalityI [consumes 1, case_names Eqinat,
+                                  case_conclusion Eqinat zero iSuc]:
   assumes major: "(m, n) \<in> X"
-  and step: "\<And>m n. (m, n) \<in> X \<Longrightarrow> m = 0 \<and> n = 0 \<or> (\<exists>m' n'. m = iSuc m' \<and> n = iSuc n' \<and> ((m', n') \<in> X \<or> m' = n'))"
+  and step:
+    "\<And>m n. (m, n) \<in> X
+     \<Longrightarrow> m = 0 \<and> n = 0 \<or> (\<exists>m' n'. m = iSuc m' \<and> n = iSuc n' \<and> ((m', n') \<in> X \<or> m' = n'))"
   shows "m = n"
 proof(rule antisym)
   from major show "m \<le> n"
-    by(coinduct rule: inat_leI)(drule step, auto simp add: iSuc_plus_1 Fin_1[symmetric])
+    by(coinduct rule: inat_leI)
+      (drule step, auto simp add: iSuc_plus_1 Fin_1[symmetric])
 
   from major have "(n, m) \<in> (\<lambda>(n, m). (m, n) \<in> X)"
     by(simp add: mem_def)
@@ -245,11 +266,13 @@ proof(rule antisym)
   proof(coinduct rule: inat_leI)
     case (Leinat n m)
     hence "(m, n) \<in> X" by(simp add: mem_def)
-    from step[OF this] show ?case by(auto simp add: mem_def iSuc_plus_1 Fin_1[symmetric])
+    from step[OF this] show ?case
+      by(auto simp add: mem_def iSuc_plus_1 Fin_1[symmetric])
   qed
 qed
 
-lemma inat_equality_funI [consumes 1, case_names zero iSuc, case_conclusion iSuc Eqzero EqiSuc]:
+lemma inat_equality_funI [consumes 1, case_names zero iSuc,
+                                      case_conclusion iSuc Eqzero EqiSuc]:
   assumes fun_0: "f 0 = g 0"
   and fun_iSuc: "!!n. f (iSuc n) = 0 \<and> g (iSuc n) = 0 \<or>
                     (\<exists>n1 n2. f (iSuc n) = iSuc n1 \<and> g (iSuc n) = iSuc n2 \<and>
@@ -293,7 +316,8 @@ subsection {* minus for @{typ inat} *}
 instantiation inat :: minus begin
 
 definition
-  "minus n m = (case n of Fin n \<Rightarrow> (case m of Fin m \<Rightarrow> Fin (n - m) | \<infinity> \<Rightarrow> 0) | \<infinity> \<Rightarrow> \<infinity>)"
+  "minus n m = (case n of Fin n \<Rightarrow> (case m of Fin m \<Rightarrow> Fin (n - m) | \<infinity> \<Rightarrow> 0) 
+                            | \<infinity> \<Rightarrow> \<infinity>)"
 
 instance ..
 
