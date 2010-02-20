@@ -28,9 +28,13 @@ USA
 header {* Facilitating the Hoare Logic *}
 theory Vcg
 imports StateSpace "~~/src/HOL/Statespace/StateSpaceLocale" Generalise
-uses "hoare.ML" ("hoare_syntax.ML")
+uses ("hoare.ML") ("hoare_syntax.ML")
 begin
 
+consts NoBody::"('s,'p,'f) com"
+finalconsts NoBody
+
+use "hoare.ML"
 setup Hoare.setup
 
 method_setup hoare = "Hoare.hoare"
@@ -48,9 +52,6 @@ method_setup vcg_step = "Hoare.vcg_step"
 
 method_setup hoare_rule = "Hoare.hoare_rule" 
   "apply single hoare rule and solve certain sideconditions"
-
-consts NoBody::"('s,'p,'f) com"
-finalconsts NoBody
 
 text {* Variables of the programming language are represented as components 
 of a record. To avoid cluttering up the namespace of Isabelle with lots of 
@@ -397,6 +398,9 @@ translations
 "s may_only_modify_globals Z in []" => "s may_not_modify_globals Z"
 
 
+constdefs Let':: "['a, 'a => 'b] => 'b"
+"Let' \<equiv> Let"
+
 use "hoare_syntax.ML"
 setup Hoare_Syntax.setup
 
@@ -504,7 +508,7 @@ parse_translation {*
 
 
  parse_translation  (advanced) {*
-[(@{syntax_const "_antiquoteOld"}, Hoare_Syntax.antiquoteOld_tr "_antiquoteOld"),
+[(@{syntax_const "_antiquoteOld"}, Hoare_Syntax.antiquoteOld_tr),
  (@{syntax_const "_Call"}, Hoare_Syntax.call_tr false false),
  (@{syntax_const "_FCall"}, Hoare_Syntax.fcall_tr),
  (@{syntax_const "_CallAss"}, Hoare_Syntax.call_ass_tr false false),
