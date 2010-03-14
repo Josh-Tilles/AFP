@@ -1,13 +1,11 @@
 header {* \isaheader{Interpretations of the various dynamic control dependences} *}
 
-theory DynamicControlDependences imports AdditionalLemmas 
-  "../Basic/StandardControlDependence"
-  "../Basic/WeakControlDependence"
-begin
+theory DynamicControlDependences imports AdditionalLemmas "../Dynamic/DynPDG" begin
 
 interpretation WDynStandardControlDependence:
   DynStandardControlDependencePDG sourcenode targetnode kind "valid_edge prog"
                     Entry "Defs prog" "Uses prog" id Exit
+  for prog
 proof(unfold_locales)
   fix n assume "CFG.valid_node sourcenode targetnode (valid_edge prog) n"
   hence "valid_node prog n" by(simp add:valid_node_def While_CFG.valid_node_def)
@@ -21,6 +19,7 @@ qed
 interpretation WDynWeakControlDependence:
   DynWeakControlDependencePDG sourcenode targetnode kind "valid_edge prog"
                     Entry "Defs prog" "Uses prog" id Exit
+  for prog
 proof(unfold_locales)
   fix n assume "CFG.valid_node sourcenode targetnode (valid_edge prog) n"
   hence "valid_node prog n" by(simp add:valid_node_def While_CFG.valid_node_def)

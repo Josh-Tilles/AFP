@@ -1,8 +1,6 @@
-header {* \isaheader{Dynamic and static data dependence} *}
+header {* \isaheader{Dynamic data dependence} *}
 
-theory DataDependence imports CFG_wf begin
-
-subsection {* Dynamic data dependence *}
+theory DynDataDependence imports CFG_wf begin
 
 context CFG_wf begin 
 
@@ -59,19 +57,6 @@ proof -
     by -(rule CFG_path_no_Def_equal)
   thus ?thesis by(auto simp:kinds_def)
 qed
-
-
-subsection {* Static data dependence *}
-
-
-definition data_dependence :: "'node \<Rightarrow> 'var \<Rightarrow> 'node \<Rightarrow> bool"
-    ("_ influences _ in _" [51,0])
-where data_dependences_eq:"n influences V in n' \<equiv> \<exists>as. n influences V in n' via as"
-
-lemma data_dependence_def: "n influences V in n' = 
-  (\<exists>a' as'. (V \<in> Def n) \<and> (V \<in> Use n') \<and>
-                 (n -a'#as'\<rightarrow>* n') \<and> (\<forall>n'' \<in> set (sourcenodes as'). V \<notin> Def n''))"
-by(auto simp:data_dependences_eq dyn_data_dependence_def)
 
 end
 

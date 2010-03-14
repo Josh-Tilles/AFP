@@ -3,7 +3,6 @@
     Maintainer:  Andreas Lochbihler
 *)
 theory Coinductive_Nat imports
-  Main
   Nat_Infinity
 begin
 
@@ -209,7 +208,7 @@ next
   case (Suc l)
   from `(m, n) \<in> Le_inat` show ?case
   proof cases
-    case (Le_inat_zero N)
+    case Le_inat_zero
     with `n < Fin (Suc l)` show ?thesis by auto
   next
     case (Le_inat_add M N K)

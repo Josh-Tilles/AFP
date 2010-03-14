@@ -14,14 +14,15 @@ fixrec llast :: "'a llist \<rightarrow> 'a"
 where
   "llast\<cdot>(x :@ yys) = (case yys of lnil \<Rightarrow> x | y :@ ys \<Rightarrow> llast\<cdot>yys)"
 
-fixpat llast_strict[simp]: "llast\<cdot>\<bottom>"
+lemma llast_strict[simp]: "llast\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec llast_body :: "('a llist \<rightarrow> 'a) \<rightarrow> 'a llist \<rightarrow> 'a"
 where
   "llast_body\<cdot>f\<cdot>(x :@ yys) = (case yys of lnil \<Rightarrow> x | y :@ ys \<Rightarrow> f\<cdot>yys)"
 
 lemma llast_llast_body: "llast = fix\<cdot>llast_body"
-  by (rule ext_cfun, subst llast_def, subst llast_body_unfold, simp)
+  by (rule ext_cfun, subst llast_def, subst llast_body.unfold, simp)
 
 definition wrap :: "('a \<rightarrow> 'a llist \<rightarrow> 'a) \<rightarrow> ('a llist \<rightarrow> 'a)" where
   "wrap \<equiv> \<Lambda> f (x :@ xs). f\<cdot>x\<cdot>xs"
@@ -35,7 +36,7 @@ lemma unwrap_strict[simp]: "unwrap\<cdot>\<bottom> = \<bottom>"
 lemma wrap_unwrap_ID: "wrap oo unwrap oo llast_body = llast_body"
   unfolding llast_body_def wrap_def unwrap_def
   apply (rule ext_cfun)+
-  apply (case_tac xa rule: llist.casedist)
+  apply (case_tac xa)
   apply (simp_all add: fix_const)
   done
 
@@ -48,7 +49,7 @@ definition llast' :: "'a llist \<rightarrow> 'a" where
 lemma llast_worker_llast_body: "llast_worker = unwrap oo llast_body oo wrap"
   unfolding llast_worker_def llast_body_def wrap_def unwrap_def
   apply (rule ext_cfun)+
-  apply (case_tac xb rule: llist.casedist)
+  apply (case_tac xb)
   apply (simp_all add: fix_const)
   done
 

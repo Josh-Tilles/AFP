@@ -21,7 +21,8 @@ where
   "nub\<cdot>lnil = lnil"
 | "nub\<cdot>(x :@ xs) = x :@ nub\<cdot>(lfilter\<cdot>(neg oo (\<Lambda> y. x =\<^sub>B y))\<cdot>xs)"
 
-fixpat nub_strict[simp]: "nub\<cdot>\<bottom>"
+lemma nub_strict[simp]: "nub\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec nub_body :: "(Nat llist \<rightarrow> Nat llist) \<rightarrow> Nat llist \<rightarrow> Nat llist"
 where
@@ -29,7 +30,7 @@ where
 | "nub_body\<cdot>f\<cdot>(x :@ xs) = x :@ f\<cdot>(lfilter\<cdot>(neg oo (\<Lambda> y. x =\<^sub>B y))\<cdot>xs)"
 
 lemma nub_nub_body_eq: "nub = fix\<cdot>nub_body"
-  by (rule ext_cfun, subst nub_def, subst nub_body_unfold, simp)
+  by (rule ext_cfun, subst nub_def, subst nub_body.unfold, simp)
 
 (* **************************************** *)
 
@@ -61,8 +62,6 @@ lemma SetMem_SetInsert: "SetMem\<cdot>v\<cdot>(SetInsert\<cdot>x\<cdot>s) = (Set
 text {* AndyG's new type. *}
 
 domain R = R (lazy resultR :: "Nat llist") (lazy exceptR :: "NatSet")
-
-declare R.rews[simp add]
 
 definition
   nextR :: "R \<rightarrow> (Nat * R) Maybe" where
@@ -117,8 +116,8 @@ lemma case_maybe_case:
      Nothing \<Rightarrow> f | Just\<cdot>\<langle>a, b\<rangle> \<Rightarrow> g\<cdot>a\<cdot>b)
    =
    (case L of lnil \<Rightarrow> f | x :@ xs \<Rightarrow> g\<cdot>(cfst\<cdot>(h\<cdot>x\<cdot>xs))\<cdot>(csnd\<cdot>(h\<cdot>x\<cdot>xs)))"
-  apply (cases L rule: llist.casedist, simp_all)
-  apply (rule_tac p="h\<cdot>a\<cdot>l" in cprodE)
+  apply (cases L, simp_all)
+  apply (rule_tac p="h\<cdot>a\<cdot>llist" in cprodE)
   apply simp
   done
 
@@ -137,11 +136,11 @@ proof -
     by simp
   also have "\<dots> = ?lhs"
     apply (simp add: a2c_def)
-    apply (cases "resultR\<cdot>w" rule: llist.casedist)
+    apply (cases "resultR\<cdot>w")
       apply simp_all
     apply (rule_tac p="SetMem\<cdot>a\<cdot>(exceptR\<cdot>w)" in trE)
       apply simp_all
-    apply (induct_tac l rule: llist.ind)
+    apply (induct_tac llist)
        apply simp_all
     apply (rule_tac p="SetMem\<cdot>aa\<cdot>(exceptR\<cdot>w)" in trE)
       apply simp_all
@@ -152,7 +151,7 @@ qed
 lemma filter_filterR: "lfilter\<cdot>(neg oo (\<Lambda> y. x =\<^sub>B y))\<cdot>(a2c\<cdot>r) = a2c\<cdot>(filterR\<cdot>x\<cdot>r)"
   using filter_filter[where p="Tr.neg oo (\<Lambda> y. x =\<^sub>B y)" and q="\<Lambda> v. Tr.neg\<cdot>(SetMem\<cdot>v\<cdot>(exceptR\<cdot>r))"]
   unfolding a2c_def filterR_def
-  by (cases r rule: R.casedist, simp_all add: SetMem_SetInsert TR_deMorgan)
+  by (cases r, simp_all add: SetMem_SetInsert TR_deMorgan)
 
 text{* Apply worker/wrapper. Unlike Gill/Hutton, we manipulate the body of
 the worker into the right form then apply the lemma. *}
@@ -165,7 +164,7 @@ definition
 lemma nub_body_nub_body'_eq: "unwrap oo nub_body oo wrap = nub_body'"
   unfolding nub_body_def nub_body'_def unwrap_def wrap_def a2c_def c2a_def
   by ((rule ext_cfun)+
-     , case_tac "lfilter\<cdot>(\<Lambda> v. Tr.neg\<cdot>(SetMem\<cdot>v\<cdot>(exceptR\<cdot>xa)))\<cdot>(resultR\<cdot>xa)" rule: llist.casedist
+     , case_tac "lfilter\<cdot>(\<Lambda> v. Tr.neg\<cdot>(SetMem\<cdot>v\<cdot>(exceptR\<cdot>xa)))\<cdot>(resultR\<cdot>xa)"
      , simp_all add: fix_const)
 
 definition
