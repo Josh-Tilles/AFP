@@ -48,10 +48,10 @@ where
 | "eval_body\<cdot>r\<cdot>(Catch\<cdot>x\<cdot>y) = mcatch\<cdot>(r\<cdot>x)\<cdot>(r\<cdot>y)"
 
 lemma eval_body_strictExpr[simp]: "eval_body\<cdot>r\<cdot>\<bottom> = \<bottom>"
-  by (subst eval_body_unfold, simp)
+  by (subst eval_body.unfold, simp)
 
 lemma eval_eval_body_eq: "eval = fix\<cdot>eval_body"
-  by (rule ext_cfun, subst eval_def, subst eval_body_unfold, simp)
+  by (rule ext_cfun, subst eval_def, subst eval_body.unfold, simp)
 
 subsection{* Worker/wrapper *}
 
@@ -70,8 +70,7 @@ lemma wrapC_unwrapC_id: "wrapC oo unwrapC = ID"
 proof(rule ext_cfun)+
   fix g e
   show "(wrapC oo unwrapC)\<cdot>g\<cdot>e = ID\<cdot>g\<cdot>e"
-    by (cases "g\<cdot>e" rule: Maybe.casedist,
-        simp_all add: wrapC_def unwrapC_def)
+    by (cases "g\<cdot>e", simp_all add: wrapC_def unwrapC_def)
 qed
 
 definition
@@ -99,7 +98,7 @@ where
                                      | Just\<cdot>n \<Rightarrow> s\<cdot>n)"
 
 lemma eval_body'_strictExpr[simp]: "eval_body'\<cdot>r\<cdot>\<bottom>\<cdot>s\<cdot>f = \<bottom>"
-  by (subst eval_body'_unfold, simp)
+  by (subst eval_body'.unfold, simp)
 
 definition
   eval_work' :: "Expr \<rightarrow> (Nat \<rightarrow> Nat Maybe) \<rightarrow> Nat Maybe \<rightarrow> Nat Maybe" where
@@ -111,16 +110,16 @@ simplifier's inability to cope with HOLCF's case distinctions. *}
 lemma eval_body'_eval_body_eq: "eval_body' = unwrapC oo eval_body oo wrapC"
   apply (rule ext_cfun)+
   apply (unfold unwrapC_def wrapC_def)
-  apply (case_tac xa rule: Expr.casedist)
+  apply (case_tac xa)
       apply simp_all
     apply (simp add: wrapC_def)
-    apply (case_tac "x\<cdot>E1\<cdot>Just\<cdot>Nothing" rule: Maybe.casedist)
+    apply (case_tac "x\<cdot>Expr1\<cdot>Just\<cdot>Nothing")
      apply simp_all
-    apply (case_tac "x\<cdot>E2\<cdot>Just\<cdot>Nothing" rule: Maybe.casedist)
+    apply (case_tac "x\<cdot>Expr2\<cdot>Just\<cdot>Nothing")
      apply simp_all
    apply (simp add: mfail_def)
   apply (simp add: mcatch_def wrapC_def)
-  apply (case_tac "x\<cdot>E1\<cdot>Just\<cdot>Nothing" rule: Maybe.casedist)
+  apply (case_tac "x\<cdot>Expr1\<cdot>Just\<cdot>Nothing")
    apply simp_all
   done
 
@@ -133,15 +132,15 @@ where
 | "eval_body_final\<cdot>r\<cdot>(Catch\<cdot>x\<cdot>y)\<cdot>s\<cdot>f = r\<cdot>x\<cdot>s\<cdot>(r\<cdot>y\<cdot>s\<cdot>f)"
 
 lemma eval_body_final_strictExpr[simp]: "eval_body_final\<cdot>r\<cdot>\<bottom>\<cdot>s\<cdot>f = \<bottom>"
-  by (subst eval_body_final_unfold, simp)
+  by (subst eval_body_final.unfold, simp)
 
 lemma eval_body'_eval_body_final_eq: "eval_body_final oo unwrapC oo wrapC = eval_body'"
   apply (rule ext_cfun)+
-  apply (case_tac xa rule: Expr.casedist)
+  apply (case_tac xa)
      apply (simp_all add: unwrapC_def)
-  apply (case_tac "wrapC\<cdot>x\<cdot>E1" rule: Maybe.casedist)
+  apply (case_tac "wrapC\<cdot>x\<cdot>Expr1")
     apply simp_all
-  apply (case_tac "wrapC\<cdot>x\<cdot>E2" rule: Maybe.casedist)
+  apply (case_tac "wrapC\<cdot>x\<cdot>Expr2")
     apply simp_all
   done
 

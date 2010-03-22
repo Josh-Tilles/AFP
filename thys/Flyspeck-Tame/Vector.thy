@@ -1,5 +1,4 @@
-(*  ID:         $Id: Vector.thy,v 1.4 2008-10-09 13:27:33 fhaftmann Exp $
-    Author:     Gertrud Bauer, Tobias Nipkow
+(*  Author:     Gertrud Bauer, Tobias Nipkow
 *)
 
 header {* Vector *}
@@ -12,16 +11,18 @@ datatype 'a vector = Vector "'a list"
 
 subsection {* Tabulation *}
 
-constdefs
-  tabulate' :: "nat \<times> (nat \<Rightarrow> 'a) \<Rightarrow> 'a vector"
+definition tabulate' :: "nat \<times> (nat \<Rightarrow> 'a) \<Rightarrow> 'a vector" where
   [code del]: "tabulate' p \<equiv> Vector (map (snd p) [0 ..< fst p])"
         (* map int [0..nat (fst p)])])*)
-  tabulate :: "nat \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a vector"
+
+definition tabulate :: "nat \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a vector" where
   "tabulate n f \<equiv> tabulate' (n, f)"
-  tabulate2 :: "nat \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> nat \<Rightarrow> 'a) \<Rightarrow> 'a vector vector"
+
+definition tabulate2 :: "nat \<Rightarrow> nat \<Rightarrow> (nat \<Rightarrow> nat \<Rightarrow> 'a) \<Rightarrow> 'a vector vector" where
   "tabulate2 m n f \<equiv> tabulate m (\<lambda>i .tabulate n (f i))"
-  tabulate3 :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 
-  (nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a) \<Rightarrow> 'a vector vector vector"
+
+definition tabulate3 :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 
+  (nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a) \<Rightarrow> 'a vector vector vector" where
   "tabulate3 l m n f \<equiv> tabulate l (\<lambda>i. tabulate m (\<lambda>j .tabulate n (\<lambda>k. f i j k)))"
 
 
@@ -42,21 +43,23 @@ translations
 
 subsection {* Access *}
 
-constdefs 
- sub1 :: "'a vector \<times> nat \<Rightarrow> 'a"
+definition sub1 :: "'a vector \<times> nat \<Rightarrow> 'a" where
  [code del]: "sub1 p \<equiv> let (a, n) = p in case a of (Vector as) \<Rightarrow> as ! n"
- sub :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a" 
+
+definition sub :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a" where
  "sub a n \<equiv> sub1 (a, n)"
 
-syntax 
-  "_sub" :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a"  ("(_\<lbrakk>_\<rbrakk>)" [1000] 999) 
-  "_sub2" :: "'a vector vector \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a"  ("(_\<lbrakk>_,_\<rbrakk>)" [1000] 999)
-  "_sub3" :: "'a vector vector vector \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" ("(_\<lbrakk>_,_,_\<rbrakk>)" [1000] 999) 
+abbreviation
+  sub1_syntax :: "'a vector \<Rightarrow> nat \<Rightarrow> 'a"  ("(_\<lbrakk>_\<rbrakk>)" [1000] 999)
+  where "a\<lbrakk>n\<rbrakk> == sub a n"
 
-translations 
-  "(a\<lbrakk>n\<rbrakk>)" == "CONST sub a n"
-  "(as\<lbrakk>m, n\<rbrakk>)" == "CONST sub (CONST sub as m) n"
-  "(as\<lbrakk>l, m, n\<rbrakk>)" == "CONST sub (CONST sub (CONST sub as l) m) n"
+abbreviation
+  sub2_syntax :: "'a vector vector \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a"  ("(_\<lbrakk>_,_\<rbrakk>)" [1000] 999)
+  where "as\<lbrakk>m, n\<rbrakk> == sub (sub as m) n"
+
+abbreviation
+  sub3_syntax :: "'a vector vector vector \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" ("(_\<lbrakk>_,_,_\<rbrakk>)" [1000] 999)
+  where "as\<lbrakk>l, m, n\<rbrakk> == sub (sub (sub as l) m) n"
 
 text {* examples:  @{term "\<lbrakk>0. i < 5\<rbrakk>"}, @{term "\<lbrakk>i. i < 5, j < 3\<rbrakk>"}  *}
 

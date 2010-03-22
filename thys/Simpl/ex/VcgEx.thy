@@ -361,7 +361,7 @@ syntax
   "_sum" :: "idt => nat => nat => nat"
     ("SUMM _<_. _" [0, 0, 10] 10)
 translations
-  "SUMM j<k. b" == "sum (\<lambda>j. b) k"
+  "SUMM j<k. b" == "CONST sum (\<lambda>j. b) k"
 
 text {*
  The following proof is quite explicit in the individual steps taken,
@@ -532,7 +532,7 @@ print_locale Fac_impl
 
 text {*
 To see how a call is syntactically translated you can switch off the
-printing translation via the flag @{text HoarePackage.use_call_tr'}
+printing translation via the flag @{ML Hoare_Syntax.use_call_tr'}
 *}
 
 context Fac_impl
@@ -540,12 +540,12 @@ begin
 text {*
 @{term "CALL Fac(\<acute>N,\<acute>M)"} is internally:
 *}
-ML "HoareSyntax.use_call_tr' := false"
+ML "Hoare_Syntax.use_call_tr' := false"
 text {*
 @{term "CALL Fac(\<acute>N,\<acute>M)"}
 *}
 term "CALL Fac(\<acute>N,\<acute>M)"
-ML "HoareSyntax.use_call_tr' := true"
+ML "Hoare_Syntax.use_call_tr' := true"
 end
 
 text {*
@@ -711,11 +711,7 @@ be derived from the general @{thm [source] HoarePartial.ProcRec} rule. An ML fun
 this work:
 *}
 
-ML {* bind_thm ("ProcRec2",
-                  HoarePackage.gen_proc_rec HoarePackage.Partial 2)*}
-
-thm ProcRec2
-
+ML {* bind_thm ("ProcRec2", Hoare.gen_proc_rec Hoare.Partial 2) *}
 
 
 lemma (in odd_even_clique)
@@ -820,9 +816,9 @@ procedures
 
 context append_impl
 begin
-ML "HoareSyntax.use_call_tr' := false"
+ML "Hoare_Syntax.use_call_tr' := false"
 term "CALL append(\<acute>p,\<acute>q,\<acute>p\<rightarrow>\<acute>next)"
-ML "HoareSyntax.use_call_tr' := true"
+ML "Hoare_Syntax.use_call_tr' := true"
 end
 text {* Below we give two specifications this time.
 One captures the functional behaviour and focuses on the
