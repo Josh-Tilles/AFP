@@ -1,5 +1,4 @@
 (*  Title:       CoreC++
-    ID:          $Id: Execute.thy,v 1.22 2009-07-14 09:00:10 fhaftmann Exp $
     Author:      Daniel Wasserrab, Stefan Berghofer
     Maintainer:  Daniel Wasserrab <wasserra at fmi.uni-passau.de>
 *)
@@ -12,6 +11,12 @@ imports BigStep WellType Executable_Set Efficient_Nat
 begin
 
 section{* General redefinitions *}
+
+lemma [code_unfold del]: "op = = Executable_Set.set_eq"
+  by simp
+
+lemma [code_unfold]: "op mem = ListMem"
+  by (simp add: expand_fun_eq mem_iff ListMem_iff)
 
 inductive app :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> bool"
 where
@@ -34,6 +39,8 @@ theorem app_eq: "app xs ys zs = (zs = xs @ ys)"
    apply (erule app_eq2)
   apply (erule app_eq1)
   done
+
+lemmas [code_ind_set] = rtrancl.rtrancl_refl converse_rtrancl_into_rtrancl
 
 
 inductive
@@ -141,14 +148,13 @@ text {* Redefine MethodDefs and FieldDecls *}
 
 (* FIXME: These predicates should be defined inductively in the first place! *)
 
-constdefs
-  MethodDefs' :: "prog \<Rightarrow> cname \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool"
+definition MethodDefs' :: "prog \<Rightarrow> cname \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool" where
   "MethodDefs' P C M Cs mthd \<equiv> (Cs, mthd) \<in> MethodDefs P C M"
 
-  FieldDecls' :: "prog \<Rightarrow> cname \<Rightarrow> vname \<Rightarrow> path \<Rightarrow> ty \<Rightarrow> bool"
+definition FieldDecls' :: "prog \<Rightarrow> cname \<Rightarrow> vname \<Rightarrow> path \<Rightarrow> ty \<Rightarrow> bool" where
   "FieldDecls' P C F Cs T \<equiv> (Cs, T) \<in> FieldDecls P C F"
 
-  MinimalMethodDefs' :: "prog \<Rightarrow> cname \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool"
+definition MinimalMethodDefs' :: "prog \<Rightarrow> cname \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool" where
   "MinimalMethodDefs' P C M Cs mthd \<equiv> (Cs, mthd) \<in> MinimalMethodDefs P C M"
 
 lemma [code_ind params: 3]:
@@ -175,8 +181,7 @@ lemma ForallFieldDecls_eq:
   "(\<forall>(Cs, T)\<in>FieldDecls P C F. Q Cs) = (\<forall>(Cs, T)\<in>{(Cs, T). FieldDecls' P C F Cs T}. Q Cs)"
   by (auto simp add: FieldDecls'_def)
 
-constdefs
-  OverriderMethodDefs' :: "prog \<Rightarrow> subobj \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool"
+definition OverriderMethodDefs' :: "prog \<Rightarrow> subobj \<Rightarrow> mname \<Rightarrow> path \<Rightarrow> method \<Rightarrow> bool" where
   "OverriderMethodDefs' P R M Cs mthd \<equiv> (Cs, mthd) \<in> OverriderMethodDefs P R M"
 
 lemma OverriderMethodDefs_card_eq:
@@ -651,7 +656,6 @@ by(rule widen_subcls,auto simp:path_unique_def)
 lemmas [code_ind] = widen_refl widen_null
 
 
-
 section{* Code generation *}
 
 lemmas [code_ind] = 
@@ -703,10 +707,6 @@ lemmas [code_ind] =
  WT_WTs.WTBlock WT_WTs.WTSeq WT_WTs.WTCond WT_WTs.WTWhile WT_WTs.WTThrow
  WT_WTs.WTNil WT_WTs.WTCons
 
-
-
-lemmas [code_ind_set] = rtrancl.rtrancl_refl converse_rtrancl_into_rtrancl
-
 (* A hack to make set operations work on sets with function types *)
 
 consts_code
@@ -714,8 +714,8 @@ consts_code
     ("(fn x => fn {*Set*} xs => {*Set*} (Library.insert (eq'_fst (op =)) x xs))")
   "Executable_Set.union :: ('a \<times> ('b \<Rightarrow> 'c)) set \<Rightarrow> ('a \<times> ('b \<Rightarrow> 'c)) set => ('a \<times> ('b \<Rightarrow> 'c)) set"
     ("(fn {*Set*} xs => fn {*Set*} ys => {*Set*} (Library.union (eq'_fst (op =)) xs ys))")
-  "minus :: ('a \<times> ('b \<Rightarrow> 'c)) set \<Rightarrow> ('a \<times> ('b \<Rightarrow> 'c)) set \<Rightarrow> ('a \<times> ('b \<Rightarrow> 'c)) set"
-    ("(fn {*Set*} xs => fn {*Set*} ys => {*Set*} (Library.subtract (eq'_fst (op =)) ys xs))")
+  "Executable_Set.subtract :: ('a \<times> ('b \<Rightarrow> 'c)) set \<Rightarrow> ('a \<times> ('b \<Rightarrow> 'c)) set \<Rightarrow> ('a \<times> ('b \<Rightarrow> 'c)) set"
+    ("(fn {*Set*} xs => fn {*Set*} ys => {*Set*} (Library.subtract (eq'_fst (op =)) xs ys))")
 
 consts_code
   "new_Addr"
@@ -733,8 +733,6 @@ fun new_addr z s alloc some hp =
 text{* Definition of program examples *}
 
 
-lemma [code_unfold]: "x mem xs = ListMem x xs"
-  by (simp add: mem_iff ListMem_iff)
 
 text{* {\ldots}and off we go *}
 
@@ -755,10 +753,10 @@ contains
      (''V'' := (if(Var ''a'' \<guillemotleft>Eq\<guillemotright> Val(Intg 0)) Val(Intg 0) else Val(Intg 1)))),
      (empty,empty)\<rangle> \<Rightarrow> \<langle>_,_\<rangle>"
 
-   testIf = "[],[''a''\<mapsto>Integer, ''b''\<mapsto>Integer, ''c''\<mapsto> Integer, ''cond''\<mapsto>Boolean] \<turnstile> \<langle>''a'' := Val(Intg 17);; ''b'' := Val(Intg 13);; ''c'' := Val(Intg 42);; ''cond'' := true;; if (Var ''cond'') (Var ''a'' \<guillemotleft>Add\<guillemotright> Var ''b'') else (Var ''a'' \<guillemotleft>Add\<guillemotright> Var ''c''),(empty,empty)\<rangle> \<Rightarrow> \<langle>_,_\<rangle>"
+  testIf = "[],[''a''\<mapsto>Integer, ''b''\<mapsto>Integer, ''c''\<mapsto> Integer, ''cond''\<mapsto>Boolean] \<turnstile> \<langle>''a'' := Val(Intg 17);; ''b'' := Val(Intg 13);; ''c'' := Val(Intg 42);; ''cond'' := true;; if (Var ''cond'') (Var ''a'' \<guillemotleft>Add\<guillemotright> Var ''b'') else (Var ''a'' \<guillemotleft>Add\<guillemotright> Var ''c''),(empty,empty)\<rangle> \<Rightarrow> \<langle>_,_\<rangle>"
 
-V = "''V''"
-mult = "''mult''"
+  V = "''V''"
+  mult = "''mult''"
 
 ML {* local open NoProg in val Val (Intg 5) = fst (DSeq.hd test1) end *}
 ML {* local open NoProg in val Val (Intg 11) = fst (DSeq.hd test2) end *}

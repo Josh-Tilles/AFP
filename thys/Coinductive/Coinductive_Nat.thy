@@ -3,7 +3,6 @@
     Maintainer:  Andreas Lochbihler
 *)
 theory Coinductive_Nat imports
-  Main
   Nat_Infinity
 begin
 
@@ -16,7 +15,7 @@ text {*
 *}
 
 lemma iSuc_plus: "iSuc n + m = iSuc (n + m)"
-by (metis comm_monoid_add.mult_assoc comm_monoid_add.mult_commute plus_1_iSuc(2))
+by (metis add_assoc add_commute plus_1_iSuc(2))
 
 coinductive_set inat :: "inat \<Rightarrow> bool"
 where "0 \<in> inat"
@@ -209,7 +208,7 @@ next
   case (Suc l)
   from `(m, n) \<in> Le_inat` show ?case
   proof cases
-    case (Le_inat_zero N)
+    case Le_inat_zero
     with `n < Fin (Suc l)` show ?thesis by auto
   next
     case (Le_inat_add M N K)
