@@ -1,5 +1,4 @@
 (*  Title:       Category theory using Isar and Locales
-    ID:          $Id: Cat.thy,v 1.6 2008-12-30 15:30:12 ballarin Exp $
     Author:      Greg O'Keefe, June, July, August 2003
 *)
 

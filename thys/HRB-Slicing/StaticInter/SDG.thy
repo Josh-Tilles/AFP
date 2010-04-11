@@ -24,10 +24,11 @@ locale SDG = CFGExit_wf sourcenode targetnode kind valid_edge Entry
   Postdomination sourcenode targetnode kind valid_edge Entry 
     get_proc get_return_edges procs Main Exit
   for sourcenode :: "'edge \<Rightarrow> 'node" and targetnode :: "'edge \<Rightarrow> 'node"
-  and kind :: "'edge \<Rightarrow> ('var,'val,'ret) edge_kind" and valid_edge :: "'edge \<Rightarrow> bool"
-  and Entry :: "'node" ("'('_Entry'_')")  and get_proc :: "'node \<Rightarrow> pname"
+  and kind :: "'edge \<Rightarrow> ('var,'val,'ret,'pname) edge_kind" 
+  and valid_edge :: "'edge \<Rightarrow> bool"
+  and Entry :: "'node" ("'('_Entry'_')")  and get_proc :: "'node \<Rightarrow> 'pname"
   and get_return_edges :: "'edge \<Rightarrow> 'edge set"
-  and procs :: "(pname \<times> 'var list \<times> 'var list) list" and Main :: "pname"
+  and procs :: "('pname \<times> 'var list \<times> 'var list) list" and Main :: "'pname"
   and Exit::"'node"  ("'('_Exit'_')") 
   and Def :: "'node \<Rightarrow> 'var set" and Use :: "'node \<Rightarrow> 'var set"
   and ParamDefs :: "'node \<Rightarrow> 'var list" and ParamUses :: "'node \<Rightarrow> 'var set list"
@@ -41,13 +42,13 @@ fun valid_SDG_node :: "'node SDG_node \<Rightarrow> bool"
   (\<exists>a Q r p fs ins outs. valid_edge a \<and> (kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs) \<and> targetnode a = m \<and> 
   (p,ins,outs) \<in> set procs \<and> x < length ins)"
   | "valid_SDG_node (Formal_out (m,x)) \<longleftrightarrow>
-  (\<exists>a Q p f ins outs. valid_edge a \<and> (kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f) \<and> sourcenode a = m \<and> 
+  (\<exists>a Q p f ins outs. valid_edge a \<and> (kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f) \<and> sourcenode a = m \<and> 
   (p,ins,outs) \<in> set procs \<and> x < length outs)"
   | "valid_SDG_node (Actual_in (m,x)) \<longleftrightarrow>
   (\<exists>a Q r p fs ins outs. valid_edge a \<and> (kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs) \<and> sourcenode a = m \<and> 
   (p,ins,outs) \<in> set procs \<and> x < length ins)"
   | "valid_SDG_node (Actual_out (m,x)) \<longleftrightarrow>
-  (\<exists>a Q p f ins outs. valid_edge a \<and> (kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f) \<and> targetnode a = m \<and> 
+  (\<exists>a Q p f ins outs. valid_edge a \<and> (kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f) \<and> targetnode a = m \<and> 
   (p,ins,outs) \<in> set procs \<and> x < length outs)"
 
 
@@ -97,12 +98,12 @@ next
   with `parent_node n = (_Entry_)` obtain x 
     where [simp]:"z = ((_Entry_),x)" by(cases z) auto
   with `valid_SDG_node n` Formal_out obtain a Q p f where "valid_edge a"
-    and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f" and  "sourcenode a = (_Entry_)" by auto
-  from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have "get_proc (sourcenode a) = p"
+    and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f" and  "sourcenode a = (_Entry_)" by auto
+  from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have "get_proc (sourcenode a) = p"
     by(rule get_proc_return)
   with `sourcenode a = (_Entry_)` have "p = Main"
     by(auto simp:get_proc_Entry)
-  with `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have False
+  with `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have False
     by(fastsimp intro:Main_no_return_source)
   thus ?thesis by simp
 next
@@ -163,7 +164,7 @@ next
   with `parent_node n = (_Exit_)` obtain x 
     where [simp]:"z = ((_Exit_),x)" by(cases z) auto
   with `valid_SDG_node n` Actual_out obtain a Q p f where "valid_edge a"
-    and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f" and "targetnode a = (_Exit_)" by auto
+    and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f" and "targetnode a = (_Exit_)" by auto
   hence False by -(erule Exit_no_return_target,auto)
   thus ?thesis by simp
 qed
@@ -211,15 +212,15 @@ next
 next
   case (Formal_out_SDG_Use n m x p ins outs V)
   from `valid_SDG_node n` `n = Formal_out (m, x)` obtain a Q p' f ins' outs'
-    where "valid_edge a" and "kind a = Q\<^bsub>p'\<^esub>\<hookleftarrow>f" and "sourcenode a = m"
+    where "valid_edge a" and "kind a = Q\<hookleftarrow>\<^bsub>p'\<^esub>f" and "sourcenode a = m"
     and "(p',ins',outs') \<in> set procs" and "x < length outs'" by fastsimp
-  from `valid_edge a` `kind a = Q\<^bsub>p'\<^esub>\<hookleftarrow>f` have "get_proc (sourcenode a) = p'"
+  from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p'\<^esub>f` have "get_proc (sourcenode a) = p'"
     by(rule get_proc_return)
   with `get_proc m = p` `sourcenode a = m` have [simp]:"p = p'" by simp
   with `(p',ins',outs') \<in> set procs` `(p,ins,outs) \<in> set procs` unique_callers
   have [simp]:"ins' = ins" "outs' = outs" by(auto dest:distinct_fst_isin_same_fst)
   from `x < length outs'` `V = outs ! x` have "V \<in> set outs" by fastsimp
-  with `valid_edge a` `kind a = Q\<^bsub>p'\<^esub>\<hookleftarrow>f` `(p,ins,outs) \<in> set procs`
+  with `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p'\<^esub>f` `(p,ins,outs) \<in> set procs`
   have "V \<in> Use (sourcenode a)" by(fastsimp intro:outs_in_Use)
   with `sourcenode a = m` `valid_SDG_node n` `n = Formal_out (m, x)`
   show ?case by simp
@@ -267,9 +268,9 @@ next
 next
   case (Actual_out_SDG_Def n m x V)
   from `valid_SDG_node n` `n = Actual_out (m, x)` obtain a Q p f ins outs
-    where "valid_edge a" and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f" and "targetnode a = m"
+    where "valid_edge a" and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f" and "targetnode a = m"
     and "(p,ins,outs) \<in> set procs" and "x < length outs" by fastsimp
-  from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` `(p,ins,outs) \<in> set procs`
+  from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` `(p,ins,outs) \<in> set procs`
   have "length(ParamDefs (targetnode a)) = length outs" 
     by(rule ParamDefs_return_target_length)
   with `x < length outs` `V = ParamDefs m ! x` `targetnode a = m`
@@ -421,8 +422,8 @@ proof -
 	    with `valid_edge a1` show False by(rule Exit_source)
 	  next
 	    fix a Q f p assume "pex = sourcenode a" and "valid_edge a"
-	      and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
-	    from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` `pex = sourcenode a` 
+	      and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
+	    from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` `pex = sourcenode a` 
 	      `pex = sourcenode a1` `valid_edge a1` `intra_kind (kind a1)`
 	    show False by(fastsimp dest:return_edges_only simp:intra_kind_def)
 	  qed
@@ -482,16 +483,16 @@ inductive cdep_edge :: "'node SDG_node \<Rightarrow> 'node SDG_node \<Rightarrow
     ("_ \<longrightarrow>\<^bsub>cd\<^esub> _" [51,0] 80)
   and ddep_edge :: "'node SDG_node \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ -_\<rightarrow>\<^bsub>dd\<^esub> _" [51,0,0] 80)
-  and call_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
+  and call_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
     ("_ -_\<rightarrow>\<^bsub>call\<^esub> _" [51,0,0] 80)
-  and return_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
+  and return_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
     ("_ -_\<rightarrow>\<^bsub>ret\<^esub> _" [51,0,0] 80)
-  and param_in_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+  and param_in_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ -_:_\<rightarrow>\<^bsub>in\<^esub> _" [51,0,0,0] 80)
-  and param_out_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+  and param_out_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ -_:_\<rightarrow>\<^bsub>out\<^esub> _" [51,0,0,0] 80)
   and SDG_edge :: "'node SDG_node \<Rightarrow> 'var option \<Rightarrow> 
-                          (pname \<times> bool) option \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+                          ('pname \<times> bool) option \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
 
 where
     (* Syntax *)
@@ -516,14 +517,14 @@ where
     "\<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; n = CFG_node (sourcenode a); 
       n' = CFG_node (targetnode a)\<rbrakk> \<Longrightarrow> n -p\<rightarrow>\<^bsub>call\<^esub> n'"
   | SDG_return_edge:
-    "\<lbrakk>valid_edge a; kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f; n = CFG_node (sourcenode a); 
+    "\<lbrakk>valid_edge a; kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f; n = CFG_node (sourcenode a); 
       n' = CFG_node (targetnode a)\<rbrakk> \<Longrightarrow> n -p\<rightarrow>\<^bsub>ret\<^esub> n'"
   | SDG_param_in_edge:
     "\<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; (p,ins,outs) \<in> set procs; V = ins!x;
       x < length ins; n = Actual_in (sourcenode a,x); n' = Formal_in (targetnode a,x)\<rbrakk>
       \<Longrightarrow> n -p:V\<rightarrow>\<^bsub>in\<^esub> n'"
   | SDG_param_out_edge:
-    "\<lbrakk>valid_edge a; kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f; (p,ins,outs) \<in> set procs; V = outs!x;
+    "\<lbrakk>valid_edge a; kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f; (p,ins,outs) \<in> set procs; V = outs!x;
       x < length outs; n = Formal_out (sourcenode a,x); 
       n' = Actual_out (targetnode a,x)\<rbrakk>
       \<Longrightarrow> n -p:V\<rightarrow>\<^bsub>out\<^esub> n'"
@@ -595,7 +596,7 @@ qed
 
 
 lemma SDG_cdep_edge_CFG_node: "n \<longrightarrow>\<^bsub>cd\<^esub> n' \<Longrightarrow> \<exists>m. n = CFG_node m"
-by(induct n Vopt\<equiv>"None::'var option" popt\<equiv>"None::(pname \<times> bool) option" n' 
+by(induct n Vopt\<equiv>"None::'var option" popt\<equiv>"None::('pname \<times> bool) option" n' 
    rule:SDG_edge.induct) auto
 
 lemma SDG_call_edge_CFG_node: "n -p\<rightarrow>\<^bsub>call\<^esub> n' \<Longrightarrow> \<exists>m. n = CFG_node m"
@@ -612,9 +613,8 @@ lemma SDG_call_or_param_in_edge_unique_CFG_call_edge:
   "SDG_edge n Vopt (Some(p,True)) n'
   \<Longrightarrow> \<exists>!a. valid_edge a \<and> sourcenode a = parent_node n \<and> 
           targetnode a = parent_node n' \<and> (\<exists>Q r fs. kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
-proof(induct n Vopt popt\<equiv>"Some(p,True)" n' rule:SDG_edge.induct)
-  case (SDG_call_edge a Q r p' fs n n')
-  from `Some (p',True) = Some (p,True)` have [simp]:"p' = p" by simp
+proof(induct n Vopt "Some(p,True)" n' rule:SDG_edge.induct)
+  case (SDG_call_edge a Q r fs n n')
   { fix a' 
     assume "valid_edge a'" and "sourcenode a' = parent_node n"
       and "targetnode a' = parent_node n'"
@@ -625,10 +625,9 @@ proof(induct n Vopt popt\<equiv>"Some(p,True)" n' rule:SDG_edge.induct)
     ultimately have "a' = a" using `valid_edge a'` `valid_edge a`
       by(fastsimp intro:edge_det) }
   with `valid_edge a` `n = CFG_node (sourcenode a)` `n' = CFG_node (targetnode a)`
-    `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` show ?case by(fastsimp intro!:ex1I[of _ a])
+    `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` show ?case by(fastsimp intro!:ex1I[of _ a])
 next
-  case (SDG_param_in_edge a Q r p' fs ins outs V x n n')
-  from `Some (p',True) = Some (p,True)` have [simp]:"p' = p" by simp
+  case (SDG_param_in_edge a Q r fs ins outs V x n n')
   { fix a' 
     assume "valid_edge a'" and "sourcenode a' = parent_node n"
       and "targetnode a' = parent_node n'"
@@ -639,7 +638,7 @@ next
     ultimately have "a' = a" using `valid_edge a'` `valid_edge a`
       by(fastsimp intro:edge_det) }
   with `valid_edge a` `n = Actual_in (sourcenode a,x)` 
-    `n' = Formal_in (targetnode a,x)` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs`
+    `n' = Formal_in (targetnode a,x)` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
   show ?case by(fastsimp intro!:ex1I[of _ a])
 qed simp_all
 
@@ -647,10 +646,9 @@ qed simp_all
 lemma SDG_return_or_param_out_edge_unique_CFG_return_edge:
   "SDG_edge n Vopt (Some(p,False)) n'
   \<Longrightarrow> \<exists>!a. valid_edge a \<and> sourcenode a = parent_node n \<and> 
-          targetnode a = parent_node n' \<and> (\<exists>Q f. kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f)"
-proof(induct n Vopt popt\<equiv>"Some(p,False)" n' rule:SDG_edge.induct)
-  case (SDG_return_edge a Q p' f n n')
-  from `Some (p',False) = Some (p,False)` have [simp]:"p' = p" by simp
+          targetnode a = parent_node n' \<and> (\<exists>Q f. kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f)"
+proof(induct n Vopt "Some(p,False)" n' rule:SDG_edge.induct)
+  case (SDG_return_edge a Q f n n')
   { fix a' 
     assume "valid_edge a'" and "sourcenode a' = parent_node n" 
       and "targetnode a' = parent_node n'"
@@ -661,10 +659,9 @@ proof(induct n Vopt popt\<equiv>"Some(p,False)" n' rule:SDG_edge.induct)
     ultimately have "a' = a" using `valid_edge a'` `valid_edge a`
       by(fastsimp intro:edge_det) }
   with `valid_edge a` `n = CFG_node (sourcenode a)` `n' = CFG_node (targetnode a)`
-    `kind a = Q\<^bsub>p'\<^esub>\<hookleftarrow>f` show ?case by(fastsimp intro!:ex1I[of _ a])
+    `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` show ?case by(fastsimp intro!:ex1I[of _ a])
 next
-  case (SDG_param_out_edge a Q p' f ins outs V x n n')
-  from `Some (p',False) = Some (p,False)` have [simp]:"p' = p" by simp
+  case (SDG_param_out_edge a Q f ins outs V x n n')
   { fix a' 
     assume "valid_edge a'" and "sourcenode a' = parent_node n"
       and "targetnode a' = parent_node n'"
@@ -675,20 +672,20 @@ next
     ultimately have "a' = a" using `valid_edge a'` `valid_edge a`
       by(fastsimp intro:edge_det) }
   with `valid_edge a` `n = Formal_out (sourcenode a,x)`
-    `n' = Actual_out (targetnode a,x)` `kind a = Q\<^bsub>p'\<^esub>\<hookleftarrow>f`
+    `n' = Actual_out (targetnode a,x)` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f`
   show ?case by(fastsimp intro!:ex1I[of _ a])
 qed simp_all
 
 
 lemma Exit_no_SDG_edge_source:
   "SDG_edge (CFG_node (_Exit_)) Vopt popt n' \<Longrightarrow> False"
-proof(induct n\<equiv>"CFG_node (_Exit_)" Vopt popt n' rule:SDG_edge.induct)
-  case (SDG_cdep_edge n m n' m')
+proof(induct "CFG_node (_Exit_)" Vopt popt n' rule:SDG_edge.induct)
+  case (SDG_cdep_edge m n' m')
   hence "(_Exit_) controls m'" by simp
   thus ?case by fastsimp
 next
-  case (SDG_proc_entry_exit_cdep a Q r p fs n a' n')
-  from `n = CFG_node (_Exit_)` `n = CFG_node (targetnode a)`
+  case (SDG_proc_entry_exit_cdep a Q r p fs a' n')
+  from `CFG_node (_Exit_) = CFG_node (targetnode a)`
   have "targetnode a = (_Exit_)" by simp
   from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` have "get_proc (targetnode a) = p"
     by(rule get_proc_call)
@@ -698,26 +695,26 @@ next
     by(fastsimp intro:Main_no_call_target)
   thus ?thesis by simp
 next
-  case (SDG_parent_cdep_edge n' m n)
-  from `n = CFG_node m` `n = CFG_node (_Exit_)` 
+  case (SDG_parent_cdep_edge n' m)
+  from `CFG_node (_Exit_) = CFG_node m` 
   have [simp]:"m = (_Exit_)" by simp
-  with `valid_SDG_node n'` `m = parent_node n'` `n \<noteq> n'` `n = CFG_node m`
+  with `valid_SDG_node n'` `m = parent_node n'` `CFG_node (_Exit_) \<noteq> n'`
   have False by -(drule valid_SDG_node_parent_Exit,simp+)
   thus ?thesis by simp
 next
-  case (SDG_ddep_edge n V n')
+  case (SDG_ddep_edge V n')
   hence "(CFG_node (_Exit_)) influences V in n'" by simp
   with Exit_empty show ?case
     by(fastsimp dest:path_Exit_source SDG_Def_parent_Def 
                 simp:data_dependence_def intra_path_def)
 next
-  case (SDG_call_edge a Q r p fs n n')
-  from `n = CFG_node (sourcenode a)` `n = CFG_node (_Exit_)`
+  case (SDG_call_edge a Q r p fs n')
+  from `CFG_node (_Exit_) = CFG_node (sourcenode a)`
   have "sourcenode a = (_Exit_)" by simp
   with `valid_edge a` show ?case by(rule Exit_source)
 next
-  case (SDG_return_edge a Q p f n n')
-  from `n = CFG_node (sourcenode a)` `n = CFG_node (_Exit_)`
+  case (SDG_return_edge a Q p f n')
+  from `CFG_node (_Exit_) = CFG_node (sourcenode a)`
   have "sourcenode a = (_Exit_)" by simp
   with `valid_edge a` show ?case by(rule Exit_source)
 qed simp_all
@@ -967,8 +964,8 @@ proof(atomize_elim)
 	    with `valid_edge ax'` show False by(rule Exit_source)
 	  next
 	    fix x Q f p assume " sourcenode ax' = sourcenode x"
-	      and "valid_edge x" and "kind x = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
-	    from `valid_edge x` `kind x = Q\<^bsub>p\<^esub>\<hookleftarrow>f` `sourcenode ax' = sourcenode x`
+	      and "valid_edge x" and "kind x = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
+	    from `valid_edge x` `kind x = Q\<hookleftarrow>\<^bsub>p\<^esub>f` `sourcenode ax' = sourcenode x`
 	    `valid_edge ax'` `intra_kind (kind ax')` show False
 	      by(fastsimp dest:return_edges_only simp:intra_kind_def)
 	  qed
@@ -1033,18 +1030,18 @@ proof(atomize_elim)
 	  thus ?thesis by simp
 	next
 	  fix a' Q' f' p'
-	  assume "n' = sourcenode a'" and "valid_edge a'" and "kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'"
+	  assume "n' = sourcenode a'" and "valid_edge a'" and "kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'"
 	  from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` have "get_proc(targetnode a) = p"
 	    by(rule get_proc_call)
 	  from `n -as\<rightarrow>\<^isub>\<iota>* n'` have "get_proc n = get_proc n'" 
 	    by(rule intra_path_get_procs)
 	  with `get_proc(targetnode a) = p` `targetnode a = n`
 	  have "get_proc (targetnode a) = get_proc n'" by simp
-	  from `valid_edge a'` `kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'`
+	  from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'`
 	  have "get_proc (sourcenode a') = p'" by(rule get_proc_return)
 	  with `n' = sourcenode a'` `get_proc (targetnode a) = get_proc n'` 
 	    `get_proc (targetnode a) = p` have "p = p'" by simp
-	  with `valid_edge a'` `kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'`
+	  with `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'`
 	  obtain ax where "valid_edge ax" and "\<exists>Q r fs. kind ax = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs"
 	    and "a' \<in> get_return_edges ax" by(auto dest:return_needs_call)
 	  hence "CFG_node (targetnode ax) \<longrightarrow>\<^bsub>cd\<^esub> CFG_node (sourcenode a')"
@@ -1075,7 +1072,7 @@ proof(atomize_elim)
 	from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` obtain a' 
 	  where "a' \<in> get_return_edges a"
 	  by(fastsimp dest:get_return_edge_call)
-	with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'"
+	with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'"
 	  by(fastsimp dest!:call_return_edges)
 	with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `a' \<in> get_return_edges a` obtain a''
 	  where "valid_edge a''" and "sourcenode a'' = targetnode a" 
@@ -1130,7 +1127,7 @@ proof(atomize_elim)
 	    with `targetnode a'' -as'\<rightarrow>\<^isub>\<iota>* n'` obtain ax' where "valid_edge ax'"
 	      and "targetnode a'' = sourcenode ax'" and "intra_kind(kind ax')"
 	      by(clarsimp simp:intra_path_def)(erule path.cases,fastsimp+)
-	    from `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `valid_edge ax'`
+	    from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `valid_edge ax'`
 	      `targetnode a'' = sourcenode a'` `targetnode a'' = sourcenode ax'`
 	      `intra_kind(kind ax')`
 	    have False by(fastsimp dest:return_edges_only simp:intra_kind_def) }
@@ -1223,8 +1220,8 @@ proof(atomize_elim)
 		  with `valid_edge ax'` show False by(rule Exit_source)
 		next
 		  fix x Q f p assume " sourcenode ax' = sourcenode x"
-		    and "valid_edge x" and "kind x = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
-		  from `valid_edge x` `kind x = Q\<^bsub>p\<^esub>\<hookleftarrow>f` `sourcenode ax' = sourcenode x`
+		    and "valid_edge x" and "kind x = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
+		  from `valid_edge x` `kind x = Q\<hookleftarrow>\<^bsub>p\<^esub>f` `sourcenode ax' = sourcenode x`
 		    `valid_edge ax'` `intra_kind (kind ax')` show False
 		    by(fastsimp dest:return_edges_only simp:intra_kind_def)
 		qed
@@ -1323,345 +1320,357 @@ by(induct rule:cdep_SDG_path.induct,auto intro:call_cdep_SDG_path.intros)
 
 
 lemma Entry_cc_SDG_path_to_inner_node:
-  assumes "inner_node (parent_node n)" and "valid_SDG_node n"
+  assumes "valid_SDG_node n" and "parent_node n \<noteq> (_Exit_)"
   obtains ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n"
 proof(atomize_elim)
   obtain m where "m = parent_node n" by simp
-  with `inner_node (parent_node n)` obtain asx where "(_Entry_) -asx\<rightarrow>\<^isub>\<surd>* m"
-    by(fastsimp dest:Entry_path inner_is_valid)
-  then obtain as where "(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m"
-    and "\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
-    by -(erule valid_Entry_path_ascending_path,fastsimp)
-  from `inner_node (parent_node n)` `m = parent_node n`
-  have "inner_node m" by simp
-  with `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `m = parent_node n` `valid_SDG_node n`
-    `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
-  show "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n"
-  proof(induct as arbitrary:m n rule:length_induct)
-    fix as m n
-    assume IH:"\<forall>as'. length as' < length as \<longrightarrow>
-      (\<forall>m'. (_Entry_) -as'\<rightarrow>\<^isub>\<surd>* m' \<longrightarrow>
-      (\<forall>n'. m' = parent_node n' \<longrightarrow> valid_SDG_node n' \<longrightarrow>
-      (\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)) \<longrightarrow>
-      inner_node m' \<longrightarrow> (\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n')))"
-      and "(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m" 
-      and "m = parent_node n" and "valid_SDG_node n" and "inner_node m"
+  from `valid_SDG_node n` have "valid_node (parent_node n)" 
+    by(rule valid_SDG_CFG_node)
+  thus "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n"
+  proof(cases "parent_node n" rule:valid_node_cases)
+    case Entry
+    with `valid_SDG_node n` have "n = CFG_node (_Entry_)" 
+      by(rule valid_SDG_node_parent_Entry)
+    with `valid_SDG_node n` show ?thesis by(fastsimp intro:ccSp_Nil)
+  next
+    case Exit
+    with `parent_node n \<noteq> (_Exit_)` have False by simp
+    thus ?thesis by simp
+  next
+    case inner
+    with `m = parent_node n` obtain asx where "(_Entry_) -asx\<rightarrow>\<^isub>\<surd>* m"
+      by(fastsimp dest:Entry_path inner_is_valid)
+    then obtain as where "(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m"
       and "\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
-    show "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n"
-    proof(cases "\<forall>a' \<in> set as. intra_kind(kind a')")
-      case True
-      with `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` have "(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m"
-	by(fastsimp simp:intra_path_def vp_def)
-      have "\<not> method_exit m"
-      proof
-	assume "method_exit m"
-	thus False
-	proof(rule method_exit_cases)
-	  assume "m = (_Exit_)"
-	  with `inner_node m` show False by(simp add:inner_node_def)
-	next
-	  fix a Q f p assume "m = sourcenode a" and "valid_edge a"
-	    and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
-	  from `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m` have "get_proc m = Main"
-	    by(fastsimp dest:intra_path_get_procs simp:get_proc_Entry)
-	  from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f`
-	  have "get_proc (sourcenode a) = p" by(rule get_proc_return)
-	  with `get_proc m = Main` `m = sourcenode a` have "p = Main" by simp
-	  with `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` show False
-	    by(fastsimp intro:Main_no_return_source)
-	qed
-      qed
-      with `inner_node m` `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m`
-      obtain ns where "CFG_node (_Entry_) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
-	and "ns \<noteq> []" and "\<forall>n'' \<in> set ns. parent_node n'' \<in> set(sourcenodes as)"
-	by -(erule Entry_cdep_SDG_path)
-      then obtain n' where "n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m"
-	and "parent_node n' \<in> set(sourcenodes as)"
-	by -(erule cdep_SDG_path.cases,auto)
-      from `parent_node n' \<in> set(sourcenodes as)` obtain ms ms' 
-	where "sourcenodes as = ms@(parent_node n')#ms'"
-	by(fastsimp dest:split_list simp:sourcenodes_def)
-      then obtain as' a as'' where "ms = sourcenodes as'" 
-	and "ms' = sourcenodes as''" and "as = as'@a#as''" 
-	and "parent_node n' = sourcenode a"
-	by(fastsimp elim:map_append_append_maps simp:sourcenodes_def)
-      with `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m` have "(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'"
-	by(fastsimp intro:path_split simp:intra_path_def)
-      from `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "valid_SDG_node n'"
-	by(rule SDG_edge_valid_SDG_node)
-      hence n'_cases:
-	"n' = CFG_node (parent_node n') \<or> CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
-	by(rule valid_SDG_node_cases)
-      show ?thesis
-      proof(cases "as' = []")
-	case True
-	with `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'` have "parent_node n' = (_Entry_)"
-	  by(fastsimp simp:intra_path_def)
-	from n'_cases have "\<exists>ns. CFG_node (_Entry_) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
-	proof
-	  assume "n' = CFG_node (parent_node n')"
-	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` `parent_node n' = (_Entry_)`
-	  have "CFG_node (_Entry_) cd-[]@[CFG_node (_Entry_)]\<rightarrow>\<^isub>d* CFG_node m"
-	    by -(rule cdSp_Append_cdep,rule cdSp_Nil,auto)
-	  thus ?thesis by fastsimp
-	next
-	  assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
-	  with `parent_node n' = (_Entry_)`
-	  have "CFG_node (_Entry_) cd-[]@[CFG_node (_Entry_)]\<rightarrow>\<^isub>d* n'"
-	    by -(rule cdSp_Append_cdep,rule cdSp_Nil,auto)
-	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m`
-	  have "CFG_node (_Entry_) cd-[CFG_node (_Entry_)]@[n']\<rightarrow>\<^isub>d* CFG_node m"
-	    by(fastsimp intro:cdSp_Append_cdep)
-	  thus ?thesis by fastsimp
-	qed
-	then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m"
-	  by(fastsimp intro:cdep_SDG_path_cc_SDG_path)
-	show ?thesis
-	proof(cases "n = CFG_node m")
+      by -(erule valid_Entry_path_ascending_path,fastsimp)
+    from `inner_node (parent_node n)` `m = parent_node n`
+    have "inner_node m" by simp
+    with `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `m = parent_node n` `valid_SDG_node n`
+      `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
+    show ?thesis
+    proof(induct as arbitrary:m n rule:length_induct)
+      fix as m n
+      assume IH:"\<forall>as'. length as' < length as \<longrightarrow>
+        (\<forall>m'. (_Entry_) -as'\<rightarrow>\<^isub>\<surd>* m' \<longrightarrow>
+        (\<forall>n'. m' = parent_node n' \<longrightarrow> valid_SDG_node n' \<longrightarrow>
+        (\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)) \<longrightarrow>
+        inner_node m' \<longrightarrow> (\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n')))"
+        and "(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m" 
+        and "m = parent_node n" and "valid_SDG_node n" and "inner_node m"
+        and "\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
+      show "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n"
+      proof(cases "\<forall>a' \<in> set as. intra_kind(kind a')")
+        case True
+        with `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` have "(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m"
+	  by(fastsimp simp:intra_path_def vp_def)
+        have "\<not> method_exit m"
+        proof
+	  assume "method_exit m"
+	  thus False
+	  proof(rule method_exit_cases)
+	    assume "m = (_Exit_)"
+	    with `inner_node m` show False by(simp add:inner_node_def)
+	  next
+	    fix a Q f p assume "m = sourcenode a" and "valid_edge a"
+	      and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
+	    from `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m` have "get_proc m = Main"
+	      by(fastsimp dest:intra_path_get_procs simp:get_proc_Entry)
+	    from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f`
+	    have "get_proc (sourcenode a) = p" by(rule get_proc_return)
+	    with `get_proc m = Main` `m = sourcenode a` have "p = Main" by simp
+	    with `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` show False
+	      by(fastsimp intro:Main_no_return_source)
+	  qed
+        qed
+        with `inner_node m` `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m`
+        obtain ns where "CFG_node (_Entry_) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
+	  and "ns \<noteq> []" and "\<forall>n'' \<in> set ns. parent_node n'' \<in> set(sourcenodes as)"
+	  by -(erule Entry_cdep_SDG_path)
+        then obtain n' where "n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m"
+	  and "parent_node n' \<in> set(sourcenodes as)"
+	  by -(erule cdep_SDG_path.cases,auto)
+        from `parent_node n' \<in> set(sourcenodes as)` obtain ms ms' 
+	  where "sourcenodes as = ms@(parent_node n')#ms'"
+	  by(fastsimp dest:split_list simp:sourcenodes_def)
+        then obtain as' a as'' where "ms = sourcenodes as'" 
+	  and "ms' = sourcenodes as''" and "as = as'@a#as''" 
+	  and "parent_node n' = sourcenode a"
+	  by(fastsimp elim:map_append_append_maps simp:sourcenodes_def)
+        with `(_Entry_) -as\<rightarrow>\<^isub>\<iota>* m` have "(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'"
+	  by(fastsimp intro:path_split simp:intra_path_def)
+        from `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "valid_SDG_node n'"
+	  by(rule SDG_edge_valid_SDG_node)
+        hence n'_cases:
+	  "n' = CFG_node (parent_node n') \<or> CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
+	  by(rule valid_SDG_node_cases)
+        show ?thesis
+        proof(cases "as' = []")
 	  case True
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` 
-	  show ?thesis by fastsimp
-	next
+	  with `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'` have "parent_node n' = (_Entry_)"
+	    by(fastsimp simp:intra_path_def)
+	  from n'_cases have "\<exists>ns. CFG_node (_Entry_) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
+	  proof
+	    assume "n' = CFG_node (parent_node n')"
+	    with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` `parent_node n' = (_Entry_)`
+	    have "CFG_node (_Entry_) cd-[]@[CFG_node (_Entry_)]\<rightarrow>\<^isub>d* CFG_node m"
+	      by -(rule cdSp_Append_cdep,rule cdSp_Nil,auto)
+	    thus ?thesis by fastsimp
+	  next
+	    assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
+	    with `parent_node n' = (_Entry_)`
+	    have "CFG_node (_Entry_) cd-[]@[CFG_node (_Entry_)]\<rightarrow>\<^isub>d* n'"
+	      by -(rule cdSp_Append_cdep,rule cdSp_Nil,auto)
+	    with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m`
+	    have "CFG_node (_Entry_) cd-[CFG_node (_Entry_)]@[n']\<rightarrow>\<^isub>d* CFG_node m"
+	      by(fastsimp intro:cdSp_Append_cdep)
+	    thus ?thesis by fastsimp
+	  qed
+	  then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m"
+	    by(fastsimp intro:cdep_SDG_path_cc_SDG_path)
+	  show ?thesis
+	  proof(cases "n = CFG_node m")
+	    case True
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` 
+	    show ?thesis by fastsimp
+	  next
+	    case False
+	    with `inner_node m` `valid_SDG_node n` `m = parent_node n`
+	    have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
+	      by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m`
+	    have "CFG_node (_Entry_) cc-ns@[CFG_node m]\<rightarrow>\<^isub>d* n"
+	      by(fastsimp intro:ccSp_Append_cdep)
+	    thus ?thesis by fastsimp
+	  qed
+        next
 	  case False
-	  with `inner_node m` `valid_SDG_node n` `m = parent_node n`
-	  have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
-	    by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m`
-	  have "CFG_node (_Entry_) cc-ns@[CFG_node m]\<rightarrow>\<^isub>d* n"
-	    by(fastsimp intro:ccSp_Append_cdep)
-	  thus ?thesis by fastsimp
-	qed
-      next
-	case False
-	with `as = as'@a#as''` have "length as' < length as" by simp
-	from `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'` have "valid_node (parent_node n')"
-	  by(fastsimp intro:path_valid_node simp:intra_path_def)
-	hence "inner_node (parent_node n')"
-	proof(cases "parent_node n'" rule:valid_node_cases)
-	  case Entry
-	  with `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* (parent_node n')`
-	  have "(_Entry_) -as'\<rightarrow>* (_Entry_)" by(fastsimp simp:intra_path_def)
-	  with False have False by fastsimp
-	  thus ?thesis by simp
-	next
-	  case Exit
-	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "n' = CFG_node (_Exit_)"
-	    by -(rule valid_SDG_node_parent_Exit,erule SDG_edge_valid_SDG_node,simp)
-	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` Exit have False
-	    by simp(erule Exit_no_SDG_edge_source)
-	  thus ?thesis by simp
-	next
-	  case inner
-	  thus ?thesis by simp
-	qed
-	from `valid_node (parent_node n')` 
-	have "valid_SDG_node (CFG_node (parent_node n'))" by simp
-	from `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* (parent_node n')` 
-	have "(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* (parent_node n')"
-	  by(rule intra_path_vp)
-	from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
-	  `as = as'@a#as''`
-	have "\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
-	  by auto
-	with IH `length as' < length as` `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* (parent_node n')`
-	  `valid_SDG_node (CFG_node (parent_node n'))` `inner_node (parent_node n')`
-	obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')"
-	  apply(erule_tac x="as'" in allE) apply clarsimp
-	  apply(erule_tac x="(parent_node n')" in allE) apply clarsimp
-	  apply(erule_tac x="CFG_node (parent_node n')" in allE) by clarsimp
-	from n'_cases have "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n'"
-	proof
-	  assume "n' = CFG_node (parent_node n')"
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
-	  show ?thesis by fastsimp
-	next
-	  assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
-	  have "CFG_node (_Entry_) cc-ns@[CFG_node (parent_node n')]\<rightarrow>\<^isub>d* n'"
-	    by(fastsimp intro:ccSp_Append_cdep)
-	  thus ?thesis by fastsimp
-	qed
-	then obtain ns' where "CFG_node (_Entry_) cc-ns'\<rightarrow>\<^isub>d* n'" by blast
-	with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` 
-	have "CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m"
-	  by(fastsimp intro:ccSp_Append_cdep)
-	show ?thesis
-	proof(cases "n = CFG_node m")
-	  case True
-	  with `CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m`
-	  show ?thesis by fastsimp
-	next
-	  case False
-	  with `inner_node m` `valid_SDG_node n` `m = parent_node n`
-	  have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
-	    by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
-	  with `CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m`
-	  have "CFG_node (_Entry_) cc-(ns'@[n'])@[CFG_node m]\<rightarrow>\<^isub>d* n"
-	    by(fastsimp intro:ccSp_Append_cdep)
-	  thus ?thesis by fastsimp
-	qed
-      qed
-    next
-      case False
-      hence "\<exists>a' \<in> set as. \<not> intra_kind (kind a')" by fastsimp
-      then obtain a as' as'' where "as = as'@a#as''" and "\<not> intra_kind (kind a)"
-	and "\<forall>a' \<in> set as''. intra_kind (kind a')"
-	by(fastsimp elim!:split_list_last_propE)
-      from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
-	`as = as'@a#as''` `\<not> intra_kind (kind a)`
-      obtain Q r p fs where "kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs" 
-	and "\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
-	by auto
-      from `as = as'@a#as''` have "length as' < length as" by fastsimp
-      from `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `as = as'@a#as''`
-      have "(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a" and "valid_edge a"
-	and "targetnode a -as''\<rightarrow>\<^isub>\<surd>* m"
-	by(auto intro:vp_split)
-      hence "valid_SDG_node (CFG_node (sourcenode a))"
-	by simp
-      have "\<exists>ns'. CFG_node (_Entry_) cc-ns'\<rightarrow>\<^isub>d* CFG_node m"
-      proof(cases "targetnode a = m")
-	case True
-	with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
-	have "CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m"
-	  by(fastsimp intro:SDG_call_edge)
-	have "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
-	proof(cases "as' = []")
-	  case True
-	  with `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a` have "(_Entry_) = sourcenode a"
-	    by(fastsimp simp:vp_def)
-	  with `CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m`
-	  have "CFG_node (_Entry_) cc-[]\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
-	    by(fastsimp intro:ccSp_Nil SDG_edge_valid_SDG_node)
-	  thus ?thesis by fastsimp
-	next
-	  case False
-	  from `valid_edge a` have "valid_node (sourcenode a)" by simp
-	  hence "inner_node (sourcenode a)"
-	  proof(cases "sourcenode a" rule:valid_node_cases)
+	  with `as = as'@a#as''` have "length as' < length as" by simp
+	  from `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* parent_node n'` have "valid_node (parent_node n')"
+	    by(fastsimp intro:path_valid_node simp:intra_path_def)
+	  hence "inner_node (parent_node n')"
+	  proof(cases "parent_node n'" rule:valid_node_cases)
 	    case Entry
-	    with `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a`
-	    have "(_Entry_) -as'\<rightarrow>* (_Entry_)" by(fastsimp simp:vp_def)
+	    with `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* (parent_node n')`
+	    have "(_Entry_) -as'\<rightarrow>* (_Entry_)" by(fastsimp simp:intra_path_def)
 	    with False have False by fastsimp
 	    thus ?thesis by simp
 	  next
 	    case Exit
-	    with `valid_edge a` have False by -(erule Exit_source)
+	    with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "n' = CFG_node (_Exit_)"
+	      by -(rule valid_SDG_node_parent_Exit,erule SDG_edge_valid_SDG_node,simp)
+	    with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` Exit have False
+	      by simp(erule Exit_no_SDG_edge_source)
 	    thus ?thesis by simp
 	  next
 	    case inner
 	    thus ?thesis by simp
 	  qed
-	  with IH `length as' < length as` `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a`
-	    `valid_SDG_node (CFG_node (sourcenode a))` 
-	    `\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
-	  obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
+	  from `valid_node (parent_node n')` 
+	  have "valid_SDG_node (CFG_node (parent_node n'))" by simp
+	  from `(_Entry_) -as'\<rightarrow>\<^isub>\<iota>* (parent_node n')` 
+	  have "(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* (parent_node n')"
+	    by(rule intra_path_vp)
+	  from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
+	    `as = as'@a#as''`
+	  have "\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
+	    by auto
+	  with IH `length as' < length as` `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* (parent_node n')`
+	    `valid_SDG_node (CFG_node (parent_node n'))` `inner_node (parent_node n')`
+	  obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')"
 	    apply(erule_tac x="as'" in allE) apply clarsimp
-	    apply(erule_tac x="sourcenode a" in allE) apply clarsimp
-	    apply(erule_tac x="CFG_node (sourcenode a)" in allE) by clarsimp
-	  thus ?thesis by fastsimp
-	qed
-	then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
-	  by blast
-	with `CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m`
-	show ?thesis by(fastsimp intro:ccSp_Append_call)
+	    apply(erule_tac x="(parent_node n')" in allE) apply clarsimp
+	    apply(erule_tac x="CFG_node (parent_node n')" in allE) by clarsimp
+	  from n'_cases have "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* n'"
+	  proof
+	    assume "n' = CFG_node (parent_node n')"
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
+	    show ?thesis by fastsimp
+	  next
+	    assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
+	    have "CFG_node (_Entry_) cc-ns@[CFG_node (parent_node n')]\<rightarrow>\<^isub>d* n'"
+	      by(fastsimp intro:ccSp_Append_cdep)
+	    thus ?thesis by fastsimp
+	  qed
+	  then obtain ns' where "CFG_node (_Entry_) cc-ns'\<rightarrow>\<^isub>d* n'" by blast
+	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` 
+	  have "CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m"
+	    by(fastsimp intro:ccSp_Append_cdep)
+	  show ?thesis
+	  proof(cases "n = CFG_node m")
+	    case True
+	    with `CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m`
+	    show ?thesis by fastsimp
+	  next
+	    case False
+	    with `inner_node m` `valid_SDG_node n` `m = parent_node n`
+	    have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
+	      by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
+	    with `CFG_node (_Entry_) cc-ns'@[n']\<rightarrow>\<^isub>d* CFG_node m`
+	    have "CFG_node (_Entry_) cc-(ns'@[n'])@[CFG_node m]\<rightarrow>\<^isub>d* n"
+	      by(fastsimp intro:ccSp_Append_cdep)
+	    thus ?thesis by fastsimp
+	  qed
+        qed
       next
-	case False
-	from `targetnode a -as''\<rightarrow>\<^isub>\<surd>* m` `\<forall>a' \<in> set as''. intra_kind (kind a')`
-	have "targetnode a -as''\<rightarrow>\<^isub>\<iota>* m" by(fastsimp simp:vp_def intra_path_def)
-	hence "get_proc (targetnode a) = get_proc m" by(rule intra_path_get_procs)
-	from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` have "get_proc (targetnode a) = p"
-	  by(rule get_proc_call)
-	from `inner_node m` `valid_edge a` `targetnode a -as''\<rightarrow>\<^isub>\<iota>* m`
-	  `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `targetnode a \<noteq> m`
-	obtain ns where "CFG_node (targetnode a) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
-	  and "ns \<noteq> []" 
-	  and "\<forall>n'' \<in> set ns. parent_node n'' \<in> set(sourcenodes as'')"
-	  by(fastsimp elim!:in_proc_cdep_SDG_path)
-	then obtain n' where "n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m"
-	  and "parent_node n' \<in> set(sourcenodes as'')"
-	  by -(erule cdep_SDG_path.cases,auto)
-	from `(parent_node n') \<in> set(sourcenodes as'')` obtain ms ms' 
-	  where "sourcenodes as'' = ms@(parent_node n')#ms'"
-	  by(fastsimp dest:split_list simp:sourcenodes_def)
-	then obtain xs a' ys where "ms = sourcenodes xs" 
-	  and "ms' = sourcenodes ys" and "as'' = xs@a'#ys"
-	  and "parent_node n' = sourcenode a'"
-	  by(fastsimp elim:map_append_append_maps simp:sourcenodes_def)
-	from `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `as = as'@a#as''` `as'' = xs@a'#ys`
-	have "(_Entry_) -(as'@a#xs)@a'#ys\<rightarrow>\<^isub>\<surd>* m" by simp
-	hence "(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'"
-	  and "valid_edge a'" by(auto intro:vp_split)
-	from `as = as'@a#as''` `as'' = xs@a'#ys` 
-	have "length (as'@a#xs) < length as" by simp
-	from `valid_edge a'` have "valid_node (sourcenode a')" by simp
-	hence "inner_node (sourcenode a')"
-	proof(cases "sourcenode a'" rule:valid_node_cases)
-	  case Entry
-	  with `(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'`
-	  have "(_Entry_) -as'@a#xs\<rightarrow>* (_Entry_)" by(fastsimp simp:vp_def)
-	  hence False by fastsimp
-	  thus ?thesis by simp
-	next
-	  case Exit
-	  with `valid_edge a'` have False by -(erule Exit_source)
-	  thus ?thesis by simp
-	next
-	  case inner
-	  thus ?thesis by simp
-	qed
-	from `valid_edge a'` have "valid_SDG_node (CFG_node (sourcenode a'))"
-	  by simp
-	from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
-	  `as = as'@a#as''` `as'' = xs@a'#ys`
-	have "\<forall>a' \<in> set (as'@a#xs). 
-	  intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
+        case False
+        hence "\<exists>a' \<in> set as. \<not> intra_kind (kind a')" by fastsimp
+        then obtain a as' as'' where "as = as'@a#as''" and "\<not> intra_kind (kind a)"
+	  and "\<forall>a' \<in> set as''. intra_kind (kind a')"
+	  by(fastsimp elim!:split_list_last_propE)
+        from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
+	  `as = as'@a#as''` `\<not> intra_kind (kind a)`
+        obtain Q r p fs where "kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs" 
+	  and "\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
 	  by auto
-	with IH `length (as'@a#xs) < length as` 
-	  `(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'`
-	  `valid_SDG_node (CFG_node (sourcenode a'))`
-	  `inner_node (sourcenode a')` `parent_node n' = sourcenode a'`
-	obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')"
-	  apply(erule_tac x="as'@a#xs" in allE) apply clarsimp
-	  apply(erule_tac x="sourcenode a'" in allE) apply clarsimp
-	  apply(erule_tac x="CFG_node (sourcenode a')" in allE) by clarsimp
-	from `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "valid_SDG_node n'"
-	  by(rule SDG_edge_valid_SDG_node)
-	hence "n' = CFG_node (parent_node n') \<or> CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
-	  by(rule valid_SDG_node_cases)
-	thus ?thesis
-	proof
-	  assume "n' = CFG_node (parent_node n')"
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
-	    `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` show ?thesis
-	    by(fastsimp intro:ccSp_Append_cdep)
-	next
-	  assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
-	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
-	  have "CFG_node (_Entry_) cc-ns@[CFG_node (parent_node n')]\<rightarrow>\<^isub>d* n'"
-	    by(fastsimp intro:ccSp_Append_cdep)
-	  with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` show ?thesis
-	    by(fastsimp intro:ccSp_Append_cdep)
-	qed
-      qed
-      then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m" by blast
-      show ?thesis
-      proof(cases "n = CFG_node m")
-	case True
-	with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` show ?thesis by fastsimp
-      next
-	case False
-	with `inner_node m` `valid_SDG_node n` `m = parent_node n`
-	have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
-	  by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
-	with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` show ?thesis
-	  by(fastsimp dest:ccSp_Append_cdep)
+        from `as = as'@a#as''` have "length as' < length as" by fastsimp
+        from `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `as = as'@a#as''`
+        have "(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a" and "valid_edge a"
+	  and "targetnode a -as''\<rightarrow>\<^isub>\<surd>* m"
+	  by(auto intro:vp_split)
+        hence "valid_SDG_node (CFG_node (sourcenode a))" by simp
+        have "\<exists>ns'. CFG_node (_Entry_) cc-ns'\<rightarrow>\<^isub>d* CFG_node m"
+        proof(cases "targetnode a = m")
+	  case True
+	  with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
+	  have "CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m"
+	    by(fastsimp intro:SDG_call_edge)
+	  have "\<exists>ns. CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
+	  proof(cases "as' = []")
+	    case True
+	    with `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a` have "(_Entry_) = sourcenode a"
+	      by(fastsimp simp:vp_def)
+	    with `CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m`
+	    have "CFG_node (_Entry_) cc-[]\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
+	      by(fastsimp intro:ccSp_Nil SDG_edge_valid_SDG_node)
+	    thus ?thesis by fastsimp
+	  next
+	    case False
+	    from `valid_edge a` have "valid_node (sourcenode a)" by simp
+	    hence "inner_node (sourcenode a)"
+	    proof(cases "sourcenode a" rule:valid_node_cases)
+	      case Entry
+	      with `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a`
+	      have "(_Entry_) -as'\<rightarrow>* (_Entry_)" by(fastsimp simp:vp_def)
+	      with False have False by fastsimp
+	      thus ?thesis by simp
+	    next
+	      case Exit
+	      with `valid_edge a` have False by -(erule Exit_source)
+	      thus ?thesis by simp
+	    next
+	      case inner
+	      thus ?thesis by simp
+	    qed
+	    with IH `length as' < length as` `(_Entry_) -as'\<rightarrow>\<^isub>\<surd>* sourcenode a`
+	      `valid_SDG_node (CFG_node (sourcenode a))` 
+	      `\<forall>a' \<in> set as'. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
+	    obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
+	      apply(erule_tac x="as'" in allE) apply clarsimp
+	      apply(erule_tac x="sourcenode a" in allE) apply clarsimp
+	      apply(erule_tac x="CFG_node (sourcenode a)" in allE) by clarsimp
+	    thus ?thesis by fastsimp
+	  qed
+	  then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (sourcenode a)"
+	    by blast
+	  with `CFG_node (sourcenode a) -p\<rightarrow>\<^bsub>call\<^esub> CFG_node m`
+	  show ?thesis by(fastsimp intro:ccSp_Append_call)
+        next
+	  case False
+	  from `targetnode a -as''\<rightarrow>\<^isub>\<surd>* m` `\<forall>a' \<in> set as''. intra_kind (kind a')`
+	  have "targetnode a -as''\<rightarrow>\<^isub>\<iota>* m" by(fastsimp simp:vp_def intra_path_def)
+	  hence "get_proc (targetnode a) = get_proc m" by(rule intra_path_get_procs)
+	  from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` have "get_proc (targetnode a) = p"
+	    by(rule get_proc_call)
+	  from `inner_node m` `valid_edge a` `targetnode a -as''\<rightarrow>\<^isub>\<iota>* m`
+	    `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `targetnode a \<noteq> m`
+	  obtain ns where "CFG_node (targetnode a) cd-ns\<rightarrow>\<^isub>d* CFG_node m"
+	    and "ns \<noteq> []" 
+	    and "\<forall>n'' \<in> set ns. parent_node n'' \<in> set(sourcenodes as'')"
+	    by(fastsimp elim!:in_proc_cdep_SDG_path)
+	  then obtain n' where "n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m"
+	    and "parent_node n' \<in> set(sourcenodes as'')"
+	    by -(erule cdep_SDG_path.cases,auto)
+	  from `(parent_node n') \<in> set(sourcenodes as'')` obtain ms ms' 
+	    where "sourcenodes as'' = ms@(parent_node n')#ms'"
+	    by(fastsimp dest:split_list simp:sourcenodes_def)
+	  then obtain xs a' ys where "ms = sourcenodes xs" 
+	    and "ms' = sourcenodes ys" and "as'' = xs@a'#ys"
+	    and "parent_node n' = sourcenode a'"
+	    by(fastsimp elim:map_append_append_maps simp:sourcenodes_def)
+	  from `(_Entry_) -as\<rightarrow>\<^isub>\<surd>* m` `as = as'@a#as''` `as'' = xs@a'#ys`
+	  have "(_Entry_) -(as'@a#xs)@a'#ys\<rightarrow>\<^isub>\<surd>* m" by simp
+	  hence "(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'"
+	    and "valid_edge a'" by(auto intro:vp_split)
+	  from `as = as'@a#as''` `as'' = xs@a'#ys` 
+	  have "length (as'@a#xs) < length as" by simp
+	  from `valid_edge a'` have "valid_node (sourcenode a')" by simp
+	  hence "inner_node (sourcenode a')"
+	  proof(cases "sourcenode a'" rule:valid_node_cases)
+	    case Entry
+	    with `(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'`
+	    have "(_Entry_) -as'@a#xs\<rightarrow>* (_Entry_)" by(fastsimp simp:vp_def)
+	    hence False by fastsimp
+	    thus ?thesis by simp
+	  next
+	    case Exit
+	    with `valid_edge a'` have False by -(erule Exit_source)
+	    thus ?thesis by simp
+	  next
+	    case inner
+	    thus ?thesis by simp
+	  qed
+	  from `valid_edge a'` have "valid_SDG_node (CFG_node (sourcenode a'))"
+	    by simp
+	  from `\<forall>a' \<in> set as. intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)`
+	    `as = as'@a#as''` `as'' = xs@a'#ys`
+	  have "\<forall>a' \<in> set (as'@a#xs). 
+	    intra_kind(kind a') \<or> (\<exists>Q r p fs. kind a' = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs)"
+	    by auto
+	  with IH `length (as'@a#xs) < length as` 
+	    `(_Entry_) -as'@a#xs\<rightarrow>\<^isub>\<surd>* sourcenode a'`
+	    `valid_SDG_node (CFG_node (sourcenode a'))`
+	    `inner_node (sourcenode a')` `parent_node n' = sourcenode a'`
+	  obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')"
+	    apply(erule_tac x="as'@a#xs" in allE) apply clarsimp
+	    apply(erule_tac x="sourcenode a'" in allE) apply clarsimp
+	    apply(erule_tac x="CFG_node (sourcenode a')" in allE) by clarsimp
+	  from `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` have "valid_SDG_node n'"
+	    by(rule SDG_edge_valid_SDG_node)
+	  hence "n' = CFG_node (parent_node n') \<or> CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
+	    by(rule valid_SDG_node_cases)
+	  thus ?thesis
+	  proof
+	    assume "n' = CFG_node (parent_node n')"
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
+	      `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` show ?thesis
+	      by(fastsimp intro:ccSp_Append_cdep)
+	  next
+	    assume "CFG_node (parent_node n') \<longrightarrow>\<^bsub>cd\<^esub> n'"
+	    with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node (parent_node n')`
+	    have "CFG_node (_Entry_) cc-ns@[CFG_node (parent_node n')]\<rightarrow>\<^isub>d* n'"
+	      by(fastsimp intro:ccSp_Append_cdep)
+	    with `n' \<longrightarrow>\<^bsub>cd\<^esub> CFG_node m` show ?thesis
+	      by(fastsimp intro:ccSp_Append_cdep)
+	  qed
+        qed
+        then obtain ns where "CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m" by blast
+        show ?thesis
+        proof(cases "n = CFG_node m")
+	  case True
+	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` show ?thesis by fastsimp
+        next
+	  case False
+	  with `inner_node m` `valid_SDG_node n` `m = parent_node n`
+	  have "CFG_node m \<longrightarrow>\<^bsub>cd\<^esub> n"
+	    by(fastsimp intro:SDG_parent_cdep_edge inner_is_valid)
+	  with `CFG_node (_Entry_) cc-ns\<rightarrow>\<^isub>d* CFG_node m` show ?thesis
+	    by(fastsimp dest:ccSp_Append_cdep)
+        qed
       qed
     qed
   qed
 qed
-
-
 
 
 subsection {* Same level paths in the SDG *}
@@ -1679,7 +1688,7 @@ inductive matched :: "'node SDG_node \<Rightarrow> 'node SDG_node list \<Rightar
   \<Longrightarrow> matched n\<^isub>0 (ns@n\<^isub>1#ns'@[n\<^isub>3]) n\<^isub>4"
   | matched_bracket_param:
   "\<lbrakk>matched n\<^isub>0 ns n\<^isub>1; n\<^isub>1 -p:V\<rightarrow>\<^bsub>in\<^esub> n\<^isub>2; matched n\<^isub>2 ns' n\<^isub>3; 
-    n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4; valid_edge a; a' \<in> get_return_edges a;
+    n\<^isub>3 -p:V'\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4; valid_edge a; a' \<in> get_return_edges a;
     sourcenode a = parent_node n\<^isub>1; targetnode a = parent_node n\<^isub>2; 
     sourcenode a' = parent_node n\<^isub>3; targetnode a' = parent_node n\<^isub>4\<rbrakk>
   \<Longrightarrow> matched n\<^isub>0 (ns@n\<^isub>1#ns'@[n\<^isub>3]) n\<^isub>4"
@@ -1758,7 +1767,7 @@ proof(atomize_elim)
     with `\<exists>as. parent_node n\<^isub>0 -as\<rightarrow>\<^isub>\<iota>* parent_node n\<^isub>1` show ?case
       by(fastsimp intro:intra_path_Append)
   next
-    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 n\<^isub>4 a a')
+    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 V' n\<^isub>4 a a')
     from `valid_edge a` `a' \<in> get_return_edges a` `sourcenode a = parent_node n\<^isub>1`
       `targetnode a' = parent_node n\<^isub>4`
     obtain a'' where "valid_edge a''" and "sourcenode a'' = parent_node n\<^isub>1" 
@@ -1807,7 +1816,7 @@ proof(atomize_elim)
     from `\<exists>as. parent_node n\<^isub>2 -as\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3`
     obtain as' where "parent_node n\<^isub>2 -as'\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3" by blast
     from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs`
-    obtain Q' f' where "kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
+    obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'" by(fastsimp dest!:call_return_edges)
     from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'" 
       by(rule get_return_edges_valid)
     from `parent_node n\<^isub>2 -as'\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3` have "same_level_path as'"
@@ -1818,7 +1827,7 @@ proof(atomize_elim)
       by(fastsimp intro:same_level_path_upd_cs_callstack_Append 
                    simp:same_level_path_def)
     with `same_level_path_aux ([]@[a]) as'` `a' \<in> get_return_edges a`
-      `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'`
+      `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'`
     have "same_level_path (a#as'@[a'])"
       by(fastsimp intro:same_level_path_aux_Append upd_cs_Append 
                    simp:same_level_path_def)
@@ -1838,7 +1847,7 @@ proof(atomize_elim)
     with `sourcenode a = parent_node n\<^isub>1` `sourcenode a' = parent_node n\<^isub>3`
     show ?case by fastsimp
   next
-    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 n\<^isub>4 a a')
+    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 V' n\<^isub>4 a a')
     from `valid_edge a` `a' \<in> get_return_edges a`
     obtain Q r p' fs where "kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs" 
       by(fastsimp dest!:only_call_get_return_edges)
@@ -1847,7 +1856,7 @@ proof(atomize_elim)
     from `\<exists>as. parent_node n\<^isub>2 -as\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3`
     obtain as' where "parent_node n\<^isub>2 -as'\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3" by blast
     from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs`
-    obtain Q' f' where "kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
+    obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'" by(fastsimp dest!:call_return_edges)
     from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'" 
       by(rule get_return_edges_valid)
     from `parent_node n\<^isub>2 -as'\<rightarrow>\<^bsub>sl\<^esub>* parent_node n\<^isub>3` have "same_level_path as'"
@@ -1858,7 +1867,7 @@ proof(atomize_elim)
       by(fastsimp intro:same_level_path_upd_cs_callstack_Append 
                    simp:same_level_path_def)
     with `same_level_path_aux ([]@[a]) as'` `a' \<in> get_return_edges a`
-      `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `kind a' = Q'\<^bsub>p'\<^esub>\<hookleftarrow>f'`
+      `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `kind a' = Q'\<hookleftarrow>\<^bsub>p'\<^esub>f'`
     have "same_level_path (a#as'@[a'])"
       by(fastsimp intro:same_level_path_aux_Append upd_cs_Append 
                    simp:same_level_path_def)
@@ -1981,18 +1990,18 @@ inductive sum_cdep_edge :: "'node SDG_node \<Rightarrow> 'node SDG_node \<Righta
     ("_ s\<longrightarrow>\<^bsub>cd\<^esub> _" [51,0] 80)
   and sum_ddep_edge :: "'node SDG_node \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ s-_\<rightarrow>\<^bsub>dd\<^esub> _" [51,0,0] 80)
-  and sum_call_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
+  and sum_call_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
     ("_ s-_\<rightarrow>\<^bsub>call\<^esub> _" [51,0,0] 80)
-  and sum_return_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
+  and sum_return_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
     ("_ s-_\<rightarrow>\<^bsub>ret\<^esub> _" [51,0,0] 80)
-  and sum_param_in_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+  and sum_param_in_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ s-_:_\<rightarrow>\<^bsub>in\<^esub> _" [51,0,0,0] 80)
-  and sum_param_out_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+  and sum_param_out_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'var \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
     ("_ s-_:_\<rightarrow>\<^bsub>out\<^esub> _" [51,0,0,0] 80)
-  and sum_summary_edge :: "'node SDG_node \<Rightarrow> pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
+  and sum_summary_edge :: "'node SDG_node \<Rightarrow> 'pname \<Rightarrow> 'node SDG_node \<Rightarrow> bool" 
     ("_ s-_\<rightarrow>\<^bsub>sum\<^esub> _" [51,0] 80)
   and sum_SDG_edge :: "'node SDG_node \<Rightarrow> 'var option \<Rightarrow> 
-                          (pname \<times> bool) option \<Rightarrow> bool \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
+                          ('pname \<times> bool) option \<Rightarrow> bool \<Rightarrow> 'node SDG_node \<Rightarrow> bool"
 
 where
     (* Syntax *)
@@ -2018,14 +2027,14 @@ where
     "\<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; n = CFG_node (sourcenode a); 
       n' = CFG_node (targetnode a)\<rbrakk> \<Longrightarrow> n s-p\<rightarrow>\<^bsub>call\<^esub> n'"
   | sum_SDG_return_edge:
-    "\<lbrakk>valid_edge a; kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>fs; n = CFG_node (sourcenode a); 
+    "\<lbrakk>valid_edge a; kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>fs; n = CFG_node (sourcenode a); 
       n' = CFG_node (targetnode a)\<rbrakk> \<Longrightarrow> n s-p\<rightarrow>\<^bsub>ret\<^esub> n'"
   | sum_SDG_param_in_edge:
     "\<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; (p,ins,outs) \<in> set procs; V = ins!x;
       x < length ins; n = Actual_in (sourcenode a,x); n' = Formal_in (targetnode a,x)\<rbrakk>
       \<Longrightarrow> n s-p:V\<rightarrow>\<^bsub>in\<^esub> n'"
   | sum_SDG_param_out_edge:
-    "\<lbrakk>valid_edge a; kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f; (p,ins,outs) \<in> set procs; V = outs!x;
+    "\<lbrakk>valid_edge a; kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f; (p,ins,outs) \<in> set procs; V = outs!x;
       x < length outs; n = Formal_out (sourcenode a,x); 
       n' = Actual_out (targetnode a,x)\<rbrakk>
       \<Longrightarrow> n s-p:V\<rightarrow>\<^bsub>out\<^esub> n'"
@@ -2037,8 +2046,7 @@ where
     "\<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; a' \<in> get_return_edges a;
       matched (Formal_in (targetnode a,x)) ns (Formal_out (sourcenode a',x'));
       n = Actual_in (sourcenode a,x); n' = Actual_out (targetnode a',x');
-      (p,ins,outs) \<in> set procs; x < length ins; x' < length outs; 
-      ins!x = outs!x'\<rbrakk>
+      (p,ins,outs) \<in> set procs; x < length ins; x' < length outs\<rbrakk>
       \<Longrightarrow> n s-p\<rightarrow>\<^bsub>sum\<^esub> n'"
 
 
@@ -2051,8 +2059,7 @@ lemma sum_edge_cases:
       \<lbrakk>valid_edge a; kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs; a' \<in> get_return_edges a;
        matched (Formal_in (targetnode a,x)) ns (Formal_out (sourcenode a',x'));
        n = Actual_in (sourcenode a,x); n' = Actual_out (targetnode a',x');
-       (p,ins,outs) \<in> set procs; x < length ins; x' < length outs; 
-       ins!x = outs!x'\<rbrakk> \<Longrightarrow> P\<rbrakk>
+       (p,ins,outs) \<in> set procs; x < length ins; x' < length outs\<rbrakk> \<Longrightarrow> P\<rbrakk>
   \<Longrightarrow> P"
 by -(erule sum_SDG_edge.cases,auto,fastsimp+)
 
@@ -2093,7 +2100,7 @@ proof -
       from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
 	by(rule get_return_edges_valid)
       from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
-      obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
+      obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
       with `valid_edge a'` `n' = Actual_out (targetnode a',x')`
 	`(p,ins,outs) \<in> set procs` `x' < length outs`
       have "valid_SDG_node n'" by fastsimp
@@ -2114,13 +2121,13 @@ lemma Exit_no_sum_SDG_edge_source:
 proof(cases b)
   case True
   with `sum_SDG_edge (CFG_node (_Exit_)) Vopt popt b n'` show ?thesis
-  proof(induct n\<equiv>"CFG_node (_Exit_)" Vopt popt b n' rule:sum_SDG_edge.induct)
-    case (sum_SDG_call_summary_edge a Q r p f a' n n')
-    from `n = CFG_node (sourcenode a)` `n = CFG_node (_Exit_)`
+  proof(induct "CFG_node (_Exit_)" Vopt popt b n' rule:sum_SDG_edge.induct)
+    case (sum_SDG_call_summary_edge a Q r p f a' n')
+    from `CFG_node (_Exit_) = CFG_node (sourcenode a)`
     have "sourcenode a = (_Exit_)" by simp
     with `valid_edge a` show ?case by(rule Exit_source)
   next
-    case (sum_SDG_param_summary_edge a Q r p f a' x ns x' n n' ins outs)
+    case (sum_SDG_param_summary_edge a Q r p f a' x ns x' n' ins outs)
     thus ?case by simp
   qed simp_all
 next
@@ -2134,27 +2141,27 @@ qed
 
 lemma Exit_no_sum_SDG_edge_target:
   "sum_SDG_edge n Vopt popt b (CFG_node (_Exit_)) \<Longrightarrow> False"
-proof(induct n'\<equiv>"CFG_node (_Exit_)" rule:sum_SDG_edge.induct)
-  case (sum_SDG_cdep_edge n m n' m')
-  from `m controls m'` `n' = CFG_node m'` `n' = CFG_node (_Exit_)`
+proof(induct "CFG_node (_Exit_)" rule:sum_SDG_edge.induct)
+  case (sum_SDG_cdep_edge n m m')
+  from `m controls m'` `CFG_node (_Exit_) = CFG_node m'`
   have "m controls (_Exit_)" by simp
   hence False by(fastsimp dest:Exit_not_control_dependent)
   thus ?case by simp
 next
-  case (sum_SDG_proc_entry_exit_cdep a Q r p f n a' n')
+  case (sum_SDG_proc_entry_exit_cdep a Q r p f n a')
   from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
     by(rule get_return_edges_valid)
   moreover
-  from `n' = CFG_node (sourcenode a')` `n' = CFG_node (_Exit_)`
+  from `CFG_node (_Exit_) = CFG_node (sourcenode a')`
   have "sourcenode a' = (_Exit_)" by simp
   ultimately have False by(rule Exit_source)
   thus ?case by simp
 next
-  case (sum_SDG_ddep_edge n V n') thus ?case
+  case (sum_SDG_ddep_edge n V) thus ?case
     by(fastsimp elim:SDG_Use.cases simp:data_dependence_def)
 next
-  case (sum_SDG_call_edge a Q r p fs n n')
-  from `n' = CFG_node (targetnode a)` `n' = CFG_node (_Exit_)`
+  case (sum_SDG_call_edge a Q r p fs n)
+  from `CFG_node (_Exit_) = CFG_node (targetnode a)`
   have "targetnode a = (_Exit_)" by simp
   with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` have "get_proc (_Exit_) = p"
     by(fastsimp intro:get_proc_call)
@@ -2163,20 +2170,20 @@ next
     by(fastsimp intro:Main_no_call_target)
   thus ?case by simp
 next
-  case (sum_SDG_return_edge a Q p f n n')
-  from `n' = CFG_node (targetnode a)` `n' = CFG_node (_Exit_)`
+  case (sum_SDG_return_edge a Q p f n)
+  from `CFG_node (_Exit_) = CFG_node (targetnode a)`
   have "targetnode a = (_Exit_)" by simp
-  with `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have False by(rule Exit_no_return_target)
+  with `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have False by(rule Exit_no_return_target)
   thus ?case by simp
 next
-  case (sum_SDG_call_summary_edge a Q r p fs a' n n')
+  case (sum_SDG_call_summary_edge a Q r p fs a' n)
   from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
     by(rule get_return_edges_valid)
   from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `a' \<in> get_return_edges a`
-  obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
-  from `n' = CFG_node (targetnode a')` `n' = CFG_node (_Exit_)`
+  obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
+  from `CFG_node (_Exit_) = CFG_node (targetnode a')`
   have "targetnode a' = (_Exit_)" by simp
-  with `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` have False by(rule Exit_no_return_target)
+  with `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` have False by(rule Exit_no_return_target)
   thus ?case by simp
 qed simp+
 
@@ -2189,23 +2196,22 @@ lemma sum_SDG_summary_edge_matched:
 proof(atomize_elim)
   from `n s-p\<rightarrow>\<^bsub>sum\<^esub> n'` 
   show "\<exists>ns. matched n ns n' \<and> n \<in> set ns \<and> get_proc (parent_node(last ns)) = p"
-  proof(induct n Vopt\<equiv>"None::'var option" popt\<equiv>"Some(p,True)" b\<equiv>"True" n'
+  proof(induct n "None::'var option" "Some(p,True)" "True" n'
                rule:sum_SDG_edge.induct)
-    case (sum_SDG_call_summary_edge a Q r p' fs a' n n')
-    from `Some (p',True) = Some (p,True)` have [simp]:"p' = p" by simp
-    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `n = CFG_node (sourcenode a)`
+    case (sum_SDG_call_summary_edge a Q r fs a' n n')
+    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `n = CFG_node (sourcenode a)`
     have "n -p\<rightarrow>\<^bsub>call\<^esub> CFG_node (targetnode a)" by(fastsimp intro:SDG_call_edge)
     hence "valid_SDG_node n" by(rule SDG_edge_valid_SDG_node)
     hence "matched n [] n" by(rule matched_Nil)
     from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
       by(rule get_return_edges_valid)
-    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `a' \<in> get_return_edges a` 
+    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `a' \<in> get_return_edges a` 
     have matched:"matched (CFG_node (targetnode a)) [CFG_node (targetnode a)]
       (CFG_node (sourcenode a'))" by(rule intra_proc_matched)
-    from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs`
-    obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
+    from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
+    obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
     with `valid_edge a'` have "get_proc (sourcenode a') = p" by(rule get_proc_return)
-    from `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `n' = CFG_node (targetnode a')`
+    from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `n' = CFG_node (targetnode a')`
     have "CFG_node (sourcenode a') -p\<rightarrow>\<^bsub>ret\<^esub> n'" by(fastsimp intro:SDG_return_edge)
     from `matched n [] n` `n -p\<rightarrow>\<^bsub>call\<^esub> CFG_node (targetnode a)` matched
       `CFG_node (sourcenode a') -p\<rightarrow>\<^bsub>ret\<^esub> n'` `a' \<in> get_return_edges a`
@@ -2214,9 +2220,8 @@ proof(atomize_elim)
       by(fastsimp intro:matched_bracket_call)
     with `get_proc (sourcenode a') = p` show ?case by auto
   next
-    case (sum_SDG_param_summary_edge a Q r p' fs a' x ns x' n n' ins outs)
-    from `Some (p',True) = Some (p,True)` have [simp]:"p' = p" by simp
-    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `(p',ins,outs) \<in> set procs`
+    case (sum_SDG_param_summary_edge a Q r fs a' x ns x' n n' ins outs)
+    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `(p,ins,outs) \<in> set procs`
       `x < length ins` `n = Actual_in (sourcenode a,x)`
     have "n -p:ins!x\<rightarrow>\<^bsub>in\<^esub> Formal_in (targetnode a,x)" 
       by(fastsimp intro:SDG_param_in_edge)
@@ -2224,16 +2229,16 @@ proof(atomize_elim)
     hence "matched n [] n" by(rule matched_Nil)
     from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
       by(rule get_return_edges_valid)
-    from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs`
-    obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
+    from `valid_edge a` `a' \<in> get_return_edges a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
+    obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
     with `valid_edge a'` have "get_proc (sourcenode a') = p" by(rule get_proc_return)
-    from `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `(p',ins,outs) \<in> set procs`
-      `x' < length outs` `ins!x = outs!x'` `n' = Actual_out (targetnode a',x')`
-    have "Formal_out (sourcenode a',x') -p:ins!x\<rightarrow>\<^bsub>out\<^esub> n'"
+    from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `(p,ins,outs) \<in> set procs`
+      `x' < length outs` `n' = Actual_out (targetnode a',x')`
+    have "Formal_out (sourcenode a',x') -p:outs!x'\<rightarrow>\<^bsub>out\<^esub> n'"
       by(fastsimp intro:SDG_param_out_edge)
     from `matched n [] n` `n -p:ins!x\<rightarrow>\<^bsub>in\<^esub> Formal_in (targetnode a,x)`
       `matched (Formal_in (targetnode a,x)) ns (Formal_out (sourcenode a',x'))`
-      `Formal_out (sourcenode a',x') -p:ins!x\<rightarrow>\<^bsub>out\<^esub> n'` 
+      `Formal_out (sourcenode a',x') -p:outs!x'\<rightarrow>\<^bsub>out\<^esub> n'` 
       `a' \<in> get_return_edges a` `n = Actual_in (sourcenode a,x)`
       `n' = Actual_out (targetnode a',x')` `valid_edge a`
     have "matched n ([]@n#ns@[Formal_out (sourcenode a',x')]) n'"
@@ -2244,15 +2249,15 @@ qed
 
 
 lemma return_edge_determines_call_and_sum_edge:
-  assumes "valid_edge a" and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
+  assumes "valid_edge a" and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
   obtains a' Q' r' fs' where "a \<in> get_return_edges a'" and "valid_edge a'"
   and "kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'" 
   and "CFG_node (sourcenode a') s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode a)"
 proof(atomize_elim)
-  from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f`
+  from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f`
   have "CFG_node (sourcenode a) s-p\<rightarrow>\<^bsub>ret\<^esub> CFG_node (targetnode a)"
     by(fastsimp intro:sum_SDG_return_edge)
-  from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f`
+  from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f`
   obtain a' Q' r' fs' where "valid_edge a'" and "kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'"
     and "a \<in> get_return_edges a'" by(blast dest:return_needs_call)
   hence "CFG_node (sourcenode a') s-p\<rightarrow>\<^bsub>call\<^esub> CFG_node (targetnode a')"
@@ -2274,7 +2279,7 @@ proof(atomize_elim)
   have "matched (CFG_node (targetnode a')) ([]@[CFG_node (targetnode a')])
                 (CFG_node (sourcenode a))"
     by(fastsimp intro:matched_Append_intra_SDG_path)
-  with `valid_edge a'` `kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'` `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f`
+  with `valid_edge a'` `kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'` `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f`
     `a \<in> get_return_edges a'`
   have "CFG_node (sourcenode a') s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode a)"
     by(fastsimp intro!:sum_SDG_call_summary_edge)
@@ -2367,9 +2372,7 @@ next
       (\<exists>n'' V. n s-V\<rightarrow>\<^bsub>dd\<^esub> n'' \<and> n \<noteq> n'' \<and> n'' is-xs\<rightarrow>\<^isub>d* n')) \<or>
       (\<exists>n'' p. n s-p\<rightarrow>\<^bsub>sum\<^esub> n'' \<and> n'' is-xs\<rightarrow>\<^isub>d* n')`
     with `n is-nx#xs@[x]\<rightarrow>\<^isub>d* n'` show ?case
-    proof(induct n ns\<equiv>"nx#xs@[x]" n' rule:intra_sum_SDG_path.induct)
-      case isSp_Nil thus ?case by simp
-    next
+    proof(induct n "nx#xs@[x]" n' rule:intra_sum_SDG_path.induct)
       case (isSp_Append_cdep m ms m'' n')
       note IH = `\<And>n'. m is-nx # xs\<rightarrow>\<^isub>d* n' \<Longrightarrow>
 	((\<exists>n''. m s\<longrightarrow>\<^bsub>cd\<^esub> n'' \<and> n'' is-xs\<rightarrow>\<^isub>d* n') \<or>
@@ -2560,12 +2563,12 @@ proof(atomize_elim)
     from `n\<^isub>3 -p\<rightarrow>\<^bsub>ret\<^esub> n\<^isub>4 \<or> n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4` show ?case
     proof
       assume "n\<^isub>3 -p\<rightarrow>\<^bsub>ret\<^esub> n\<^isub>4"
-      then obtain ax Q' f' where "valid_edge ax" and "kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'"
+      then obtain ax Q' f' where "valid_edge ax" and "kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'"
 	and "n\<^isub>3 = CFG_node (sourcenode ax)" and "n\<^isub>4 = CFG_node (targetnode ax)"
 	by(fastsimp elim:SDG_edge.cases)
       with `sourcenode a' = parent_node n\<^isub>3` `targetnode a' = parent_node n\<^isub>4` 
 	`valid_edge a'` have [simp]:"ax = a'" by(fastsimp dest:edge_det)
-      from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge ax` `kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'`
+      from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge ax` `kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'`
 	`a' \<in> get_return_edges a` `matched n\<^isub>2 ns' n\<^isub>3`
 	`n\<^isub>1 = CFG_node (sourcenode a)` `n\<^isub>2 = CFG_node (targetnode a)`
 	`n\<^isub>3 = CFG_node (sourcenode ax)` `n\<^isub>4 = CFG_node (targetnode ax)`
@@ -2575,13 +2578,13 @@ proof(atomize_elim)
       thus ?case by blast
     next
       assume "n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4"
-      then obtain ax Q' f' x where "valid_edge ax" and "kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'"
+      then obtain ax Q' f' x where "valid_edge ax" and "kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'"
 	and "n\<^isub>3 = Formal_out (sourcenode ax,x)" 
 	and "n\<^isub>4 = Actual_out (targetnode ax,x)"
 	by(fastsimp elim:SDG_edge.cases)
       with `sourcenode a' = parent_node n\<^isub>3` `targetnode a' = parent_node n\<^isub>4` 
 	`valid_edge a'` have [simp]:"ax = a'" by(fastsimp dest:edge_det)
-      from `valid_edge ax` `kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `n\<^isub>3 = Formal_out (sourcenode ax,x)`
+      from `valid_edge ax` `kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `n\<^isub>3 = Formal_out (sourcenode ax,x)`
 	`n\<^isub>4 = Actual_out (targetnode ax,x)`
       have "CFG_node (sourcenode a') -p\<rightarrow>\<^bsub>ret\<^esub> CFG_node (targetnode a')"
 	by(fastsimp intro:SDG_return_edge)
@@ -2593,7 +2596,7 @@ proof(atomize_elim)
       have "matched n\<^isub>2 ([]@([]@[n\<^isub>2])) (CFG_node (sourcenode a'))"
 	by(fastsimp intro:matched.intros intra_SDG_path.intros 
 	                  SDG_edge_valid_SDG_node) 
-      with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge a'` `kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'`
+      with `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge a'` `kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'`
 	`a' \<in> get_return_edges a` `n\<^isub>1 = CFG_node (sourcenode a)` 
 	`n\<^isub>2 = CFG_node (targetnode a)` `n\<^isub>4 = Actual_out (targetnode ax,x)`
       have "n\<^isub>1 s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode a')"
@@ -2609,7 +2612,7 @@ proof(atomize_elim)
       thus ?case by blast
     qed
   next
-    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 n\<^isub>4 a a')
+    case (matched_bracket_param n\<^isub>0 ns n\<^isub>1 p V n\<^isub>2 ns' n\<^isub>3 V' n\<^isub>4 a a')
     from `\<exists>ns'. n\<^isub>0 is-ns'\<rightarrow>\<^isub>d* n\<^isub>1` obtain nsx where "n\<^isub>0 is-nsx\<rightarrow>\<^isub>d* n\<^isub>1" by blast
     from `n\<^isub>1 -p:V\<rightarrow>\<^bsub>in\<^esub> n\<^isub>2` `sourcenode a = parent_node n\<^isub>1`
       `targetnode a = parent_node n\<^isub>2` obtain x ins outs
@@ -2624,21 +2627,21 @@ proof(atomize_elim)
     have [simp]:"p' = p" by -(erule SDG_edge.cases,(fastsimp dest:edge_det)+)
     from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
       by(rule get_return_edges_valid)
-    from `n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4` obtain ax Q' f' x' ins' outs' where "valid_edge ax" 
-      and "kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" and "n\<^isub>3 = Formal_out (sourcenode ax,x')" 
+    from `n\<^isub>3 -p:V'\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4` obtain ax Q' f' x' ins' outs' where "valid_edge ax" 
+      and "kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" and "n\<^isub>3 = Formal_out (sourcenode ax,x')" 
       and "n\<^isub>4 = Actual_out (targetnode ax,x')" and "(p,ins',outs') \<in> set procs"
-      and "V = outs'!x'" and "x' < length outs'"
+      and "V' = outs'!x'" and "x' < length outs'"
       by(fastsimp elim:SDG_edge.cases)
     with `sourcenode a' = parent_node n\<^isub>3` `targetnode a' = parent_node n\<^isub>4`
       `valid_edge a'` have [simp]:"ax = a'" by(fastsimp dest:edge_det)
     from unique_callers `(p,ins,outs) \<in> set procs` `(p,ins',outs') \<in> set procs`
     have [simp]:"ins = ins'" "outs = outs'"
       by(auto dest:distinct_fst_isin_same_fst)
-    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge a'` `kind ax = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'`
+    from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p'\<^esub>fs` `valid_edge a'` `kind ax = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'`
       `a' \<in> get_return_edges a` `matched n\<^isub>2 ns' n\<^isub>3` `n\<^isub>1 = Actual_in (sourcenode a,x)` 
       `n\<^isub>2 = Formal_in (targetnode a,x)` `n\<^isub>3 = Formal_out (sourcenode ax,x')`
       `n\<^isub>4 = Actual_out (targetnode ax,x')` `(p,ins,outs) \<in> set procs`
-      `x < length ins` `x' < length outs'` `V = ins!x` `V = outs'!x'`
+      `x < length ins` `x' < length outs'` `V = ins!x` `V' = outs'!x'`
     have "n\<^isub>1 s-p\<rightarrow>\<^bsub>sum\<^esub> n\<^isub>4" 
       by(fastsimp intro!:sum_SDG_param_summary_edge[of a _ _ _ _ a'])
     with `n\<^isub>0 is-nsx\<rightarrow>\<^isub>d* n\<^isub>1` have "n\<^isub>0 is-nsx@[n\<^isub>1]\<rightarrow>\<^isub>d* n\<^isub>4" by(rule isSp_Append_sum)
@@ -3010,8 +3013,8 @@ proof(atomize_elim)
       from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
 	by(rule get_return_edges_valid)
       from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `a' \<in> get_return_edges a`
-      obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
-      from `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `n' = CFG_node (targetnode a')`
+      obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
+      from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `n' = CFG_node (targetnode a')`
       have "CFG_node (sourcenode a') -p\<rightarrow>\<^bsub>ret\<^esub> n'"
 	by(fastsimp intro:SDG_return_edge)
       from `matched n'' [] n''` `n'' -p\<rightarrow>\<^bsub>call\<^esub> CFG_node (targetnode a)`
@@ -3033,7 +3036,7 @@ proof(atomize_elim)
 	                    (Formal_out (sourcenode a',x'))"
 	and "n'' = Actual_in (sourcenode a,x)" 
 	and "n' = Actual_out (targetnode a',x')" and "(p,ins,outs) \<in> set procs" 
-	and "x < length ins" and "x' < length outs" and "ins!x = outs!x'"
+	and "x < length ins" and "x' < length outs"
       from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `n'' = Actual_in (sourcenode a,x)`
 	`(p,ins,outs) \<in> set procs` `x < length ins`
       have "n'' -p:ins!x\<rightarrow>\<^bsub>in\<^esub> Formal_in (targetnode a,x)"
@@ -3043,15 +3046,15 @@ proof(atomize_elim)
       from `valid_edge a` `a' \<in> get_return_edges a` have "valid_edge a'"
 	by(rule get_return_edges_valid)
       from `valid_edge a` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `a' \<in> get_return_edges a`
-      obtain Q' f' where "kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'" by(fastsimp dest!:call_return_edges)
-      from `valid_edge a'` `kind a' = Q'\<^bsub>p\<^esub>\<hookleftarrow>f'` `n' = Actual_out (targetnode a',x')`
+      obtain Q' f' where "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'" by(fastsimp dest!:call_return_edges)
+      from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'` `n' = Actual_out (targetnode a',x')`
 	`(p,ins,outs) \<in> set procs` `x' < length outs`
       have "Formal_out (sourcenode a',x') -p:outs!x'\<rightarrow>\<^bsub>out\<^esub> n'"
 	by(fastsimp intro:SDG_param_out_edge)
       from `matched n'' [] n''` `n'' -p:ins!x\<rightarrow>\<^bsub>in\<^esub> Formal_in (targetnode a,x)`
 	match' `Formal_out (sourcenode a',x') -p:outs!x'\<rightarrow>\<^bsub>out\<^esub> n'` `valid_edge a` 
 	`a' \<in> get_return_edges a` `n' = Actual_out (targetnode a',x')`
-	`n'' = Actual_in (sourcenode a,x)` `ins!x = outs!x'`
+	`n'' = Actual_in (sourcenode a,x)`
       have "matched n'' ([]@n''#ns''@[Formal_out (sourcenode a',x')]) n'"
 	by(fastsimp intro:matched_bracket_param)
       with `realizable n ns' n''`
@@ -3366,10 +3369,10 @@ proof(atomize_elim)
     from `n'' s-p\<rightarrow>\<^bsub>ret\<^esub> n' \<or> n'' s-p:V\<rightarrow>\<^bsub>out\<^esub> n'`
     have "CFG_node (parent_node n'') s-p\<rightarrow>\<^bsub>ret\<^esub> CFG_node (parent_node n')"
       by(fastsimp elim:sum_SDG_edge.cases intro:sum_SDG_return_edge)
-    then obtain a Q f where "valid_edge a" and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
+    then obtain a Q f where "valid_edge a" and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
       and "parent_node n'' = sourcenode a" and "parent_node n' = targetnode a"
       by(fastsimp elim:sum_SDG_edge.cases)
-    from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` obtain a' Q' r' fs' 
+    from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` obtain a' Q' r' fs' 
       where "a \<in> get_return_edges a'" and "valid_edge a'" and "kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'"
       and "CFG_node (sourcenode a') s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode a)"
       by(erule return_edge_determines_call_and_sum_edge)
@@ -3410,11 +3413,11 @@ proof(atomize_elim)
 	from `get_proc (parent_node n) = get_proc (parent_node n'')`
 	  `get_proc (parent_node n) = Main` 
 	have "get_proc (parent_node n'') = Main" by simp
-	from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have "get_proc (sourcenode a) = p"
+	from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have "get_proc (sourcenode a) = p"
 	  by(rule get_proc_return)
 	with `parent_node n'' = sourcenode a` `get_proc (parent_node n'') = Main`
 	have "p = Main" by simp
-	with `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have "kind a = Q\<^bsub>Main\<^esub>\<hookleftarrow>f" by simp
+	with `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have "kind a = Q\<hookleftarrow>\<^bsub>Main\<^esub>f" by simp
 	with `valid_edge a` have False by(rule Main_no_return_source)
 	thus ?thesis by simp
       next
@@ -3461,7 +3464,7 @@ proof(atomize_elim)
 	from `get_proc (parent_node n'') = p` `parent_node n'' = (_Exit_)`
 	  `parent_node n'' = sourcenode a` get_proc_Exit 
 	have "p = Main" by simp
-	with `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` have "kind a = Q\<^bsub>Main\<^esub>\<hookleftarrow>f" by simp
+	with `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` have "kind a = Q\<hookleftarrow>\<^bsub>Main\<^esub>f" by simp
 	with `valid_edge a` show False by(rule Main_no_return_source)
       qed
       have "\<exists>nsx. CFG_node (targetnode a') cd-nsx\<rightarrow>\<^isub>d* CFG_node (parent_node n)"
@@ -3607,10 +3610,10 @@ proof(atomize_elim)
       from `m s-px\<rightarrow>\<^bsub>ret\<^esub> m' \<or> (\<exists>V. m s-px:V\<rightarrow>\<^bsub>out\<^esub> m')`
       have "CFG_node (parent_node m) s-px\<rightarrow>\<^bsub>ret\<^esub> CFG_node (parent_node m')"
 	by(fastsimp elim:sum_SDG_edge.cases intro:sum_SDG_return_edge)
-      then obtain ax Qx fx where "valid_edge ax" and "kind ax = Qx\<^bsub>px\<^esub>\<hookleftarrow>fx"
+      then obtain ax Qx fx where "valid_edge ax" and "kind ax = Qx\<hookleftarrow>\<^bsub>px\<^esub>fx"
       and "parent_node m = sourcenode ax" and "parent_node m' = targetnode ax"
 	by(fastsimp elim:sum_SDG_edge.cases)
-      from `valid_edge ax` `kind ax = Qx\<^bsub>px\<^esub>\<hookleftarrow>fx` obtain ax' Qx' rx' fsx' 
+      from `valid_edge ax` `kind ax = Qx\<hookleftarrow>\<^bsub>px\<^esub>fx` obtain ax' Qx' rx' fsx' 
 	where "ax \<in> get_return_edges ax'" and "valid_edge ax'" 
 	and "kind ax' = Qx':rx'\<hookrightarrow>\<^bsub>px\<^esub>fsx'"
 	and "CFG_node (sourcenode ax') s-px\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode ax)"
@@ -3791,13 +3794,12 @@ proof(atomize_elim)
 qed
 
 
-
 lemma irs_SDG_path_realizable:
-  assumes "n irs-ns\<rightarrow>\<^isub>d* n'" obtains "n = n'"
-  | ns' where "realizable (CFG_node (_Entry_)) ns' n'" and "n \<in> set ns'"
+  assumes "n irs-ns\<rightarrow>\<^isub>d* n'" and "n \<noteq> n'"
+  obtains ns' where "realizable (CFG_node (_Entry_)) ns' n'" and "n \<in> set ns'"
 proof(atomize_elim)
   from `n irs-ns\<rightarrow>\<^isub>d* n'`
-  show "n = n' \<or> (\<exists>ns'. realizable (CFG_node (_Entry_)) ns' n' \<and> n \<in> set ns')"
+  have "n = n' \<or> (\<exists>ns'. realizable (CFG_node (_Entry_)) ns' n' \<and> n \<in> set ns')"
   proof(rule irs_SDG_path_split)
     assume "n is-ns\<rightarrow>\<^isub>d* n'"
     show ?thesis
@@ -3816,16 +3818,9 @@ proof(atomize_elim)
       with `n \<in> set ns` have "n \<in> set ns'" by fastsimp
       from `valid_node (parent_node n)`
       show ?thesis
-      proof(cases "parent_node n" rule:valid_node_cases)
-	case Entry
-	with `valid_SDG_node n` have "n = CFG_node (_Entry_)"
-	  by(rule valid_SDG_node_parent_Entry)
-	with `matched n ns' n'` have "realizable (CFG_node (_Entry_)) ns' n'"
-	  by(fastsimp intro:realizable_matched)
-	with `n \<in> set ns'` show ?thesis by fastsimp
-      next
-	case Exit
-	with `valid_SDG_node n` have "n = CFG_node (_Exit_)"
+      proof(cases "parent_node n = (_Exit_)")
+        case True
+        with `valid_SDG_node n` have "n = CFG_node (_Exit_)"
 	  by(rule valid_SDG_node_parent_Exit)
 	from `n is-ns\<rightarrow>\<^isub>d* n'` obtain as where "parent_node n -as\<rightarrow>\<^isub>\<iota>* parent_node n'"
 	  by -(erule is_SDG_path_intra_CFG_path)
@@ -3835,8 +3830,8 @@ proof(atomize_elim)
 	  by(rule valid_SDG_node_parent_Exit)
 	with `n = CFG_node (_Exit_)` show ?thesis by simp
       next
-	case inner
-	from this `valid_SDG_node n`
+        case False
+        with `valid_SDG_node n`
 	obtain nsx where "CFG_node (_Entry_) cc-nsx\<rightarrow>\<^isub>d* n"
 	  by(erule Entry_cc_SDG_path_to_inner_node)
 	hence "realizable (CFG_node (_Entry_)) nsx n" 
@@ -3854,10 +3849,10 @@ proof(atomize_elim)
     from `nx s-p\<rightarrow>\<^bsub>ret\<^esub> nx' \<or> (\<exists>V. nx s-p:V\<rightarrow>\<^bsub>out\<^esub> nx')`
     have "CFG_node (parent_node nx) s-p\<rightarrow>\<^bsub>ret\<^esub> CFG_node (parent_node nx')"
       by(fastsimp elim:sum_SDG_edge.cases intro:sum_SDG_return_edge)
-    then obtain a Q f where "valid_edge a" and "kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
+    then obtain a Q f where "valid_edge a" and "kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
       and "parent_node nx = sourcenode a" and "parent_node nx' = targetnode a"
       by(fastsimp elim:sum_SDG_edge.cases)
-    from `valid_edge a` `kind a = Q\<^bsub>p\<^esub>\<hookleftarrow>f` obtain a' Q' r' fs' 
+    from `valid_edge a` `kind a = Q\<hookleftarrow>\<^bsub>p\<^esub>f` obtain a' Q' r' fs' 
       where "a \<in> get_return_edges a'" and "valid_edge a'" and "kind a' = Q':r'\<hookrightarrow>\<^bsub>p\<^esub>fs'"
       and "CFG_node (sourcenode a') s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (targetnode a)"
       by(erule return_edge_determines_call_and_sum_edge)
@@ -3875,23 +3870,16 @@ proof(atomize_elim)
       by(rule sum_SDG_edge_valid_SDG_node)
     hence "valid_node (parent_node m)" by(rule valid_SDG_CFG_node)
     thus ?thesis
-    proof(cases "parent_node m" rule:valid_node_cases)
-      case Entry
-      with `valid_SDG_node m` have "m = CFG_node (_Entry_)"
-	by(rule valid_SDG_node_parent_Entry)
-      with `matched m (ms@ms') n'` have "realizable (CFG_node (_Entry_)) (ms@ms') n'"
-	by(fastsimp intro:realizable_matched)
-      with `n \<in> set ms` show ?thesis by fastsimp
-    next
-      case Exit
+    proof(cases "parent_node m = (_Exit_)")
+      case True
       from `m s-p\<rightarrow>\<^bsub>sum\<^esub> CFG_node (parent_node nx')` obtain a where "valid_edge a" 
 	and "sourcenode a = parent_node m"
 	by(fastsimp elim:sum_SDG_edge.cases)
-      with Exit have False by -(rule Exit_source,simp_all)
+      with True have False by -(rule Exit_source,simp_all)
       thus ?thesis by simp
     next
-      case inner
-      from this `valid_SDG_node m`
+      case False
+      with `valid_SDG_node m`
       obtain ms'' where "CFG_node (_Entry_) cc-ms''\<rightarrow>\<^isub>d* m"
 	by(erule Entry_cc_SDG_path_to_inner_node)
       hence "realizable (CFG_node (_Entry_)) ms'' m" 
@@ -3902,6 +3890,8 @@ proof(atomize_elim)
       with `n \<in> set ms` show ?thesis by fastsimp
     qed
   qed
+  with `n \<noteq> n'` show "\<exists>ns'. realizable (CFG_node (_Entry_)) ns' n' \<and> n \<in> set ns'"
+    by simp
 qed
 
 end
