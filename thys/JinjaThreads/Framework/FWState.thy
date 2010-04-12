@@ -30,9 +30,8 @@ datatype 'w wait_set_action =
 
 types 'l lock_actions = "'l \<Rightarrow>\<^isub>f lock_action list"
 
-
 translations
-  "lock_actions l" <= (type) "l \<Rightarrow>\<^isub>f lock_action list"
+  (type) "'l lock_actions" <= (type) "'l \<Rightarrow>\<^isub>f lock_action list"
 
 types ('l,'t,'x,'m,'w,'o) thread_action =
   "'l lock_actions \<times> ('t,'x,'m) new_thread_action list \<times>
@@ -40,16 +39,21 @@ types ('l,'t,'x,'m,'w,'o) thread_action =
 (* pretty printing for thread_action type *)
 print_translation {*
   let
-    fun tr' [Const ("finfun", _) $ l $ (Const ("list", _) $ Const ("lock_action", _)),
-             Const ("*",_) $ (Const ("list", _) $ (Const ("new_thread_action", _) $ t1 $ x $ m)) $
-                             (Const ("*", _) $ (Const ("list", _) $ (Const ("conditional_action", _) $ t2)) $
-                                               (Const ("*", _) $ (Const ("list", _) $ (Const ("wait_set_action", _) $ w)) $ o1))] =
-      if t1 = t2 then Syntax.const "thread_action" $ l $ t1 $ x $ m $ w $ o1
+    fun tr'
+       [Const (@{type_syntax finfun}, _) $ l $
+          (Const (@{type_syntax list}, _) $ Const (@{type_syntax lock_action}, _)),
+        Const (@{type_syntax "*"}, _) $
+          (Const (@{type_syntax list}, _) $ (Const (@{type_syntax new_thread_action}, _) $ t1 $ x $ m)) $
+          (Const (@{type_syntax "*"}, _) $
+            (Const (@{type_syntax list}, _) $ (Const (@{type_syntax conditional_action}, _) $ t2)) $
+            (Const (@{type_syntax "*"}, _) $
+              (Const (@{type_syntax list}, _) $ (Const (@{type_syntax wait_set_action}, _) $ w)) $ o1))] =
+      if t1 = t2 then Syntax.const @{type_syntax thread_action} $ l $ t1 $ x $ m $ w $ o1
       else raise Match;
-  in [("*",tr')]
+  in [(@{type_syntax "*"}, tr')]
   end
 *}
-(* typ "('l,'t,'x,'m,'w,'o) thread_action" *)
+typ "('l,'t,'x,'m,'w,'o) thread_action"
 
 definition locks_a :: "('l,'t,'x,'m,'w,'o) thread_action \<Rightarrow> 'l lock_actions" ("\<lbrace>_\<rbrace>\<^bsub>l\<^esub>" [0] 1000) where
   "locks_a \<equiv> fst"
@@ -112,7 +116,7 @@ syntax
 
 translations
   "_lockUpdate ta (_locklets b bs)"  == "_lockUpdate (_lockUpdate ta b) bs"
-  "ta\<lbrace>\<^bsub>l\<^esub>x\<rightarrow>y\<rbrace>"                         == "(CONST ta_update_locks) ta x y"
+  "ta\<lbrace>\<^bsub>l\<^esub>x\<rightarrow>y\<rbrace>"                         == "CONST ta_update_locks ta x y"
 
 
 nonterminals
@@ -125,7 +129,7 @@ syntax
 
 translations
   "_ntUpdate ta (_ntlets b bs)"  == "_ntUpdate (_ntUpdate ta b) bs"
-  "ta\<lbrace>\<^bsub>t\<^esub>nt\<rbrace>"                         == "(CONST ta_update_NewThread) ta nt"
+  "ta\<lbrace>\<^bsub>t\<^esub>nt\<rbrace>"                         == "CONST ta_update_NewThread ta nt"
 
 
 nonterminals
@@ -138,7 +142,7 @@ syntax
 
 translations
   "_jUpdate ta (_jlets b bs)"  == "_jUpdate (_jUpdate ta b) bs"
-  "ta\<lbrace>\<^bsub>c\<^esub>nt\<rbrace>"                         == "(CONST ta_update_Conditional) ta nt"
+  "ta\<lbrace>\<^bsub>c\<^esub>nt\<rbrace>"                         == "CONST ta_update_Conditional ta nt"
 
 
 nonterminals
@@ -151,7 +155,7 @@ syntax
 
 translations
   "_wsUpdate ta (_wslets b bs)"  == "_wsUpdate (_wsUpdate ta b) bs"
-  "ta\<lbrace>\<^bsub>w\<^esub>ws\<rbrace>"                         == "(CONST ta_update_wait_set) ta ws"
+  "ta\<lbrace>\<^bsub>w\<^esub>ws\<rbrace>"                         == "CONST ta_update_wait_set ta ws"
 
 
 types
@@ -162,24 +166,29 @@ types
   ('w,'t) wait_sets = "'t \<rightharpoonup> 'w"
   ('l,'t,'x,'m,'w) state = "('l,'t) locks \<times> (('l,'t,'x) thread_info \<times> 'm) \<times> ('w,'t) wait_sets"
 translations
-  "locks l t" <= (type) "l \<Rightarrow>\<^isub>f (t \<times> nat) option"
-  "thread_info l t x" <= (type) "t \<rightharpoonup> (x \<times> (l \<Rightarrow>\<^isub>f nat))"
+  (type) "('l, 't) locks" <= (type) "'l \<Rightarrow>\<^isub>f ('t \<times> nat) option"
+  (type) "('l, 't, 'x) thread_info" <= (type) "'t \<rightharpoonup> ('x \<times> ('l \<Rightarrow>\<^isub>f nat))"
 (* pretty printing for state type *)
 print_translation {*
   let
-    fun tr' [Const ("finfun", _) $ l1 $ (Const ("option", _) $ (Const ("*", _) $ t1 $ Const ("nat", _))),
-             Const ("*", _) $
-               (Const ("*", _) $ (Const ("fun", _) $ t2 $
-                                   (Const ("option", _) $ (Const ("*", _) $ x $
-                                                            (Const ("finfun", _) $ l2 $ Const ("nat", _))))) $ m) $
-               (Const ("fun", _) $ t3 $ (Const ("option", _) $ w))] =
+    fun tr'
+       [Const (@{type_syntax finfun}, _) $ l1 $
+        (Const (@{type_syntax option}, _) $
+          (Const (@{type_syntax "*"}, _) $ t1 $ Const (@{type_syntax nat}, _))),
+        Const (@{type_syntax "*"}, _) $
+          (Const (@{type_syntax "*"}, _) $
+            (Const (@{type_syntax fun}, _) $ t2 $
+              (Const (@{type_syntax option}, _) $
+                (Const (@{type_syntax "*"}, _) $ x $
+                  (Const (@{type_syntax finfun}, _) $ l2 $ Const (@{type_syntax nat}, _))))) $ m) $
+               (Const (@{type_syntax fun}, _) $ t3 $ (Const (@{type_syntax option}, _) $ w))] =
       if t1 = t2 andalso t1 = t3 andalso l1 = l2
-      then Syntax.const "state" $ l1 $ t1 $ x $ m $ w
+      then Syntax.const @{type_syntax state} $ l1 $ t1 $ x $ m $ w
       else raise Match;
-  in [("*",tr')]
+  in [(@{type_syntax "*"}, tr')]
   end
 *}
-(* typ "('l,'t,'x,'m,'w) state" *)
+typ "('l,'t,'x,'m,'w) state"
 
 abbreviation no_wait_locks :: "'l \<Rightarrow>\<^isub>f nat"
 where "no_wait_locks \<equiv> (\<lambda>\<^isup>f 0)"
@@ -287,22 +296,29 @@ types
 (* pretty printing for semantics *)
 print_translation {*
   let
-    fun tr' [Const ("*", _) $ x1 $ m1,
-             Const ("fun", _) $
-               (Const ("*", _) $ 
-                 (Const ("finfun", _) $ l $ (Const ("list", _) $ Const ("lock_action", _))) $
-                 (Const ("*",_) $ (Const ("list", _) $ (Const ("new_thread_action", _) $ t1 $ x2 $ m2)) $
-                                  (Const ("*", _) $ (Const ("list", _) $ (Const ("conditional_action", _) $ t2)) $
-                                         (Const ("*", _) $ (Const ("list", _) $ (Const ("wait_set_action", _) $ w)) $
-                                                           (Const ("option", _) $ o1))))) $
-               (Const ("fun", _) $ (Const ("*", _) $ x3 $ m3) $ Const ("bool", _))] =
+    fun tr'
+       [Const (@{type_syntax "*"}, _) $ x1 $ m1,
+        Const (@{type_syntax fun}, _) $
+          (Const (@{type_syntax "*"}, _) $
+            (Const (@{type_syntax finfun}, _) $ l $
+              (Const (@{type_syntax list}, _) $ Const (@{type_syntax lock_action}, _))) $
+                (Const (@{type_syntax "*"}, _) $
+                  (Const (@{type_syntax list}, _) $
+                    (Const (@{type_syntax new_thread_action}, _) $ t1 $ x2 $ m2)) $
+                      (Const (@{type_syntax "*"}, _) $
+                        (Const (@{type_syntax list}, _) $ (Const (@{type_syntax conditional_action}, _) $ t2)) $
+                          (Const (@{type_syntax "*"}, _) $ (Const (@{type_syntax list}, _) $
+                            (Const (@{type_syntax wait_set_action}, _) $ w)) $
+                              (Const (@{type_syntax option}, _) $ o1))))) $
+          (Const (@{type_syntax fun}, _) $ (Const (@{type_syntax "*"}, _) $ x3 $ m3) $
+            Const (@{type_syntax bool}, _))] =
       if x1 = x2 andalso x1 = x3 andalso m1 = m2 andalso m1 = m3 andalso t1 = t2
-      then Syntax.const "semantics" $ l $ t1 $ x1 $ m1 $ w $ o1
+      then Syntax.const @{type_syntax semantics} $ l $ t1 $ x1 $ m1 $ w $ o1
       else raise Match;
-  in [("fun",tr')]
+  in [(@{type_syntax fun}, tr')]
   end
 *}
-(* typ "('l,'t,'x,'m,'w,'o) semantics" *)
+typ "('l,'t,'x,'m,'w,'o) semantics"
 
 types ('a, 'b) trsys = "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> bool"
 types ('a, 'b) bisim = "'a \<Rightarrow> 'b \<Rightarrow> bool"
