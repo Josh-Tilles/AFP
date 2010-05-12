@@ -108,7 +108,7 @@ assumes 0: "f 0 = 1" and f_add: "\<And>x y. f(x+y+1) = f x + f y"
 assumes "r : \<rat>" shows "f(r) = r + 1"
 proof -
   { fix i :: int have "f(real i) = real i + 1"
-    proof (induct i rule: Presburger.int_induct[where k=0])
+    proof (induct i rule: int_induct [where k=0])
       case base show ?case using 0 by simp
     next
       case (step1 i)
@@ -131,11 +131,11 @@ proof -
       case (Suc n)
       have "real(Suc(Suc n))*r + real(Suc n) =
             r + (real(Suc n)*r + real n) + 1" (is "?a = ?b")
-	by(simp add:real_of_nat_Suc ring_simps)
+	by(simp add:real_of_nat_Suc field_simps)
       hence "f ?a = f ?b" by simp
       also have "\<dots> = f r + f(real(Suc n)*r + real n)" by(rule f_add)
       also have "\<dots> = f r + real(Suc n) * f r" by(simp only:Suc)
-      finally show ?case by(simp add:real_of_nat_Suc ring_simps)
+      finally show ?case by(simp add:real_of_nat_Suc field_simps)
     qed }
   note 1 = this
   { fix n::nat and r assume "n\<noteq>0"

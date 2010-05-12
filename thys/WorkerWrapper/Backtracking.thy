@@ -31,7 +31,8 @@ where
 | "eval_body\<cdot>r\<cdot>(Disj\<cdot>e1\<cdot>e2) = r\<cdot>e1 :++ r\<cdot>e2"
 | "eval_body\<cdot>r\<cdot>Fail = lnil"
 
-fixpat eval_body_strict_e[simp]: "eval_body\<cdot>r\<cdot>\<bottom>"
+lemma eval_body_strict_e[simp]: "eval_body\<cdot>r\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 text{* The observation type is @{typ "Nat llist"}, which is a little
 less obvious than Gill/Hutton's example. Also note @{text
@@ -52,7 +53,8 @@ where
   "blah\<cdot>lnil\<cdot>s\<cdot>f = f"
 | "blah\<cdot>(x :@ xs)\<cdot>s\<cdot>f = s\<cdot>x\<cdot>(blah\<cdot>xs\<cdot>s\<cdot>f)"
 
-fixpat blah_strict[simp]: "blah\<cdot>\<bottom>"
+lemma blah_strict[simp]: "blah\<cdot>\<bottom> = \<bottom>"
+by (fixrec_simp, simp)
 
 definition unwrap :: "(Expr \<rightarrow> Nat llist) \<rightarrow> (Expr \<rightarrow> K)"
 where
@@ -73,7 +75,7 @@ lemma wrap_unwrap_id: "wrap oo unwrap = ID"
   apply (rule ext_cfun)+
   apply (case_tac "x\<cdot>xa")
   apply (simp_all)
-  apply (induct_tac l)
+  apply (induct_tac llist)
   apply simp_all
   done
 
@@ -97,10 +99,8 @@ where
 | "eval_body'\<cdot>r\<cdot>(Disj\<cdot>e1\<cdot>e2)\<cdot>s\<cdot>f = r\<cdot>e1\<cdot>s\<cdot>(r\<cdot>e2\<cdot>s\<cdot>f)"
 | "eval_body'\<cdot>r\<cdot>Fail\<cdot>s\<cdot>f = f"
 
-fixpat eval_body'_strict_e[simp]: "eval_body'\<cdot>r\<cdot>\<bottom>"
-
 lemma eval_body'_strict[simp]: "eval_body'\<cdot>r\<cdot>\<bottom> = \<bottom>"
-  by (rule ext_cfun)+ simp
+  by (fixrec_simp, simp)
 
 lemma FIXME: "blah\<cdot>(xs :++ ys)\<cdot>s\<cdot>f = blah\<cdot>xs\<cdot>s\<cdot>(blah\<cdot>ys\<cdot>s\<cdot>f)"
   apply (induct xs)
@@ -123,8 +123,8 @@ lemma eval_body_body':
      apply (simp add: unwrap_def)
     apply (simp add: unwrap_def)
     apply (simp add: FIXME2 eta_cfun)
-    apply (subgoal_tac "(\<Lambda> xa. blah\<cdot>(lconcat\<cdot>(lmap\<cdot>(\<Lambda> y. (xa + y) :@ lnil)\<cdot>(wrap\<cdot>x\<cdot>E2)))\<cdot>xb)
-                      = (\<Lambda> xa. blah\<cdot>(wrap\<cdot>x\<cdot>E2)\<cdot>(\<Lambda> y. xb\<cdot>(xa + y)))")
+    apply (subgoal_tac "(\<Lambda> xa. blah\<cdot>(lconcat\<cdot>(lmap\<cdot>(\<Lambda> y. (xa + y) :@ lnil)\<cdot>(wrap\<cdot>x\<cdot>Expr2)))\<cdot>xb)
+                      = (\<Lambda> xa. blah\<cdot>(wrap\<cdot>x\<cdot>Expr2)\<cdot>(\<Lambda> y. xb\<cdot>(xa + y)))")
      apply simp
     apply (rule ext_cfun)+
     apply (simp add: FIXME2)

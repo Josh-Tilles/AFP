@@ -10,13 +10,11 @@ domain Switch = S1 | S2
 
 domain 'a Maybe = Nothing | Just 'a
 
-hide (open) const Left Right
+hide_const (open) Left Right
 
 domain ('a, 'b) Either = Left 'a | Right 'b
 
-domain ('a, 'b) Both = Both 'a 'b (infixl ":!:" 75)
-
-syntax Both :: "type \<Rightarrow> type \<Rightarrow> type" (infixl ":!:" 25)
+domain ('a, 'b) Both  (infixl ":!:" 25) = Both 'a 'b (infixl ":!:" 75)
 
 domain 'a L = L (lazy 'a)
 
@@ -148,7 +146,7 @@ lemma unfold_foldrS:
 proof (rule antisym_less)
   show "foldrS\<cdot>f\<cdot>z\<cdot>(Stream\<cdot>h\<cdot>s) \<sqsubseteq> foldrL\<cdot>f\<cdot>z\<cdot>(unfold\<cdot>h\<cdot>s)"
   using `s \<noteq> \<bottom>`
-  apply (induct arbitrary: s rule: foldrS_induct)
+  apply (induct arbitrary: s rule: foldrS.induct)
   apply (simp, simp, simp)
   apply (case_tac "h\<cdot>s", simp_all add: monofun_cfun unfold)
   done
@@ -186,10 +184,11 @@ where
   "enumFromToStep\<cdot>(up\<cdot>y)\<cdot>(up\<cdot>(up\<cdot>x)) =
     (if x \<le> y then Yield\<cdot>(up\<cdot>x)\<cdot>(up\<cdot>(up\<cdot>(x+1))) else Done)"
 
-fixpat enumFromToStep_strict [simp]:
-  "enumFromToStep\<cdot>\<bottom>\<cdot>x''"
-  "enumFromToStep\<cdot>(up\<cdot>y)\<cdot>\<bottom>"
-  "enumFromToStep\<cdot>(up\<cdot>y)\<cdot>(up\<cdot>\<bottom>)"
+lemma enumFromToStep_strict [simp]:
+  "enumFromToStep\<cdot>\<bottom>\<cdot>x'' = \<bottom>"
+  "enumFromToStep\<cdot>(up\<cdot>y)\<cdot>\<bottom> = \<bottom>"
+  "enumFromToStep\<cdot>(up\<cdot>y)\<cdot>(up\<cdot>\<bottom>) = \<bottom>"
+by fixrec_simp+
 
 lemma enumFromToStep_simps' [simp]:
   "x \<le> y \<Longrightarrow> enumFromToStep\<cdot>(up\<cdot>y)\<cdot>(up\<cdot>(up\<cdot>x)) =
@@ -197,14 +196,14 @@ lemma enumFromToStep_simps' [simp]:
   "\<not> x \<le> y \<Longrightarrow> enumFromToStep\<cdot>(up\<cdot>y)\<cdot>(up\<cdot>(up\<cdot>x)) = Done"
   by simp_all
 
-declare enumFromToStep_simps [simp del]
+declare enumFromToStep.simps [simp del]
 
 fixrec
   enumFromToS :: "int' \<rightarrow> int' \<rightarrow> (int', (int')\<^sub>\<bottom>) Stream"
 where
   "enumFromToS\<cdot>x\<cdot>y = Stream\<cdot>(enumFromToStep\<cdot>y)\<cdot>(up\<cdot>x)"
 
-declare enumFromToS_simps [simp del]
+declare enumFromToS.simps [simp del]
 
 lemma unfold_enumFromToStep:
   "unfold\<cdot>(enumFromToStep\<cdot>(up\<cdot>y))\<cdot>(up\<cdot>n) = enumFromToL\<cdot>n\<cdot>(up\<cdot>y)"
@@ -217,7 +216,7 @@ proof (rule antisym_less)
     done
 next
   show "enumFromToL\<cdot>n\<cdot>(up\<cdot>y) \<sqsubseteq> unfold\<cdot>(enumFromToStep\<cdot>(up\<cdot>y))\<cdot>(up\<cdot>n)"
-    apply (induct arbitrary: n rule: enumFromToL_induct)
+    apply (induct arbitrary: n rule: enumFromToL.induct)
     apply (simp, simp)
     apply (rename_tac e n)
     apply (case_tac n, simp)
@@ -227,14 +226,14 @@ qed
 
 lemma unstream_enumFromToS:
   "unstream\<cdot>(enumFromToS\<cdot>x\<cdot>y) = enumFromToL\<cdot>x\<cdot>y"
-apply (simp add: enumFromToS_simps)
+apply (simp add: enumFromToS.simps)
 apply (induct y, simp add: unfold)
 apply (induct x, simp add: unfold)
 apply (simp add: unfold_enumFromToStep)
 done
 
 lemma enumFromToS_defined: "enumFromToS\<cdot>x\<cdot>y \<noteq> \<bottom>"
-  by (simp add: enumFromToS_simps)
+  by (simp add: enumFromToS.simps)
 
 lemma enumFromToS_cong:
   "x = x' \<Longrightarrow> y = y' \<Longrightarrow> enumFromToS\<cdot>x\<cdot>y \<approx> enumFromToS\<cdot>x'\<cdot>y'"
@@ -263,7 +262,8 @@ where
     | Skip\<cdot>sb' \<Rightarrow> Skip\<cdot>(Right\<cdot>sb')
     | Yield\<cdot>x\<cdot>sb' \<Rightarrow> Yield\<cdot>x\<cdot>(Right\<cdot>sb'))"
 
-fixpat appendStep_strict [simp]: "appendStep\<cdot>ha\<cdot>hb\<cdot>sb0\<cdot>\<bottom>"
+lemma appendStep_strict [simp]: "appendStep\<cdot>ha\<cdot>hb\<cdot>sb0\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec
   appendS ::
@@ -385,7 +385,8 @@ where
    | Skip\<cdot>sb' \<Rightarrow> Skip\<cdot>(sa :!: sb' :!: Just\<cdot>(L\<cdot>a))
    | Yield\<cdot>b\<cdot>sb' \<Rightarrow> Yield\<cdot>(f\<cdot>a\<cdot>b)\<cdot>(sa :!: sb' :!: Nothing))"
 
-fixpat zipWithStep_strict [simp]: "zipWithStep\<cdot>f\<cdot>ha\<cdot>hb\<cdot>\<bottom>"
+lemma zipWithStep_strict [simp]: "zipWithStep\<cdot>f\<cdot>ha\<cdot>hb\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec
   zipWithS :: "('a \<rightarrow> 'b \<rightarrow> 'c) \<rightarrow>
@@ -421,24 +422,24 @@ proof -
     apply (simp add: Q_0)
     apply (simp add: Q_Suc)
     done
-  have "split P (\<Squnion>i. \<langle>iterate i\<cdot>f\<cdot>\<bottom>, iterate i\<cdot>g\<cdot>\<bottom>\<rangle>)"
+  have "split P (\<Squnion>i. (iterate i\<cdot>f\<cdot>\<bottom>, iterate i\<cdot>g\<cdot>\<bottom>))"
     apply (rule admD)
     apply (simp add: split_def adm_P)
     apply simp
-    apply (simp add: cpair_eq_pair 1)
+    apply (simp add: 1)
     done
   then have P: "P x y"
     unfolding x y fix_def2
-    by (simp add: thelub_cprod, simp add: cpair_eq_pair)
-  have "split Q (\<Squnion>i. \<langle>iterate i\<cdot>f\<cdot>\<bottom>, iterate i\<cdot>g\<cdot>\<bottom>\<rangle>)"
+    by (simp add: thelub_cprod)
+  have "split Q (\<Squnion>i. (iterate i\<cdot>f\<cdot>\<bottom>, iterate i\<cdot>g\<cdot>\<bottom>))"
     apply (rule admD)
     apply (simp add: split_def adm_Q)
     apply simp
-    apply (simp add: cpair_eq_pair 1)
+    apply (simp add: 1)
     done
   then have Q: "Q x y"
     unfolding x y fix_def2
-    by (simp add: thelub_cprod, simp add: cpair_eq_pair)
+    by (simp add: thelub_cprod)
   from P Q show ?thesis by simp
 qed
 
@@ -559,7 +560,8 @@ where
     | Skip\<cdot>sb' \<Rightarrow> Skip\<cdot>(sa :!: Just\<cdot>(Stream\<cdot>hb\<cdot>sb'))
     | Yield\<cdot>b\<cdot>sb' \<Rightarrow> Yield\<cdot>b\<cdot>(sa :!: Just\<cdot>(Stream\<cdot>hb\<cdot>sb')))"
 
-fixpat concatMapStep_strict [simp]: "concatMapStep\<cdot>f\<cdot>ha\<cdot>\<bottom>"
+lemma concatMapStep_strict [simp]: "concatMapStep\<cdot>f\<cdot>ha\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec
   concatMapS ::
@@ -568,7 +570,8 @@ fixrec
 where
   "s \<noteq> \<bottom> \<Longrightarrow> concatMapS\<cdot>f\<cdot>(Stream\<cdot>h\<cdot>s) = Stream\<cdot>(concatMapStep\<cdot>f\<cdot>h)\<cdot>(s :!: Nothing)"
 
-fixpat concatMapS_strict [simp]: "concatMapS\<cdot>f\<cdot>\<bottom>"
+lemma concatMapS_strict [simp]: "concatMapS\<cdot>f\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 lemma unfold_concatMapStep:
   fixes ha :: "'s \<rightarrow> ('a, 's) Step"

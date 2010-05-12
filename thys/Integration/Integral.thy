@@ -222,10 +222,10 @@ lemma assumes ms: "measure_space M" and un: "(\<Union>i\<in>R. B i) = UNIV" and
 qed(*>*)
 
 
-lemma nat2_to_nat_fst_inj: "inj (\<lambda>i. nat2_to_nat(i,j))" using nat2_to_nat_inj
+lemma prod_encode_fst_inj: "inj (\<lambda>i. prod_encode(i,j))" using inj_prod_encode
   by (unfold inj_on_def) blast
 
-lemma nat2_to_nat_snd_inj: "inj (\<lambda>j. nat2_to_nat(i,j))" using nat2_to_nat_inj
+lemma prod_encode_snd_inj: "inj (\<lambda>j. prod_encode(i,j))" using inj_prod_encode
   by (unfold inj_on_def) blast
 
 (*>*)
@@ -258,12 +258,12 @@ proof cases
       and x: "nonnegative x" and y: "nonnegative y"
       by simp_all
 txt{*\nopagebreak*}
-    def "C" \<equiv> "(\<lambda>(i,j). A i \<inter> B j) \<circ> nat_to_nat2"
-    def "z1" \<equiv> "(\<lambda>k. x (fst (nat_to_nat2 k)))"
-    def "z2" \<equiv> "(\<lambda>k. y (snd (nat_to_nat2 k)))"
-    def "K" \<equiv> "{k. \<exists>i\<in>R. \<exists>j\<in>S. k = nat2_to_nat (i,j)}"
-    def "G" \<equiv> "(\<lambda>i. (\<lambda>j. nat2_to_nat (i,j)) ` S)"                                            
-    def "H" \<equiv> "(\<lambda>j. (\<lambda>i. nat2_to_nat (i,j)) ` R)"
+    def "C" \<equiv> "(\<lambda>(i,j). A i \<inter> B j) \<circ> prod_decode"
+    def "z1" \<equiv> "(\<lambda>k. x (fst (prod_decode k)))"
+    def "z2" \<equiv> "(\<lambda>k. y (snd (prod_decode k)))"
+    def "K" \<equiv> "{k. \<exists>i\<in>R. \<exists>j\<in>S. k = prod_encode (i,j)}"
+    def "G" \<equiv> "(\<lambda>i. (\<lambda>j. prod_encode (i,j)) ` S)"                                            
+    def "H" \<equiv> "(\<lambda>j. (\<lambda>i. prod_encode (i,j)) ` R)"
 
     { fix t
       { fix i
@@ -274,15 +274,15 @@ txt{*\nopagebreak*}
 	also 
 	{ fix j
 	  have "S=S" and 
-	    "x i * \<chi> (A i \<inter> B j) t = (let k=nat2_to_nat(i,j) in z1 k * \<chi> (C k) t)"
-	    by (auto simp add: C_def z1_def Let_def nat2_to_nat_inj nat_to_nat2_def)
+	    "x i * \<chi> (A i \<inter> B j) t = (let k=prod_encode(i,j) in z1 k * \<chi> (C k) t)"
+	    by (auto simp add: C_def z1_def Let_def)
 	}
-	hence "\<dots> = (\<Sum>j\<in>S. let k=nat2_to_nat (i,j) in z1 k * \<chi> (C k) t)"
+	hence "\<dots> = (\<Sum>j\<in>S. let k=prod_encode (i,j) in z1 k * \<chi> (C k) t)"
 	  by (rule setsum_cong)
 
 	also from S have "\<dots> = (\<Sum>k\<in>(G i). z1 k * \<chi> (C k) t)"
 	  by (simp add: G_def Let_def o_def
-                setsum_reindex[OF subset_inj_on[OF nat2_to_nat_snd_inj]])
+                setsum_reindex[OF subset_inj_on[OF prod_encode_snd_inj]])
 
 	finally have eq: "x i * \<chi> (A i) t = (\<Sum>k\<in> G i. z1 k * \<chi> (C k) t)" .
 	  (*Repeat with measure instead of char*)
@@ -291,18 +291,18 @@ txt{*\nopagebreak*}
 	  by (simp add: G_def)	
 	
 	{ fix k assume "k \<in> G i"
-	  then obtain j where kij: "k=nat2_to_nat (i,j)" 
+	  then obtain j where kij: "k=prod_encode (i,j)" 
 	    by (auto simp only: G_def)
 	  { 
 	    fix i2 assume i2: "i2 \<noteq> i" 
 	    
 	    { fix k2 assume "k2 \<in> G i2"
-	      then obtain j2 where kij2: "k2=nat2_to_nat (i2,j2)" 
+	      then obtain j2 where kij2: "k2=prod_encode (i2,j2)" 
 		by (auto simp only: G_def)
 	      
 	      from i2 have "(i2,j2) \<noteq> (i,j)" and "(i2,j2) \<in> UNIV" 
 		and "(i,j) \<in> UNIV" by auto
-	      with nat2_to_nat_inj have  "nat2_to_nat (i2,j2) \<noteq> nat2_to_nat (i,j)"
+	      with inj_prod_encode have  "prod_encode (i2,j2) \<noteq> prod_encode (i,j)"
 		by (rule inj_on_contraD)
 	      with kij kij2 have "k2 \<noteq> k" 
 		by fast
@@ -330,16 +330,16 @@ txt{*\nopagebreak*}
 	also 
 	{ fix j 
 	  have "S=S" and "x i * measure M (A i \<inter> B j) = 
-	    (let k=nat2_to_nat(i,j) in z1 k * measure M (C k))"
-	    by (auto simp add: C_def z1_def Let_def nat2_to_nat_inj nat_to_nat2_def)
+	    (let k=prod_encode(i,j) in z1 k * measure M (C k))"
+	    by (auto simp add: C_def z1_def Let_def)
 	}
 	
-	hence "\<dots> = (\<Sum>j\<in>S. let k=nat2_to_nat (i,j) in z1 k * measure M (C k))"
+	hence "\<dots> = (\<Sum>j\<in>S. let k=prod_encode (i,j) in z1 k * measure M (C k))"
 	  by (rule setsum_cong)
 	
 	also from S have "\<dots> = (\<Sum>k\<in>(G i). z1 k * measure M (C k))"
 	  by (simp add: G_def Let_def o_def
-                setsum_reindex[OF subset_inj_on[OF nat2_to_nat_snd_inj]])
+                setsum_reindex[OF subset_inj_on[OF prod_encode_snd_inj]])
 	
 	finally have 
 	  "x i * measure M (A i) = (\<Sum>k\<in>(G i). z1 k * measure M (C k))" .
@@ -366,29 +366,29 @@ txt{*\nopagebreak*}
 	also 
 	{ fix i
 	  have "R=R" and 
-	    "y j * \<chi> (A i \<inter> B j) t = (let k=nat2_to_nat(i,j) in z2 k * \<chi> (C k) t)"
-	    by (auto simp add: C_def z2_def Let_def nat2_to_nat_inj nat_to_nat2_def)
+	    "y j * \<chi> (A i \<inter> B j) t = (let k=prod_encode(i,j) in z2 k * \<chi> (C k) t)"
+	    by (auto simp add: C_def z2_def Let_def)
 	}
-	hence "\<dots> = (\<Sum>i\<in>R. let k=nat2_to_nat (i,j) in z2 k * \<chi> (C k) t)"
+	hence "\<dots> = (\<Sum>i\<in>R. let k=prod_encode (i,j) in z2 k * \<chi> (C k) t)"
 	  by (rule setsum_cong)
 	also from R have "\<dots> = (\<Sum>k\<in>(H j). z2 k * \<chi> (C k) t)" 
 	  by (simp add: H_def Let_def o_def
-                setsum_reindex[OF subset_inj_on[OF nat2_to_nat_fst_inj]])
+                setsum_reindex[OF subset_inj_on[OF prod_encode_fst_inj]])
 	finally have eq: "y j * \<chi> (B j) t = (\<Sum>k\<in> H j. z2 k * \<chi> (C k) t)" .
 		
 	from R have H: "finite (H j)"  by (simp add: H_def)
 	
 	{ fix k assume "k \<in> H j"
-	  then obtain i where kij: "k=nat2_to_nat (i,j)" 
+	  then obtain i where kij: "k=prod_encode (i,j)" 
 	    by (auto simp only: H_def)
 	  { fix j2 assume j2: "j2 \<noteq> j" 
 	    { fix k2 assume "k2 \<in> H j2"
-	      then obtain i2 where kij2: "k2=nat2_to_nat (i2,j2)" 
+	      then obtain i2 where kij2: "k2=prod_encode (i2,j2)" 
 		by (auto simp only: H_def)
 	      
 	      from j2 have "(i2,j2) \<noteq> (i,j)" and "(i2,j2) \<in> UNIV" and "(i,j) \<in> UNIV" 
 		by auto
-	      with nat2_to_nat_inj have  "nat2_to_nat (i2,j2) \<noteq> nat2_to_nat (i,j)"
+	      with inj_prod_encode have  "prod_encode (i2,j2) \<noteq> prod_encode (i,j)"
 		by (rule inj_on_contraD)
 	      with kij kij2 have "k2 \<noteq> k" 
 		by fast
@@ -416,14 +416,14 @@ txt{*\nopagebreak*}
 	also 
 	{ fix i 
 	  have "R=R" and "y j * measure M (A i \<inter> B j) = 
-	    (let k=nat2_to_nat(i,j) in z2 k * measure M (C k))"
-	    by (auto simp add: C_def z2_def Let_def nat2_to_nat_inj nat_to_nat2_def)
+	    (let k=prod_encode(i,j) in z2 k * measure M (C k))"
+	    by (auto simp add: C_def z2_def Let_def)
 	}
-	hence "\<dots> = (\<Sum>i\<in>R. let k=nat2_to_nat(i,j) in z2 k * measure M (C k))"
+	hence "\<dots> = (\<Sum>i\<in>R. let k=prod_encode(i,j) in z2 k * measure M (C k))"
 	  by (rule setsum_cong)
 	also from R have "\<dots> = (\<Sum>k\<in>(H j). z2 k * measure M (C k))"
 	  by (simp add: H_def Let_def o_def
-                setsum_reindex[OF subset_inj_on[OF nat2_to_nat_fst_inj]])
+                setsum_reindex[OF subset_inj_on[OF prod_encode_fst_inj]])
 	finally have eq2: 
 	  "y j * measure M (B j) = (\<Sum>k\<in>(H j). z2 k * measure M (C k))" .
       }
@@ -440,7 +440,7 @@ txt{*\nopagebreak*}
       
       { fix i 
 	from Bun have "(\<Union>k\<in>G i. C k) = A i" 
-	  by (simp add: G_def C_def nat_to_nat2_def nat2_to_nat_inj)
+	  by (simp add: G_def C_def)
       }
       with Aun have "(\<Union>i\<in>R. (\<Union>k\<in>G i. C k)) = UNIV" 
 	by simp
@@ -463,26 +463,26 @@ txt{*\nopagebreak*}
     { fix k1 k2 assume "k1\<in>K" and "k2\<in>K" and diff: "k1 \<noteq> k2"
       with K_def obtain i1 j1 i2 j2 where 
 	RS: "i1 \<in> R \<and> i2 \<in> R \<and> j1 \<in> S \<and> j2 \<in> S"
-	and k1: "k1 = nat2_to_nat (i1,j1)" and k2: "k2 = nat2_to_nat (i2,j2)" 
+	and k1: "k1 = prod_encode (i1,j1)" and k2: "k2 = prod_encode (i2,j2)" 
 	by auto
       
       with diff have "(i1,j1) \<noteq> (i2,j2)" 
 	by auto
       
       with RS Adis Bdis k1 k2 have "C k1 \<inter> C k2 = {}" 
-	by (simp add: C_def nat_to_nat2_def nat2_to_nat_inj) fast
+	by (simp add: C_def) fast
     }	
     moreover
     { fix k assume "k \<in> K"
       with K_def obtain i j where R: "i \<in> R" and S: "j \<in> S"
-	and k: "k = nat2_to_nat (i,j)" 
+	and k: "k = prod_encode (i,j)" 
 	by auto
       with Ams Bms have "A i \<in> measurable_sets M" and "B j \<in> measurable_sets M"
 	by auto
       with ms have "A i \<inter> B j \<in> measurable_sets M" 
 	by (simp add: measure_space_def sigma_algebra_inter)
       with k have "C k \<in> measurable_sets M" 
-	by (simp add: C_def nat_to_nat2_def nat2_to_nat_inj) 
+	by (simp add: C_def)
     }
     moreover note Kun
     
@@ -1074,14 +1074,14 @@ lemma nnfis_times:
   assumes ms: "measure_space M" and a: "a \<in> nnfis f M" and nn: "0\<le>z"
   shows "z*a \<in> nnfis (\<lambda>w. z*f w) M" (*<*)using a
 proof (cases)
-  case (base u x y)
+  case (base u x)
   from prems have "(\<lambda>m w. z*u m w)\<up>(\<lambda>w. z*f w)" by (simp add: realfun_mon_conv_times)
   also
   { fix m 
     from prems have "z*x m \<in> sfis (\<lambda>w. z*u m w) M" by (simp add: sfis_times)
   }
-  moreover from prems have "(\<lambda>m. z*x m)\<up>(z*y)" by (simp add: real_mon_conv_times)
-  ultimately have "z*y \<in> nnfis (\<lambda>w. z*f w) M" by (rule nnfis.base)
+  moreover from prems have "(\<lambda>m. z*x m)\<up>(z*a)" by (simp add: real_mon_conv_times)
+  ultimately have "z*a \<in> nnfis (\<lambda>w. z*f w) M" by (rule nnfis.base)
   
   with base show ?thesis by simp
 qed(*>*)
@@ -1091,19 +1091,19 @@ lemma nnfis_add:
   assumes ms: "measure_space M" and a: "a \<in> nnfis f M" and b: "b \<in> nnfis g M"
   shows "a+b \<in> nnfis (\<lambda>w. f w + g w) M" (*<*)using a
 proof (cases)
-  case (base u x y)
+  case (base u x)
   from b show ?thesis 
   proof (cases)
-    case (base v r s)
+    case (base v r)
     from prems have "(\<lambda>m w. u m w + v m w)\<up>(\<lambda>w. f w + g w)"
       by (simp add: realfun_mon_conv_add)
     also
     { fix n
       from prems have "x n + r n \<in> sfis (\<lambda>w. u n w + v n w) M" by (simp add: sfis_add) 
     }
-    moreover from prems have "(\<lambda>m. x m + r m)\<up>(y+s)" by (simp add: real_mon_conv_add)
+    moreover from prems have "(\<lambda>m. x m + r m)\<up>(a+b)" by (simp add: real_mon_conv_add)
    
-    ultimately have "y+s \<in> nnfis (\<lambda>w. f w + g w) M" by (rule nnfis.base)
+    ultimately have "a+b \<in> nnfis (\<lambda>w. f w + g w) M" by (rule nnfis.base)
     with prems show ?thesis by simp
   qed
 qed(*>*)
@@ -1113,21 +1113,21 @@ lemma assumes ms: "measure_space M" and a: "a \<in> nnfis f M"
   and b: "b \<in> nnfis g M" and fg: "f\<le>g"
   shows nnfis_mono: "a \<le> b" using a
 proof (cases)
-  case (base u x y)
+  case (base u x)
   from b show ?thesis 
   proof (cases)
-    case (base v r s)
+    case (base v r)
     { fix m
       from prems have "u m \<le> f" 
 	by (simp add: realfun_mon_conv_le) 
       also note fg finally have "u m \<le> g" .
-      with prems have "v\<up>g" and  "\<And>n. r n \<in> sfis (v n) M" and "r\<up>s" 
+      with prems have "v\<up>g" and  "\<And>n. r n \<in> sfis (v n) M" and "r\<up>b" 
 	and "x m \<in> sfis (u m) M" and "u m \<le> g" and "measure_space M"
 	by simp_all
-      hence "x m \<le> s" 
+      hence "x m \<le> b" 
 	by (rule sfis_mon_conv_mono)
     }
-    with prems have "y \<le> s" 
+    with prems have "a \<le> b" 
       by (auto simp add: real_mon_conv LIMSEQ_le_const2)
     thus ?thesis using prems 
       by simp
@@ -1402,7 +1402,7 @@ proof -
   { fix n
     from xf[of n] have "\<exists>u. u\<up>(f n) \<and> (\<forall>m. \<exists>a. a \<in> sfis (u m) M)" (is "\<exists>x. ?P x")
     proof (cases)
-      case (base r a b)
+      case (base r a)
       hence "r\<up>(f n)" and "\<And>m. \<exists>a. a \<in> sfis (r m) M" by auto
       thus ?thesis by fast
     qed
@@ -1468,7 +1468,7 @@ text{*Establishing that only nonnegative functions may arise this way
 lemma nnfis_nn: assumes "a \<in> nnfis f M"
   shows "nonnegative f" (*<*)using prems
 proof (cases)
-  case (base u x y)
+  case (base u x)
   {fix t
     { fix n
       from base have "x n \<in> sfis (u n) M" by fast
@@ -1488,7 +1488,7 @@ qed(*>*)(*>*)text{*\subsection{Integrable Functions}
 lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f:(*>*) "a \<in> nnfis f M"
   shows nnfis_rv: "f \<in> rv M" (*<*)using f
 proof (cases)
-  case (base u x y)
+  case (base u x)
   { fix n
     from base have "x n \<in> sfis (u n) M"
       by simp
@@ -1686,7 +1686,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
 	  also from ftn have "f t * (2::real)^n < real n * (2::real)^n"
 	    by simp
 	  finally have ni: "i < n * 2 ^ n"
-	    by (simp add: real_of_nat_less_iff[THEN sym] realpow_real_of_nat[THEN sym])
+	    by (simp add: real_of_nat_less_iff[THEN sym])
 	  
 	  with tA have un: "u n t = real i / (2::real)^n"
 	    using disj by simp
@@ -1748,7 +1748,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
 	  { fix i assume "i \<in> {..<(n*2^n)}-{0}"
 	    hence "Suc i \<le> n*2^n" by simp
 	    hence mult: "real (Suc i) \<le> real n * (2::real)^n"
-	      by (simp add: real_of_nat_le_iff[THEN sym] realpow_real_of_nat[THEN sym])
+	      by (simp add: real_of_nat_le_iff[THEN sym])
 	    have "0 < (2::real)^n"
 	      by simp
 	    with mult have "real (Suc i) / (2::real)^n \<le> real n" 
@@ -1860,7 +1860,7 @@ corollary assumes ms: "measure_space M" and f: "f \<in> rv M"
   and b: "b \<in> nnfis g M" and fg: "f\<le>g" and nn: "nonnegative f"  
   shows nnfis_dom_conv: "\<exists>a. a \<in> nnfis f M \<and> a \<le> b" using b
 proof (cases)
-  case (base v r z)
+  case (base v r)
   from ms f nn have "\<exists>u x. u\<up>f \<and> (\<forall>n. x n \<in> sfis (u n) M)" 
     by (rule rv_mon_conv_sfis)
   then obtain u x where uf: "u\<up>f" and xu: "\<And>n. x n \<in> sfis (u n) M" 

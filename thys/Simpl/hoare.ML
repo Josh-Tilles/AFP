@@ -20,7 +20,53 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 USA
 *)
 
-structure HoarePackage =
+signature HOARE =
+sig
+  datatype hoareMode = Partial | Total
+  val gen_proc_rec: hoareMode -> int -> thm
+  datatype state_kind = Record | Function
+  datatype par_kind = In | Out
+  val deco: string
+  val proc_deco: string
+  val par_deco: string -> string
+  val chopsfx: string -> string -> string
+  val is_state_var: string -> bool
+  val remdeco: string -> string
+  val undeco: term -> term
+  val varname: string -> string
+  val resuffix: string -> string -> string -> string
+  type proc_info =
+    {params: ((par_kind * string) list),
+     recursive: bool,
+     state_kind: state_kind}
+  type hoare_tac = (bool -> int -> tactic) -> Proof.context -> hoareMode -> int -> tactic
+  type hoare_data =
+   {proc_info: proc_info Symtab.table,
+    active_procs: string list list,
+    default_state_kind: state_kind,
+    generate_guard: (stamp * (Proof.context -> term -> term option)),
+    wp_tacs: (string * hoare_tac) list,
+    hoare_tacs: (string * hoare_tac) list,
+    vcg_simps: thm list}
+  val get_data: Proof.context -> hoare_data
+  val get_params: string -> Proof.context -> (par_kind * string) list option
+  val get_default_state_kind: Proof.context -> state_kind
+  val get_state_kind: string -> Proof.context -> state_kind option
+  val clique_name: string list -> string
+  val install_generate_guard: (Proof.context -> term -> term option) ->
+    Context.generic -> Context.generic
+  val generate_guard: Proof.context -> term -> term option
+  val BasicSimpTac: Proof.context -> state_kind ->
+    bool -> thm list -> (int -> tactic) -> int -> tactic
+  val hoare: (Proof.context -> Proof.method) context_parser
+  val hoare_raw: (Proof.context -> Proof.method) context_parser
+  val vcg: (Proof.context -> Proof.method) context_parser
+  val vcg_step: (Proof.context -> Proof.method) context_parser
+  val hoare_rule: (Proof.context -> Proof.method) context_parser
+  val setup: theory -> theory
+end;
+
+structure Hoare: HOARE =
 struct
 
 (* Misc *)
@@ -29,11 +75,6 @@ val use_generalise = Unsynchronized.ref false;
 val sort_variables = Unsynchronized.ref true;
 val use_cond_inv_modifies = Unsynchronized.ref true;
 val trace_hoare = Unsynchronized.ref false;
-
-val foldl = Library.foldl;
-val foldr = Library.foldr;
-val take = Library.take;
-val drop = Library.drop;
 
 val call_prfx = "_Call_";
 val call_ass_prfx = "_CallAss_";
@@ -66,7 +107,7 @@ val hoarePartialN = "HoarePartial";
 val hoareTotalN = "HoareTotal";
 val modify_callN = "HoarePartial.ModifyReturnNoAbr";
 val modretN = "return'";
-val KNF = "StateFun.K_statefun"
+val KNF = @{const_name StateFun.K_statefun};
 
 
 (* Some abstract syntax operations *)
@@ -566,8 +607,8 @@ fun but_last [] = raise Empty
   | but_last [x] = []
   | but_last (x::xs) = x::but_last xs;
 
-fun dest_splits (Const ("split",_)$Abs (n,T,t)) = (n,T)::dest_splits t
-  | dest_splits (Const ("split",_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
+fun dest_splits (Const (@{const_name split},_)$Abs (n,T,t)) = (n,T)::dest_splits t
+  | dest_splits (Const (@{const_name split},_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
   | dest_splits (Abs (n,T,_)) = [(n,T)]
   | dest_splits _ = [];
 
@@ -579,7 +620,7 @@ fun idx eq [] x = ~1
   | idx eq (x::rs) y =
       if eq x y then 0
       else let val i = idx eq rs y in if i < 0 then i else i+1 end
-  | idx _ _ _ = raise TERM ("HoarePackage.idx",[]);
+  | idx _ _ _ = raise TERM ("Hoare.idx",[]);
 
 fun resuffix sfx1 sfx2 s =
   suffix sfx2 (unsuffix sfx1 s)
@@ -621,9 +662,8 @@ fun extension_id thy stateN =
      SOME (e,_) => SOME (unsuffix Record.ext_typeN e)
    | NONE => NONE);
 
-val updateN = Record.updateN
-
 datatype par_kind = In | Out
+
 
 (*** utilities ***)
 
@@ -660,8 +700,10 @@ fun remdeco str =
     in String.implode (remove (String.explode deco) (String.explode str)) end;
 
 fun undeco (Const (c,T)) = (Const (remdeco c,T))
-  | undeco ((f as Const ("_free",_)) $ Free (x, T)) = (*f$*)Const (remdeco x,T)
-  | undeco (Const (lookup,_)$_$((f as Const ("_free",_)) $ Free (x, T))) = (*f$*)Const (remdeco x,T)
+  | undeco ((f as Const (@{syntax_const "_free"},_)) $ Free (x, T)) =
+      (*f$*)Const (remdeco x,T)
+  | undeco (Const (lookup,_)$_$((f as Const (@{syntax_const "_free"},_)) $ Free (x, T))) =
+      (*f$*)Const (remdeco x,T)
   | undeco (Free (c,T)) = (Const (remdeco c,T))
   | undeco x = x
 
@@ -690,7 +732,7 @@ fun dest_string' t =
 fun is_state_space_var Tids t =
     let
       fun is_stateT T = (case stateT_id T of NONE => 0
-                         | SOME id => if id mem Tids then ~1 else 0);
+                         | SOME id => if member (op =) Tids id then ~1 else 0);
     in
       (case t of
          Const _ $ Abs (_,T,_) => is_stateT T
@@ -702,37 +744,39 @@ fun is_state_space_var Tids t =
 datatype callMode = Static | Parameter
 
 fun proc_name Static (Const (p,_)$_) = resuffix deco proc_deco (Long_Name.base_name p)
-  | proc_name Static (Const ("StateFun.lookup",_)$_$Free (p,_)$_) =
+  | proc_name Static (Const (@{const_name StateFun.lookup},_)$_$Free (p,_)$_) =
        suffix proc_deco (remdeco (Long_Name.base_name p))
   | proc_name Static p = dest_string' p
   | proc_name Parameter (Const (p,_)) = resuffix deco proc_deco (Long_Name.base_name p)
   | proc_name Parameter (Abs (_,_,Const (p,_)$Bound 0)) =
       resuffix deco proc_deco (Long_Name.base_name p)
-  | proc_name Parameter (Abs (_,_,Const ("StateFun.lookup",_)$_$Free (p,_)$_)) =
+  | proc_name Parameter (Abs (_,_,Const (@{const_name StateFun.lookup},_)$_$Free (p,_)$_)) =
       suffix proc_deco (remdeco (Long_Name.base_name p))
   | proc_name _ t = raise TERM ("proc_name",[t]);
 
 
 
-fun dest_call (Const ("Language.call",_)$init$pname$return$c) =
+fun dest_call (Const (@{const_name Language.call},_)$init$pname$return$c) =
            (init,pname,return,c,Static,true)
-  | dest_call (Const ("Language.com.Call",_)$pname) =
+  | dest_call (Const (@{const_name Language.com.Call},_)$pname) =
            (Bound 0,pname,Bound 0,Bound 0,Static,false)
-  | dest_call (Const ("Language.dynCall",_)$init$pname$return$c) =
+  | dest_call (Const (@{const_name Language.dynCall},_)$init$pname$return$c) =
            (init,pname,return,c,Parameter,true)
-  | dest_call t = raise TERM ("HoarePackage.dest_call: unexpected term",[t]);
+  | dest_call t = raise TERM ("Hoare.dest_call: unexpected term",[t]);
 
-fun dest_whileAnno (Const ("Language.whileAnnoG",_) $gs$b$I$V$c) =
+fun dest_whileAnno (Const (@{const_name Language.whileAnnoG},_) $gs$b$I$V$c) =
         (SOME gs,b,I,V,c,false)
-  | dest_whileAnno (Const ("Language.whileAnno",_) $b$I$V$c) = (NONE,b,I,V,c,false)
-  | dest_whileAnno (Const ("Language.whileAnnoGFix",_)$gs$b$I$V$c) =
+  | dest_whileAnno (Const (@{const_name Language.whileAnno},_) $b$I$V$c) = (NONE,b,I,V,c,false)
+  | dest_whileAnno (Const (@{const_name Language.whileAnnoGFix},_)$gs$b$I$V$c) =
         (SOME gs,b,I,V,c,true)
-  | dest_whileAnno (Const ("Language.whileAnnoFix",_) $b$I$V$c) = (NONE,b,I,V,c,true)
-  | dest_whileAnno t = raise TERM ("HoarePackage.dest_while: unexpected term",[t]);
+  | dest_whileAnno (Const (@{const_name Language.whileAnnoFix},_) $b$I$V$c) = (NONE,b,I,V,c,true)
+  | dest_whileAnno t = raise TERM ("Hoare.dest_while: unexpected term",[t]);
 
-fun dest_Guard (Const ("Language.com.Guard",_)$f$g$c) = (f,g,c,false)
-  | dest_Guard (Const ("Language.guaranteeStrip",_)$f$g$c) = (f,g,c,true)
-  | dest_Guard t = raise TERM ("HoarePackage.dest_guard: unexpected term",[t]);
+fun dest_Guard (Const (@{const_name Language.com.Guard},_)$f$g$c) = (f,g,c,false)
+  | dest_Guard (Const (@{const_name Language.guaranteeStrip},_)$f$g$c) = (f,g,c,true)
+  | dest_Guard t = raise TERM ("Hoare.dest_guard: unexpected term",[t]);
+
+
 
 (*** extend theory by procedure definition ***)
 
@@ -750,12 +794,13 @@ type proc_info =
    recursive: bool,
    state_kind: state_kind}
 
-type hoare_tac = (bool -> int -> tactic) -> Proof.context -> hoareMode -> int -> tactic
+type hoare_tac = (bool -> int -> tactic) -> Proof.context -> hoareMode -> int -> tactic;
+
 type hoare_data =
  {proc_info: proc_info Symtab.table,
   active_procs: string list list,
   default_state_kind: state_kind,
-  generate_guard: (stamp * (Context.generic -> term -> term option)),
+  generate_guard: (stamp * (Proof.context -> term -> term option)),
   wp_tacs: (string * hoare_tac) list,
   hoare_tacs: (string * hoare_tac) list,
   vcg_simps: thm list};
@@ -767,7 +812,7 @@ fun make_hoare_data proc_info active_procs default_state_kind generate_guard
    generate_guard = generate_guard,
    wp_tacs = wp_tacs, hoare_tacs = hoare_tacs, vcg_simps = vcg_simps};
 
-structure HoareData = Generic_Data
+structure Hoare_Data = Generic_Data
 (
   type T = hoare_data;
 
@@ -775,7 +820,7 @@ structure HoareData = Generic_Data
                (Symtab.empty: proc_info Symtab.table) (* smlnj needs typing *)
                ([]:string list list)
                (Function)
-               (stamp (),(K (K NONE)):Context.generic -> term -> term option)
+               (stamp (),(K (K NONE)): Proof.context -> term -> term option)
                ([]:(string * hoare_tac) list)
                ([]:(string * hoare_tac) list)
                ([]:thm list);
@@ -802,6 +847,8 @@ structure HoareData = Generic_Data
       else error ("Theories have different aux. functions to generate guards")
 );
 
+val get_data = Hoare_Data.get o Context.Proof;
+
 
 (* access 'params' *)
 
@@ -814,7 +861,7 @@ fun mk_free ctxt name =
   let
     val ctxt' = Context.proof_of ctxt;
     val n' = lookupI (op =) (Variable.fixes_of ctxt') name
-    val T' = ProofContext.infer_type ctxt' n' handle ERROR _ => dummyT
+    val T' = ProofContext.infer_type ctxt' (n', dummyT) handle ERROR _ => dummyT
   in (Free (n',T')) end;
 
 
@@ -830,51 +877,51 @@ fun set_default_state_kind sk ctxt =
   let
     val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val data = make_hoare_data proc_info active_procs sk
                    generate_guard wp_tacs hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
-fun get_default_state_kind ctxt = #default_state_kind (HoareData.get ctxt);
+val get_default_state_kind = #default_state_kind o get_data;
 
 fun add_active_procs phi ps ctxt =
   let
       val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val data = make_hoare_data proc_info
                    ((map (morph_name ctxt phi) ps)::active_procs)
                    default_state_kind
                    generate_guard wp_tacs hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 
 fun add_wp_tacs tacs ctxt =
   let
       val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val data = make_hoare_data proc_info active_procs default_state_kind generate_guard
                    (wp_tacs@tacs) hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun add_hoare_tacs tacs ctxt =
   let
       val {proc_info,active_procs, default_state_kind, generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val data = make_hoare_data proc_info active_procs default_state_kind generate_guard
                    wp_tacs (hoare_tacs@tacs) vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun map_vcg_simps f ctxt =
   let
       val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val data = make_hoare_data proc_info active_procs default_state_kind generate_guard
                    wp_tacs hoare_tacs (f vcg_simps);
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun thy_attrib f = Thm.declaration_attribute (fn thm => map_vcg_simps (f thm));
 
@@ -904,66 +951,68 @@ fun add_params phi name frmls ctxt =
   let
       val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
            vcg_simps,...}
-            = HoareData.get ctxt;
+            = Hoare_Data.get ctxt;
       val params = map (apsnd (morph_name ctxt phi)) frmls;
       val f = map_proc_info_params (K params);
       val default = f empty_proc_info;
       val proc_info' = Symtab.map_default (morph_name ctxt phi name,default) f proc_info;
       val data = make_hoare_data proc_info' active_procs default_state_kind
                    generate_guard wp_tacs hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun get_params name ctxt =
-  Option.map #params (Symtab.lookup (#proc_info (HoareData.get ctxt)) name);
+  Option.map #params (Symtab.lookup (#proc_info (get_data ctxt)) name);
 
 
 fun add_recursive phi name ctxt =
   let
      val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
           vcg_simps,...}
-          = HoareData.get ctxt;
+          = Hoare_Data.get ctxt;
      val f = map_proc_info_recursive (K true);
      val default = f empty_proc_info;
      val proc_info'= Symtab.map_default (morph_name ctxt phi name,default) f proc_info;
      val data = make_hoare_data proc_info' active_procs default_state_kind
                   generate_guard wp_tacs hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun get_recursive name ctxt =
-  Option.map #recursive (Symtab.lookup (#proc_info (HoareData.get ctxt)) name);
+  Option.map #recursive (Symtab.lookup (#proc_info (get_data ctxt)) name);
 
 fun add_state_kind phi name sk ctxt =
   let
      val {proc_info,active_procs,default_state_kind,generate_guard,wp_tacs,hoare_tacs,
           vcg_simps,...}
-          = HoareData.get ctxt;
+          = Hoare_Data.get ctxt;
      val f = map_proc_info_state_kind (K sk);
      val default = f empty_proc_info;
      val proc_info'= Symtab.map_default (morph_name ctxt phi name,default) f proc_info;
      val data = make_hoare_data proc_info' active_procs default_state_kind
                   generate_guard wp_tacs hoare_tacs vcg_simps;
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
 fun get_state_kind name ctxt =
-  Option.map #state_kind (Symtab.lookup (#proc_info (HoareData.get ctxt)) name);
+  Option.map #state_kind (Symtab.lookup (#proc_info (get_data ctxt)) name);
 
 fun install_generate_guard f ctxt =
   let
     val {proc_info,active_procs, default_state_kind, generate_guard,wp_tacs,hoare_tacs,
          vcg_simps,...} =
-         HoareData.get ctxt;
+         Hoare_Data.get ctxt;
     val data = make_hoare_data proc_info active_procs default_state_kind (stamp (), f)
                 wp_tacs hoare_tacs vcg_simps
-  in HoareData.put data ctxt end;
+  in Hoare_Data.put data ctxt end;
 
-fun get_generate_guard ctxt = snd (#generate_guard (HoareData.get ctxt));
+fun generate_guard ctxt = snd (#generate_guard (get_data ctxt)) ctxt;
 
 
 fun check_procedures_definition procs thy =
     let
         val _ = Theory.requires thy "Hoare" "Hoare definitions";
+        val ctxt = ProofContext.init_global thy;
+
         fun already_defined name =
-            if is_some (get_params name (Context.Theory thy))
+            if is_some (get_params name ctxt)
             then ["procedure " ^ quote name ^ " already defined"]
             else []
 
@@ -994,7 +1043,7 @@ fun check_procedures_definition procs thy =
 
 fun add_parameter_info phi cname (name,(inpars,outpars,state_kind)) ctxt =
     let val name' = unsuffix proc_deco name;
-        fun par_deco' T = if T="" then deco else par_deco (cname name);
+        fun par_deco' T = if T = "" then deco else par_deco (cname name);
         val pars = map (fn (par,T) => (In,suffix (par_deco' T) par)) inpars@
                    map (fn (par,T) => (Out,suffix (par_deco' T) par)) outpars;
 
@@ -1016,7 +1065,7 @@ val implementationN = "_impl";
 val cliqueN = "_clique";
 val clique_namesN = "_clique_names";
 val callN      = "_call";
-val NoBodyN = "Vcg.NoBody";
+val NoBodyN = @{const_name Vcg.NoBody};
 val statetypeN = "StateType";
 val proc_nameT = HOLogic.stringT;
 
@@ -1039,10 +1088,10 @@ fun add_locale_cmd name expr elems thy =
 
 fun add_variable_statespaces prep_typ (cname,(inpars,outpars,locvars)) thy =
   let
-    val inpars'  = if forall (fn (_,T) => T="") inpars then [] else inpars;
-    val outpars' = if forall (fn (_,T) => T="") outpars then [] else outpars;
+    val inpars'  = if forall (fn (_,T) => T = "") inpars then [] else inpars;
+    val outpars' = if forall (fn (_,T) => T = "") outpars then [] else outpars;
     fun prep_comp (n,T) env =
-      let val (T', env') = prep_typ (ProofContext.init thy) T env handle ERROR msg =>
+      let val (T', env') = prep_typ (ProofContext.init_global thy) T env handle ERROR msg =>
        cat_error msg ("The error(s) above occured in component " ^ quote n)
       in ((n,T'), env') end;
 
@@ -1163,13 +1212,13 @@ fun procedures_definition locname procs thy =
           (case try dest_call t of
              SOME (_,p,_,_,m,_) => SOME (proc_name m p)
            | _ => NONE);
-        fun in_names x = if x mem names then SOME x else NONE;
-        fun add_edges (g,(n,es)) = foldl (fn (g,x) => Graph.add_edge (n,x) g) (g,es);
+        fun in_names x = if member (op =) names x then SOME x else NONE;
+        fun add_edges n = fold (fn x => Graph.add_edge (n, x));
 
         val all_callss = map (map snd o max_subterms_dest dcall) bodies;
         val callss = map (map_filter in_names) all_callss;
-        val graph = foldl (fn (g,n) => Graph.new_node (n,()) g) (Graph.empty,names);
-        val graph' = foldl add_edges (graph,(names ~~ callss));
+        val graph = fold (fn n => Graph.new_node (n, ())) names Graph.empty;
+        val graph' = fold2 add_edges names callss graph;
         fun idx x = find_index (fn y => x=y) names;
         fun name_ord (a,b) = int_ord (idx a, idx b);
         val cliques = Graph.strong_conn graph';
@@ -1196,7 +1245,7 @@ fun procedures_definition locname procs thy =
     (* cliques may only depend on ones to the left, so it is safe to
      * add the locales from the left to the right. *)
 
-    fun my_clique n = Library.find_first (fn c => n mem c) cliques;
+    fun my_clique n = Library.find_first (fn c => member (op =) c n) cliques;
 
     fun lname sfx clique = suffix sfx (clique_name clique);
     fun cname n = clique_name (the (my_clique n));
@@ -1204,7 +1253,7 @@ fun procedures_definition locname procs thy =
 
 
     fun get_loc sfx clique n =
-        if n mem clique then NONE else SOME (resuffix proc_deco sfx n);
+        if member (op =) clique n then NONE else SOME (resuffix proc_deco sfx n);
 
     fun parent_locales thy sfx clique =
       let
@@ -1484,30 +1533,30 @@ fun dest_conjs t =
      [t1,t2] => dest_conjs t1 @ dest_conjs t2
    | ts => ts);
 
-fun split_guard (Const ("Collect",CT)$(Abs (s,T,t))) =
+fun split_guard (Const (@{const_name Collect},CT)$(Abs (s,T,t))) =
      let
-       fun mkCollect t = Const ("Collect",CT)$(Abs (s,T,t));
+       fun mkCollect t = Const (@{const_name Collect},CT)$(Abs (s,T,t));
      in map mkCollect (dest_conjs t) end
   | split_guard t = [t];
 
 fun split_guards gs =
   let
     fun norm c f g = map (fn g => c$f$g) (split_guard g);
-    fun norm_guard ((c as Const ("Pair",_))$f$g) = norm c f g
-      | norm_guard ((c as Const ("Language.guaranteeStripPair",_))$f$g) = norm c f g
+    fun norm_guard ((c as Const (@{const_name Pair},_))$f$g) = norm c f g
+      | norm_guard ((c as Const (@{const_name Language.guaranteeStripPair},_))$f$g) = norm c f g
       | norm_guard t = [t];
   in maps norm_guard (HOLogic.dest_list gs)
   end
 
-fun guard_of_pair (Const ("Pair",_)$_$g) = g
-  | guard_of_pair (Const ("Language.guaranteeStripPair",_)$_$g) = g
+fun guard_of_pair (Const (@{const_name Pair},_)$_$g) = g
+  | guard_of_pair (Const (@{const_name Language.guaranteeStripPair},_)$_$g) = g
   | guard_of_pair t = t;
 
 fun mark_guards mark gs =
   let
     fun mrk c f g i = case mark i f of SOME f' => SOME (c$f'$g) | _ => NONE;
-    fun domark ((c as Const ("Pair",_))$f$g) i = mrk c f g i
-      | domark ((c as Const ("Language.guaranteeStripPair",_))$f$g) i = mrk c f g i
+    fun domark ((c as Const (@{const_name Pair},_))$f$g) i = mrk c f g i
+      | domark ((c as Const (@{const_name Language.guaranteeStripPair},_))$f$g) i = mrk c f g i
       | domark t i = SOME t;
     fun domarks [] i = []
       | domarks (g::gs) i =
@@ -1519,43 +1568,43 @@ fun mark_guards mark gs =
 fun fold_com f t =
   let
     (* traverse does not descend into abstractions, like in DynCom, call, etc. *)
-    fun traverse cnt (c as Const ("Language.com.Skip",_)) = (cnt,f cnt c [] [])
-      | traverse cnt ((c as Const ("Language.com.Basic",_))$g) = (cnt, f cnt c [g] [])
-      | traverse cnt ((c as Const ("Language.com.Spec",_))$r) = (cnt, f cnt c [r] [])
-      | traverse cnt ((c as Const ("Language.com.Seq",_))$c1$c2) =
+    fun traverse cnt (c as Const (@{const_name Language.com.Skip},_)) = (cnt,f cnt c [] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.Basic},_))$g) = (cnt, f cnt c [g] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.Spec},_))$r) = (cnt, f cnt c [r] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.Seq},_))$c1$c2) =
           let
             val (cnt1,v1) = traverse cnt c1;
             val (cnt2,v2) = traverse cnt1 c2;
           in (cnt2, f cnt c [] [v1,v2]) end
-      | traverse cnt ((c as Const ("Language.com.Cond",_))$b$c1$c2) =
+      | traverse cnt ((c as Const (@{const_name Language.com.Cond},_))$b$c1$c2) =
           let
             val (cnt1,v1) = traverse cnt c1;
             val (cnt2,v2) = traverse cnt1 c2;
           in (cnt2, f cnt c [b] [v1,v2]) end
-      | traverse cnt ((c as Const ("Language.com.While",_))$b$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.com.While},_))$b$c1) =
           let val (cnt1,v1) = traverse cnt c1 in (cnt1, f cnt c [b] [v1]) end
-      | traverse cnt ((c as Const ("Language.com.Call",_))$p) = (cnt, f cnt c [p] [])
-      | traverse cnt ((c as Const ("Language.com.DynCom",_))$c1) = (cnt, f cnt c [c1] [])
-      | traverse cnt ((c as Const ("Language.com.Guard",_))$flt$g$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.com.Call},_))$p) = (cnt, f cnt c [p] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.DynCom},_))$c1) = (cnt, f cnt c [c1] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.Guard},_))$flt$g$c1) =
           let val (cnt1,v1) = traverse (cnt + length (split_guard g)) c1
           in (cnt1, f cnt c [flt,g] [v1]) end
-      | traverse cnt (c as Const ("Language.com.Throw",_)) = (cnt,f cnt c [] [])
-      | traverse cnt ((c as Const ("Language.com.Catch",_))$c1$c2) =
+      | traverse cnt (c as Const (@{const_name Language.com.Throw},_)) = (cnt,f cnt c [] [])
+      | traverse cnt ((c as Const (@{const_name Language.com.Catch},_))$c1$c2) =
           let
             val (cnt1,v1) = traverse cnt c1;
             val (cnt2,v2) = traverse cnt1 c2;
           in (cnt2, f cnt c [] [v1,v2]) end
-      | traverse cnt ((c as Const ("Language.guards",_))$gs$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.guards},_))$gs$c1) =
           let
             val (cnt1,v1) = traverse (cnt + length (split_guards gs)) c1;
           in (cnt1, f cnt c [gs] [v1]) end
-      | traverse cnt ((c as Const ("Language.block",_))$init$c1$return$c2) =
+      | traverse cnt ((c as Const (@{const_name Language.block},_))$init$c1$return$c2) =
           let val (cnt1,v1) = traverse cnt c1 in (cnt1, f cnt c [init,return,c2] [v1]) end
-      | traverse cnt ((c as Const ("Language.call",_))$init$p$return$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.call},_))$init$p$return$c1) =
            (cnt, f cnt c [init,p,return,c1] [])
-      | traverse cnt ((c as Const ("Language.whileAnno",_))$b$I$V$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.whileAnno},_))$b$I$V$c1) =
           let val (cnt1,v1) = traverse cnt c1 in (cnt1, f cnt c [b,I,V] [v1]) end
-      | traverse cnt ((c as Const ("Language.whileAnnoG",_))$gs$b$I$V$c1) =
+      | traverse cnt ((c as Const (@{const_name Language.whileAnnoG},_))$gs$b$I$V$c1) =
           let val (cnt1,v1) = traverse (cnt + length (split_guards gs)) c1
           in (cnt1, f cnt c [gs,b,I,V] [v1]) end
       | traverse _ t = raise TERM ("fold_com: unknown command",[t]);
@@ -1565,46 +1614,46 @@ fun mark_proven_guards proven t =
   let
     fun mark_grd cnt idx =
          if proven (cnt + idx) then (K (SOME HOLogic.true_const)) else (fn f => SOME f)
-    fun mark cnt (c as Const ("Language.com.Skip",_)) [] [] = c
-      | mark cnt (c as Const ("Language.com.Basic",_)) [g] [] = list_comb (c,[g])
-      | mark cnt (c as Const ("Language.com.Spec",_)) [r] [] = list_comb (c,[r])
-      | mark cnt (c as Const ("Language.com.Seq",_)) [] [c1,c2] = list_comb (c,[c1,c2])
-      | mark cnt (c as Const ("Language.com.Cond",_)) [b] [c1,c2] = list_comb (c,[b,c1,c2])
-      | mark cnt (c as Const ("Language.com.While",_)) [b] [c1] = list_comb (c,[b,c1])
-      | mark cnt (c as Const ("Language.com.Call",_)) [p] [] = list_comb (c,[p])
-      | mark cnt (c as Const ("Language.com.DynCom",_)) [c1] [] = list_comb (c,[c1])
-      | mark cnt (c as Const ("Language.com.Guard",gT)) [flt,g] [c1] =
+    fun mark cnt (c as Const (@{const_name Language.com.Skip},_)) [] [] = c
+      | mark cnt (c as Const (@{const_name Language.com.Basic},_)) [g] [] = list_comb (c,[g])
+      | mark cnt (c as Const (@{const_name Language.com.Spec},_)) [r] [] = list_comb (c,[r])
+      | mark cnt (c as Const (@{const_name Language.com.Seq},_)) [] [c1,c2] = list_comb (c,[c1,c2])
+      | mark cnt (c as Const (@{const_name Language.com.Cond},_)) [b] [c1,c2] = list_comb (c,[b,c1,c2])
+      | mark cnt (c as Const (@{const_name Language.com.While},_)) [b] [c1] = list_comb (c,[b,c1])
+      | mark cnt (c as Const (@{const_name Language.com.Call},_)) [p] [] = list_comb (c,[p])
+      | mark cnt (c as Const (@{const_name Language.com.DynCom},_)) [c1] [] = list_comb (c,[c1])
+      | mark cnt (c as Const (@{const_name Language.com.Guard},gT)) [flt,g] [c1] =
            let
              val flt_g = HOLogic.mk_prod (flt,g);
              val flt_gT = fastype_of flt_g
              val gs = HOLogic.mk_list flt_gT [flt_g]
              val ([_,_,cT],_) = strip_type gT;
-             val grds = Const ("Language.guards", Type ("List.list", [flt_gT]) --> cT --> cT)
+             val grds = Const (@{const_name Language.guards}, Type (@{type_name list}, [flt_gT]) --> cT --> cT)
            in list_comb (grds,[mark_guards (mark_grd cnt) gs,c1]) end
-      | mark cnt (c as Const ("Language.com.Throw",_)) [] [] = c
-      | mark cnt (c as Const ("Language.com.Catch",_)) [] [c1,c2] = list_comb (c,[c1,c2])
-      | mark cnt (c as Const ("Language.guards",_)) [gs] [c1] =
+      | mark cnt (c as Const (@{const_name Language.com.Throw},_)) [] [] = c
+      | mark cnt (c as Const (@{const_name Language.com.Catch},_)) [] [c1,c2] = list_comb (c,[c1,c2])
+      | mark cnt (c as Const (@{const_name Language.guards},_)) [gs] [c1] =
             list_comb (c,[mark_guards (mark_grd cnt) gs,c1])
-      | mark cnt (c as Const ("Language.block",_)) [init,return,c2] [c1] =
+      | mark cnt (c as Const (@{const_name Language.block},_)) [init,return,c2] [c1] =
            list_comb (c,[init,c1,return,c2])
-      | mark cnt (c as Const ("Language.call",_)) [init,p,return,c1] [] =
+      | mark cnt (c as Const (@{const_name Language.call},_)) [init,p,return,c1] [] =
            list_comb (c,[init,p,return,c1])
-      | mark cnt (c as Const ("Language.whileAnno",_)) [b,I,V] [c1] =
+      | mark cnt (c as Const (@{const_name Language.whileAnno},_)) [b,I,V] [c1] =
            list_comb (c,[b,I,V,c1])
-      | mark cnt (c as Const ("Language.whileAnnoG",_)) [gs,b,I,V] [c1] =
+      | mark cnt (c as Const (@{const_name Language.whileAnnoG},_)) [gs,b,I,V] [c1] =
            list_comb (c,[mark_guards (mark_grd cnt) gs,b,I,V,c1])
       | mark cnt c ts vs = raise TERM ("mark: unexpected term",c::ts);
    in fold_com mark t end
 
 local
-  val ss = HOL_basic_ss addsimps ([if_True,if_False,fst_conv,snd_conv,split_conv,Let_def,
+  val ss = HOL_basic_ss addsimps ([@{thm if_True}, @{thm if_False}, @{thm fst_conv}, @{thm snd_conv}, @{thm split_conv}, @{thm Let_def},
                                    insert_iff,empty_iff,
                                    CollectInt_iff,conj_assoc,
-                                   while_def]@simp_thms@
+                                   while_def] @ @{thms simp_thms} @
                                    anno_defs@mark_guards_simps@merge_guards_simps@
                                    guards_simps@strip_guards_simps@
                                    is_Guard_simps@dest_Guard_simps)
-                        addcongs [if_weak_cong];
+                        addcongs [@{thm if_weak_cong}];
 in
 val merge_mark_strip_guards_simp_tac = simp_tac ss
 end;
@@ -1659,10 +1708,10 @@ fun split_pair_apps thm =
                 val z = Name.variant (fold Term.add_free_names args []) "z";
                 val frees = map (apfst (fn i => z^string_of_int i))
                                 (0 upto (len - 1) ~~ argTs);
-                fun splitT (Type ("*", [T1, T2])) = T1::splitT T2
+                fun splitT (Type (@{type_name "*"}, [T1, T2])) = T1::splitT T2
                   | splitT T = [T];
 
-                fun pair_depth (Const ("Pair",aT)$t1$t2) = 1 + (pair_depth t2)
+                fun pair_depth (Const (@{const_name Pair},aT)$t1$t2) = 1 + (pair_depth t2)
                   | pair_depth _ = 0;
 
                 fun mk_sel max free i  =
@@ -1693,9 +1742,6 @@ fun split_pair_apps thm =
        (instantiate ([],subst) thm)
   end;
 
-fun prove_standard thy xs asms prop tac
- = Drule.standard (Goal.prove_global thy xs asms prop tac);
-
 (* Generates split theorems, for !!,!,? quantifiers and for UN, e.g.
  * ALL x. P x = ALL a b. P a b
  *)
@@ -1708,7 +1754,7 @@ fun mk_split_thms ctxt (vars as _::_)  =
     val pT = foldr1 HOLogic.mk_prodT types;
     val x = (Name.variant names "x",pT);
     val xp = foldr1 HOLogic.mk_prod free_vars;
-    val tfree_names = foldr OldTerm.add_term_tfree_names (free_vars,[]);
+    val tfree_names = Library.foldr OldTerm.add_term_tfree_names (free_vars,[]);
     val zeta = TFree (Name.variant tfree_names "z", Sign.defaultS thy);
 
     val split_meta_prop =
@@ -1719,25 +1765,24 @@ fun mk_split_thms ctxt (vars as _::_)  =
     val P = Free (Name.variant names "P",pT --> HOLogic.boolT);
 
     val split_object_prop =
-      let fun ALL vs t = foldr (fn ((v,T),t) => HOLogic.mk_all (v,T,t)) (vs,t)
+      let fun ALL vs t = Library.foldr (fn ((v,T),t) => HOLogic.mk_all (v,T,t)) (vs,t)
       in (ALL [x] (P $ Free x)) === (ALL vars (P $ xp))
       end;
 
     val split_ex_prop =
-      let fun EX vs t = foldr (fn ((v,T),t) => HOLogic.mk_exists (v,T,t)) (vs,t)
+      let fun EX vs t = Library.foldr (fn ((v,T),t) => HOLogic.mk_exists (v,T,t)) (vs,t)
       in (EX [x] (P $ Free x)) === (EX vars (P $ xp))
       end;
 
     val split_UN_prop =
       let val P = Free (Name.variant names "P",pT --> HOLogic.mk_setT zeta);
-          fun UN vs t = foldr (fn ((v,T),t) => mk_UN (v,T,t)) (vs,t)
+          fun UN vs t = Library.foldr (fn ((v,T),t) => mk_UN (v,T,t)) (vs,t)
       in (UN [x] (P $ Free x)) === (UN vars (P $ xp))
       end;
 
     fun simp_all_tac ss simps = ALLGOALS (Simplifier.simp_tac (ss addsimps simps));
-    val prove_standard = prove_standard thy;
     fun prove_simp simps prop =
-         prove_standard [] [] prop (K (simp_all_tac (HOL_basic_ss) simps));
+      Goal.prove_global thy [] [] prop (K (simp_all_tac (HOL_basic_ss) simps));
 
     val split_meta   = prove_simp [split_paired_all] split_meta_prop;
     val split_object = prove_simp [split_paired_All] split_object_prop;
@@ -1765,7 +1810,7 @@ fun adapt_aux_var ctxt split_app (vars as (_::_::_)) tvar_rules =
      let
        val thy = ProofContext.theory_of ctxt;
        fun get_maxidx thm = let val {maxidx=m,...} = rep_thm thm in m end;
-       val max_idx = foldl Int.max (0,(map (get_maxidx o snd) tvar_rules));
+       val max_idx = fold Integer.max (map (get_maxidx o snd) tvar_rules) 0;
        val types = map (fn i => TVar (("z",i),Sign.defaultS thy))
                     (max_idx + 1 upto (max_idx + length vars));
        fun ctyp n = ctyp_of thy (TVar (n,Sign.defaultS thy));
@@ -1793,7 +1838,8 @@ fun gen_call_rec_rule specs_name n rule =
     val maxidx = #maxidx (rep_cterm (cprop_of rule));
     val vars = map (dest_Var) (OldTerm.term_vars (prop_of rule));
     fun get_type n = the (AList.lookup (op =) vars (n, 0));
-    val specsT as (Type ("fun", [Type (_,[assT,Type (_,[pT,_])]), Type ("bool", [])])) = get_type specs_name;
+    val specsT as (Type ("fun", [Type (_,[assT,Type (_,[pT,_])]), Type (@{type_name bool}, [])])) =
+      get_type specs_name;
     val zT = TVar (("z",maxidx+1),Sign.defaultS thy)
 
     fun mk_var i n T = Var ((n ^ string_of_int i,0),T);
@@ -1818,7 +1864,7 @@ fun gen_call_rec_rule specs_name n rule =
            |> full_simplify ((global_simpset_of Main_thy)
                   addsimps [conjE_simp,in_Specs_simp,in_set_Un_simp,split_all_conj,
                             image_Un,image_Un_single_simp] )
-           |> rename_bvars (fn s => if s mem_string ["s","\<sigma>"] then s else "Z")
+           |> rename_bvars (fn s => if member (op =) ["s","\<sigma>"] s then s else "Z")
   in rule'
   end;
 
@@ -1838,7 +1884,7 @@ fun merge_assertion_simp_tac thms =
  *)
 fun in_assertion_simp_tac ctxt state_kind thms i =
  let val HOL_basic_ss' = Simplifier.context ctxt HOL_basic_ss;
-     val vcg_simps = #vcg_simps (HoareData.get (Context.Proof ctxt));
+     val vcg_simps = #vcg_simps (get_data ctxt);
  in
    EVERY [simp_tac
             (HOL_basic_ss' addsimps ([mem_Collect_eq,Un_iff,Int_iff,
@@ -1859,7 +1905,7 @@ fun assertion_simp_tac ctxt state_kind thms i =
 (* simplify equality test on strings (and datatype-constructors) and propagate result*)
 fun string_eq_simp_tac ctxt = simp_tac (Simplifier.context ctxt HOL_basic_ss
   addsimps (@{thms list.inject} @ @{thms char.inject}
-    @ @{thms list.distinct} @ @{thms char.distinct} @ simp_thms));
+    @ @{thms list.distinct} @ @{thms char.distinct} @ @{thms simp_thms}));
     
 
 
@@ -1949,16 +1995,16 @@ fun post_conforms_tac ctxt state_kind i =
  end;
 
 
-fun dest_hoare_raw (Const("HoarePartialDef.hoarep",_)$G$T$F$P$C$Q$A) = (P,C,Q,A,Partial,G,T,F)
-  | dest_hoare_raw (Const("HoareTotalDef.hoaret",_)$G$T$F$P$C$Q$A) = (P,C,Q,A,Total,G,T,F)
-  | dest_hoare_raw t = raise TERM ("HoarePackage.dest_hoare_raw: unexpected term",[t])
+fun dest_hoare_raw (Const(@{const_name HoarePartialDef.hoarep},_)$G$T$F$P$C$Q$A) = (P,C,Q,A,Partial,G,T,F)
+  | dest_hoare_raw (Const(@{const_name HoareTotalDef.hoaret},_)$G$T$F$P$C$Q$A) = (P,C,Q,A,Total,G,T,F)
+  | dest_hoare_raw t = raise TERM ("Hoare.dest_hoare_raw: unexpected term",[t])
 
 
 fun mk_hoare_abs Ts (P,C,Q,A,mode,G,T,F) =
   let
     val hoareT = map (curry fastype_of1 Ts) [G,T,F,P,C,Q,A] ---> HOLogic.boolT;
-    val hoareC = (case mode of Partial => Const ("HoarePartialDef.hoarep",hoareT)
-                     | Total => Const ("HoareTotalDef.hoaret",hoareT));
+    val hoareC = (case mode of Partial => Const (@{const_name HoarePartialDef.hoarep},hoareT)
+                     | Total => Const (@{const_name HoareTotalDef.hoaret},hoareT));
   in hoareC$G$T$F$P$C$Q$A end;
 
 
@@ -1968,7 +2014,9 @@ val is_hoare = can dest_hoare_raw
 
 fun dest_hoare t =
     let
-      val triple = (strip_qnt_body "All" o HOLogic.dest_Trueprop o strip_qnt_body "all") t;
+      val triple =
+        (strip_qnt_body @{const_name "All"} o
+          HOLogic.dest_Trueprop o strip_qnt_body @{const_name all}) t;
     in
       dest_hoare_raw triple
     end;
@@ -1977,14 +2025,16 @@ fun dest_hoare t =
 fun mk_terminates Ts (G,c,s) =
   let
     val T = map (curry fastype_of1 Ts) [G,c,s] ---> HOLogic.boolT;
-  in Const ("Termination.terminates",T)$G$c$s end;
+  in Const (@{const_name Termination.terminates},T)$G$c$s end;
 
 
 fun get_aux_tvar rule =
-  let fun aux_hoare (Abs ("Z",TVar (z,_),t)) = if is_hoare (strip_qnt_body "All" t)
-                                               then SOME z
-                                               else NONE
-        | aux_hoare _ = NONE;
+  let
+    fun aux_hoare (Abs ("Z",TVar (z,_),t)) =
+          if is_hoare (strip_qnt_body @{const_name All} t)
+          then SOME z
+          else NONE
+      | aux_hoare _ = NONE;
   in (case first_subterm_dest (aux_hoare) (prop_of rule) of
         SOME (_,z) => (z,rule)
       | NONE => raise TERM ("get_aux_tvar: No auxiliary variable of hoare-rule found",
@@ -1994,7 +2044,7 @@ fun get_aux_tvar rule =
 fun strip_vars t =
   let
     val bdy = (HOLogic.dest_Trueprop o Logic.strip_assums_concl) t;
-  in strip_qnt_vars "all" t @ strip_qnt_vars "All" bdy end
+  in strip_qnt_vars @{const_name all} t @ strip_qnt_vars @{const_name All} bdy end;
 
 
 local
@@ -2005,8 +2055,8 @@ local
 val conseq1_ss_base = (HOL_basic_ss
                        addsimps ([mem_Collect_eq,singleton_iff,Int_iff,
                                   empty_iff,UNIV_I,
-                                  conj_assoc,disj_assoc]@all_imp_eq_triv
-                                  @K_convs@simp_thms@ex_simps@all_simps)
+                                  conj_assoc, @{thm disj_assoc}] @ all_imp_eq_triv
+                                  @K_convs @ @{thms simp_thms} @ @{thms ex_simps} @ @{thms all_simps})
                        delsimps [all_imp_to_ex]
                        addcongs K_congs
                        )
@@ -2016,7 +2066,7 @@ fun conseq1_ss Record   = conseq1_ss_record
   | conseq1_ss Function = conseq1_ss_fun;
 
 val conseq2_ss_base = (HOL_basic_ss
-        addsimps (all_imp_eq_triv@simp_thms@simp_thms@ex_simps@all_simps )
+        addsimps (all_imp_eq_triv @ @{thms simp_thms} @ @{thms ex_simps} @ @{thms all_simps})
         delsimps [all_imp_to_ex]
         addcongs [imp_cong]
     )
@@ -2055,8 +2105,9 @@ fun gen_context_thms ctxt thy mode params G T F =
 
     fun mkHoare mode G T F (vars,PpQA) =
       let
-        val hoare = (case mode of Partial => "HoarePartialDef.hoarep"
-                          | Total => "HoareTotalDef.hoaret");
+        val hoare =
+          (case mode of Partial => @{const_name HoarePartialDef.hoarep}
+          | Total => @{const_name HoareTotalDef.hoaret});
         (* FIXME: Use future ProofContext.rename_vars or make closed term and remove by hand *)
         (*
         fun free_params ps t = foldr (fn ((x,xT),t) => snd (variant_abs (x,xT,t))) (ps,t);
@@ -2078,13 +2129,13 @@ fun gen_context_thms ctxt thy mode params G T F =
 
     fun hoare_context_specs thy mode G T F =
       let fun mk t = (SOME o mkHoare mode G T F o apsnd destQuadruple o dest_UN) t
-                     handle _ => NONE
+                     handle _ => NONE  (* FIXME avoid handle _ !!! *)
       in map_filter mk (dest_Un T) end;
 
 
     fun mk_prove ctxt mode (prop,params) =
       let
-        val vars = map fst (strip_qnt_vars "All"
+        val vars = map fst (strip_qnt_vars @{const_name All}
                              (HOLogic.dest_Trueprop (Logic.strip_assums_concl prop)));
         val [asmUN'] = adapt_aux_var ctxt true vars [get_aux_tvar (AsmUN mode)]
       in Goal.prove ctxt params [] prop
@@ -2106,7 +2157,7 @@ fun gen_context_thms ctxt thy mode params G T F =
 
 
 fun is_modifies_clause t =
-    exists_subterm (fn (Const ("Hoare.meq",_)) => true| _ => false)
+    exists_subterm (fn (Const (@{const_name Hoare.meq},_)) => true| _ => false)
            (#3 (dest_hoare (Logic.strip_assums_concl t)))
     handle (TERM _) => false;
 val is_spec_clause = not o is_modifies_clause;
@@ -2117,11 +2168,11 @@ val is_spec_clause = not o is_modifies_clause;
         map Ingt => map the_Intg
         Hp o lift Intg => lift the_Intg o the_Hp
 *)
-fun swap_constr_destr f (t as (Const ("Fun.id",_))) = t
+fun swap_constr_destr f (t as (Const (@{const_name Fun.id},_))) = t
   | swap_constr_destr f  (t as (Const (c,Type ("fun",[T,valT])))) =
      (Const (f c, Type ("fun",[valT,T]))
-      handle Empty => raise TERM ("HoarePackage.swap_constr_destr",[t]))
-  | swap_constr_destr f (Const ("StateFun.map_fun",Type ("fun",
+      handle Empty => raise TERM ("Hoare.swap_constr_destr",[t]))
+  | swap_constr_destr f (Const ("StateFun.map_fun",Type ("fun",   (* FIXME unknown "StateFun.map_fun" !? *)
                                              [Type ("fun",[T,valT]),
                                               Type ("fun",[Type ("fun",[xT,T']),
                                                            Type ("fun",[xT',valT'])])]))$g) =
@@ -2129,25 +2180,25 @@ fun swap_constr_destr f (t as (Const ("Fun.id",_))) = t
                                          Type ("fun",[Type ("fun",[xT,valT']),
                                                       Type ("fun",[xT',T'])])]))$
         swap_constr_destr f g
-  | swap_constr_destr f (Const ("Fun.comp",Type ("fun",
+  | swap_constr_destr f (Const (@{const_name Fun.comp},Type ("fun",
                                        [Type ("fun",[bT',cT]),
                                         Type ("fun",[Type ("fun",[aT ,bT]),
                                                      Type ("fun",[aT',cT'])])]))$h$g) =
      let
        val h'=swap_constr_destr f h;
        val g'=swap_constr_destr f g;
-     in Const ("Fun.comp",Type ("fun",
+     in Const (@{const_name Fun.comp},Type ("fun",
                                        [Type ("fun",[bT,aT]),
                                         Type ("fun",[Type ("fun",[cT,bT']),
                                                      Type ("fun",[cT',aT'])])]))$g'$h'
      end
-  | swap_constr_destr f (Const ("List.map",Type ("fun",
+  | swap_constr_destr f (Const (@{const_name List.map},Type ("fun",
                                          [Type ("fun",[aT,bT]),
                                           Type ("fun",[asT,bsT])]))$g) =
-     (Const ("List.map",Type ("fun",
+     (Const (@{const_name List.map},Type ("fun",
                           [Type ("fun",[bT,aT]),
                            Type ("fun",[bsT,asT])]))$swap_constr_destr f g)
-  | swap_constr_destr f t = raise TERM ("HoarePackage.swap_constr_destr",[t]);
+  | swap_constr_destr f t = raise TERM ("Hoare.swap_constr_destr",[t]);
 
 (* FIXME: unused? *)
 val constr_to_destr =
@@ -2252,7 +2303,7 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
                | _ => all_tac)
          in Subgoal.FOCUS (tac o #prems) ctxt i end
 
-    val strip_spec_vars = (strip_qnt_vars "All") o HOLogic.dest_Trueprop;
+    val strip_spec_vars = strip_qnt_vars @{const_name All} o HOLogic.dest_Trueprop;
 
     fun apply_call_tac ctxt pname mode cmode spec_mode spec_goal is_abr
                        spec (subgoal,i) =
@@ -2328,12 +2379,12 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
                  trace_tac "call_tac -- basic_tac -- STOP --"]
         end;
 
-    fun get_modifies (Const ("Collect",_) $ Abs (_,_,m)) = m
+    fun get_modifies (Const (@{const_name Collect},_) $ Abs (_,_,m)) = m
       | get_modifies t =  raise TERM ("gen_call_tac.get_modifies",[t]);
 
     fun get_updates (Abs (_,_,t)) = get_updates t
-      | get_updates (Const ("Hoare.mex",_) $ t) = get_updates t
-      | get_updates (Const ("Hoare.meq",T) $ s $ upd) = (T,upd)
+      | get_updates (Const (@{const_name Hoare.mex},_) $ t) = get_updates t
+      | get_updates (Const (@{const_name Hoare.meq},T) $ s $ upd) = (T,upd)
       | get_updates t = raise TERM ("gen_call_tac.get_updates",[t]);
 
 
@@ -2347,10 +2398,10 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
      fun mk_selR subst gT (upd,uT) =
        let val vT = range_type (hd (binder_types uT));
-       in Const (unsuffix updateN upd,gT --> (Envir.norm_type subst vT)) end;
+       in Const (unsuffix Record.updateN upd,gT --> (Envir.norm_type subst vT)) end;
 
      fun revT (Type ("fun",[A,B])) = Type ("fun",[B,A])
-       | revT T = raise TYPE ("HoarePackage.revT",[T],[]);
+       | revT T = raise TYPE ("Hoare.revT",[T],[]);
 
      (* lookup:: "('v => 'a) => 'n => ('n => 'v) => 'a"
       * update:: "('v => 'a) => ('a => 'v) => 'n => ('a => 'a) => ('n => 'v) => ('n => 'v)"
@@ -2360,7 +2411,7 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
           val vT_a::a_vT::nT::aT_aT::n_vT::_ = binder_types uT;
           val lT = (Envir.norm_type subst (vT_a --> nT --> n_vT --> (domain_type aT_aT)));
           val d' = map_types (Envir.norm_type subst) d;
-       in Const ("StateFun.lookup",lT)$d'$n
+       in Const (@{const_name StateFun.lookup},lT)$d'$n
        end;
 
      fun mk_rupdR subst gT (upd,uT) =
@@ -2380,7 +2431,7 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
          val uT' = Envir.norm_type subst uT;
          val c' = map_types (Envir.norm_type subst) c;
          val d' = map_types (Envir.norm_type subst) d;
-       in Const ("StateFun.update",uT')$d'$c'$n end;
+       in Const (@{const_name StateFun.update},uT')$d'$c'$n end;
 
      fun modify_updatesR subst gT glob ((u as Const (upd,uT))$_$(Const globs$Z)) =
              mk_rupdR subst gT (upd,uT)$
@@ -2392,10 +2443,11 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
        | modify_updatesR subst gT glob ((globs$Z)) = (glob$Bound 1) (* may_not_modify *)
        | modify_updatesR _ _ _ t = raise TERM ("gen_call_tac.modify_updatesR",[t]);
 
-     fun modify_updatesF subst _ glob (Const ("StateFun.update",uT)$d$c$n$_$(Const globs$Z)) =
+     fun modify_updatesF subst _ glob
+          (Const (@{const_name StateFun.update},uT)$d$c$n$_$(Const globs$Z)) =
              mk_supdF subst uT d c n$
                (K_fun KNF uT$(mk_selF subst uT d n$(glob$Bound 0)))$(glob$Bound 1)
-       | modify_updatesF subst gT glob (Const ("StateFun.update",uT)$d$c$n$_$s) =
+       | modify_updatesF subst gT glob (Const (@{const_name StateFun.update},uT)$d$c$n$_$s) =
              mk_supdF subst uT d c n$
                (K_fun KNF uT$(mk_selF subst uT d n$(glob$Bound 0)))$modify_updatesF subst gT glob s
        | modify_updatesF subst _ glob ((globs$Z)) = (glob$Bound 1) (* may_not_modify *)
@@ -2495,10 +2547,11 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
                   basic_tac spec (cnt - 8),
                   if cmode = Parameter
                   then EVERY [rtac subset_refl (cnt - 8),
-                              simp_tac (HOL_basic_ss addsimps (CollectInt_iff::simp_thms)) 1]
+                              simp_tac (HOL_basic_ss addsimps (CollectInt_iff :: @{thms simp_thms})) 1]
                   else all_tac]
         end
-        handle e => raise TERM ("get_call_tac.modify_tac: no proper modifies spec",[]);
+        handle _ => raise TERM ("get_call_tac.modify_tac: no proper modifies spec", []);
+        (* FIXME avoid handle _ !!! *)
 
   fun specs_of_assms_tac thms =
        (case get_spec pname is_spec_clause thms of
@@ -2554,7 +2607,7 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
   in
     (case cmode of
-       Static => if get_recursive pname (Context.Proof ctxt) = SOME false
+       Static => if get_recursive pname ctxt = SOME false
                  andalso is_none spec
                  then inline_bdy_tac has_args
                  else test_modify_in_ctxt_tac
@@ -2577,7 +2630,7 @@ fun call_tac cont_tac mode state_kind state_space ctxt asms spec_sfx t =
            gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
                          (proc_name cmode pname) return has_args F;
   in gen_tac (dest_call c) end
-  handle (TERM t) => (K no_tac);
+  handle TERM t => (K no_tac);
 
 fun solve_in_Faults_tac i =
     resolve_tac [UNIV_I, in_insert_hd] i
@@ -2586,7 +2639,7 @@ fun solve_in_Faults_tac i =
 
 local
 val triv_simp = merge_assertion_simp_tac [mem_Collect_eq] THEN'
-         simp_tac (HOL_basic_ss addsimps simp_thms addcongs [conj_cong,imp_cong]);
+         simp_tac (HOL_basic_ss addsimps @{thms simp_thms} addcongs [@{thm conj_cong}, @{thm imp_cong}]);
     (* a guarded while produces stupid things, since the guards are
           put at the end of the body and in the invariant (rule WhileAnnoG):
          - guard: g /\ g
@@ -2681,7 +2734,7 @@ fun while_tac ctxt state_kind inv cont_tac tac mode t i=
 fun dest_split (Abs (x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => Abs (x,T,recomb t'),bdy) end
-  | dest_split (c as Const ("split",_)$Abs(x,T,t)) =
+  | dest_split (c as Const (@{const_name split},_)$Abs(x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => c$Abs (x,T,recomb t'),bdy) end
   | dest_split t = ([],I,t);
@@ -2734,12 +2787,12 @@ fun gen_Anno_tac dest rules tac cont_tac ctxt state_kind (t,i) st =
             cont_tac (i+1),
             conseq_simp_tac ctxt state_kind [] i] st
   end
-  handle (TERM _) => no_tac st;
+  handle TERM _ => no_tac st;
 
 
 fun specAnno_tac ctxt state_kind cont_tac mode =
   let
-    fun dest_specAnno (Const ("Language.specAnno",_)$P$c$Q$A) = [P,c,Q,A]
+    fun dest_specAnno (Const (@{const_name Language.specAnno},_)$P$c$Q$A) = [P,c,Q,A]
       | dest_specAnno t = raise TERM ("dest_specAnno",[t]);
 
     val rules = [SpecAnnoNoAbrupt mode,SpecAnno mode];
@@ -2747,7 +2800,7 @@ fun specAnno_tac ctxt state_kind cont_tac mode =
 
 fun whileAnnoFix_tac ctxt state_kind cont_tac mode (t,i) =
   let
-    fun dest (Const ("Language.whileAnnoFix",_)$b$I$V$c) = [I,V,c]
+    fun dest (Const (@{const_name Language.whileAnnoFix},_)$b$I$V$c) = [I,V,c]
       | dest t = raise TERM ("dest_whileAnnoFix",[t]);
 
     val rules = [WhileAnnoFix mode];
@@ -2766,12 +2819,12 @@ fun lemAnno_tac ctxt state_kind mode (t,i) st =
       | dest_name (Free (x,_)) = x
       | dest_name t = raise TERM ("dest_name",[t]);
 
-    fun dest_lemAnno ctxt (Const ("Language.lem",_)$n$c) =
+    fun dest_lemAnno ctxt (Const (@{const_name Language.lem},_)$n$c) =
       let val x = Long_Name.base_name (dest_name n);
       in
          (case try (ProofContext.get_thm ctxt) x of
             NONE => error ("No lemma: '" ^ x ^ "' found.")
-          | SOME spec => (strip_qnt_vars "All"
+          | SOME spec => (strip_qnt_vars @{const_name All}
                            (HOLogic.dest_Trueprop (Thm.concl_of spec)),spec))
       end
       | dest_lemAnno _ t = raise TERM ("dest_lemAnno",[t]);
@@ -2786,7 +2839,7 @@ fun lemAnno_tac ctxt state_kind mode (t,i) st =
             rtac spec (i+1),
             conseq_simp_tac ctxt state_kind [] i] st
   end
-  handle (TERM _) => no_tac st;
+  handle TERM _ => no_tac st;
 
 fun prems_tac ctxt i = TRY (resolve_tac (Assumption.all_prems_of ctxt) i);
 
@@ -2814,8 +2867,8 @@ fun HoareTac annotate_inv strip_guards mode state_kind state_space spec_sfx ctxt
  let
      val (P,c,Q,A,_,G,T,F) = dest_hoare (Logic.strip_assums_concl
                                        (Logic.get_goal (prop_of st) 1));
-     val wp_tacs = #wp_tacs (HoareData.get (Context.Proof ctxt));
-     val hoare_tacs = #hoare_tacs (HoareData.get (Context.Proof ctxt));
+     val wp_tacs = #wp_tacs (get_data ctxt);
+     val hoare_tacs = #hoare_tacs (get_data ctxt);
      val params = (strip_vars (Logic.get_goal (prop_of st) 1));
      val Inv = (if annotate_inv
                 then (* Take the postcondition of the triple as invariant for all *)
@@ -2823,7 +2876,7 @@ fun HoareTac annotate_inv strip_guards mode state_kind state_space spec_sfx ctxt
                      SOME Q
                 else NONE);
      val asms = (mk_proc_assoc (gen_context_thms ctxt (theory_of_thm st) mode params G T F))
-                handle _ => [];
+                handle _ => [];  (* FIXME avoid handle _ !!! *)
 
      fun while_annoG_tac (t,i) =
            whileAnnoG_tac ctxt (annotate_inv orelse strip_guards) mode t i;
@@ -2928,7 +2981,7 @@ fun HoareStepTac strip_guards mode state_kind state_space spec_sfx ctxt tac st =
                                               (Logic.get_goal (prop_of st) 1));
            val params = (strip_vars (Logic.get_goal (prop_of st) 1));
        in mk_proc_assoc (gen_context_thms ctxt (theory_of_thm st) mode params G T F)
-       end handle _ => [];
+       end handle _ => [];   (* FIXME avoid handle _ !!! *)
 
      fun result_tac i = TRY (EVERY [rtac (Basic mode) i, rtac subset_refl i]);
      fun call (t,i) = call_tac result_tac mode state_kind state_space ctxt asms spec_sfx t i
@@ -2997,17 +3050,18 @@ fun HoareStepTac strip_guards mode state_kind state_space spec_sfx ctxt tac st =
 structure RecordSplitState : SPLIT_STATE =
 struct
 
-val globals = "StateSpace.state.globals";
+val globals = @{const_name StateSpace.state.globals};
 
-fun isState (Const _$Abs (s,T,t)) = (case (state_hierarchy T) of
-                      ((n,_)::_) =>  n="StateSpace.state.state" andalso
-                                     is_none (try dest_hoare_raw (strip_qnt_body "All" t))
-                     | _ => false)
+fun isState (Const _$Abs (s,T,t)) =
+      (case (state_hierarchy T) of
+        ((n,_)::_) => n = "StateSpace.state.state" andalso
+          is_none (try dest_hoare_raw (strip_qnt_body @{const_name All} t))
+      | _ => false)
   | isState _ = false;
 
 fun isFreeState (Free (_,T)) =
      (case (state_hierarchy T) of
-        ((n,_)::_) =>  n="StateSpace.state.state"
+        ((n,_)::_) => n = "StateSpace.state.state"
       | _ => false)
   | isFreeState _ = false;
 
@@ -3113,7 +3167,7 @@ fun split_state ctxt s T t =
     val vars' = if !sort_variables then sort_vars ctxt T vars else vars;
   in (abstract_vars vars' s t,rev vars') end;
 
-fun ex_tac vs st = Record.record_split_simp_tac simp_thms (K ~1) 1 st;
+fun ex_tac vs st = Record.record_split_simp_tac @{thms simp_thms} (K ~1) 1 st;
 
 end;
 
@@ -3121,19 +3175,20 @@ structure FunSplitState : SPLIT_STATE =
 struct
 
  val globalsN = "globals";
- val full_globalsN = "StateSpace.state.globals";
+ val full_globalsN = @{const_name StateSpace.state.globals};
  val localsN  = "locals";
 
 
-fun isState (Const _$Abs (s,T,t)) = (case (state_hierarchy T) of
-                      ((n,_)::_) =>  n="StateSpace.state.state" andalso
-                                     is_none (try dest_hoare_raw (strip_qnt_body "All" t))
-                     | _ => false)
+fun isState (Const _$Abs (s,T,t)) =
+      (case (state_hierarchy T) of
+        ((n,_)::_) => n = "StateSpace.state.state" andalso
+          is_none (try dest_hoare_raw (strip_qnt_body @{const_name All} t))
+      | _ => false)
   | isState _ = false;
 
 fun isFreeState (Free (_,T)) =
-     (case (state_hierarchy T) of
-        ((n,_)::_) =>  n="StateSpace.state.state"
+      (case (state_hierarchy T) of
+        ((n,_)::_) => n = "StateSpace.state.state"
       | _ => false)
   | isFreeState _ = false;
 
@@ -3179,7 +3234,7 @@ fun bound xs t =
   | bound xs t = raise TERM ("FunSplitState.bound",[t]);
 
 fun fold_state_prop var app abs other inc s res
-      (t as (Const ("StateFun.lookup",_)$destr$name$(Const _$Free (s',_)))) =
+      (t as (Const (@{const_name StateFun.lookup},_)$destr$name$(Const _$Free (s',_)))) =
          if s'=s
          then var inc res t
          else other res t (*raise TERM ("FunSplitState.fold_state_prop",[t])*)
@@ -3259,7 +3314,7 @@ local
 val ss = global_simpset_of @{theory Fun}
   addsimps (@{thm StateFun.lookup_def} :: @{thm StateFun.id_id_cancel}
     :: @{thms list.inject} @ @{thms char.inject}
-    @ @{thms list.distinct} @ @{thms char.distinct} @ simp_thms)
+    @ @{thms list.distinct} @ @{thms char.distinct} @ @{thms simp_thms})
   addsimprocs [Record.record_simproc, StateFun.lazy_conj_simproc]
   addcongs @{thms block_conj_cong};
 
@@ -3296,8 +3351,9 @@ fun ex_tac vs st =
         val valT = range_type selT;
         val constr = destr_to_constr (sel_destr t);
         val name = (sel_raw_name t);
-        val upd = Const ("Fun.fun_upd", (strT --> valT)-->strT-->valT--> (strT --> valT)) $
-                   s $ name $ (constr $ Bound i)
+        val upd =
+          Const (@{const_name Fun.fun_upd}, (strT --> valT)-->strT-->valT--> (strT --> valT)) $
+            s $ name $ (constr $ Bound i)
       in AList.update streq (selN,(selT,upd)) xs
       end;
 
@@ -3352,10 +3408,10 @@ fun generalise Record = GeneraliseRecord.GENERALISE
 fun record_vanish_tac ctxt state_kind state_space i =
     let
         val rem_useless_vars_simps = [triv_forall_equality,triv_All_eq,triv_Ex_eq];
-        val rem_useless_vars_ss = (empty_ss setmksimps single)
+        val rem_useless_vars_ss = (empty_ss setmksimps (K single))
                                    addsimps rem_useless_vars_simps;
-        fun no_spec (t as (Const ("All",_)$_)) =
-              is_none (try dest_hoare_raw (strip_qnt_body "All" t))
+        fun no_spec (t as (Const (@{const_name All},_)$_)) =
+              is_none (try dest_hoare_raw (strip_qnt_body @{const_name All} t))
           | no_spec _ = true;
         fun state_space_no_spec t = if state_space t <> 0 andalso no_spec t then
                                     ~1 else 0;
@@ -3399,9 +3455,9 @@ local
 val state_fun_update_ss = HOL_basic_ss
   addsimps ([@{thm StateFun.update_def}, @{thm id_def}, @{thm fun_upd_apply}, @{thm if_True}, @{thm if_False}]
     @ @{thms list.inject} @ @{thms char.inject}
-    @ @{thms list.distinct} @ @{thms char.distinct} @ simp_thms @ K_fun_convs)
+    @ @{thms list.distinct} @ @{thms char.distinct} @ @{thms simp_thms} @ K_fun_convs)
     addcongs ([imp_cong] (* @ K_fun_congs  FIXME: Stefan fragen*))
-    addsplits [split_if]
+    addsplits [@{thm split_if}]
     addsimprocs [DistinctTreeProver.distinct_simproc ["distinct_fields", "distinct_fields_globals"]]
 
 in
@@ -3409,20 +3465,20 @@ in
 fun solve_modifies_tac ctxt state_kind state_space i =
   let
     val thy = ProofContext.theory_of ctxt;
-    fun is_split_state (trm as (Const ("all",_)$Abs(x,T,t))) =
+    fun is_split_state (trm as (Const (@{const_name all},_)$Abs(x,T,t))) =
       if state_space trm <> 0 then
        (let
           fun seed (upd$v$st) = seed st
             | seed (globals$t) = (1,t) (* split only state pair *)
             | seed t = (~1,t) (* split globals completely *)
-          val all_vars = strip_qnt_vars "all" t;
+          val all_vars = strip_qnt_vars @{const_name all} t;
           val concl = HOLogic.dest_Trueprop (Logic.strip_assums_concl t);
-          val ex_vars = strip_qnt_vars "Ex" concl;
+          val ex_vars = strip_qnt_vars @{const_name Ex} concl;
           val state = Bound (length all_vars + length ex_vars);
-          val (Const ("op =",_)$x_upd$x_upd') = strip_qnt_body "Ex" concl;
+          val (Const (@{const_name "op ="},_)$x_upd$x_upd') = strip_qnt_body @{const_name Ex} concl;
           val (split,sd) = seed x_upd;
         in if sd = state then split else 0 end
-        handle _ => 0)
+        handle _ => 0)    (* FIXME avoid handle _ !!! *)
       else 0
       | is_split_state t = 0;
     val ss = HOL_ss addsimps (Ex_True::Ex_False::Record.get_extinjects thy);
@@ -3463,7 +3519,7 @@ fun proc_lookup_simp_tac ctxt i st =
                              suffix (body_def_sfx^"_def") pname,
                              suffix procL pname^"."^ (suffix (body_def_sfx^"_def") pname)]);
   in simp_tac (HOL_basic_ss addsimps thms@strip_simps@the_simps) i st end
-  handle _ => all_tac st;
+  handle _ => all_tac st;   (* FIXME avoid handle _ !!! *)
 
 fun proc_lookup_in_dom_simp_tac ctxt i st =
   let
@@ -3473,7 +3529,7 @@ fun proc_lookup_in_dom_simp_tac ctxt i st =
     val thms =  map_filter I (map (try (ProofContext.get_thm ctxt))
                                [suffix bodyP pname]);
   in simp_tac (HOL_basic_ss addsimps (lookup_Some_in_dom::dom_strip::thms)) i st end
-  handle _ => all_tac st;
+  handle _ => all_tac st;    (* FIXME avoid handle _ !!! *)
 
 
 fun HoareRuleTac ctxt insts st =
@@ -3481,9 +3537,9 @@ fun HoareRuleTac ctxt insts st =
     val HOL_basic_ss' = Simplifier.context ctxt HOL_basic_ss
     val annotate_simp_tac = simp_tac (HOL_basic_ss' addsimps (anno_defs@normalize_simps)
                                                    addsimprocs [split_beta_proc]);
-    fun is_com_eq (Const ("Trueprop",_)$(Const ("op =",T)$_$_)) =
+    fun is_com_eq (Const (@{const_name Trueprop},_)$(Const (@{const_name "op ="},T)$_$_)) =
           (case (binder_types T) of
-             (Type ("Language.com",_)::_) => true
+             (Type (@{type_name Language.com},_)::_) => true
            | _ => false)
        | is_com_eq _ = false;
     fun annotate_tac i st =
@@ -3496,7 +3552,7 @@ fun HoareRuleTac ctxt insts st =
 
 fun HoareCallRuleTac state_kind state_space ctxt thms i st =
   let
-    fun dest_All (Const ("All",_)$t) = SOME t
+    fun dest_All (Const (@{const_name All},_)$t) = SOME t
       | dest_All _ = NONE;
 
     fun auxvars t =
@@ -3553,7 +3609,7 @@ fun vcg_polish_tac solve_modifies ctxt state_kind state_space i =
     then solve_modifies_tac ctxt state_kind state_space i
     else record_vanish_tac ctxt state_kind state_space i
          THEN_MAYBE EVERY [rename_goal remdeco i(*,
-                           simp_tac (HOL_basic_ss addsimps (thms "simp_thms")) i*)];
+                           simp_tac (HOL_basic_ss addsimps @{thms simp_thms})) i*)];
 
 fun is_funtype (Type ("fun", _)) = true
   | is_funtype _ = false;
@@ -3574,19 +3630,20 @@ fun find_state_space_in_triple thy t =
          val SOME Tids  = stateT_ids state_spaceT;
       in SOME (Tids,mode,state_kind_of thy state_spaceT)
       end)
-      handle _ => NONE
+      handle _ => NONE   (* FIXME avoid handle _ !!! *)
 
 fun get_state_space_in_subset_eq thy t =
   (* get state type from the following kind of terms: P <= Q, s: P *)
   let
-    val (subset_eq,_) = (strip_comb o HOLogic.dest_Trueprop o strip_qnt_body "all") t;
+    val (subset_eq,_) =
+      (strip_comb o HOLogic.dest_Trueprop o strip_qnt_body @{const_name all}) t;
     val Ts = map snd (strip_vars t);
     val T = fastype_of1 (Ts,subset_eq);
-    val Type(_,[_,Type(_,[Type ("fun", [state_spaceT, Type ("bool", [])]),_])]) = T;
+    val Type(_,[_,Type(_,[Type ("fun", [state_spaceT, Type (@{type_name bool}, [])]),_])]) = T;
             (* also works for "in": x : P *)
     val SOME Tids = stateT_ids state_spaceT;
   in SOME (Tids,Partial,state_kind_of thy state_spaceT)
-  end handle _ => NONE;
+  end handle _ => NONE;    (* FIXME avoid handle _ !!! *)
 
 fun get_state_space i st =
     let val thy = theory_of_thm st;

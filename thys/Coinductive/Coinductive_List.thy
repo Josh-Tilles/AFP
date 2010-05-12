@@ -5,7 +5,7 @@
 header {* Potentially infinite lists as greatest fixed-point *}
 
 theory Coinductive_List
-imports List Main
+imports Main
 begin
 
 subsection {* List constructors over the datatype universe *}
@@ -53,12 +53,12 @@ proof
   qed
 qed
 
-consts
+primrec
   LList_corec_aux :: "nat \<Rightarrow> ('a \<Rightarrow> ('b Datatype.item \<times> 'a) option) \<Rightarrow>
     'a \<Rightarrow> 'b Datatype.item"
-primrec
+where
   "LList_corec_aux 0 f x = {}"
-  "LList_corec_aux (Suc k) f x =
+| "LList_corec_aux (Suc k) f x =
     (case f x of
       None \<Rightarrow> NIL
     | Some (z, w) \<Rightarrow> CONS z (LList_corec_aux k f w))"
@@ -201,11 +201,8 @@ definition
     List_case c (\<lambda>x y. d (inv Datatype.Leaf x) (Abs_llist y)) (Rep_llist l)"
 
 
-syntax  (* FIXME? *)
-  LNil :: logic
-  LCons :: logic
 translations
-  "case p of LNil \<Rightarrow> a | LCons x l \<Rightarrow> b" \<rightleftharpoons> "CONST llist_case a (\<lambda>x l. b) p"
+  "case p of XCONST LNil \<Rightarrow> a | XCONST LCons x l \<Rightarrow> b" \<rightleftharpoons> "CONST llist_case a (\<lambda>x l. b) p"
 
 lemma llist_case_LNil [simp, code]: "llist_case c d LNil = c"
   by (simp add: llist_case_def LNil_def
