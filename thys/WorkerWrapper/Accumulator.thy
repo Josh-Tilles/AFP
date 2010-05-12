@@ -62,21 +62,23 @@ where
 
 text{* Note ``body'' is the generator of @{term "lrev_def"}. *}
 
-fixpat lrev_strict[simp]: "lrev\<cdot>\<bottom>"
+lemma lrev_strict[simp]: "lrev\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 fixrec lrev_body :: "('a llist \<rightarrow> 'a llist) \<rightarrow> 'a llist \<rightarrow> 'a llist"
 where
   "lrev_body\<cdot>r\<cdot>lnil = lnil"
 | "lrev_body\<cdot>r\<cdot>(x :@ xs) = r\<cdot>xs :++ (x :@ lnil)"
 
-fixpat lrev_body_strict[simp]: "lrev_body\<cdot>r\<cdot>\<bottom>"
+lemma lrev_body_strict[simp]: "lrev_body\<cdot>r\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 text{* This is trivial but syntactically a bit touchy. Would be nicer
 to define @{term "lrev_body"} as the generator of the fixpoint
 definition of @{term "lrev"} directly. *}
 
 lemma lrev_lrev_body_eq: "lrev = fix\<cdot>lrev_body"
-  by (rule ext_cfun, subst lrev_def, subst lrev_body_unfold, simp)
+  by (rule ext_cfun, subst lrev_def, subst lrev_body.unfold, simp)
 
 text{* Wrap / unwrap functions. *}
 
@@ -130,9 +132,9 @@ definition
 
 lemma lrev_body_lrev_body1_eq: "lrev_body1 = unwrapH oo lrev_body oo wrapH"
   apply (rule ext_cfun)+
-  apply (subst lrev_body_unfold)
-  apply (subst lrev_body1_unfold)
-  apply (case_tac xa rule: llist.casedist)
+  apply (subst lrev_body.unfold)
+  apply (subst lrev_body1.unfold)
+  apply (case_tac xa)
   apply (simp_all add: list2H_def wrapH_def unwrapH_def)
   done
 
@@ -147,7 +149,8 @@ where
   "lrev_body2\<cdot>r\<cdot>lnil = ID"
 | "lrev_body2\<cdot>r\<cdot>(x :@ xs) = list2H\<cdot>(wrapH\<cdot>r\<cdot>xs) oo list2H\<cdot>(x :@ lnil)"
 
-fixpat lrev_body2_strict[simp]: "lrev_body2\<cdot>r\<cdot>\<bottom>"
+lemma lrev_body2_strict[simp]: "lrev_body2\<cdot>r\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 definition
   lrev_work2 :: "'a llist \<rightarrow> 'a H" where
@@ -159,7 +162,7 @@ lemma lrev_work2_strict[simp]: "lrev_work2\<cdot>\<bottom> = \<bottom>"
 
 lemma lrev_body2_lrev_body1_eq: "lrev_body2 = lrev_body1"
   by ((rule ext_cfun)+
-     , (subst lrev_body1_unfold, subst lrev_body2_unfold)
+     , (subst lrev_body1.unfold, subst lrev_body2.unfold)
      , (simp add: H_llist_hom_append[symmetric] H_llist_hom_id))
 
 lemma lrev_work2_lrev_work1_eq: "lrev_work2 = lrev_work1"
@@ -173,7 +176,8 @@ where
   "lrev_body3\<cdot>r\<cdot>lnil = ID"
 | "lrev_body3\<cdot>r\<cdot>(x :@ xs) = r\<cdot>xs oo list2H\<cdot>(x :@ lnil)"
 
-fixpat lrev_body3_strict[simp]: "lrev_body3\<cdot>r\<cdot>\<bottom>"
+lemma lrev_body3_strict[simp]: "lrev_body3\<cdot>r\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 definition
   lrev_work3 :: "'a llist \<rightarrow> 'a H" where
@@ -203,18 +207,18 @@ lemma "lrev_work3 \<sqsubseteq> lrev_work2"
 proof(rule fix_least)
   {
     fix xs have "lrev_body3\<cdot>lrev_work2\<cdot>xs = lrev_work2\<cdot>xs"
-    proof(cases xs rule: LList.casedist)
-      case 1 thus ?thesis by simp
+    proof(cases xs)
+      case bottom thus ?thesis by simp
     next
-      case 2 thus ?thesis
+      case lnil thus ?thesis
 	unfolding lrev_work2_def
 	by (subst fix_eq[where F="lrev_body2"], simp)
     next
-      case (3 y ys)
+      case (lcons y ys)
       hence "lrev_body3\<cdot>lrev_work2\<cdot>xs = lrev_work2\<cdot>ys oo list2H\<cdot>(y :@ lnil)" by simp
       also have "\<dots> = list2H\<cdot>((wrapH\<cdot>lrev_work2)\<cdot>ys) oo list2H\<cdot>(y :@ lnil)"
 	using lrev_wwfusion[where xs=ys] by simp
-      also from 3 have "\<dots> = lrev_body2\<cdot>lrev_work2\<cdot>xs" by simp
+      also from lcons have "\<dots> = lrev_body2\<cdot>lrev_work2\<cdot>xs" by simp
       also have "\<dots> = lrev_work2\<cdot>xs"
 	unfolding lrev_work2_def by (simp only: fix_eq[symmetric])
       finally show ?thesis by simp
@@ -238,18 +242,18 @@ lemma lrev_work3_lrev_work2_eq: "lrev_work3 = lrev_work2" (is "?lhs = ?rhs")
 proof(rule ext_cfun)
   fix x
   show "?lhs\<cdot>x = ?rhs\<cdot>x"
-  proof(induct x rule: llist.ind)
+  proof(induct x)
     show "lrev_work3\<cdot>\<bottom> = lrev_work2\<cdot>\<bottom>"
       apply (unfold lrev_work3_def lrev_work2_def)
       apply (subst fix_eq[where F="lrev_body2"])
       apply (subst fix_eq[where F="lrev_body3"])
-      by (simp add: lrev_body3_unfold lrev_body2_unfold)
+      by (simp add: lrev_body3.unfold lrev_body2.unfold)
   next
     show "lrev_work3\<cdot>lnil = lrev_work2\<cdot>lnil"
       apply (unfold lrev_work3_def lrev_work2_def)
       apply (subst fix_eq[where F="lrev_body2"])
       apply (subst fix_eq[where F="lrev_body3"])
-      by (simp add: lrev_body3_unfold lrev_body2_unfold)
+      by (simp add: lrev_body3.unfold lrev_body2.unfold)
   next
     fix a l assume "lrev_work3\<cdot>l = lrev_work2\<cdot>l"
     thus "lrev_work3\<cdot>(a :@ l) = lrev_work2\<cdot>(a :@ l)"
@@ -257,7 +261,7 @@ proof(rule ext_cfun)
       apply (subst fix_eq[where F="lrev_body2"])
       apply (subst fix_eq[where F="lrev_body3"])
       apply (fold lrev_work3_def lrev_work2_def)
-      apply (simp add: lrev_body3_unfold lrev_body2_unfold lrev_wwfusion)
+      apply (simp add: lrev_body3.unfold lrev_body2.unfold lrev_wwfusion)
       done
   qed simp_all
 qed
@@ -265,9 +269,9 @@ qed
 text{* Use the combined worker/wrapper-fusion rule. Note we get a weaker lemma. *}
 
 lemma lrev3_2_syntactic: "lrev_body3 oo (unwrapH oo wrapH) = lrev_body2"
-  apply (subst lrev_body2_unfold, subst lrev_body3_unfold)
+  apply (subst lrev_body2.unfold, subst lrev_body3.unfold)
   apply (rule ext_cfun)+
-  apply (case_tac xa rule: llist.casedist)
+  apply (case_tac xa)
     apply (simp_all add: unwrapH_def)
   done
 
@@ -298,10 +302,10 @@ definition
   "lrev_final \<equiv> \<Lambda> xs. lrev_work_final\<cdot>xs\<cdot>lnil"
 
 lemma lrev_body_final_lrev_body3_eq': "lrev_body_final\<cdot>r\<cdot>xs = lrev_body3\<cdot>r\<cdot>xs"
-  apply (subst lrev_body_final_unfold)
-  apply (subst lrev_body3_unfold)
-  apply (cases xs rule: casedist)
-  apply (simp_all add: list2H_def inst_cfun_pcpo ID_def ext_cfun)
+  apply (subst lrev_body_final.unfold)
+  apply (subst lrev_body3.unfold)
+  apply (cases xs)
+  apply (simp_all add: list2H_def ID_def ext_cfun)
   done
 
 lemma lrev_body_final_lrev_body3_eq: "lrev_body_final = lrev_body3"
