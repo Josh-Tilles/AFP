@@ -58,7 +58,7 @@ subsection{* Heap *}
 types heap = "addr \<rightharpoonup> heapobj"
 
 translations
-  "heap" <= (type) "nat \<Rightarrow> heapobj option"
+  (type) "heap" <= (type) "nat \<Rightarrow> heapobj option"
 
 fun the_obj :: "heapobj \<Rightarrow> cname \<times> fields" where
   "the_obj (Obj C fs) = (C, fs)"
@@ -119,11 +119,9 @@ by(induct v) (auto simp:fun_upd_apply)
 text{* For literal values the first parameter of @{term typeof} can be
 set to @{term empty} because they do not contain addresses: *}
 
-consts
+abbreviation
   typeof :: "val \<Rightarrow> ty option"
-
-translations
-  "typeof v" == "typeof_h (CONST empty) v"
+  where "typeof v == typeof_h empty v"
 
 lemma typeof_lit_typeof:
   "typeof v = Some T \<Longrightarrow> typeof\<^bsub>h\<^esub> v = Some T"

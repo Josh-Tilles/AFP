@@ -3,7 +3,7 @@
 *)
 
 theory Presburger_Automata
-imports DFS Nat_Int_Bij
+imports DFS Nat_Bijection
 begin
 
 section {* General automata *}
@@ -198,12 +198,11 @@ lemma bdd_all_bdd_binop:
   shows "bdd_all R (bdd_binop f bdd bdd')"
   using assms by (induct f bdd bdd' rule: bdd_binop.induct) simp+
 
-constdefs
-  insert_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list"
+definition insert_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "insert_list x xs \<equiv> if x mem xs then xs else x # xs"
 
 lemma insert_list_set[simp]:
-  "y \<in> set (insert_list x xs) = (y = x \<or> y \<in> set xs)"
+  "set (insert_list x xs) = insert x (set xs)"
   by (auto simp add: insert_list_def mem_iff)
 
 lemma insert_list_idemp[simp]:
@@ -252,14 +251,6 @@ lemma add_leaves_binop_subset:
    (\<Union>x\<in>set (add_leaves b xs). \<Union>y\<in>set (add_leaves b' ys). {f x y})"
   apply (induct f b b' arbitrary: xs ys rule: bdd_binop.induct)
   apply auto
-  apply (rule_tac x=x in bexI)
-  apply (rule_tac x=y in bexI)
-  apply (rule refl)
-  apply simp+
-  apply (rule_tac x=a in bexI)
-  apply (rule_tac x=xb in bexI)
-  apply (rule refl)
-  apply simp+
   apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> insert_list y ys]" in
     rev_subsetD [OF _ add_leaves_mono, standard])
   apply (simp add: image_eq_UN)
@@ -894,7 +885,7 @@ next
       hence "m < l \<or> m = l" by auto
       thus ?thesis proof (elim disjE)
 	assume H: "m < l"
-	with Cons(9) have I: "(y # xs) ! i = Some m" proof (induct "y # xs" arbitrary: jj i)
+	with Cons(9) have I: "(y # xs) ! i = Some m" proof (induct ("y # xs") arbitrary: jj i)
 	  case (Cons a l jj i) thus ?case by (cases i) (auto, cases "tr_lookup T jj ii \<or> a \<noteq> None", simp+)
 	qed simp
 	from 0 H have "(mk_eqcl' (y # xs) ii jj l T ! j = Some m) = ((y#xs) ! j = Some m)" by (cases "tr_lookup T jj ii \<or> y \<noteq> None") simp+
@@ -1604,7 +1595,7 @@ lemma bddh_subsetbdd:
   and "bddh l bdd'"
   and "nfa_is_node A q"
   shows "bddh l (subsetbdd (fst A) q bdd')"
-using assms unfolding nfa_is_node_def by (induct "fst A" q bdd' rule: subsetbdd.induct) (simp add: bddh_binop)+
+using assms unfolding nfa_is_node_def by (induct ("fst A") q bdd' rule: subsetbdd.induct) (simp add: bddh_binop)+
 
 lemma bdd_lookup_subsetbdd':
   assumes "length bdds = length q"
@@ -2708,7 +2699,7 @@ proof -
     hence "list_all (\<lambda>p. \<exists>j. bdd_lookup bt p = Some j \<and> j < length ls) (add_leaves (subsetbdd (fst A) q (nfa_emptybdd (length q))) [])" by (simp add: list_all_iff subset_succs_def)
     hence "bdd_all (\<lambda>p. \<exists>j. bdd_lookup bt p = Some j \<and> j < length ls) (subsetbdd (fst A) q (nfa_emptybdd (length q)))" by (simp add: add_leaves_bdd_all_eq)
     hence "bdd_all (\<lambda>l. l < length ls) (bdd_map (\<lambda>q. the (bdd_lookup bt q)) (subsetbdd (fst A) q (nfa_emptybdd (length q))))"
-      by (induct "subsetbdd (fst A) q (nfa_emptybdd (length q))") auto
+      by (induct ("subsetbdd (fst A) q (nfa_emptybdd (length q))")) auto
   }
   then have "\<forall>x \<in> set ls. bdd_all (\<lambda>l. l < length ls) (bdd_map (\<lambda>q. the (bdd_lookup bt q)) (subsetbdd (fst A) x (nfa_emptybdd (length x))))" by (simp add: in_set_conv_nth)
   hence "list_all (\<lambda>x. bdd_all (\<lambda>l. l < length ls) (bdd_map (\<lambda>q. the (bdd_lookup bt q)) (subsetbdd (fst A) x (nfa_emptybdd (length x))))) ls" by (simp add: list_all_iff)
@@ -3561,7 +3552,7 @@ proof -
       \<bar>k * int (x mod 2)\<bar> + \<bar>eval_dioph ks (map (\<lambda>x. x mod 2) xs)\<bar>"
       by (rule abs_triangle_ineq)
     also have "\<bar>k * int (x mod 2)\<bar> \<le> \<bar>k\<bar> * \<bar>int (x mod 2)\<bar>"
-      by (rule abs_le_mult)
+      by (simp add: abs_mult)
     also have "\<bar>int (x mod 2)\<bar> \<le> 1" by simp
     finally have "\<bar>k * int (x mod 2) + eval_dioph ks (map (\<lambda>x. x mod 2) xs)\<bar> \<le>
       \<bar>k\<bar> + \<bar>eval_dioph ks (map (\<lambda>x. x mod 2) xs)\<bar>"
@@ -3677,19 +3668,19 @@ definition
   "dioph_invariant ks l \<equiv> \<lambda>(is, js). length is = nat (2 * max \<bar>l\<bar> (\<Sum>k\<leftarrow>ks. \<bar>k\<bar>) + 1)"
 
 definition
-  "dioph_ins m \<equiv> \<lambda>(is, js). (is[int_to_nat_bij m := Some (length js)], js @ [m])"
+  "dioph_ins m \<equiv> \<lambda>(is, js). (is[int_encode m := Some (length js)], js @ [m])"
 
 definition
   dioph_memb :: "int \<Rightarrow> nat option list \<times> int list \<Rightarrow> bool" where
-  "dioph_memb m \<equiv> \<lambda>(is, js). is ! int_to_nat_bij m \<noteq> None"
+  "dioph_memb m \<equiv> \<lambda>(is, js). is ! int_encode m \<noteq> None"
 
 definition
   dioph_empt :: "int list \<Rightarrow> int \<Rightarrow> nat option list \<times> int list" where
   "dioph_empt ks l \<equiv> (replicate (nat (2 * max \<bar>l\<bar> (\<Sum>k\<leftarrow>ks. \<bar>k\<bar>) + 1)) None, [])"
 
-lemma int_to_nat_bij_bound: "dioph_is_node ks l m \<Longrightarrow>
-  int_to_nat_bij m < nat (2 * max \<bar>l\<bar> (\<Sum>k\<leftarrow>ks. \<bar>k\<bar>) + 1)"
-  by (simp add: dioph_is_node_def int_to_nat_bij_def) arith
+lemma int_encode_bound: "dioph_is_node ks l m \<Longrightarrow>
+  int_encode m < nat (2 * max \<bar>l\<bar> (\<Sum>k\<leftarrow>ks. \<bar>k\<bar>) + 1)"
+  by (simp add: dioph_is_node_def int_encode_def sum_encode_def) arith
 
 interpretation dioph_dfs: DFS "dioph_succs n ks" "dioph_is_node ks l"
   "dioph_invariant ks l" dioph_ins dioph_memb "dioph_empt ks l"
@@ -3698,13 +3689,13 @@ proof
   then show ?case
     apply (simp add: dioph_memb_def dioph_ins_def split_beta dioph_invariant_def)
     apply (cases "x = y")
-    apply (simp add: int_to_nat_bij_bound)
-    apply (simp add: inj_eq [OF inj_int_to_nat_bij])
+    apply (simp add: int_encode_bound)
+    apply (simp add: inj_eq [OF inj_int_encode])
     done
 next
   case goal2
   then show ?case
-    by (simp add: dioph_memb_def dioph_empt_def int_to_nat_bij_bound)
+    by (simp add: dioph_memb_def dioph_empt_def int_encode_bound)
 next
   case goal3
   then show ?case
@@ -3745,7 +3736,7 @@ definition
      in
        (map (\<lambda>j. make_bdd (\<lambda>xs.
           if eval_dioph ks xs mod 2 = j mod 2
-          then the (is ! int_to_nat_bij ((j - eval_dioph ks xs) div 2))
+          then the (is ! int_encode ((j - eval_dioph ks xs) div 2))
           else length js) n []) js @ [Leaf (length js)],
         map (\<lambda>j. j = 0) js @ [False])"
 
@@ -3906,25 +3897,25 @@ lemma eval_dioph_replicate_0: "eval_dioph ks (replicate n 0) = 0"
   done
 
 lemma dioph_dfs_bij:
-  "(fst (dioph_dfs n ks l) ! int_to_nat_bij i = Some k \<and> dioph_is_node ks l i) =
+  "(fst (dioph_dfs n ks l) ! int_encode i = Some k \<and> dioph_is_node ks l i) =
     (k < length (snd (dioph_dfs n ks l)) \<and> (snd (dioph_dfs n ks l) ! k = i))"
 proof -
   let ?dfs = "gen_dfs (dioph_succs n ks) dioph_ins dioph_memb (dioph_empt ks l) [l]"
   have "list_all (dioph_is_node ks l) [l]"
     by (simp add: dioph_is_node_def)
   with dioph_dfs.empt_invariant [of ks l]
-  have "(fst ?dfs ! int_to_nat_bij i = Some k \<and> dioph_is_node ks l i) =
+  have "(fst ?dfs ! int_encode i = Some k \<and> dioph_is_node ks l i) =
     (k < length (snd ?dfs) \<and> (snd ?dfs ! k = i))"
   proof (induct rule: dioph_dfs.dfs_invariant)
     case base
     show ?case
-      by (auto simp add: dioph_empt_def dioph_is_node_def int_to_nat_bij_bound)
+      by (auto simp add: dioph_empt_def dioph_is_node_def int_encode_bound)
   next
     case (step S y)
     then show ?case
       by (cases "y = i")
         (auto simp add: dioph_ins_def dioph_memb_def dioph_is_node_def split_beta dioph_invariant_def
-	  int_to_nat_bij_bound nth_append inj_eq [OF inj_int_to_nat_bij])
+	  int_encode_bound nth_append inj_eq [OF inj_int_encode])
   qed
   then show ?thesis by (simp add: dioph_dfs_def)
 qed
@@ -3937,12 +3928,12 @@ lemma dioph_dfs_mono:
   using z xs H
   apply (rule dioph_dfs.dfs_invariant)
   apply (simp add: dioph_ins_def dioph_memb_def split_paired_all)
-  apply (case_tac "i = int_to_nat_bij x")
+  apply (case_tac "i = int_encode x")
   apply simp_all
   done
 
 lemma dioph_dfs_start:
-  "fst (dioph_dfs n ks l) ! int_to_nat_bij l = Some 0"
+  "fst (dioph_dfs n ks l) ! int_encode l = Some 0"
   apply (simp add: dioph_dfs_def gen_dfs.simps dioph_dfs.empt dioph_is_node_def)
   apply (rule dioph_dfs_mono [of _ l])
   apply (rule dioph_dfs.ins_invariant)
@@ -3950,7 +3941,7 @@ lemma dioph_dfs_start:
   apply (rule dioph_dfs.empt_invariant)
   apply (simp add: dioph_dfs.empt dioph_is_node_def)
   apply (simp add: dioph_dfs.succs_is_node dioph_is_node_def)
-  apply (simp add: dioph_ins_def dioph_empt_def int_to_nat_bij_bound dioph_is_node_def)
+  apply (simp add: dioph_ins_def dioph_empt_def int_encode_bound dioph_is_node_def)
   done
 
 lemma eq_dfa_error: "\<not> dfa_accepting (eq_dfa n ks l) (dfa_steps (eq_dfa n ks l) (length (snd (dioph_dfs n ks l))) bss)"
@@ -3961,7 +3952,7 @@ lemma eq_dfa_error: "\<not> dfa_accepting (eq_dfa n ks l) (dfa_steps (eq_dfa n k
 
 lemma eq_dfa_accepting:
   "(l, m) \<in> (succsr (dioph_succs n ks))\<^sup>* \<Longrightarrow> list_all (is_alph n) bss \<Longrightarrow>
-  dfa_accepting (eq_dfa n ks l) (dfa_steps (eq_dfa n ks l) (the (fst (dioph_dfs n ks l) ! int_to_nat_bij m)) bss) =
+  dfa_accepting (eq_dfa n ks l) (dfa_steps (eq_dfa n ks l) (the (fst (dioph_dfs n ks l) ! int_encode m)) bss) =
   (eval_dioph ks (nats_of_boolss n bss) = m)"
 proof (induct bss arbitrary: m)
   case Nil
@@ -3973,7 +3964,7 @@ proof (induct bss arbitrary: m)
   with l Nil
   have "dioph_memb m (dioph_dfs n ks l)"
     by (simp add: dioph_dfs.dfs_eq_rtrancl dioph_dfs_def)
-  then obtain k where k: "fst (dioph_dfs n ks l) ! int_to_nat_bij m = Some k"
+  then obtain k where k: "fst (dioph_dfs n ks l) ! int_encode m = Some k"
     by (auto simp add: dioph_memb_def)
   with m have "k < length (snd (dioph_dfs n ks l)) \<and> (snd (dioph_dfs n ks l) ! k = m)"
     by (simp add: dioph_dfs_bij [symmetric])
@@ -3989,7 +3980,7 @@ next
   with l Cons
   have "dioph_memb m (dioph_dfs n ks l)"
     by (simp add: dioph_dfs.dfs_eq_rtrancl dioph_dfs_def)
-  then obtain k where k: "fst (dioph_dfs n ks l) ! int_to_nat_bij m = Some k"
+  then obtain k where k: "fst (dioph_dfs n ks l) ! int_encode m = Some k"
     by (auto simp add: dioph_memb_def)
   with m have k': "k < length (snd (dioph_dfs n ks l)) \<and> (snd (dioph_dfs n ks l) ! k = m)"
     by (simp add: dioph_dfs_bij [symmetric])
@@ -3998,7 +3989,7 @@ next
     case True
     with k' Cons
     have "bdd_lookup (fst (eq_dfa n ks l) ! k) bs =
-      the (fst (dioph_dfs n ks l) ! int_to_nat_bij ((m - eval_dioph ks (map nat_of_bool bs)) div 2))"
+      the (fst (dioph_dfs n ks l) ! int_encode ((m - eval_dioph ks (map nat_of_bool bs)) div 2))"
       by (simp add: eq_dfa_def split_beta nth_append bdd_lookup_make_bdd is_alph_def)
     moreover have "(l, (m - eval_dioph ks (map nat_of_bool bs)) div 2) \<in> (succsr (dioph_succs n ks))\<^sup>*"
       apply (rule rtrancl_into_rtrancl)
@@ -4039,14 +4030,14 @@ lemma eq_wf_dfa: "wf_dfa (eq_dfa n ks l) n"
 proof -
   have "\<forall>x\<in>set (snd (dioph_dfs n ks l)). \<forall>ys\<in>set (mk_nat_vecs n).
     eval_dioph ks ys mod 2 = x mod 2 \<longrightarrow>
-      the (fst (dioph_dfs n ks l) ! int_to_nat_bij ((x - eval_dioph ks ys) div 2)) <
+      the (fst (dioph_dfs n ks l) ! int_encode ((x - eval_dioph ks ys) div 2)) <
         Suc (length (snd (dioph_dfs n ks l)))"
   proof (intro ballI impI)
     fix x ys
     assume x: "x \<in> set (snd (dioph_dfs n ks l))"
     and ys: "ys \<in> set (mk_nat_vecs n)"
     and ys': "eval_dioph ks ys mod 2 = x mod 2"
-    from x obtain k where k: "fst (dioph_dfs n ks l) ! int_to_nat_bij x = Some k"
+    from x obtain k where k: "fst (dioph_dfs n ks l) ! int_encode x = Some k"
       and k': "dioph_is_node ks l x"
       by (auto simp add: in_set_conv_nth dioph_dfs_bij [symmetric])
     from k have "dioph_memb x (dioph_dfs n ks l)"
@@ -4067,13 +4058,13 @@ proof -
     ultimately have "dioph_memb ((x - eval_dioph ks ys) div 2) (dioph_dfs n ks l)"
       by (simp add: dioph_dfs.dfs_eq_rtrancl dioph_dfs_def ll)
     then obtain k' where k': "fst (dioph_dfs n ks l) !
-      int_to_nat_bij ((x - eval_dioph ks ys) div 2) = Some k'"
+      int_encode ((x - eval_dioph ks ys) div 2) = Some k'"
       by (auto simp add: dioph_memb_def)
     with x' have "k' < length (snd (dioph_dfs n ks l)) \<and>
       snd (dioph_dfs n ks l) ! k' = ((x - eval_dioph ks ys) div 2)"
       by (simp add: dioph_dfs_bij [symmetric])
     with k'
-    show "the (fst (dioph_dfs n ks l) ! int_to_nat_bij ((x - eval_dioph ks ys) div 2)) <
+    show "the (fst (dioph_dfs n ks l) ! int_encode ((x - eval_dioph ks ys) div 2)) <
       Suc (length (snd (dioph_dfs n ks l)))"
       by simp
   qed
@@ -4096,13 +4087,13 @@ proof
   then show ?case
     apply (simp add: dioph_memb_def dioph_ins_def split_beta dioph_invariant_def)
     apply (cases "x = y")
-    apply (simp add: int_to_nat_bij_bound)
-    apply (simp add: inj_eq [OF inj_int_to_nat_bij])
+    apply (simp add: int_encode_bound)
+    apply (simp add: inj_eq [OF inj_int_encode])
     done
 next
   case goal2
   then show ?case
-    by (simp add: dioph_memb_def dioph_empt_def int_to_nat_bij_bound)
+    by (simp add: dioph_memb_def dioph_empt_def int_encode_bound)
 next
   case goal3
   then show ?case
@@ -4137,29 +4128,29 @@ definition
      let (is, js) = dioph_ineq_dfs n ks l
      in
        (map (\<lambda>j. make_bdd (\<lambda>xs.
-          the (is ! int_to_nat_bij ((j - eval_dioph ks xs) div 2))) n []) js,
+          the (is ! int_encode ((j - eval_dioph ks xs) div 2))) n []) js,
         map (\<lambda>j. 0 \<le> j) js)"
 
 lemma dioph_ineq_dfs_bij:
-  "(fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij i = Some k \<and> dioph_is_node ks l i) =
+  "(fst (dioph_ineq_dfs n ks l) ! int_encode i = Some k \<and> dioph_is_node ks l i) =
     (k < length (snd (dioph_ineq_dfs n ks l)) \<and> (snd (dioph_ineq_dfs n ks l) ! k = i))"
 proof -
   let ?dfs = "gen_dfs (dioph_ineq_succs n ks) dioph_ins dioph_memb (dioph_empt ks l) [l]"
   have "list_all (dioph_is_node ks l) [l]"
     by (simp add: dioph_is_node_def)
   with dioph_dfs.empt_invariant [of ks l]
-  have "(fst ?dfs ! int_to_nat_bij i = Some k \<and> dioph_is_node ks l i) =
+  have "(fst ?dfs ! int_encode i = Some k \<and> dioph_is_node ks l i) =
     (k < length (snd ?dfs) \<and> (snd ?dfs ! k = i))"
   proof (induct rule: dioph_ineq_dfs.dfs_invariant)
     case base
     show ?case
-      by (auto simp add: dioph_empt_def dioph_is_node_def int_to_nat_bij_bound)
+      by (auto simp add: dioph_empt_def dioph_is_node_def int_encode_bound)
   next
     case (step S y)
     then show ?case
       by (cases "y = i")
         (auto simp add: dioph_ins_def dioph_memb_def dioph_is_node_def split_beta dioph_invariant_def
-	  int_to_nat_bij_bound nth_append inj_eq [OF inj_int_to_nat_bij])
+	  int_encode_bound nth_append inj_eq [OF inj_int_encode])
   qed
   then show ?thesis by (simp add: dioph_ineq_dfs_def)
 qed
@@ -4172,12 +4163,12 @@ lemma dioph_ineq_dfs_mono:
   using z xs H
   apply (rule dioph_ineq_dfs.dfs_invariant)
   apply (simp add: dioph_ins_def dioph_memb_def split_paired_all)
-  apply (case_tac "i = int_to_nat_bij x")
+  apply (case_tac "i = int_encode x")
   apply simp_all
   done
 
 lemma dioph_ineq_dfs_start:
-  "fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij l = Some 0"
+  "fst (dioph_ineq_dfs n ks l) ! int_encode l = Some 0"
   apply (simp add: dioph_ineq_dfs_def gen_dfs.simps dioph_ineq_dfs.empt dioph_is_node_def)
   apply (rule dioph_ineq_dfs_mono [of _ l])
   apply (rule dioph_ineq_dfs.ins_invariant)
@@ -4185,12 +4176,12 @@ lemma dioph_ineq_dfs_start:
   apply (rule dioph_ineq_dfs.empt_invariant)
   apply (simp add: dioph_ineq_dfs.empt dioph_is_node_def)
   apply (simp add: dioph_ineq_dfs.succs_is_node dioph_is_node_def)
-  apply (simp add: dioph_ins_def dioph_empt_def int_to_nat_bij_bound dioph_is_node_def)
+  apply (simp add: dioph_ins_def dioph_empt_def int_encode_bound dioph_is_node_def)
   done
 
 lemma ineq_dfa_accepting:
   "(l, m) \<in> (succsr (dioph_ineq_succs n ks))\<^sup>* \<Longrightarrow> list_all (is_alph n) bss \<Longrightarrow>
-  dfa_accepting (ineq_dfa n ks l) (dfa_steps (ineq_dfa n ks l) (the (fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij m)) bss) =
+  dfa_accepting (ineq_dfa n ks l) (dfa_steps (ineq_dfa n ks l) (the (fst (dioph_ineq_dfs n ks l) ! int_encode m)) bss) =
   (eval_dioph ks (nats_of_boolss n bss) \<le> m)"
 proof (induct bss arbitrary: m)
   case Nil
@@ -4202,7 +4193,7 @@ proof (induct bss arbitrary: m)
   with l Nil
   have "dioph_memb m (dioph_ineq_dfs n ks l)"
     by (simp add: dioph_ineq_dfs.dfs_eq_rtrancl dioph_ineq_dfs_def)
-  then obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij m = Some k"
+  then obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_encode m = Some k"
     by (auto simp add: dioph_memb_def)
   with m have "k < length (snd (dioph_ineq_dfs n ks l)) \<and> (snd (dioph_ineq_dfs n ks l) ! k = m)"
     by (simp add: dioph_ineq_dfs_bij [symmetric])
@@ -4218,12 +4209,12 @@ next
   with l Cons
   have "dioph_memb m (dioph_ineq_dfs n ks l)"
     by (simp add: dioph_ineq_dfs.dfs_eq_rtrancl dioph_ineq_dfs_def)
-  then obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij m = Some k"
+  then obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_encode m = Some k"
     by (auto simp add: dioph_memb_def)
   with m have k': "k < length (snd (dioph_ineq_dfs n ks l)) \<and> (snd (dioph_ineq_dfs n ks l) ! k = m)"
     by (simp add: dioph_ineq_dfs_bij [symmetric])
   moreover with Cons have "bdd_lookup (fst (ineq_dfa n ks l) ! k) bs =
-    the (fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij ((m - eval_dioph ks (map nat_of_bool bs)) div 2))"
+    the (fst (dioph_ineq_dfs n ks l) ! int_encode ((m - eval_dioph ks (map nat_of_bool bs)) div 2))"
     by (simp add: ineq_dfa_def split_beta nth_append bdd_lookup_make_bdd is_alph_def)
   moreover have "(l, (m - eval_dioph ks (map nat_of_bool bs)) div 2) \<in> (succsr (dioph_ineq_succs n ks))\<^sup>*"
     apply (rule rtrancl_into_rtrancl)
@@ -4247,13 +4238,13 @@ lemma ineq_dfa_accepts:
 lemma ineq_wf_dfa: "wf_dfa (ineq_dfa n ks l) n"
 proof -
   have "\<forall>x\<in>set (snd (dioph_ineq_dfs n ks l)). \<forall>ys\<in>set (mk_nat_vecs n).
-    the (fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij ((x - eval_dioph ks ys) div 2)) <
+    the (fst (dioph_ineq_dfs n ks l) ! int_encode ((x - eval_dioph ks ys) div 2)) <
       length (snd (dioph_ineq_dfs n ks l))"
   proof (intro ballI impI)
     fix x ys
     assume x: "x \<in> set (snd (dioph_ineq_dfs n ks l))"
     and ys: "ys \<in> set (mk_nat_vecs n)"
-    from x obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij x = Some k"
+    from x obtain k where k: "fst (dioph_ineq_dfs n ks l) ! int_encode x = Some k"
       and k': "dioph_is_node ks l x"
       by (auto simp add: in_set_conv_nth dioph_ineq_dfs_bij [symmetric])
     from k have "dioph_memb x (dioph_ineq_dfs n ks l)"
@@ -4274,17 +4265,17 @@ proof -
     ultimately have "dioph_memb ((x - eval_dioph ks ys) div 2) (dioph_ineq_dfs n ks l)"
       by (simp add: dioph_ineq_dfs.dfs_eq_rtrancl dioph_ineq_dfs_def ll)
     then obtain k' where k': "fst (dioph_ineq_dfs n ks l) !
-      int_to_nat_bij ((x - eval_dioph ks ys) div 2) = Some k'"
+      int_encode ((x - eval_dioph ks ys) div 2) = Some k'"
       by (auto simp add: dioph_memb_def)
     with x' have "k' < length (snd (dioph_ineq_dfs n ks l)) \<and>
       snd (dioph_ineq_dfs n ks l) ! k' = ((x - eval_dioph ks ys) div 2)"
       by (simp add: dioph_ineq_dfs_bij [symmetric])
     with k'
-    show "the (fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij ((x - eval_dioph ks ys) div 2)) <
+    show "the (fst (dioph_ineq_dfs n ks l) ! int_encode ((x - eval_dioph ks ys) div 2)) <
       length (snd (dioph_ineq_dfs n ks l))"
       by simp
   qed
-  moreover have "fst (dioph_ineq_dfs n ks l) ! int_to_nat_bij l = Some 0 \<and> dioph_is_node ks l l"
+  moreover have "fst (dioph_ineq_dfs n ks l) ! int_encode l = Some 0 \<and> dioph_is_node ks l l"
     by (simp add: dioph_ineq_dfs_start dioph_is_node_def)
   then have "snd (dioph_ineq_dfs n ks l) \<noteq> []"
     by (simp add: dioph_ineq_dfs_bij)

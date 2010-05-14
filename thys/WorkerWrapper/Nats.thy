@@ -26,7 +26,7 @@ Note: we default to just CPOs (not pointed CPOs) in this theory. We
 adopt bothg the Isabelle syntax for overloaded arithmetic and the
 notation for unboxed operators of \citet{SPJ-JL:1991}. *}
 
-defaultsort cpo
+default_sort cpo
 
 types UNat = "nat discr"
 
@@ -133,7 +133,7 @@ abbreviation
   "b >>= g \<equiv> bbind\<cdot>b\<cdot>g"
 
 lemma bbind_strict1[simp]: "bbind\<cdot>\<bottom> = \<bottom>"
-  by (simp add: bbind_def inst_cfun_pcpo UU_I[OF minimal_up])
+  by (simp add: bbind_def)
 lemma bbind_strict2[simp]: "x >>= \<bottom> = \<bottom>"
   by (cases x, simp_all add: bbind_def)
 
@@ -161,7 +161,7 @@ abbreviation
   "b >=> g \<equiv> bKleisli\<cdot>b\<cdot>g"
 
 lemma bKleisli_strict1[simp]: "bKleisli\<cdot>\<bottom> = \<bottom>"
-  by (simp add: bKleisli_def inst_cfun_pcpo)
+  by (simp add: bKleisli_def)
 lemma bKleisli_strict2[simp]: "b >=> \<bottom> = \<bottom>"
   by (rule ext_cfun, simp add: bKleisli_def)
 
@@ -187,17 +187,6 @@ lemma boxI: "Box\<cdot>(up\<cdot>x) = box\<cdot>x" unfolding box_def by simp
 lemma unbox_box[simp]: "unbox\<cdot>(box\<cdot>x) = up\<cdot>x" unfolding box_def by simp
 lemma unbox_Box[simp]: "x \<noteq> \<bottom> \<Longrightarrow> unbox\<cdot>(Box\<cdot>x) = x" by simp
 
-text{* The built-in case distinctions can be improved. Do that
-here. Firstly, let's stop talking about @{term "Ibottom"} and use @{term
-"\<bottom>"} uniformly. *}
-
-lemma lift_casedist[case_names bottom up, cases type: u]:
-  assumes xbot: "x = \<bottom> \<Longrightarrow> P"
-      and xup: "\<And>u. x = up\<cdot>u \<Longrightarrow> P"
-  shows "P"
-  using xbot xup
-  by (cases x, simp_all add: up_def cont_Iup UU_I[OF minimal_up])
-
 text{* If we suceed in @{term "box"}ing something, then clearly that
 something was not @{term "\<bottom>"}. *}
 
@@ -205,10 +194,10 @@ lemma box_casedist[case_names bottom Box, cases type: Box]:
   assumes xbot: "x = \<bottom> \<Longrightarrow> P"
       and xbox: "\<And>u. x = box\<cdot>u \<Longrightarrow> P"
   shows "P"
-proof(cases x rule: Box.casedist)
-  case 1 with xbot show ?thesis by simp
+proof(cases x)
+  case bottom with xbot show ?thesis by simp
 next
-  case (2 u) with xbox show ?thesis
+  case (Box u) with xbox show ?thesis
     by (cases u, simp_all add: box_def up_def cont_Iup UU_I[OF minimal_up])
 qed
 
@@ -256,7 +245,7 @@ definition plus_Box_def: "x + y \<equiv> bliftM2 (\<Lambda> a b. a + b)\<cdot>x\
 instance ..
 end
 
-lemma plus_Box_cont[simp]:
+lemma plus_Box_cont[cont2cont]:
   "\<lbrakk>cont g; cont h\<rbrakk> \<Longrightarrow> cont (\<lambda>x. (g x :: 'a :: {cpo, plus} Box) + h x)"
   unfolding plus_Box_def by simp
 
@@ -271,7 +260,7 @@ definition minus_Box_def: "x - y \<equiv> bliftM2 (\<Lambda> a b. a - b)\<cdot>x
 instance ..
 end
 
-lemma minus_Box_cont[simp]:
+lemma minus_Box_cont[cont2cont]:
   "\<lbrakk>cont g; cont h\<rbrakk> \<Longrightarrow> cont (\<lambda>x. (g x :: 'a :: {cpo, minus} Box) - h x)"
   unfolding minus_Box_def by simp
 
@@ -286,7 +275,7 @@ definition times_Box_def: "x * y \<equiv> bliftM2 (\<Lambda> a b. a * b)\<cdot>x
 instance ..
 end
 
-lemma times_Box_cont[simp]:
+lemma times_Box_cont[cont2cont]:
   "\<lbrakk>cont g; cont h\<rbrakk> \<Longrightarrow> cont (\<lambda>x. (g x :: 'a :: {cpo, times} Box) * h x)"
   unfolding times_Box_def by simp
 
@@ -361,9 +350,9 @@ lemma Nat_case_add_1[simp]:
 proof -
   from ndef obtain nu where nu: "n = box\<cdot>nu"
     unfolding box_def
-    apply (cases "n" rule: Box.casedist)
+    apply (cases "n" rule: Box.exhaust)
     apply simp
-    apply (case_tac "u" rule: lift_casedist)
+    apply (case_tac "u")
     apply simp_all
     done
   then obtain u where "nu = Discr u"
@@ -383,11 +372,11 @@ lemma Nat_casedist[case_names bottom zero Suc]:
       and xzero: "x = 0 \<Longrightarrow> P"
       and xsuc: "\<And>n. x = n + 1 \<Longrightarrow> P"
   shows "P"
-proof(cases x rule: Box.casedist)
-  case 1 with xbot show ?thesis by simp
+proof(cases x rule: Box.exhaust)
+  case bottom with xbot show ?thesis by simp
 next
-  case (2 u) hence xu: "x = Box\<cdot>u" and ubottom: "u \<noteq> \<bottom>" .
-  from ubottom obtain n where ndn: "u = up\<cdot>(Discr n)" apply (cases u) apply simp_all apply (case_tac ua) apply simp done
+  case (Box u) hence xu: "x = Box\<cdot>u" and ubottom: "u \<noteq> \<bottom>" .
+  from ubottom obtain n where ndn: "u = up\<cdot>(Discr n)" apply (cases u) apply simp_all apply (case_tac x) apply simp done
   show ?thesis
   proof(cases n)
     case 0 with ndn xu xzero show ?thesis unfolding zero_Nat_def by (simp add: boxI zero_discr_def)
@@ -402,7 +391,7 @@ lemma cont_Nat_case[simp]:
   "\<lbrakk>cont (\<lambda>x. f x); \<And>n. cont (\<lambda>x. g x\<cdot>n) \<rbrakk> \<Longrightarrow> cont (\<lambda>x. Nat_case\<cdot>(f x)\<cdot>(g x)\<cdot>n)"
   apply (cases n rule: Nat_casedist)
     apply simp_all
-  apply (case_tac na rule: Box.casedist)
+  apply (case_tac na rule: Box.exhaust)
    apply simp_all
   done
 
@@ -473,7 +462,7 @@ qed
 
 text{* Restore the HOLCF default sort. *}
 
-defaultsort pcpo
+default_sort pcpo
 
 (*<*)
 end
