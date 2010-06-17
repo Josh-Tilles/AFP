@@ -1,11 +1,10 @@
 (*  Title:       An Example of a Cofinitary Group in Isabelle/HOL
-    ID:          $Id: CofGroups.thy,v 1.6 2009-09-05 14:20:05 lsf37 Exp $
     Author:      Bart.Kastermans at colorado.edu, 2009
     Maintainer:  Bart.Kastermans at colorado.edu
 *)
 
 theory CofGroups
-imports Main Nat_Int_Bij
+imports Main Nat_Bijection
 begin;
 
 section {* Introduction *}
@@ -75,7 +74,8 @@ since we only define it for sets of permutations on the natural
 numbers).  In Section \ref {sect:moveNN} we show the general theorem that
 conjugating a permutation by a bijection does the expected thing to
 the set of fixed points.  In Section \ref {sect:bijN} we define the
-function @{term CONJ} that is conjugation by @{term ni_bij} (a bijection from @{typ nat} to @{typ int}), show that
+function @{term CONJ} that is conjugation by @{term ni_bij}
+(a bijection from @{typ nat} to @{typ int}), show that
 is acts well with respect to the group operations, use it to define
 @{term Ex2} which is the underlying set of the cofinitary group we are
 construction, and show the basic properties of @{term Ex2}.  Finally
@@ -248,7 +248,7 @@ next
   with fa_k show "\<exists>k. \<forall>n. (inv upOne \<circ> fa) n = n + k" by auto;
 qed;
 
-text {* Now we'll show the other direction.  Then we apply rule @{term
+text {* Now we'll show the other direction.  Then we apply rule @{text
 int_induct} which allows us to do the induction by first showing it
 true for $k = 1$, then showing that if true for $k = i$ it is also
 true for $k = i+1$ and finally showing that if true for $k = i$ then
@@ -544,7 +544,7 @@ text {* \label {sect:moveNN} An abbreviation of the bijection from the
 natural numbers to the integers defined in the library.  This will be
 used to coerce the functions above to be on the natural numbers. *}
 
-abbreviation "ni_bij == nat_to_int_bij"
+abbreviation "ni_bij == int_decode"
 
 lemma bij_f_o_inf_f: "bij f \<Longrightarrow> f \<circ> inv f = id"
 by(simp add: bij_def surj_iff)
@@ -626,9 +626,9 @@ lemma type_CONJ: "f \<in> Ex1 \<Longrightarrow> (inv ni_bij) \<circ> f \<circ> n
 proof -
   assume f_Ex1: "f \<in> Ex1"
   with all_bij have "bij f" by auto;
-  with bij_nat_to_int_bij and bij_comp 
+  with bij_int_decode and bij_comp 
     have bij_f_nibij: "bij (f \<circ> ni_bij)" by auto;
-  with bij_nat_to_int_bij and bij_imp_bij_inv have "bij (inv ni_bij)" by auto;
+  with bij_int_decode and bij_imp_bij_inv have "bij (inv ni_bij)" by auto;
   with bij_f_nibij and bij_comp[of  "f \<circ> ni_bij" "inv ni_bij"] 
     and o_assoc[of "inv ni_bij" "f" "ni_bij"]
     have "bij ((inv ni_bij) \<circ> f \<circ> ni_bij)" by auto;
@@ -642,17 +642,17 @@ lemma inv_CONJ:
 proof -
   have st1: "?left = inv ((inv ni_bij) \<circ> f \<circ> ni_bij)" 
     using CONJ_def by auto;
-  from bij_nat_to_int_bij and bij_imp_bij_inv 
+  from bij_int_decode and bij_imp_bij_inv 
     have inv_ni_bij_bij: "bij (inv ni_bij)" by auto;
   with bij_f and bij_comp have "bij (inv ni_bij \<circ> f)" by auto;
-  with o_inv_distrib[of "inv ni_bij \<circ> f" ni_bij] and bij_nat_to_int_bij
+  with o_inv_distrib[of "inv ni_bij \<circ> f" ni_bij] and bij_int_decode
   have "inv ((inv ni_bij) \<circ> f \<circ>  ni_bij) = 
     (inv ni_bij) \<circ> (inv ((inv ni_bij) \<circ> f))" by auto;
   with st1 have st2: "?left =
     (inv ni_bij) \<circ> (inv ((inv ni_bij) \<circ> f))" by auto;
   from inv_ni_bij_bij and `bij f` and o_inv_distrib
     have h1: "inv (inv ni_bij \<circ> f) = inv f \<circ> inv (inv (ni_bij))" by auto;
-  from bij_nat_to_int_bij and inv_inv_eq[of ni_bij] 
+  from bij_int_decode and inv_inv_eq[of ni_bij] 
     have "inv (inv ni_bij) = ni_bij" by auto;
   with st2 and h1 have "?left = (inv ni_bij \<circ> (inv f \<circ> ( ni_bij)))" by auto;
   with o_assoc have "?left = inv ni_bij \<circ> inv f \<circ> ni_bij" by auto;
@@ -662,7 +662,7 @@ qed;
 lemma comp_CONJ:
   "CONJ (f \<circ> g) = (CONJ f) \<circ> (CONJ g)" (is "?left = ?right")
 proof -;
-  from bij_nat_to_int_bij have "surj ni_bij" using bij_def by auto;
+  from bij_int_decode have "surj ni_bij" using bij_def by auto;
   with surj_iff have "ni_bij \<circ> (inv ni_bij) = id" by auto;
   moreover
   have "?left = (inv ni_bij) \<circ> (f \<circ> g) \<circ> ni_bij" by simp;
@@ -678,7 +678,7 @@ qed;
 
 lemma id_CONJ: "CONJ id = id";
 proof (unfold CONJ_def)
-  from bij_nat_to_int_bij have "inj ni_bij" using bij_def by auto;
+  from bij_int_decode have "inj ni_bij" using bij_def by auto;
   hence "inv ni_bij \<circ> ni_bij = id" by auto;
   thus "(inv ni_bij \<circ> id) \<circ> ni_bij = id" by auto;
 qed;
@@ -710,7 +710,7 @@ proof -
   obtain g where g_Ex1: "g \<in> Ex1" and f_cg: "f = CONJ g" by auto;
   with id_CONJ and f_nid have "g \<noteq> id" by auto;
   with g_Ex1 and no_fixed_pt[of g] have fg_empty: "Fix g = {}" by auto;
-  from conj_fix_pt[of ni_bij g] and bij_nat_to_int_bij
+  from conj_fix_pt[of ni_bij g] and bij_int_decode
   have "(inv ni_bij)`(Fix g) = Fix(CONJ g)" by auto;
   with fg_empty have "{} = Fix (CONJ g)" by auto;
   with f_cg show "Fix f = {}" by auto;

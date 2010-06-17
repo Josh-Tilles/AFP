@@ -33,9 +33,10 @@ fixrec fac :: "Nat \<rightarrow> Nat"
 where
   "fac\<cdot>n = If n =\<^sub>B 0 then 1 else n * fac\<cdot>(n - 1) fi"
 
-declare fac_simps[simp del]
+declare fac.simps[simp del]
 
-fixpat fac_strict[simp]: "fac\<cdot>\<bottom>"
+lemma fac_strict[simp]: "fac\<cdot>\<bottom> = \<bottom>"
+by fixrec_simp
 
 definition
   fac_body :: "(Nat \<rightarrow> Nat) \<rightarrow> Nat \<rightarrow> Nat" where

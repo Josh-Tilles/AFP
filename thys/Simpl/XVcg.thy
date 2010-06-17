@@ -38,15 +38,12 @@ theorem attribute @{text "vcg_simp"} we can declare equalities to be used
 by the verification condition generator, while simplifying assertions.
 *}
 
-constdefs Let':: "['a, 'a => 'b] => 'b"
-"Let' \<equiv> Let"
-
 syntax
 "_Let'" :: "[letbinds, basicblock] => basicblock"  ("(LET (_)/ IN (_))" 23)
  
 translations
   "_Let' (_binds b bs) e"  == "_Let' b (_Let' bs e)"
-  "_Let' (_bind x a) e"    == "Let' a (%x. e)"
+  "_Let' (_bind x a) e"    == "CONST Let' a (%x. e)"
 
 
 lemma Let'_unfold [vcg_simp]: "Let' x f = f x"

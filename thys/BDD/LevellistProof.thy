@@ -30,7 +30,7 @@ USA
 header {* Proof of Procedure Levellist *}
 theory LevellistProof imports ProcedureSpecs "../HeapList"  begin
 
-hide (open) const DistinctTreeProver.set_of tree.Node tree.Tip
+hide_const (open) DistinctTreeProver.set_of tree.Node tree.Tip
 
 lemma (in Levellist_impl) Levellist_modifies:
   shows "\<forall>\<sigma>. \<Gamma>\<turnstile>{\<sigma>} \<acute>levellist :== PROC Levellist (\<acute>p, \<acute>m, \<acute>levellist) 
@@ -137,16 +137,16 @@ apply  simp
 apply auto
 done
 
-consts wf_levellist :: "dag \<Rightarrow> ref list list \<Rightarrow> ref list list \<Rightarrow>
-                       (ref \<Rightarrow> nat) \<Rightarrow> bool"
-defs wf_levellist_def: "wf_levellist t levellist_old levellist_new var  \<equiv> 
-case t of Tip \<Rightarrow> levellist_old = levellist_new
+definition wf_levellist :: "dag \<Rightarrow> ref list list \<Rightarrow> ref list list \<Rightarrow>
+                       (ref \<Rightarrow> nat) \<Rightarrow> bool" where
+"wf_levellist t levellist_old levellist_new var =
+(case t of Tip \<Rightarrow> levellist_old = levellist_new
 | (Node lt p rt) \<Rightarrow>
   (\<forall> q. q \<in> set_of t \<longrightarrow> q \<in> set (levellist_new ! (var q))) \<and>
   (\<forall> i \<le> var p. (\<exists> prx. (levellist_new ! i) = prx@(levellist_old ! i) 
                        \<and> (\<forall> pt \<in> set prx. pt \<in> set_of t \<and> var pt = i))) \<and>
   (\<forall> i. (var p) < i \<longrightarrow> (levellist_new ! i) = (levellist_old ! i)) \<and>
-  (length levellist_new = length levellist_old)" 
+  (length levellist_new = length levellist_old))" 
 
 lemma wf_levellist_subset: 
   assumes wf_ll: "wf_levellist t ll ll' var" 

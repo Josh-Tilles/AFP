@@ -1,5 +1,4 @@
-(*  ID:         $Id: ScoreProps.thy,v 1.10 2008-06-12 06:57:17 lsf37 Exp $
-    Author:     Gertrud Bauer, Tobias Nipkow
+(*  Author:     Gertrud Bauer, Tobias Nipkow
 *)
 
 header {* Properties of Lower Bound Machinery *}
@@ -42,9 +41,8 @@ next
 qed
 
 
-constdefs
-  deleteAround' :: "graph \<Rightarrow> vertex \<Rightarrow> (vertex \<times> nat) list \<Rightarrow>
-    (vertex \<times> nat) list"
+definition deleteAround' :: "graph \<Rightarrow> vertex \<Rightarrow> (vertex \<times> nat) list \<Rightarrow>
+    (vertex \<times> nat) list" where
   "deleteAround' g v ps \<equiv>
       let fs = facesAt g v;
       vs = (\<lambda>f. let n1 = f \<bullet> v;
@@ -202,26 +200,6 @@ next
     with a  v show "\<V> f \<inter> insert a V = {v}" by blast
   qed
 qed
-
-
-
-(*consts ExcessNotAtRecList :: "(vertex, nat) table \<Rightarrow> graph \<Rightarrow> vertex list"
-recdef ExcessNotAtRecList "measure (\<lambda>ps. size ps)"
-"ExcessNotAtRecList [] = (%g. [])"
-"ExcessNotAtRecList (p#ps) = (%g.
-  let l1 = ExcessNotAtRecList ps g;
-  l2 = ExcessNotAtRecList (deleteAround g (fst p) ps) g in
-  if ExcessNotAtRec ps g
-   \<le> snd p + ExcessNotAtRec (deleteAround g (fst p) ps) g
-  then fst p#l2 else l1)"
-(hints recdef_simp: less_Suc_eq_le length_deleteAround)
-thm ExcessNotAtRecList.induct
-
-lemma ExcessNotAtRecList_induct'
-(?P\<Colon>(nat \<times> nat) list \<Rightarrow> bool) [] \<Longrightarrow>
-(\<And>(a\<Colon>nat) (b\<Colon>nat) ps\<Colon>(nat \<times> nat) list.
-    \<forall>:000\<Colon>graph. ?P (deleteAround :000 a ps) \<Longrightarrow> ?P ps \<Longrightarrow> ?P ((a, b) # ps)) \<Longrightarrow>
-?P (?x\<Colon>(nat \<times> nat) list)*)
 
 function ExcessNotAtRecList :: "(vertex, nat) table \<Rightarrow> graph \<Rightarrow> vertex list" where
   "ExcessNotAtRecList [] = (%g. [])"
@@ -420,8 +398,7 @@ primrec
      then (v, vi)#ExcessTable_cont ExcessAtPG vs
      else ExcessTable_cont ExcessAtPG vs)"
 
-constdefs
-  ExcessTable' :: "graph \<Rightarrow> vertex list \<Rightarrow> (vertex \<times> nat) list"
+definition ExcessTable' :: "graph \<Rightarrow> vertex list \<Rightarrow> (vertex \<times> nat) list" where
   "ExcessTable' g \<equiv> ExcessTable_cont (ExcessAt g)"
 
 

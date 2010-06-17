@@ -112,7 +112,7 @@ definition [code del]:
 
 lemmas DLOe_code_lemmas = DLO_code_lemmas lift_dnfeq_qe_def lift_eq_qe_def
 
-hide const lift_dnfeq_qe lift_eq_qe
+hide_const lift_dnfeq_qe lift_eq_qe
 (*>*)
 
 interpretation DLO\<^isub>e!:
@@ -131,7 +131,7 @@ lemmas [folded DLOe_code_lemmas, code] =
   DLO\<^isub>e.lift_dnfeq_qe_def DLO\<^isub>e.lift_eq_qe_def
 (*>*)
 
-setup {* Sign.revert_abbrev "" @{const_name DLO\<^isub>e.lift_dnfeq_qe} *}
+setup {* Sign.revert_abbrev "" @{const_abbrev DLO\<^isub>e.lift_dnfeq_qe} *}
 
 definition "qe_dlo = DLO\<^isub>e.lift_dnfeq_qe qe_dlo\<^isub>1"
 (*<*)

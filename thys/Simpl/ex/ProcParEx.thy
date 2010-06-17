@@ -89,10 +89,10 @@ print_locale! compare_signature
 
 context compare_signature
 begin
-ML "HoareSyntax.use_call_tr' := false"
+ML "Hoare_Syntax.use_call_tr' := false"
 term "\<acute>b :== CALL compare(\<acute>n,\<acute>m)"
 term "\<acute>b :== DYNCALL \<acute>compare(\<acute>n,\<acute>m)"
-ML "HoareSyntax.use_call_tr' := true"
+ML "Hoare_Syntax.use_call_tr' := true"
 term "\<acute>b :== DYNCALL \<acute>compare(\<acute>n,\<acute>m)"
 end
 
@@ -104,8 +104,8 @@ procedures
 
 
 
-constdefs mx:: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a"
-"mx leq a b \<equiv> if leq a b then a else b"
+definition mx:: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a"
+  where "mx leq a b = (if leq a b then a else b)"
 
 procedures
   Max (compare, n, m | k) = 

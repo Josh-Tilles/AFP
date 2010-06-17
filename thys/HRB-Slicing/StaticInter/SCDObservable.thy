@@ -4,15 +4,51 @@ theory SCDObservable imports Observable HRBSlice begin
 
 context SDG begin
 
+lemma matched_bracket_assms_variant:
+  assumes "n\<^isub>1 -p\<rightarrow>\<^bsub>call\<^esub> n\<^isub>2 \<or> n\<^isub>1 -p:V'\<rightarrow>\<^bsub>in\<^esub> n\<^isub>2" and "matched n\<^isub>2 ns' n\<^isub>3" 
+  and "n\<^isub>3 -p\<rightarrow>\<^bsub>ret\<^esub> n\<^isub>4 \<or> n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4"
+  and "call_of_return_node (parent_node n\<^isub>4) (parent_node n\<^isub>1)"
+  obtains a a' where "valid_edge a" and "a' \<in> get_return_edges a"
+  and "sourcenode a = parent_node n\<^isub>1" and "targetnode a = parent_node n\<^isub>2"
+  and "sourcenode a' = parent_node n\<^isub>3" and "targetnode a' = parent_node n\<^isub>4"
+proof(atomize_elim)
+  from `n\<^isub>1 -p\<rightarrow>\<^bsub>call\<^esub> n\<^isub>2 \<or> n\<^isub>1 -p:V'\<rightarrow>\<^bsub>in\<^esub> n\<^isub>2` obtain a Q r fs where "valid_edge a" 
+    and "kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs" and "parent_node n\<^isub>1 = sourcenode a"
+    and "parent_node n\<^isub>2 = targetnode a"
+    by(fastsimp elim:SDG_edge.cases)
+  from `n\<^isub>3 -p\<rightarrow>\<^bsub>ret\<^esub> n\<^isub>4 \<or> n\<^isub>3 -p:V\<rightarrow>\<^bsub>out\<^esub> n\<^isub>4` obtain a' Q' f'
+    where "valid_edge a'" and "kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'"
+    and "parent_node n\<^isub>3 = sourcenode a'" and "parent_node n\<^isub>4 = targetnode a'"
+    by(fastsimp elim:SDG_edge.cases)
+  from `valid_edge a'` `kind a' = Q'\<hookleftarrow>\<^bsub>p\<^esub>f'`
+  obtain ax where "valid_edge ax" and "\<exists>Q r fs. kind ax = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs"
+    and "a' \<in> get_return_edges ax"
+    by -(drule return_needs_call,fastsimp+)
+  from `valid_edge a` `valid_edge ax` `kind a = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs` `\<exists>Q r fs. kind ax = Q:r\<hookrightarrow>\<^bsub>p\<^esub>fs`
+  have "targetnode a = targetnode ax" by(fastsimp dest:same_proc_call_unique_target)
+  from `valid_edge a'` `a' \<in> get_return_edges ax` `valid_edge ax`
+  have "call_of_return_node (targetnode a') (sourcenode ax)"
+    by(fastsimp simp:return_node_def call_of_return_node_def)
+  with `call_of_return_node (parent_node n\<^isub>4) (parent_node n\<^isub>1)` 
+    `parent_node n\<^isub>4 = targetnode a'`
+  have "sourcenode ax = parent_node n\<^isub>1" by fastsimp
+  with `valid_edge ax` `a' \<in> get_return_edges ax` `targetnode a = targetnode ax`
+    `parent_node n\<^isub>2 = targetnode a` `parent_node n\<^isub>3 = sourcenode a'` 
+    `parent_node n\<^isub>4 = targetnode a'`
+  show "\<exists>a a'. valid_edge a \<and> a' \<in> get_return_edges a \<and>
+    sourcenode a = parent_node n\<^isub>1 \<and> targetnode a = parent_node n\<^isub>2 \<and>
+    sourcenode a' = parent_node n\<^isub>3 \<and> targetnode a' = parent_node n\<^isub>4"
+    by fastsimp
+qed
+
+subsection {* Observable set of standard control dependence is at most a singleton *}
+
 definition SDG_to_CFG_set :: "'node SDG_node set \<Rightarrow> 'node set" ("\<lfloor>_\<rfloor>\<^bsub>CFG\<^esub>")
   where "\<lfloor>S\<rfloor>\<^bsub>CFG\<^esub> \<equiv> {m. CFG_node m \<in> S}"
 
 
 lemma [intro]:"\<forall>n \<in> S. valid_SDG_node n \<Longrightarrow> \<forall>n \<in> \<lfloor>S\<rfloor>\<^bsub>CFG\<^esub>. valid_node n"
   by(fastsimp simp:SDG_to_CFG_set_def)
-
-
-subsection {* Observable set of standard control dependence is at most a singleton *}
 
 
 lemma Exit_HRB_Slice:
@@ -22,26 +58,25 @@ proof -
   have "CFG_node n \<in> combine_SDG_slices (sum_SDG_slice1 (CFG_node (_Exit_)))"
     by(simp add:HRB_slice_def SDG_to_CFG_set_def)
   thus ?thesis
-  proof(induct m\<equiv>"CFG_node n" rule:combine_SDG_slices.induct)
-    case (combSlice_refl m)
-    from `m \<in> sum_SDG_slice1 (CFG_node (_Exit_))`
-    have "m = CFG_node (_Exit_) \<or> 
+  proof(induct "CFG_node n" rule:combine_SDG_slices.induct)
+    case combSlice_refl
+    from `CFG_node n \<in> sum_SDG_slice1 (CFG_node (_Exit_))`
+    have "CFG_node n = CFG_node (_Exit_) \<or> 
       (\<exists>n Vopt popt b. sum_SDG_edge n Vopt popt b (CFG_node (_Exit_)))"
       by(induct rule:sum_SDG_slice1.induct) auto
-    with `m = CFG_node n` show ?thesis by(fastsimp dest:Exit_no_sum_SDG_edge_target)
+    then show ?thesis by(fastsimp dest:Exit_no_sum_SDG_edge_target)
   next
-    case (combSlice_Return_parent_node n' n'' p nx)
+    case (combSlice_Return_parent_node n' n'' p)
     from `n' \<in> sum_SDG_slice1 (CFG_node (_Exit_))`
     have "n' = CFG_node (_Exit_) \<or> 
       (\<exists>n Vopt popt b. sum_SDG_edge n Vopt popt b (CFG_node (_Exit_)))"
       by(induct rule:sum_SDG_slice1.induct) auto
     hence "n' = CFG_node (_Exit_)" by(fastsimp dest:Exit_no_sum_SDG_edge_target)
-    with `nx \<in> sum_SDG_slice2 n'`
-    have "nx = CFG_node (_Exit_) \<or> 
+    with `CFG_node n \<in> sum_SDG_slice2 n'`
+    have "CFG_node n = CFG_node (_Exit_) \<or> 
       (\<exists>n Vopt popt b. sum_SDG_edge n Vopt popt b (CFG_node (_Exit_)))"
       by(induct rule:sum_SDG_slice2.induct) auto
-    hence "nx = CFG_node (_Exit_)" by(fastsimp dest:Exit_no_sum_SDG_edge_target)
-    with `nx = CFG_node n` show ?thesis by simp
+    then show ?thesis by(fastsimp dest:Exit_no_sum_SDG_edge_target)
   qed
 qed
 
@@ -57,15 +92,13 @@ proof -
   have "CFG_node (_Exit_) \<in> combine_SDG_slices (sum_SDG_slice1 n\<^isub>c)"
     by(simp add:HRB_slice_def SDG_to_CFG_set_def)
   thus ?thesis
-  proof(induct n\<equiv>"CFG_node (_Exit_)" rule:combine_SDG_slices.induct)
+  proof(induct "CFG_node (_Exit_)" rule:combine_SDG_slices.induct)
     case combSlice_refl
     thus ?case
-      by(induct rule:sum_SDG_slice1.induct,auto dest:Exit_no_sum_SDG_edge_source)
+      by(induct "CFG_node (_Exit_)" rule:sum_SDG_slice1.induct,auto dest:Exit_no_sum_SDG_edge_source)
   next
-    case (combSlice_Return_parent_node n' n'' p n)
-    from `n \<in> sum_SDG_slice2 n'` `n = CFG_node (_Exit_)`
-    have "CFG_node (_Exit_) \<in> sum_SDG_slice2 n'" by simp
-    from this `n' \<in> sum_SDG_slice1 n\<^isub>c` show ?case
+    case (combSlice_Return_parent_node n' n'' p)
+    from `CFG_node (_Exit_) \<in> sum_SDG_slice2 n'` `n' \<in> sum_SDG_slice1 n\<^isub>c` show ?case
       apply(induct n\<equiv>"CFG_node (_Exit_)" rule:sum_SDG_slice2.induct)
       apply(auto dest:Exit_no_sum_SDG_edge_source)
       apply(induct n\<equiv>"CFG_node (_Exit_)" rule:sum_SDG_slice1.induct)
@@ -109,8 +142,8 @@ proof(rule ccontr)
       with `valid_edge a` show False by(rule Exit_source)
     next
       fix a' Q f p
-      assume "pex = sourcenode a'" and "valid_edge a'" and "kind a' = Q\<^bsub>p\<^esub>\<hookleftarrow>f"
-      from `valid_edge a'` `kind a' = Q\<^bsub>p\<^esub>\<hookleftarrow>f` `valid_edge a` `intra_kind (kind a)`
+      assume "pex = sourcenode a'" and "valid_edge a'" and "kind a' = Q\<hookleftarrow>\<^bsub>p\<^esub>f"
+      from `valid_edge a'` `kind a' = Q\<hookleftarrow>\<^bsub>p\<^esub>f` `valid_edge a` `intra_kind (kind a)`
 	`sourcenode a = pex` `pex = sourcenode a'`
       show False by(fastsimp dest:return_edges_only simp:intra_kind_def)
     qed

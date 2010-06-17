@@ -6,13 +6,13 @@ header {* \isaheader{Various notions of bisimulation} *}
 
 theory Bisimulation imports
   "FWState"
-  "../HOL-Coinduct/Coinductive_List_Lib"
+  "../../Coinductive/Coinductive_List_Lib"
 begin
 
 definition flip :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> 'c"
 where "flip f = (\<lambda>b a. f a b)"
 
-(* Create a dynamic list flip_simps of theorems for flip *)
+text {* Create a dynamic list @{text "flip_simps"} of theorems for flip *}
 ML {*
   structure FlipSimpRules = Named_Thms
     (val name = "flip_simps"
@@ -110,7 +110,7 @@ proof -
       and stls: "stls = inf_step2inf_step_table s tls" by blast
     from inf show ?case
     proof cases
-      case (inf_stepI S tl s' tls')
+      case (inf_stepI tl s' tls')
       hence tls: "tls = LCons tl tls'" and r: "trsys s tl s'"
 	and inf': "s' -tls'\<rightarrow>* \<infinity>" by simp_all
       let ?s' = "SOME s'. trsys s tl s' \<and> s' -tls'\<rightarrow>* \<infinity>"
@@ -138,7 +138,7 @@ proof -
       and tls: "tls = lmap (fst \<circ> snd) stls" by blast
     from inf show ?case
     proof cases
-      case (inf_step_tableI S s' stls' tl)
+      case (inf_step_tableI s' stls' tl)
       hence stls: "stls = LCons (s, tl, s') stls'" and r: "trsys s tl s'"
 	and inf': "s' -stls'\<rightarrow>*t \<infinity>" by simp_all
       from stls tls have "tls = LCons tl (lmap (fst \<circ> snd) stls')" by simp
@@ -252,8 +252,8 @@ next
   from `s -lappend (llist_of (st # stls)) (LCons (x, tl', x') xs)\<rightarrow>*t \<infinity>`
   show ?case
   proof cases
-    case (inf_step_tableI S s' stls' tl)
-    hence [simp]: "S = s" "st = (S, tl, s')" "stls' = lappend (llist_of stls) (LCons (x, tl', x') xs)"
+    case (inf_step_tableI s' stls' tl)
+    hence [simp]: "st = (s, tl, s')" "stls' = lappend (llist_of stls) (LCons (x, tl', x') xs)"
       and "s -tl\<rightarrow> s'" "s' -lappend (llist_of stls) (LCons (x, tl', x') xs)\<rightarrow>*t \<infinity>" by simp_all
     from IH[OF `s' -lappend (llist_of stls) (LCons (x, tl', x') xs)\<rightarrow>*t \<infinity>`]
     have "s' -map (fst \<circ> snd) stls\<rightarrow>* x" "x -LCons (x, tl', x') xs\<rightarrow>*t \<infinity>" by auto
@@ -274,8 +274,8 @@ next
   from `s -lappend (LCons st stls) (LCons (x, tl' x') xs)\<rightarrow>*t \<infinity>`
   show ?case
   proof cases
-    case (inf_step_tableI X X' STLS TL)
-    hence [simp]: "X = s" "s1 = s" "TL = tl1" "X' = s1'" "STLS = lappend stls (LCons (x, tl' x') xs)"
+    case (inf_step_tableI X' STLS TL)
+    hence [simp]: "s1 = s" "TL = tl1" "X' = s1'" "STLS = lappend stls (LCons (x, tl' x') xs)"
       and "s -tl1\<rightarrow> s1'" and "s1' -lappend stls (LCons (x, tl' x') xs)\<rightarrow>*t \<infinity>" by simp_all
     from `\<forall>(s, tl, s')\<in>lset (LCons st stls). \<tau>move s tl s'` have "\<tau>move s tl1 s1'" by simp
     moreover
@@ -374,16 +374,13 @@ lemma \<tau>rtrancl3p_SingletonE:
 proof(atomize_elim)
   from red show "\<exists>s' s''. s -\<tau>\<rightarrow>* s' \<and> s' -tl\<rightarrow> s'' \<and> \<not> \<tau>move s' tl s'' \<and> s'' -\<tau>\<rightarrow>* s'''"
   proof(induct s tls\<equiv>"[tl]" s''')
-    case \<tau>rtrancl3p_refl thus ?case by simp
-  next
-    case (\<tau>rtrancl3p_step s s' tls s'' tl')
-    hence [simp]: "tl' = tl" "tls = []" by simp_all
-    from `s -tl'\<rightarrow> s'` `\<not> \<tau>move s tl' s'` `s' -\<tau>-tls\<rightarrow>* s''` show ?case
+    case (\<tau>rtrancl3p_step s s' s'')
+    from `s -tl\<rightarrow> s'` `\<not> \<tau>move s tl s'` `s' -\<tau>-[]\<rightarrow>* s''` show ?case
       by(auto simp add: \<tau>rtrancl3p_Nil_eq_\<tau>moves)
-  next
-    case (\<tau>rtrancl3p_\<tau>step s s' tls s'' tl')
+   next
+    case (\<tau>rtrancl3p_\<tau>step s s' s'' tl')
     then obtain t' t'' where "s' -\<tau>\<rightarrow>* t'" "t' -tl\<rightarrow> t''" "\<not> \<tau>move t' tl t''" "t'' -\<tau>\<rightarrow>* s''" by auto
-    moreover note tls = `tls = [tl]`
+    moreover
     from `s -tl'\<rightarrow> s'` `\<tau>move s tl' s'` have "s -\<tau>\<rightarrow>* s'" by blast
     ultimately show ?case by(auto intro: rtranclp_trans)
   qed
@@ -513,7 +510,7 @@ proof -
       and sstls: "sstls = \<tau>inf_step2\<tau>inf_step_table s tls" by blast
     from \<tau>inf show ?case
     proof(cases)
-      case (\<tau>inf_step_Cons S s' s'' tls' tl)
+      case (\<tau>inf_step_Cons s' s'' tls' tl)
       let ?ss = "SOME (s', s''). s -\<tau>\<rightarrow>* s' \<and> s' -tl\<rightarrow> s'' \<and> \<not> \<tau>move s' tl s'' \<and> s'' -\<tau>-tls'\<rightarrow>* \<infinity>"
       from \<tau>inf_step_Cons have tls: "tls = LCons tl tls'" and "s -\<tau>\<rightarrow>* s'" "s' -tl\<rightarrow> s''"
 	"\<not> \<tau>move s' tl s''" "s'' -\<tau>-tls'\<rightarrow>* \<infinity>" by simp_all
@@ -522,7 +519,7 @@ proof -
       with sstls tls have ?\<tau>inf_step_table_Cons by auto
       thus ?thesis ..
     next
-      case (\<tau>inf_step_Nil S)
+      case \<tau>inf_step_Nil
       with sstls have ?\<tau>inf_step_table_Nil by simp
       thus ?thesis ..
     qed
@@ -715,7 +712,6 @@ where "Tlsiml tl1 tl2 \<equiv> llist_all2 tlsim tl1 tl2"
 
 end
 
-
 locale bisimulation = bisimulation_base +
   constrains trsys1 :: "('s1, 'tl1) trsys"
   and trsys2 :: "('s2, 'tl2) trsys"
@@ -796,7 +792,7 @@ proof -
       and stls2: "stls2 = tl1_to_tl2 s2 stls1" and bisim: "s1 \<approx> s2" by blast
     from red1' show ?case
     proof(cases)
-      case (inf_step_tableI S1 s1' stls1' tl1)
+      case (inf_step_tableI s1' stls1' tl1)
       hence stls1: "stls1 = LCons (s1, tl1, s1') stls1'"
 	and r: "s1 -1-tl1\<rightarrow> s1'" and reds1: "s1' -1-stls1'\<rightarrow>*t \<infinity>" by simp_all
       let ?tl2s2' = "SOME (tl2, s2'). s2 -2-tl2\<rightarrow> s2' \<and> s1' \<approx> s2' \<and> tl1 \<sim> tl2"
@@ -830,7 +826,7 @@ proof -
 	by blast
       from `s1 -1-stls1\<rightarrow>*t \<infinity>` show ?case
       proof cases
-	case (inf_step_tableI S1 s1' stls1' tl1)
+	case (inf_step_tableI s1' stls1' tl1)
 	hence  stls1: "stls1 = LCons (s1, tl1, s1') stls1'"
 	  and r: "s1 -1-tl1\<rightarrow> s1'" and reds: "s1' -1-stls1'\<rightarrow>*t \<infinity>" by simp_all
 	let ?tl2s2' = "SOME (tl2, s2').  s2 -2-tl2\<rightarrow> s2' \<and> s1' \<approx> s2' \<and> tl1 \<sim> tl2"
@@ -1129,7 +1125,7 @@ proof -
       and sstls2: "sstls2 = tl1_to_tl2 s2 sstls1" and bisim: "s1 \<approx> s2" by blast
     from \<tau>inf' show ?case
     proof(cases)
-      case (\<tau>inf_step_table_Cons S1 s1' s1'' sstls1' tl1)
+      case (\<tau>inf_step_table_Cons s1' s1'' sstls1' tl1)
       hence sstls1: "sstls1 = LCons (s1, s1', tl1, s1'') sstls1'"
 	and \<tau>s: "s1 -\<tau>1\<rightarrow>* s1'" and r: "s1' -1-tl1\<rightarrow> s1''" and n\<tau>: "\<not> \<tau>move1 s1' tl1 s1''"
 	and reds1: "s1'' -\<tau>1-sstls1'\<rightarrow>*t \<infinity>" by simp_all
@@ -1147,7 +1143,7 @@ proof -
       hence "?P ?s2tl2s2'" by(rule someI)
       ultimately show ?thesis using reds1 by fastsimp
     next
-      case (\<tau>inf_step_table_Nil S)
+      case \<tau>inf_step_table_Nil
       hence [simp]: "sstls1 = LNil" and "s1 -\<tau>1\<rightarrow> \<infinity>" by simp_all
       from `s1 -\<tau>1\<rightarrow> \<infinity>` `s1 \<approx> s2` have "s2 -\<tau>2\<rightarrow> \<infinity>" by(simp add: \<tau>diverge_bisim_inv)
       thus ?thesis using sstls2 by simp
@@ -1172,7 +1168,7 @@ proof -
 	         \<Longrightarrow> lnth (lmap (fst \<circ> snd \<circ> snd) sstls1) m \<sim> lnth (lmap (fst \<circ> snd \<circ> snd) (tl1_to_tl2 s2 sstls1)) m`
       from `s1 -\<tau>1-sstls1\<rightarrow>*t \<infinity>` show ?case
       proof cases
-	case (\<tau>inf_step_table_Cons S1 s1' s1'' sstls1' tl1)
+	case (\<tau>inf_step_table_Cons s1' s1'' sstls1' tl1)
 	hence sstls1: "sstls1 = LCons (s1, s1', tl1, s1'') sstls1'"
 	  and \<tau>s: "s1 -\<tau>1\<rightarrow>* s1'" and r: "s1' -1-tl1\<rightarrow> s1''"
 	  and n\<tau>: "\<not> \<tau>move1 s1' tl1 s1''" and reds: "s1'' -\<tau>1-sstls1'\<rightarrow>*t \<infinity>" by simp_all
@@ -1562,7 +1558,7 @@ subsection {* Transitivity for bisimulations *}
 definition bisim_compose :: "('s1, 's2) bisim \<Rightarrow> ('s2, 's3) bisim \<Rightarrow> ('s1, 's3) bisim" (infixr "\<circ>\<^isub>B" 60)
 where "(bisim1 \<circ>\<^isub>B bisim2) s1 s3 \<equiv> \<exists>s2. bisim1 s1 s2 \<and> bisim2 s2 s3"
 
-lemma bisim_composeI [intro?]:
+lemma bisim_composeI [intro]:
   "\<lbrakk> bisim12 s1 s2; bisim23 s2 s3 \<rbrakk> \<Longrightarrow> (bisim12 \<circ>\<^isub>B bisim23) s1 s3"
 by(auto simp add: bisim_compose_def)
 
@@ -1578,6 +1574,11 @@ by(auto simp add: expand_fun_eq intro: bisim_composeI)
 lemma bisim_compose_conv_rel_comp:
   "split (bisim_compose bisim12 bisim23) = rel_comp (split bisim12) (split bisim23)"
 by(auto simp add: rel_comp_def mem_def intro: bisim_composeI)
+
+lemma list_all2_bisim_composeI:
+  "\<lbrakk> list_all2 A xs ys; list_all2 B ys zs \<rbrakk>
+  \<Longrightarrow> list_all2 (A \<circ>\<^isub>B B) xs zs"
+by(rule list_all2_trans)(auto intro: bisim_composeI)+
 
 lemma delay_bisimulation_diverge_compose:
   assumes wbisim12: "delay_bisimulation_diverge trsys1 trsys2 bisim12 tlsim12 \<tau>move1 \<tau>move2"

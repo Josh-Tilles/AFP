@@ -32,27 +32,25 @@ theory HoareTotalDef imports HoarePartialDef Termination begin
 
 subsection {* Validity of Hoare Tuples: @{text  "\<Gamma>\<Turnstile>\<^sub>t\<^bsub>/F\<^esub> P c Q,A"} *}
 
-constdefs
+definition
   validt :: "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com,'s assn,'s assn] \<Rightarrow> bool"
                 ("_\<Turnstile>\<^sub>t\<^bsub>'/_\<^esub>/ _ _ _,_"  [61,60,1000, 20, 1000,1000] 60)
+where
  "\<Gamma>\<Turnstile>\<^sub>t\<^bsub>/F\<^esub> P c Q,A \<equiv> \<Gamma>\<Turnstile>\<^bsub>/F\<^esub> P c Q,A \<and> (\<forall>s \<in> Normal ` P. \<Gamma>\<turnstile>c\<down>s)"
 
+definition
   cvalidt::
   "[('s,'p,'f) body,('s,'p) quadruple set,'f set,
     's assn,('s,'p,'f) com,'s assn,'s assn] \<Rightarrow> bool"
                 ("_,_\<Turnstile>\<^sub>t\<^bsub>'/_\<^esub>/ _ _ _,_"  [61,60, 60,1000, 20, 1000,1000] 60)
+where
  "\<Gamma>,\<Theta>\<Turnstile>\<^sub>t\<^bsub>/F\<^esub> P c Q,A \<equiv> (\<forall>(P,p,Q,A)\<in>\<Theta>. \<Gamma>\<Turnstile>\<^sub>t\<^bsub>/F\<^esub> P (Call p) Q,A) \<longrightarrow> \<Gamma> \<Turnstile>\<^sub>t\<^bsub>/F\<^esub> P c Q,A"
 
 
 
-syntax (ascii)
-  validt :: "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com,'s assn,'s assn] => bool"
-                ("_|=t'/_/ _ _ _,_"  [61,60,1000, 20, 1000,1000] 60)
-
-  cvalidt::
-   "[('s,'p,'f) body,('s,'p) quadruple set,'f set,
-      's assn,('s,'p,'f) com,'s assn,'s assn] \<Rightarrow> bool"
-                ("_,_|=t'/_ / _ _ _,_"  [61,60,60,1000, 20, 1000,1000] 60)
+notation (ascii)
+  validt  ("_|=t'/_/ _ _ _,_"  [61,60,1000, 20, 1000,1000] 60) and
+  cvalidt  ("_,_|=t'/_ / _ _ _,_"  [61,60,60,1000, 20, 1000,1000] 60)
 
 subsection {* Properties of Validity *}
 
