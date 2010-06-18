@@ -204,11 +204,11 @@ proof-
       then have "A \<in> set_of \<Gamma>'" using assms by auto
       thus "A :# \<Gamma>'" by simp
       qed
-  then have "\<Gamma>' \<ominus> A \<oplus> A = \<Gamma>'" by (auto simp add:multiset_eq_conv_count_eq)
+  then have "\<Gamma>' \<ominus> A \<oplus> A = \<Gamma>'" by (auto simp add:multiset_ext_iff)
   then have "\<exists> \<Gamma>''. \<Gamma>' = \<Gamma>'' \<oplus> A" apply (rule_tac x="\<Gamma>' \<ominus> A" in exI) by auto
   then obtain \<Gamma>'' where eq1:"\<Gamma>' = \<Gamma>'' \<oplus> A" by blast
   from `\<Gamma> \<oplus> A = \<Gamma>' \<oplus> B` eq1 have "\<Gamma> \<oplus> A = \<Gamma>'' \<oplus> A \<oplus> B" by auto
-  then have "\<Gamma> = \<Gamma>'' \<oplus> B" by (auto simp add:multiset_eq_conv_count_eq)
+  then have "\<Gamma> = \<Gamma>'' \<oplus> B" by (auto simp add:multiset_ext_iff)
   thus ?thesis using eq1 by blast
 qed
 
@@ -243,7 +243,7 @@ assumes a:"At i :# \<Gamma>"
     and b:"Ax \<subseteq> R"
 shows "(\<Gamma> \<Rightarrow>* At i,0) \<in> derivable R*"
 proof-
-from a have "\<Gamma> = \<Gamma> \<ominus> At i \<oplus> At i" using elem_imp_eq_diff_union by auto
+from a have "\<Gamma> = \<Gamma> \<ominus> At i \<oplus> At i" by auto
 then have "extend ((\<Gamma> \<ominus> At i) \<Rightarrow>* Em) (\<LM> At i \<RM> \<Rightarrow>* At i) = (\<Gamma> \<Rightarrow>* At i)" 
      using extend_def[where forms="\<Gamma> \<ominus> At i \<Rightarrow>* Em" and seq="\<LM>At i\<RM> \<Rightarrow>* At i"] by auto
 moreover
@@ -260,7 +260,7 @@ assumes a: "ff :# \<Gamma>"
    and  b: "Ax \<subseteq> R"
 shows "(\<Gamma> \<Rightarrow>* C,0) \<in> derivable R*"
 proof-
-from a have "\<Gamma> = \<Gamma> \<ominus> ff \<oplus> ff" using elem_imp_eq_diff_union[where a=ff] by auto
+from a have "\<Gamma> = \<Gamma> \<ominus> ff \<oplus> ff" by auto
 then have "extend (\<Gamma> \<ominus> ff \<Rightarrow>* C) (\<LM>ff\<RM> \<Rightarrow>* Em) = (\<Gamma> \<Rightarrow>* C)"
      using extend_def[where forms="\<Gamma> \<ominus> ff \<Rightarrow>* C" and seq="\<LM>ff\<RM> \<Rightarrow>* Em"] by auto 
 moreover
@@ -698,7 +698,7 @@ proof (induct n arbitrary:\<Gamma> rule:nat_less_induct)
              with ext and `r = (ps,c)`
                   have "Compound T Ts :# \<Gamma>" by (auto simp add:extendRule_def extend_def)
              then have "\<exists> \<Gamma>1. \<Gamma> = \<Gamma>1 \<oplus> Compound T Ts"
-                  by (rule_tac x="\<Gamma> \<ominus> Compound T Ts" in exI) (auto simp add:multiset_eq_conv_count_eq)
+                  by (rule_tac x="\<Gamma> \<ominus> Compound T Ts" in exI) (auto simp add:multiset_ext_iff)
              then obtain \<Gamma>1 where "\<Gamma> = \<Gamma>1 \<oplus> Compound T Ts" by auto
              moreover from `c = (\<LM>Compound T Ts\<RM> \<Rightarrow>* Em)` and `r = (ps,c)` and ext
                   have "succ S = Compound F Fs"

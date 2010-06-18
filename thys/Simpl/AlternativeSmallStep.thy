@@ -225,7 +225,7 @@ apply (simp_all del: fun_upd_apply,(blast intro: step.intros)+)
 done
 
 ML {*
-  bind_thm ("trancl_induct3", split_rule
+  bind_thm ("trancl_induct3", Split_Rule.split_rule
     (read_instantiate @{context} [(("a", 0), "(ax,ay,az)"), (("b", 0), "(bx,by,bz)")]
       @{thm tranclp_induct}));
 *}
@@ -552,7 +552,7 @@ inductive_cases execs_elim_cases [cases set]:
  "\<Gamma>\<turnstile>\<langle>c#cs,css,s\<rangle> \<Rightarrow> t"
 
 ML {*
-  bind_thm ("converse_rtrancl_induct3", split_rule
+  bind_thm ("converse_rtrancl_induct3", Split_Rule.split_rule
     (read_instantiate @{context} [(("a", 0), "(cs,css,s)"), (("b", 0), "(cs',css',t)")]
       @{thm converse_rtranclp_induct}));
 *}
@@ -581,7 +581,7 @@ next
   from step 
   show "\<Gamma>\<turnstile>\<langle>cs,css,s\<rangle> \<Rightarrow> t"
   proof (cases)
-    case (Catch c1 c2 cs css s)
+    case (Catch c1 c2 cs s)
     with execs obtain t' where
       exec_c1: "\<Gamma>\<turnstile>\<langle>c1,Normal s\<rangle> \<Rightarrow> t'" and
       execs_rest: "\<Gamma>\<turnstile>\<langle>[],(cs, c2 # cs) # css,t'\<rangle> \<Rightarrow> t"
@@ -629,7 +629,7 @@ next
     qed
     with Catch show ?thesis by simp
   next
-    case (Call p bdy cs css s)
+    case (Call p bdy cs s)
     have bdy: "\<Gamma> p = Some bdy" by fact
     from Call execs obtain t' where
       exec_body: "\<Gamma>\<turnstile>\<langle>bdy,Normal s\<rangle> \<Rightarrow> t'" and
@@ -698,10 +698,10 @@ corollary steps_eq_exec: "\<Gamma>\<turnstile>([c],[],s) \<rightarrow>\<^sup>* (
 
 subsection {* Infinite Computations: @{text "inf \<Gamma> cs css s"}*}
 
-constdefs inf :: 
+definition inf :: 
  "[('s,'p,'f) body,('s,'p,'f) com list,('s,'p,'f) continuation list,('s,'f) xstate]
   \<Rightarrow> bool"
-"inf \<Gamma> cs css s \<equiv> \<exists>f. f 0 = (cs,css,s) \<and> (\<forall>i. \<Gamma>\<turnstile>f i \<rightarrow> f(Suc i))"
+where "inf \<Gamma> cs css s = (\<exists>f. f 0 = (cs,css,s) \<and> (\<forall>i. \<Gamma>\<turnstile>f i \<rightarrow> f(Suc i)))"
 
 lemma not_infI: "\<lbrakk>\<And>f. \<lbrakk>f 0 = (cs,css,s); \<And>i. \<Gamma>\<turnstile>f i \<rightarrow> f (Suc i)\<rbrakk> \<Longrightarrow> False\<rbrakk>  
                 \<Longrightarrow> \<not>inf \<Gamma> cs css s"
@@ -976,7 +976,7 @@ qed
 
 
 ML {*
-  bind_thm ("rtrancl_induct3", split_rule
+  bind_thm ("rtrancl_induct3", Split_Rule.split_rule
     (read_instantiate @{context} [(("a", 0), "(ax,ay,az)"), (("b", 0), "(bx,by,bz)")]
      @{thm rtranclp_induct}));
 *}
@@ -2548,16 +2548,17 @@ corollary terminates_impl_no_inf_chain:
   by (rule terminatess_impl_no_inf_chain) (iprover intro: terminatess.intros)
 
 
-constdefs
+definition
  termi_call_steps :: "('s,'p,'f) body \<Rightarrow> (('s \<times> 'p) \<times> ('s \<times> 'p))set"
-"termi_call_steps \<Gamma> \<equiv>
+where
+"termi_call_steps \<Gamma> =
  {((t,q),(s,p)). \<Gamma>\<turnstile>the (\<Gamma> p)\<down>Normal s \<and> 
        (\<exists>css. \<Gamma>\<turnstile>([the (\<Gamma> p)],[],Normal s) \<rightarrow>\<^sup>+ ([the (\<Gamma> q)],css,Normal t))}"
 
 text {* Sequencing computations, or more exactly continuation stacks *}
-consts seq:: "(nat \<Rightarrow> 'a list) \<Rightarrow> nat \<Rightarrow> 'a list"
-primrec 
-"seq css 0 = []"
+primrec seq:: "(nat \<Rightarrow> 'a list) \<Rightarrow> nat \<Rightarrow> 'a list"
+where
+"seq css 0 = []" |
 "seq css (Suc i) = css i@seq css i"
 
 

@@ -7,7 +7,7 @@ header {* Sums of two squares *}
 
 theory TwoSquares
   imports "../Fermat3_4/IntNatAux"
-  "~~/src/HOL/Number_Theory/Euler"
+  "~~/src/HOL/Old_Number_Theory/Euler"
 begin
 
 text {* Show that $(\frac{-1}{p}) = +1$ for primes $p \equiv 1 \bmod 4$. *}
@@ -22,7 +22,7 @@ definition
 
 lemma mult_sum2sq: "sum2sq(a,b) * sum2sq(p,q) = 
   sum2sq(a*p+b*q, a*q-b*p)"
-  by (unfold sum2sq_def, simp add: nat_number ring_simps)
+  by (unfold sum2sq_def, simp add: nat_number field_simps)
 
 lemma is_mult_sum2sq: "is_sum2sq x \<Longrightarrow> is_sum2sq y \<Longrightarrow> is_sum2sq (x*y)"
   by (unfold is_sum2sq_def, auto simp only: mult_sum2sq, blast)
@@ -173,19 +173,19 @@ proof -
 	proof -
 	  from m1 xy have "(?p*?n1)*?C = (x^2+y^2)*(v^2+w^2)" by simp
 	  also have "\<dots> = (x*v + y*w)^2 + (x*w - y*v)^2"
-	    by (simp add: nat_number ring_simps)
+	    by (simp add: nat_number field_simps)
 	  also with rv sw have "\<dots> = 
 	    ((r*?n1+v)*v + (s*?n1+w)*w)^2 + ((r*?n1+v)*w - (s*?n1+w)*v)^2"
 	    by simp
 	  also have "\<dots> =
 	     (?n1*(r*v) + ?n1*(s*w) + (v^2+w^2))^2 + (?n1*(r*w) - ?n1*(s*v))^2"
-	    by (simp add: nat_number ring_simps)
+	    by (simp add: nat_number field_simps)
 	  also from m1 have "\<dots> = 
 	     (?n1*(r*v) + ?n1*(s*w) + ?n1*m1)^2 + (?n1*(r*w) - ?n1*(s*v))^2"
 	    by simp
 	  finally have 
 	    "(?p*?n1)*?C = ?n1^2*(r*v + s*w + m1)^2 + ?n1^2*(r*w - s*v)^2"
-	    by (simp add: nat_number ring_simps)
+	    by (simp add: nat_number field_simps)
 	  with m1 have 
 	    "?n1^2*(?p*m1) = ?n1^2*((r*v + s*w + m1)^2 + (r*w - s*v)^2)"
 	    by (simp only: mult_ac power2_eq_square, simp add: zadd_zmult_distrib2)
@@ -227,7 +227,7 @@ proof -
 	      have "v^2 \<ge> 0 \<and> w^2 \<ge> 0" by (auto simp only: zero_le_power2)
 	      thus ?thesis by arith
 	    qed
-	    ultimately have vwpos: "v^2 + w^2 > 0" by simp
+	    ultimately have vwpos: "v^2 + w^2 > 0" by arith
 	    with m1 have "m1 \<noteq> 0" by auto
 	    moreover have "m1 \<ge> 0"
 	    proof (rule ccontr)

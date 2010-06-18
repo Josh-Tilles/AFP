@@ -32,128 +32,128 @@ theory Hoare imports HoarePartial HoareTotal begin
 
 syntax 
 
-hoarep_emptyFaults::
+"_hoarep_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,
    'f set,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_,_/\<turnstile> (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoarep_emptyCtx::
+"_hoarep_emptyCtx"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_/\<turnstile>\<^bsub>'/_\<^esub> (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoarep_emptyCtx_emptyFaults::
+"_hoarep_emptyCtx_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_/\<turnstile> (_/ (_)/ _,/_))" [61,1000,20,1000,1000]60)
 
-hoarep_noAbr::
+"_hoarep_noAbr"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'f set,
     's assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_,_/\<turnstile>\<^bsub>'/_\<^esub> (_/ (_)/ _))" [61,60,60,1000,20,1000]60)
 
-hoarep_noAbr_emptyFaults::
+"_hoarep_noAbr_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_,_/\<turnstile> (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoarep_emptyCtx_noAbr::
+"_hoarep_emptyCtx_noAbr"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_/\<turnstile>\<^bsub>'/_\<^esub> (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoarep_emptyCtx_noAbr_emptyFaults::
+"_hoarep_emptyCtx_noAbr_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_/\<turnstile> (_/ (_)/ _))" [61,1000,20,1000]60)
 
 
 
-hoaret_emptyFaults::
+"_hoaret_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,
     's assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_,_/\<turnstile>\<^sub>t (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoaret_emptyCtx::
+"_hoaret_emptyCtx"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_/\<turnstile>\<^sub>t\<^bsub>'/_\<^esub> (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoaret_emptyCtx_emptyFaults::
+"_hoaret_emptyCtx_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
     ("(3_/\<turnstile>\<^sub>t (_/ (_)/ _,/_))" [61,1000,20,1000,1000]60)
 
-hoaret_noAbr::
+"_hoaret_noAbr"::
 "[('s,'p,'f) body,'f set, ('s,'p) quadruple set,
     's assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_,_/\<turnstile>\<^sub>t\<^bsub>'/_\<^esub> (_/ (_)/ _))" [61,60,60,1000,20,1000]60)
 
-hoaret_noAbr_emptyFaults::
+"_hoaret_noAbr_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_,_/\<turnstile>\<^sub>t (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoaret_emptyCtx_noAbr::
+"_hoaret_emptyCtx_noAbr"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_/\<turnstile>\<^sub>t\<^bsub>'/_\<^esub> (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoaret_emptyCtx_noAbr_emptyFaults::
+"_hoaret_emptyCtx_noAbr_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn] => bool"
     ("(3_/\<turnstile>\<^sub>t (_/ (_)/ _))" [61,1000,20,1000]60)
 
 
 syntax (ascii)
 
-hoarep_emptyFaults::
+"_hoarep_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,
      's assn,('s,'p,'f) com, 's assn,'s assn] \<Rightarrow> bool"
    ("(3_,_/|- (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoarep_emptyCtx::
+"_hoarep_emptyCtx"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
    ("(3_/|-'/_ (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoarep_emptyCtx_emptyFaults::
+"_hoarep_emptyCtx_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
    ("(3_/|-(_/ (_)/ _,/_))" [61,1000,20,1000,1000]60)
 
-hoarep_noAbr::
+"_hoarep_noAbr"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'f set,
    's assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_,_/|-'/_ (_/ (_)/ _))" [61,60,60,1000,20,1000]60)
 
-hoarep_noAbr_emptyFaults::
+"_hoarep_noAbr_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_,_/|-(_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoarep_emptyCtx_noAbr::
+"_hoarep_emptyCtx_noAbr"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_/|-'/_ (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoarep_emptyCtx_noAbr_emptyFaults::
+"_hoarep_emptyCtx_noAbr_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_/|-(_/ (_)/ _))" [61,1000,20,1000]60)
 
-hoaret_emptyFault::
+"_hoaret_emptyFault"::
 "[('s,'p,'f) body,('s,'p) quadruple set,
      's assn,('s,'p,'f) com, 's assn,'s assn] => bool"
    ("(3_,_/|-t (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoaret_emptyCtx::
+"_hoaret_emptyCtx"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
    ("(3_/|-t'/_ (_/ (_)/ _,/_))" [61,60,1000,20,1000,1000]60)
 
-hoaret_emptyCtx_emptyFaults::
+"_hoaret_emptyCtx_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn,'s assn] => bool"
    ("(3_/|-t(_/ (_)/ _,/_))" [61,1000,20,1000,1000]60)
 
-hoaret_noAbr::
+"_hoaret_noAbr"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'f set,
    's assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_,_/|-t'/_ (_/ (_)/ _))" [61,60,60,1000,20,1000]60)
 
-hoaret_noAbr_emptyFaults::
+"_hoaret_noAbr_emptyFaults"::
 "[('s,'p,'f) body,('s,'p) quadruple set,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_,_/|-t(_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoaret_emptyCtx_noAbr::
+"_hoaret_emptyCtx_noAbr"::
 "[('s,'p,'f) body,'f set,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_/|-t'/_ (_/ (_)/ _))" [61,60,1000,20,1000]60)
 
-hoaret_emptyCtx_noAbr_emptyFaults::
+"_hoaret_emptyCtx_noAbr_emptyFaults"::
 "[('s,'p,'f) body,'s assn,('s,'p,'f) com, 's assn] => bool"
    ("(3_/|-t(_/ (_)/ _))" [61,1000,20,1000]60)
 
@@ -218,9 +218,9 @@ locale hoare =
   fixes \<Gamma>::"('s,'p,'f) body" 
 
 
-consts assoc:: "('a \<times>'b) list \<Rightarrow> 'a \<Rightarrow> 'b "
-primrec
-"assoc [] x = undefined"
+primrec assoc:: "('a \<times>'b) list \<Rightarrow> 'a \<Rightarrow> 'b "
+where
+"assoc [] x = undefined" |
 "assoc (p#ps) x = (if fst p = x then (snd p) else assoc ps x)"
 
 lemma conjE_simp: "(P \<and> Q \<Longrightarrow> PROP R) \<equiv> (P \<Longrightarrow> Q \<Longrightarrow> PROP R)"
@@ -250,11 +250,11 @@ lemma Ex_True: "\<exists>b. b"
 lemma Ex_False: "\<exists>b. \<not>b"
   by blast
 
-constdefs mex::"('a \<Rightarrow> bool) \<Rightarrow> bool"
-"mex P \<equiv> Ex P"
+definition mex::"('a \<Rightarrow> bool) \<Rightarrow> bool"
+  where "mex P = Ex P"
 
-constdefs meq::"'a \<Rightarrow> 'a \<Rightarrow> bool"
-"meq s Z \<equiv> s = Z"
+definition meq::"'a \<Rightarrow> 'a \<Rightarrow> bool"
+  where "meq s Z = (s = Z)"
 
 lemma subset_unI1: "A \<subseteq> B \<Longrightarrow> A \<subseteq> B \<union> C" 
   by blast

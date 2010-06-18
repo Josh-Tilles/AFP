@@ -30,11 +30,12 @@
 
 <h2>Computer Science</h2>
 
-<h3>Automata</h3>
+<h3>Automata and Formal Languages</h3>
 
 <div class="list">
-<a href="entries/Presburger-Automata.shtml">Presburger-Automata</a>  
 <a href="entries/Functional-Automata.shtml">Functional-Automata</a>  
+<a href="entries/Presburger-Automata.shtml">Presburger-Automata</a>  
+<a href="entries/Regular-Sets.shtml">Regular-Sets-and-Expressions</a>  
 <a href="entries/Tree-Automata.shtml">Tree-Automata</a>  
 </div>
 
@@ -130,6 +131,7 @@
 <a href="entries/Recursion-Theory-I.shtml">Recursion-Theory-I</a>  
 <a href="entries/Free-Boolean-Algebra.shtml">Free-Boolean-Algebra</a>  
 </div>
+
 <h3>Rewriting</h3>
 <div class="list">
   <a href="entries/Abstract-Rewriting.shtml">Abstract-Rewriting</a>

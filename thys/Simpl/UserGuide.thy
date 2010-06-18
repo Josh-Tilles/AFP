@@ -1,5 +1,4 @@
-(*  ID:          $Id: UserGuide.thy,v 1.11 2009-09-11 07:50:00 norbertschirmer Exp $
-    Author:      Norbert Schirmer
+(*  Author:      Norbert Schirmer
     Maintainer:  Norbert Schirmer, norbert.schirmer at web de
     License:     LGPL
 *)
@@ -206,7 +205,7 @@ lemma (in vars) "\<Gamma>\<turnstile> \<lbrace>\<acute>N = 5\<rbrace> \<acute>N 
   apply (simp only: mem_Collect_eq)
   txt {* @{subgoals} *}
   apply (tactic 
-    {* HoarePackage.BasicSimpTac @{context} HoarePackage.Function false
+    {* Hoare.BasicSimpTac @{context} Hoare.Function false
        [] (K all_tac) 1*})
   txt {* @{subgoals} *}
   by simp
@@ -294,9 +293,9 @@ Square(\<acute>R)"} for the procedure call. The internal term is the
 following: 
 *} 
 
-(*<*) ML "HoareSyntax.use_call_tr' :=false"  (*>*) 
+(*<*) ML "Hoare_Syntax.use_call_tr' :=false"  (*>*) 
 text {* \small @{term [display] "CALL Square(\<acute>I,\<acute>R)"} *} 
-(*<*) ML "HoareSyntax.use_call_tr' :=true" (*>*)
+(*<*) ML "Hoare_Syntax.use_call_tr' :=true" (*>*)
 
 text {* Note the
         additional decoration (with the procedure name) of the parameter and
@@ -465,9 +464,9 @@ text {* We want to define a procedure for the factorial. We first
 define a HOL function that calculates it, to specify the procedure later on.
 *}
 
-consts fac:: "nat \<Rightarrow> nat"
-primrec
-"fac 0 = 1"
+primrec fac:: "nat \<Rightarrow> nat"
+where
+"fac 0 = 1" |
 "fac (Suc n) = (Suc n) * fac n"
 
 (*<*)
@@ -554,13 +553,13 @@ variables are automatically copied back to the procedure caller.
 We can study this effect on the translation of @{term "\<acute>p :== CALL append(\<acute>p,\<acute>q)"}:
 *}
 (*<*)
-ML "HoareSyntax.use_call_tr' :=false"
+ML "Hoare_Syntax.use_call_tr' :=false"
 (*>*)
 text {*
 @{term [display] "\<acute>p :== CALL append(\<acute>p,\<acute>q)"}
 *}
 (*<*)
-ML "HoareSyntax.use_call_tr' :=true"
+ML "Hoare_Syntax.use_call_tr' :=true"
 end
 (*>*)
 
@@ -747,9 +746,7 @@ certain states get smaller according to this relation. Proving that a
 relation is well-founded can be quite hard. But fortunately there are
 ways to construct and stick together relations so that they are
 well-founded by construction. This infrastructure is already present
-in Isabelle/HOL, since the \isacommand{recdef} command for general
-recursive functions builds on it (cf. \cite{Nipkow-02-hol} pages 46
-ff, 178 ff).  For example, @{term "measure f"} is always well-founded;
+in Isabelle/HOL.  For example, @{term "measure f"} is always well-founded;
 the lexicographic product of two well-founded relations is again
 well-founded and the inverse image construction @{term "inv_image"} of
 a well-founded relation is again well-founded. The constructions are
@@ -875,8 +872,8 @@ when we construct a well-founded relation on the product of state space and proc
 names.
 *}
 
-ML {* bind_thm ("HoareTotal_ProcRec2",
-              HoarePackage.gen_proc_rec HoarePackage.Total 2)*}
+ML {* bind_thm ("HoareTotal_ProcRec2", Hoare.gen_proc_rec Hoare.Total 2)*}
+
 
 text {*
   We provide the ML function {\tt gen\_proc\_rec} to
@@ -991,9 +988,9 @@ text {* We look at some issues regarding the modifies clause with the example
 of insertion sort for heap lists.
 *}
 
-consts sorted:: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a list  \<Rightarrow> bool"
-primrec 
-"sorted le [] = True"
+primrec sorted:: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a list  \<Rightarrow> bool"
+where
+"sorted le [] = True" |
 "sorted le (x#xs) = ((\<forall>y\<in>set xs. le x y) \<and> sorted le xs)"
 
 procedures (imports globals_heap)
