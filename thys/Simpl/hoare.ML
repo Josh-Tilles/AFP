@@ -606,8 +606,8 @@ fun but_last [] = raise Empty
   | but_last [x] = []
   | but_last (x::xs) = x::but_last xs;
 
-fun dest_splits (Const (@{const_name split},_)$Abs (n,T,t)) = (n,T)::dest_splits t
-  | dest_splits (Const (@{const_name split},_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
+fun dest_splits (Const (@{const_name prod_case},_)$Abs (n,T,t)) = (n,T)::dest_splits t
+  | dest_splits (Const (@{const_name prod_case},_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
   | dest_splits (Abs (n,T,_)) = [(n,T)]
   | dest_splits _ = [];
 
@@ -1707,7 +1707,7 @@ fun split_pair_apps thm =
                 val z = Name.variant (fold Term.add_free_names args []) "z";
                 val frees = map (apfst (fn i => z^string_of_int i))
                                 (0 upto (len - 1) ~~ argTs);
-                fun splitT (Type (@{type_name "*"}, [T1, T2])) = T1::splitT T2
+                fun splitT (Type (@{type_name Product_Type.prod}, [T1, T2])) = T1::splitT T2
                   | splitT T = [T];
 
                 fun pair_depth (Const (@{const_name Pair},aT)$t1$t2) = 1 + (pair_depth t2)
@@ -2733,7 +2733,7 @@ fun while_tac ctxt state_kind inv cont_tac tac mode t i=
 fun dest_split (Abs (x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => Abs (x,T,recomb t'),bdy) end
-  | dest_split (c as Const (@{const_name split},_)$Abs(x,T,t)) =
+  | dest_split (c as Const (@{const_name prod_case},_)$Abs(x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => c$Abs (x,T,recomb t'),bdy) end
   | dest_split t = ([],I,t);
