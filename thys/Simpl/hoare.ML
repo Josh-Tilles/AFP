@@ -522,8 +522,6 @@ val K_rec_congs = [];
 val K_fun_congs = [thm "StateFun.K_statefun_cong"];
 val K_congs = K_rec_congs @ K_fun_congs;
 
-val Set_thy = theory "Set";
-val Main_thy = theory "Main";
 val fun_upd_apply = thm "Fun.fun_upd_apply";
 
 (* misc. aux. functions *)
@@ -606,8 +604,8 @@ fun but_last [] = raise Empty
   | but_last [x] = []
   | but_last (x::xs) = x::but_last xs;
 
-fun dest_splits (Const (@{const_name split},_)$Abs (n,T,t)) = (n,T)::dest_splits t
-  | dest_splits (Const (@{const_name split},_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
+fun dest_splits (Const (@{const_name prod_case},_)$Abs (n,T,t)) = (n,T)::dest_splits t
+  | dest_splits (Const (@{const_name prod_case},_)$Abs (n,T,t)$_) = (n,T)::dest_splits t
   | dest_splits (Abs (n,T,_)) = [(n,T)]
   | dest_splits _ = [];
 
@@ -628,16 +626,16 @@ fun resuffix sfx1 sfx2 s =
 (* state space representation dependent functions *)
 
 datatype state_kind = Record | Function
-fun state_simprocs Record   = [Record.record_simproc]
-  | state_simprocs Function = [Record.record_simproc,StateFun.lookup_simproc];
+fun state_simprocs Record   = [Record.simproc]
+  | state_simprocs Function = [Record.simproc, StateFun.lookup_simproc];
 
-fun state_upd_simproc Record   = Record.record_upd_simproc
+fun state_upd_simproc Record   = Record.upd_simproc
   | state_upd_simproc Function = StateFun.update_simproc;
 
-fun state_ex_sel_eq_simproc Record   = Record.record_ex_sel_eq_simproc
+fun state_ex_sel_eq_simproc Record   = Record.ex_sel_eq_simproc
   | state_ex_sel_eq_simproc Function = StateFun.ex_lookup_eq_simproc;
 
-val state_split_simp_tac = Record.record_split_simp_tac
+val state_split_simp_tac = Record.split_simp_tac
 val state_hierarchy = Record.dest_recTs
 
 
@@ -781,7 +779,7 @@ fun dest_Guard (Const (@{const_name Language.com.Guard},_)$f$g$c) = (f,g,c,false
 
 fun add_declaration name decl thy =
   thy
-  |> Theory_Target.init name
+  |> Named_Target.init name
   |> Local_Theory.declaration false decl
   |> Local_Theory.exit
   |> ProofContext.theory_of;
@@ -1136,7 +1134,7 @@ fun print_term thy t =
 
 fun add_abbrev loc mode name spec thy =
   thy
-  |> Theory_Target.init loc
+  |> Named_Target.init loc
   |> (fn lthy => let val t = Syntax.read_term (Local_Theory.target_of lthy) spec;
       in Local_Theory.abbrev mode ((Binding.name name, NoSyn), t) lthy end)
   |> #2
@@ -1319,7 +1317,7 @@ fun procedures_definition locname procs thy =
         fun add_decl_and_def (lname,ctxt) =
             ctxt
             |> ProofContext.theory_of
-            |> Theory_Target.init (SOME lname)
+            |> Named_Target.init (SOME lname)
             |> Local_Theory.declaration false parameter_info_decl
             |> (fn lthy => if has_body name
                            then snd (Local_Theory.define (def lthy) lthy)
@@ -1707,7 +1705,7 @@ fun split_pair_apps thm =
                 val z = Name.variant (fold Term.add_free_names args []) "z";
                 val frees = map (apfst (fn i => z^string_of_int i))
                                 (0 upto (len - 1) ~~ argTs);
-                fun splitT (Type (@{type_name "*"}, [T1, T2])) = T1::splitT T2
+                fun splitT (Type (@{type_name Product_Type.prod}, [T1, T2])) = T1::splitT T2
                   | splitT T = [T];
 
                 fun pair_depth (Const (@{const_name Pair},aT)$t1$t2) = 1 + (pair_depth t2)
@@ -1860,7 +1858,7 @@ fun gen_call_rec_rule specs_name n rule =
      val Specs = foldr1 (mk_Un quadT_set) (map mk_spec (1 upto n));
      val rule' =
            instantiate' [] [SOME (cterm_of thy Specs)] rule
-           |> full_simplify ((global_simpset_of Main_thy)
+           |> full_simplify ((global_simpset_of @{theory Main})
                   addsimps [conjE_simp,in_Specs_simp,in_set_Un_simp,split_all_conj,
                             image_Un,image_Un_single_simp] )
            |> rename_bvars (fn s => if member (op =) ["s","\<sigma>"] s then s else "Z")
@@ -2520,8 +2518,8 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
           fun solve_modifies_tac i =
                 (clarsimp_tac
-                  (global_claset_of Set_thy,
-                     (Simplifier.context ctxt (global_simpset_of Set_thy))
+                  (global_claset_of @{theory Set},
+                     (Simplifier.context ctxt (global_simpset_of @{theory Set}))
                      addsimps ([mex_def,meq_def,upd_globals_def]@K_convs)
                      addsimprocs (state_upd_simproc Record::(state_simprocs state_kind))
                      addcongs K_congs) i)
@@ -2634,7 +2632,7 @@ fun call_tac cont_tac mode state_kind state_space ctxt asms spec_sfx t =
 fun solve_in_Faults_tac i =
     resolve_tac [UNIV_I, in_insert_hd] i
     ORELSE
-    SELECT_GOAL (SOLVE (simp_tac (global_simpset_of Set_thy) 1)) i;
+    SELECT_GOAL (SOLVE (simp_tac (global_simpset_of @{theory Set}) 1)) i;
 
 local
 val triv_simp = merge_assertion_simp_tac [mem_Collect_eq] THEN'
@@ -2733,7 +2731,7 @@ fun while_tac ctxt state_kind inv cont_tac tac mode t i=
 fun dest_split (Abs (x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => Abs (x,T,recomb t'),bdy) end
-  | dest_split (c as Const (@{const_name split},_)$Abs(x,T,t)) =
+  | dest_split (c as Const (@{const_name prod_case},_)$Abs(x,T,t)) =
      let val (vs,recomb,bdy) = dest_split t;
      in ((x,T)::vs,fn t' => c$Abs (x,T,recomb t'),bdy) end
   | dest_split t = ([],I,t);
@@ -3166,7 +3164,7 @@ fun split_state ctxt s T t =
     val vars' = if !sort_variables then sort_vars ctxt T vars else vars;
   in (abstract_vars vars' s t,rev vars') end;
 
-fun ex_tac vs st = Record.record_split_simp_tac @{thms simp_thms} (K ~1) 1 st;
+fun ex_tac vs st = Record.split_simp_tac @{thms simp_thms} (K ~1) 1 st;
 
 end;
 
@@ -3314,7 +3312,7 @@ val ss = global_simpset_of @{theory Fun}
   addsimps (@{thm StateFun.lookup_def} :: @{thm StateFun.id_id_cancel}
     :: @{thms list.inject} @ @{thms char.inject}
     @ @{thms list.distinct} @ @{thms char.distinct} @ @{thms simp_thms})
-  addsimprocs [Record.record_simproc, StateFun.lazy_conj_simproc]
+  addsimprocs [Record.simproc, StateFun.lazy_conj_simproc]
   addcongs @{thms block_conj_cong};
 
 in
@@ -3498,7 +3496,7 @@ fun solve_modifies_tac ctxt state_kind state_space i =
   in
     (trace_tac "solve_modifies_tac" THEN
      clarsimp_tac (global_claset_of HOL.thy,
-                        (Simplifier.context ctxt (global_simpset_of Set_thy))
+                        (Simplifier.context ctxt (global_simpset_of @{theory Set}))
                          addsimps ([mex_def,meq_def]@K_convs)
                          addsimprocs (state_upd_simproc Record::(state_simprocs Record))
                          addcongs K_congs) i)
