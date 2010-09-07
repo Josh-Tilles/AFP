@@ -37,21 +37,21 @@ end;
 functor GeneraliseFun (structure SplitState: SPLIT_STATE) =
 struct
 
-val genConj = thm "generaliseConj";
-val genImp = thm "generaliseImp";
-val genImpl = thm "generaliseImpl";
-val genAll = thm "generaliseAll";
-val gen_all = thm "generalise_all";
-val genEx = thm "generaliseEx";
-val genRefl = thm "generaliseRefl";
-val genRefl' = thm "generaliseRefl'";
-val genTrans = thm "generaliseTrans";
-val genAllShift = thm "generaliseAllShift";
+val genConj = @{thm generaliseConj};
+val genImp = @{thm generaliseImp};
+val genImpl = @{thm generaliseImpl};
+val genAll = @{thm generaliseAll};
+val gen_all = @{thm generalise_all};
+val genEx = @{thm generaliseEx};
+val genRefl = @{thm generaliseRefl};
+val genRefl' = @{thm generaliseRefl'};
+val genTrans = @{thm generaliseTrans};
+val genAllShift = @{thm generaliseAllShift};
 
-val gen_allShift = thm "generalise_allShift";
-val meta_spec = thm "meta_spec";
-val protectRefl = thm "protectRefl";
-val protectImp = thm "protectImp";
+val gen_allShift = @{thm generalise_allShift};
+val meta_spec = @{thm meta_spec};
+val protectRefl = @{thm protectRefl};
+val protectImp = @{thm protectImp};
 
 fun gen_thm decomp (t,ct) = 
   let
@@ -164,7 +164,7 @@ fun split_abs ct =
      Abs x => (x,Thm.dest_abs NONE ct)
    | _ => split_abs (eta_expand ct))
             
-fun decomp ctxt (Const (@{const_name "op &"}, _) $ t $ t', ct) =
+fun decomp ctxt (Const (@{const_name HOL.conj}, _) $ t $ t', ct) =
       ([t,t'],snd (Drule.strip_comb ct), fn [thm,thm'] => genConj SIMPLE_OF [thm,thm'])
   | decomp ctxt ((allc as Const (@{const_name "All"},aT)) $ f, ct) = 
        let 
@@ -205,7 +205,7 @@ fun decomp ctxt (Const (@{const_name "op &"}, _) $ t $ t', ct) =
           else ([term_of cb],[cb], fn [thm] => 
                        genEx' OF_RAW Goal.protect (Thm.forall_intr cx' (Goal.conclude thm)))
        end
-  | decomp ctxt (Const (@{const_name "op -->"},_)$P$Q, ct) =
+  | decomp ctxt (Const (@{const_name HOL.implies},_)$P$Q, ct) =
        let 
          val [cP,cQ] = (snd (Drule.strip_comb ct));
        in ([Q],[cQ],fn [thm] =>
@@ -268,7 +268,7 @@ fun generalise ctxt ct = gen_thm (decomp ctxt) (term_of ct,ct);
 fun init ct = Drule.instantiate' [] [SOME ct] protectRefl;
 
 local
-val meta_spec_protect = thm "meta_spec_protect";
+val meta_spec_protect = @{thm meta_spec_protect};
 val cx = meta_spec_protect |> cprop_of |> Thm.dest_implies |> snd |> Thm.dest_comb |> snd |> 
          Thm.dest_comb |> snd
 fun init ct = Drule.instantiate' [] [SOME ct] protectRefl;
