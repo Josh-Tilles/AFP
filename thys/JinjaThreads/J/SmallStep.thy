@@ -379,9 +379,9 @@ proof (induct arbitrary: l0 and l0 rule:red_reds.inducts)
   case (BlockRed e h x V vo ta e' h' x' T)
   note IH = `\<And>l0. extTA,P,t \<turnstile> \<langle>e,(hp (h, x(V := vo)), l0 ++ lcl (h, x(V := vo)))\<rangle> -ta\<rightarrow> \<langle>e',(hp (h', x'), l0 ++ lcl (h', x'))\<rangle>`[simplified]
   have lrew: "\<And>x x'. x(V := vo) ++ x'(V := vo) = (x ++ x')(V := vo)" 
-    by(simp add:expand_fun_eq map_add_def)
+    by(simp add:fun_eq_iff map_add_def)
   have lrew1: "\<And>X X' X'' vo. (X(V := vo) ++ X')(V := (X ++ X'') V) = X ++ X'(V := X'' V)"
-    by(simp add: expand_fun_eq map_add_def)
+    by(simp add: fun_eq_iff map_add_def)
   have lrew2: "\<And>X X'. (X(V := None) ++ X') V = X' V"
     by(simp add: map_add_def) 
   show ?case
@@ -468,6 +468,21 @@ lemma red_dom_lcl: "extTA,P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarro
 proof (induct rule:red_reds.inducts)
   case (BlockRed e h x V vo ta e' h' x' T)
   thus ?case by(clarsimp)(fastsimp split:split_if_asm)
+qed auto
+
+lemma red_Suspend_is_call:
+  "\<lbrakk> convert_extTA extNTA,P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; Suspend w \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
+  \<Longrightarrow> \<exists>a vs T. call e' = \<lfloor>(a, wait, vs)\<rfloor> \<and> typeof_addr (hp s) a = \<lfloor>T\<rfloor> \<and> is_external_call P T wait"
+  and reds_Suspend_is_calls:
+  "\<lbrakk> convert_extTA extNTA,P,t \<turnstile> \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; Suspend w \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
+  \<Longrightarrow> \<exists>a vs T. calls es' = \<lfloor>(a, wait, vs)\<rfloor> \<and> typeof_addr (hp s) a = \<lfloor>T\<rfloor> \<and> is_external_call P T wait"
+proof(induct rule: red_reds.inducts)
+  case RedCallExternal
+  thus ?case
+    apply clarsimp
+    apply(frule red_external_Suspend_StaySame, simp)
+    apply(drule red_external_Suspend_waitD, simp_all)
+    done
 qed auto
 
 end

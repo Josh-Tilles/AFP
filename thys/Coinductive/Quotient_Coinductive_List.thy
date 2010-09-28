@@ -100,21 +100,18 @@ lemma LCons_preserve [quot_preserve]:
   assumes "Quotient R Abs Rep"
   shows "(Rep ---> (lmap Rep) ---> (lmap Abs)) LCons = LCons"
 using Quotient_abs_rep[OF assms]
-by(simp add: expand_fun_eq lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
 
 lemma LCons_respect [quot_respect]:
-  assumes "Quotient R Abs Rep"
-  shows "(R ===> llist_all2 R ===> llist_all2 R) LCons LCons"
+  "(R ===> llist_all2 R ===> llist_all2 R) LCons LCons"
 by simp
 
 lemma LNil_preserve [quot_preserve]:
-  assumes "Quotient R Abs Rep"
-  shows "lmap Abs LNil = LNil"
+  "lmap Abs LNil = LNil"
 by simp
 
 lemma LNil_respect [quot_respect]:
-  assumes "Quotient R Abs Rep"
-  shows "llist_all2 R LNil LNil"
+  "llist_all2 R LNil LNil"
 by simp
 
 lemma lmap_preserve [quot_preserve]:
@@ -123,11 +120,9 @@ lemma lmap_preserve [quot_preserve]:
   shows "((abs1 ---> rep2) ---> (lmap rep1) ---> (lmap abs2)) lmap = lmap"
   and   "((abs1 ---> id) ---> lmap rep1 ---> id) lmap = lmap"
 using Quotient_abs_rep[OF a] Quotient_abs_rep[OF b]
-by(simp_all add: expand_fun_eq lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp_all add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
 
 lemma lmap_respect [quot_respect]:
-  assumes q1: "Quotient R1 Abs1 Rep1"
-  and     q2: "Quotient R2 Abs2 Rep2"
   shows "((R1 ===> R2) ===> (llist_all2 R1) ===> llist_all2 R2) lmap lmap"
   and   "((R1 ===> op =) ===> (llist_all2 R1) ===> op =) lmap lmap"
 by(simp_all add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2)
@@ -155,7 +150,7 @@ lemma llist_all2_preserve [quot_preserve]:
   assumes "Quotient R Abs Rep"
   shows "((Abs ---> Abs ---> id) ---> lmap Rep ---> lmap Rep ---> id) llist_all2 = llist_all2"
 using Quotient_abs_rep[OF assms]
-by(simp add: expand_fun_eq llist_all2_lmap1 llist_all2_lmap2)
+by(simp add: fun_eq_iff llist_all2_lmap1 llist_all2_lmap2)
 
 lemma llist_all2_eq [id_simps]: "llist_all2 (op =) = (op =)"
 proof(intro ext iffI)

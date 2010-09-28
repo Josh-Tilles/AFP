@@ -8,6 +8,8 @@ theory JVMJ1 imports
   J1JVMBisim
 begin
 
+declare split_paired_Ex[simp del]
+
 context J1_JVM_heap_base begin
 
 lemma assumes ha: "typeof_addr h a = \<lfloor>Class D\<rfloor>"
@@ -365,7 +367,7 @@ lemma conf_xcp_conf_xcp':
 by(cases xcp) auto
 
 lemma conf_xcp'_compP [simp]: "conf_xcp' (compP f P) = conf_xcp' P"
-by(simp add: expand_fun_eq conf_xcp'_def option_case_def[symmetric])
+by(simp add: fun_eq_iff conf_xcp'_def option_case_def[symmetric])
 
 end
 
@@ -1658,7 +1660,7 @@ next
         have "call1 (obj'\<bullet>M'(ps)) \<noteq> None \<Longrightarrow> Val v\<bullet>M'(ps) = obj'\<bullet>M'(ps) \<and> loc = xs"
           by(auto split: split_if_asm)
 	ultimately show ?thesis using red \<tau> pc xcp stk Ta call
-          apply(auto simp del: split_paired_Ex call1_calls1.simps)
+          apply(auto simp del: call1_calls1.simps)
           apply(fastsimp intro: rtranclp.rtrancl_into_rtrancl rtranclp_into_tranclp1)+
           done
       qed
@@ -1946,7 +1948,7 @@ next
   hence V: "V < length xs" by simp
   have \<tau>: "\<not> \<tau>move2 (compP2 P) h [v] (sync\<^bsub>V\<^esub> (e1) e2) (Suc (Suc (length (compE2 e1)))) None" by(simp add: \<tau>move2_iff)
   from exec have "(\<exists>a. v = Addr a \<and> stk' = [] \<and> loc' = xs[V := v] \<and> ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> \<and> xcp' = None \<and> pc' = Suc (Suc (Suc (length (compE2 e1))))) \<or> (v = Null \<and> stk' = [v] \<and> loc' = xs[V := v] \<and> ta = \<epsilon> \<and> xcp' = \<lfloor>addr_of_sys_xcpt NullPointer\<rfloor> \<and> pc' = Suc (Suc (length (compE2 e1))))" (is "?c1 \<or> ?c2")
-    by(fastsimp elim!: exec_meth.cases simp add: is_Ref_def expand_finfun_eq expand_fun_eq finfun_upd_apply exec_move_def)
+    by(fastsimp elim!: exec_meth.cases simp add: is_Ref_def expand_finfun_eq fun_eq_iff finfun_upd_apply exec_move_def)
   thus ?case
   proof
     assume ?c1
@@ -3331,7 +3333,6 @@ qed
 end
 
 declare split_beta [simp del]
-
 
 context J1_JVM_conf_read begin
 

@@ -106,7 +106,7 @@ abbreviation src :: "('edge,'node,'state) LDCFG_edge \<Rightarrow> 'node LDCFG_n
 abbreviation trg :: "('edge,'node,'state) LDCFG_edge \<Rightarrow> 'node LDCFG_node"
   where "trg a \<equiv> snd(snd a)"
 
-abbreviation knd :: "('edge,'node,'state) LDCFG_edge \<Rightarrow> 'state edge_kind"
+definition knd :: "('edge,'node,'state) LDCFG_edge \<Rightarrow> 'state edge_kind"
   where "knd a \<equiv> fst(snd a)"
 
 
@@ -162,8 +162,9 @@ proof -
     thus "state_val (transfer (knd a) s) V = state_val s V"
     proof(induct rule:lift_valid_edge.induct)
       case lve_edge
-      thus ?case by(fastsimp intro:CFG_edge_no_Def_equal dest:lift_Def_node[of _ Def])
-    qed auto
+      thus ?case by(fastsimp intro:CFG_edge_no_Def_equal dest:lift_Def_node[of _ Def]
+        simp:knd_def)
+    qed(auto simp:knd_def)
   next
     fix a s s'
     assume assms:"lift_valid_edge valid_edge sourcenode targetnode kind Entry Exit a"
@@ -209,7 +210,7 @@ proof -
 	  have "state_val s V = state_val s' V" by simp
 	  with `e = (Node (sourcenode a), kind a, Node (targetnode a))` 
 	    `\<exists>Q. kind a = (Q)\<^isub>\<surd>`
-	  show ?thesis by fastsimp
+	  show ?thesis by(fastsimp simp:knd_def)
 	next
 	  case False
 	  { fix V' assume "V' \<in> Use (sourcenode a)"
@@ -225,14 +226,14 @@ proof -
 	    `e = (Node (sourcenode a), kind a, Node (targetnode a))`
 	  have "\<forall>V \<in> Def (sourcenode a). state_val (transfer (kind a) s) V =
             state_val (transfer (kind a) s') V"
-	    by -(erule CFG_edge_transfer_uses_only_Use,auto)
+	    by -(erule CFG_edge_transfer_uses_only_Use,auto simp:knd_def)
 	  from `V \<in> lift_Def Def Entry Exit H L (src e)` False
 	    `e = (Node (sourcenode a), kind a, Node (targetnode a))`
 	  have "V \<in> Def (sourcenode a)" by(fastsimp elim:lift_Def_set.cases)
 	  with `\<forall>V \<in> Def (sourcenode a). state_val (transfer (kind a) s) V =
             state_val (transfer (kind a) s') V`
 	    `e = (Node (sourcenode a), kind a, Node (targetnode a))`
-	  show ?thesis by simp
+	  show ?thesis by(simp add:knd_def)
 	qed
       next
 	case (lve_Entry_edge e)
@@ -247,7 +248,7 @@ proof -
 	have False
 	  by(fastsimp elim:lift_Def_set.cases intro!:Entry_noteq_Exit simp:Exit_empty)
 	thus ?case  by simp
-      qed simp
+      qed(simp add:knd_def)
     qed
   next
     fix a s s'
@@ -256,7 +257,7 @@ proof -
       and "\<forall>V\<in>lift_Use Use Entry Exit H L (src a). state_val s V = state_val s' V"
     thus "pred (knd a) s'"
       by(induct rule:lift_valid_edge.induct,
-	 auto elim!:CFG_edge_Uses_pred_equal dest:lift_Use_node)
+	 auto elim!:CFG_edge_Uses_pred_equal dest:lift_Use_node simp:knd_def)
   next
     fix a a'
     assume "lift_valid_edge valid_edge sourcenode targetnode kind Entry Exit a"
@@ -271,7 +272,7 @@ proof -
 	`src e = src a'` `trg e \<noteq> trg a'`
       show ?case
       proof(induct rule:lift_valid_edge.induct)
-	case lve_edge thus ?case by(auto dest:deterministic)
+	case lve_edge thus ?case by(auto dest:deterministic simp:knd_def)
       next
 	case (lve_Exit_edge e')
 	from `e = (Node (sourcenode a), kind a, Node (targetnode a))`
@@ -280,7 +281,7 @@ proof -
 	with `valid_edge a` have False by(rule Exit_source)
 	thus ?case by simp
       qed auto
-    qed (fastsimp elim:lift_valid_edge.cases)+
+    qed (fastsimp elim:lift_valid_edge.cases simp:knd_def)+
   qed
 qed
 
@@ -307,7 +308,7 @@ proof -
     from lve_Entry_Exit_edge
     show "\<exists>a. lift_valid_edge valid_edge sourcenode targetnode kind Entry Exit a \<and>
               src a = NewEntry \<and> trg a = NewExit \<and> knd a = (\<lambda>s. False)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   qed
 qed
 
@@ -368,41 +369,39 @@ proof -
     by(fastsimp intro:lift_CFG_wf)
   show ?thesis
   proof
-    fix n n\<^isub>c
-    assume "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c"
+    fix n S
+    assume "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse S"
     with CFG_wf show "CFG.valid_node src trg lve n"
       by -(rule CFG_wf.wod_backward_slice_valid_node)
   next
-    fix n assume "CFG.valid_node src trg lve n"
-    with CFG_wf show "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse n"
+    fix n S assume "CFG.valid_node src trg lve n" and "n \<in> S"
+    with CFG_wf show "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse S"
       by -(rule CFG_wf.refl)
   next
-    fix n' n\<^isub>c n V
-    assume "n' \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c"
+    fix n' S n V
+    assume "n' \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse S"
       and "CFG_wf.data_dependence src trg lve lDef lUse n V n'"
-    with CFG_wf show "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c"
+    with CFG_wf show "n \<in> CFG_wf.wod_backward_slice src trg lve lDef lUse S"
       by -(rule CFG_wf.dd_closed)
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
-    with CFG_wf 
+    fix n S
+    from CFG_wf 
     have "(\<exists>m. (CFG.obs src trg lve n
-        (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c)) = {m}) \<or>
-      CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c) = {}"
+        (CFG_wf.wod_backward_slice src trg lve lDef lUse S)) = {m}) \<or>
+      CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse S) = {}"
       by(rule CFG_wf.obs_singleton)
     thus "finite 
-      (CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c))"
+      (CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse S))"
       by fastsimp
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
-    with CFG_wf 
+    fix n S
+    from CFG_wf 
     have "(\<exists>m. (CFG.obs src trg lve n
-        (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c)) = {m}) \<or>
-      CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c) = {}"
+        (CFG_wf.wod_backward_slice src trg lve lDef lUse S)) = {m}) \<or>
+      CFG.obs src trg lve n (CFG_wf.wod_backward_slice src trg lve lDef lUse S) = {}"
       by(rule CFG_wf.obs_singleton)
     thus "card (CFG.obs src trg lve n
-                        (CFG_wf.wod_backward_slice src trg lve lDef lUse n\<^isub>c)) \<le> 1"
+                        (CFG_wf.wod_backward_slice src trg lve lDef lUse S)) \<le> 1"
       by fastsimp
   next
     fix a assume "lve a" and "src a = NewEntry"
@@ -411,7 +410,7 @@ proof -
   next
     from lve_Entry_edge lve
     show "\<exists>a. lve a \<and> src a = NewEntry \<and> trg a = Node Entry \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "trg a = Node Entry"
     with lve show "src a = NewEntry" by(fastsimp elim:lift_valid_edge.cases)
@@ -422,7 +421,7 @@ proof -
   next
     from lve_Exit_edge lve
     show "\<exists>a. lve a \<and> src a = Node Exit \<and> trg a = NewExit \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "src a = Node Exit"
     with lve show "trg a = NewExit" by(fastsimp elim:lift_valid_edge.cases)
@@ -1010,29 +1009,28 @@ proof -
     by(fastsimp intro:lift_CFGExit_wf)
   show ?thesis
   proof
-    fix n n\<^isub>c
+    fix n S
     assume "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c"
+      (Postdomination.standard_control_dependence src trg lve NewExit) S"
     with PDG' show "CFG.valid_node src trg lve n"
       by(rule PDG.PDG_BS_valid_node)
   next
-    fix n assume "CFG.valid_node src trg lve n"
+    fix n S assume "CFG.valid_node src trg lve n" and "n \<in> S"
     thus "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (Postdomination.standard_control_dependence src trg lve NewExit) n"
+      (Postdomination.standard_control_dependence src trg lve NewExit) S"
       by(fastsimp intro:PDG.PDG_path_Nil[OF PDG'] simp:PDG.PDG_BS_def[OF PDG'])
   next
-    fix n' n\<^isub>c n V
+    fix n' S n V
     assume "n' \<in> PDG.PDG_BS src trg lve lDef lUse
-      (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c"
+      (Postdomination.standard_control_dependence src trg lve NewExit) S"
       and "CFG_wf.data_dependence src trg lve lDef lUse n V n'"
     thus "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c"
+      (Postdomination.standard_control_dependence src trg lve NewExit) S"
       by(fastsimp intro:PDG.PDG_path_Append[OF PDG'] PDG.PDG_path_ddep[OF PDG']
 	                PDG.PDG_ddep_edge[OF PDG'] simp:PDG.PDG_BS_def[OF PDG']
 	          split:split_if_asm)
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
+    fix n S
     interpret PDGx:PDG src trg knd lve NewEntry lDef lUse state_val NewExit
       "Postdomination.standard_control_dependence src trg lve NewExit"
       by(rule PDG')
@@ -1040,21 +1038,20 @@ proof -
       by(fastsimp intro:pd' simp:lve)
     have scd:"StandardControlDependencePDG src trg knd lve NewEntry
       lDef lUse state_val NewExit" by(unfold_locales)
-    from `CFG.valid_node src trg lve n` have "(\<exists>m. CFG.obs src trg lve n
+    from StandardControlDependencePDG.obs_singleton[OF scd]
+    have "(\<exists>m. CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c) = {m}) \<or>
+        (Postdomination.standard_control_dependence src trg lve NewExit) S) = {m}) \<or>
       CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c) = {}"
-      by(fastsimp dest!:StandardControlDependencePDG.obs_singleton[OF scd]
-	           simp:StandardControlDependencePDG.PDG_BS_s_def[OF scd])
+        (Postdomination.standard_control_dependence src trg lve NewExit) S) = {}"
+      by(fastsimp simp:StandardControlDependencePDG.PDG_BS_s_def[OF scd])
     thus "finite (CFG.obs src trg lve n
         (PDG.PDG_BS src trg lve lDef lUse
-          (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c))"
+          (Postdomination.standard_control_dependence src trg lve NewExit) S))"
       by fastsimp
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
+    fix n S
     interpret PDGx:PDG src trg knd lve NewEntry lDef lUse state_val NewExit
       "Postdomination.standard_control_dependence src trg lve NewExit"
       by(rule PDG')
@@ -1062,17 +1059,17 @@ proof -
       by(fastsimp intro:pd' simp:lve)
     have scd:"StandardControlDependencePDG src trg knd lve NewEntry
       lDef lUse state_val NewExit" by(unfold_locales)
-    from `CFG.valid_node src trg lve n` have "(\<exists>m. CFG.obs src trg lve n
+    from StandardControlDependencePDG.obs_singleton[OF scd]
+    have "(\<exists>m. CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c) = {m}) \<or>
+        (Postdomination.standard_control_dependence src trg lve NewExit) S) = {m}) \<or>
       CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c) = {}"
-      by(fastsimp dest!:StandardControlDependencePDG.obs_singleton[OF scd]
-	           simp:StandardControlDependencePDG.PDG_BS_s_def[OF scd])
+        (Postdomination.standard_control_dependence src trg lve NewExit) S) = {}"
+      by(fastsimp simp:StandardControlDependencePDG.PDG_BS_s_def[OF scd])
     thus "card (CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (Postdomination.standard_control_dependence src trg lve NewExit) n\<^isub>c)) \<le> 1"
+        (Postdomination.standard_control_dependence src trg lve NewExit) S)) \<le> 1"
       by fastsimp
   next
     fix a assume "lve a" and "src a = NewEntry"
@@ -1081,7 +1078,7 @@ proof -
   next
     from lve_Entry_edge lve
     show "\<exists>a. lve a \<and> src a = NewEntry \<and> trg a = Node Entry \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "trg a = Node Entry"
     with lve show "src a = NewEntry" by(fastsimp elim:lift_valid_edge.cases)
@@ -1092,7 +1089,7 @@ proof -
   next
     from lve_Exit_edge lve
     show "\<exists>a. lve a \<and> src a = Node Exit \<and> trg a = NewExit \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "src a = Node Exit"
     with lve show "trg a = NewExit" by(fastsimp elim:lift_valid_edge.cases)
@@ -1360,29 +1357,28 @@ proof -
     by(fastsimp intro:lift_CFGExit_wf)
   show ?thesis
   proof
-    fix n n\<^isub>c
+    fix n S
     assume "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c"
+      (StrongPostdomination.weak_control_dependence src trg lve NewExit) S"
     with PDG' show "CFG.valid_node src trg lve n"
       by(rule PDG.PDG_BS_valid_node)
   next
-    fix n assume "CFG.valid_node src trg lve n"
+    fix n S assume "CFG.valid_node src trg lve n" and "n \<in> S"
     thus "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (StrongPostdomination.weak_control_dependence src trg lve NewExit) n"
+      (StrongPostdomination.weak_control_dependence src trg lve NewExit) S"
       by(fastsimp intro:PDG.PDG_path_Nil[OF PDG'] simp:PDG.PDG_BS_def[OF PDG'])
   next
-    fix n' n\<^isub>c n V
+    fix n' S n V
     assume "n' \<in> PDG.PDG_BS src trg lve lDef lUse
-      (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c"
+      (StrongPostdomination.weak_control_dependence src trg lve NewExit) S"
       and "CFG_wf.data_dependence src trg lve lDef lUse n V n'"
     thus "n \<in> PDG.PDG_BS src trg lve lDef lUse
-      (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c"
+      (StrongPostdomination.weak_control_dependence src trg lve NewExit) S"
       by(fastsimp intro:PDG.PDG_path_Append[OF PDG'] PDG.PDG_path_ddep[OF PDG']
 	                PDG.PDG_ddep_edge[OF PDG'] simp:PDG.PDG_BS_def[OF PDG']
 	          split:split_if_asm)
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
+    fix n S
     interpret PDGx:PDG src trg knd lve NewEntry lDef lUse state_val NewExit
       "StrongPostdomination.weak_control_dependence src trg lve NewExit"
       by(rule PDG')
@@ -1390,21 +1386,20 @@ proof -
       by(fastsimp intro:spd' simp:lve)
     have wcd:"WeakControlDependencePDG src trg knd lve NewEntry
       lDef lUse state_val NewExit" by(unfold_locales)
-    from `CFG.valid_node src trg lve n` have "(\<exists>m. CFG.obs src trg lve n
+    from WeakControlDependencePDG.obs_singleton[OF wcd]
+    have "(\<exists>m. CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-       (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c) = {m}) \<or>
+       (StrongPostdomination.weak_control_dependence src trg lve NewExit) S) = {m}) \<or>
       CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c) = {}"
-      by(fastsimp dest!:WeakControlDependencePDG.obs_singleton[OF wcd]
-	           simp:WeakControlDependencePDG.PDG_BS_w_def[OF wcd])
+        (StrongPostdomination.weak_control_dependence src trg lve NewExit) S) = {}"
+      by(fastsimp simp:WeakControlDependencePDG.PDG_BS_w_def[OF wcd])
     thus "finite (CFG.obs src trg lve n
         (PDG.PDG_BS src trg lve lDef lUse
-          (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c))"
+          (StrongPostdomination.weak_control_dependence src trg lve NewExit) S))"
       by fastsimp
   next
-    fix n n\<^isub>c
-    assume "CFG.valid_node src trg lve n"
+    fix n S
     interpret PDGx:PDG src trg knd lve NewEntry lDef lUse state_val NewExit
       "StrongPostdomination.weak_control_dependence src trg lve NewExit"
       by(rule PDG')
@@ -1412,17 +1407,17 @@ proof -
       by(fastsimp intro:spd' simp:lve)
     have wcd:"WeakControlDependencePDG src trg knd lve NewEntry
       lDef lUse state_val NewExit" by(unfold_locales)
-    from `CFG.valid_node src trg lve n` have "(\<exists>m. CFG.obs src trg lve n
+    from WeakControlDependencePDG.obs_singleton[OF wcd]
+    have "(\<exists>m. CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-       (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c) = {m}) \<or>
+       (StrongPostdomination.weak_control_dependence src trg lve NewExit) S) = {m}) \<or>
       CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c) = {}"
-      by(fastsimp dest!:WeakControlDependencePDG.obs_singleton[OF wcd]
-	           simp:WeakControlDependencePDG.PDG_BS_w_def[OF wcd])
+        (StrongPostdomination.weak_control_dependence src trg lve NewExit) S) = {}"
+      by(fastsimp simp:WeakControlDependencePDG.PDG_BS_w_def[OF wcd])
     thus "card (CFG.obs src trg lve n
       (PDG.PDG_BS src trg lve lDef lUse
-        (StrongPostdomination.weak_control_dependence src trg lve NewExit) n\<^isub>c)) \<le> 1"
+        (StrongPostdomination.weak_control_dependence src trg lve NewExit) S)) \<le> 1"
       by fastsimp
   next
     fix a assume "lve a" and "src a = NewEntry"
@@ -1431,7 +1426,7 @@ proof -
   next
     from lve_Entry_edge lve
     show "\<exists>a. lve a \<and> src a = NewEntry \<and> trg a = Node Entry \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "trg a = Node Entry"
     with lve show "src a = NewEntry" by(fastsimp elim:lift_valid_edge.cases)
@@ -1442,7 +1437,7 @@ proof -
   next
     from lve_Exit_edge lve
     show "\<exists>a. lve a \<and> src a = Node Exit \<and> trg a = NewExit \<and> knd a = (\<lambda>s. True)\<^isub>\<surd>"
-      by fastsimp
+      by(fastsimp simp:knd_def)
   next
     fix a assume "lve a" and "src a = Node Exit"
     with lve show "trg a = NewExit" by(fastsimp elim:lift_valid_edge.cases)
