@@ -310,7 +310,7 @@ lemma execd_preserve_deadlocked:
   and lto: "lock_thread_ok (locks S) (thr S)"
   and wto: "wset_thread_ok (wset S) (thr S)"
   and cs: "correct_state_ts \<Phi> (thr S) (shr S)"
-  shows "preserve_deadlocked JVM_final (mexecd P) S"
+  shows "preserve_deadlocked JVM_final (mexecd P) convert_RA S"
 proof(unfold_locales)
   fix tta s t' ta' s' t x ln LT
   assume Red: "P \<turnstile> S -\<triangleright>tta\<rightarrow>\<^bsub>jvmd\<^esub>* s"
@@ -400,9 +400,9 @@ lemma exec_preserve_deadlocked:
   and lto: "lock_thread_ok (locks S) (thr S)"
   and wto: "wset_thread_ok (wset S) (thr S)"
   and cs: "correct_state_ts \<Phi> (thr S) (shr S)"
-  shows "preserve_deadlocked JVM_final (mexec P) S"
+  shows "preserve_deadlocked JVM_final (mexec P) convert_RA S"
 proof -
-  interpret preserve_deadlocked JVM_final "mexecd P" S
+  interpret preserve_deadlocked JVM_final "mexecd P" convert_RA S
     by(rule execd_preserve_deadlocked) fact+
 
   { fix tta s t' ta' s' t x ln
@@ -421,33 +421,28 @@ proof -
     proof(cases rule: execd_mthr.redT_elims)
       case acquire with cst show ?thesis by simp
     next
-      case (normal X X' TA M' OBS)
+      case (normal X X' M' ws')
       obtain XCP FRS where X [simp]: "X = (XCP, FRS)" by(cases X, auto)
       obtain XCP' FRS' where X' [simp]: "X' = (XCP', FRS')" by(cases X', auto)
-      from `mexecd P t' (X, shr s) TA (X', M')`
-      have "P,t' \<turnstile> Normal (XCP, shr s, FRS) -TA-jvmd\<rightarrow> Normal (XCP', M', FRS')" by simp
+      from `mexecd P t' (X, shr s) ta' (X', M')`
+      have "P,t' \<turnstile> Normal (XCP, shr s, FRS) -ta'-jvmd\<rightarrow> Normal (XCP', M', FRS')" by simp
       moreover from `thr s t' = \<lfloor>(X, no_wait_locks)\<rfloor>` css
       have "\<Phi> \<turnstile> t': (XCP, shr s, FRS) \<surd>" by(auto dest: ts_okD)
       ultimately have "\<Phi> \<turnstile> t': (XCP, M', FRS) \<surd>" by -(rule correct_state_heap_change[OF wf])
-      moreover from lifting_wf.redT_updTs_preserves[OF lifting_wf_correct_state_d[OF wf] css, OF `mexecd P t' (X, shr s) TA (X', M')` `thr s t' = \<lfloor>(X, no_wait_locks)\<rfloor>`, of no_wait_locks] `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>` `ta' = observable_ta_of TA OBS`
-      have "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>TA\<rbrace>\<^bsub>t\<^esub>(t' \<mapsto> (X', no_wait_locks))) M'" by simp
-      ultimately have "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>TA\<rbrace>\<^bsub>t\<^esub>) M'"
-        using `thr s t' = \<lfloor>(X, no_wait_locks)\<rfloor>` `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>` `ta' = observable_ta_of TA OBS`
+      moreover from lifting_wf.redT_updTs_preserves[OF lifting_wf_correct_state_d[OF wf] css, OF `mexecd P t' (X, shr s) ta' (X', M')` `thr s t' = \<lfloor>(X, no_wait_locks)\<rfloor>`, of no_wait_locks] `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>`
+      have "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>(t' \<mapsto> (X', no_wait_locks))) M'" by simp
+      ultimately have "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>) M'"
+        using `thr s t' = \<lfloor>(X, no_wait_locks)\<rfloor>` `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>`
         apply(auto intro!: ts_okI dest: ts_okD)
         apply(case_tac "t=t'")
          apply(fastsimp dest: redT_updTs_Some)
         apply(drule_tac t=t in ts_okD, fastsimp+)
         done
-      moreover from `execd_mthr.redTWs P t' \<lbrace>ta'\<rbrace>\<^bsub>w\<^esub> (redT_updLs (locks s) t' \<lbrace>ta'\<rbrace>\<^bsub>l\<^esub>, (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>(t' \<mapsto> (X', redT_updLns (locks s) t' no_wait_locks \<lbrace>ta'\<rbrace>\<^bsub>l\<^esub>)), M'), wset s) OBS s'` `mexecd P t' (X, shr s) TA (X', M')` `ta' = observable_ta_of TA OBS`
-      have "execd_mthr.interrupted_mem_reds P (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>(t' \<mapsto> (X', redT_updLns (locks s) t' no_wait_locks \<lbrace>ta'\<rbrace>\<^bsub>l\<^esub>))) (wset s) M' (shr s')"
-        by -(drule (1) execd_mthr.redTWs_interrupted_mem_reds_ta, auto)
-      hence "execd_mthr.interrupted_mem_reds P (redT_updTs (thr s) \<lbrace>TA\<rbrace>\<^bsub>t\<^esub>) (wset s) M' (shr s')"
-        using `ta' = observable_ta_of TA OBS` `wset s t' = None`
-        by -(erule execd_mthr.interrupted_mem_reds_thr_change, auto)
-      ultimately have "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>TA\<rbrace>\<^bsub>t\<^esub>) (shr s')"
-        by -(rule lifting_wf.interrupted_mem_reds_preserve[OF lifting_wf_correct_state_d[OF wf]])
-      moreover from tst `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>` `ta' = observable_ta_of TA OBS`
-      have "redT_updTs (thr s) \<lbrace>TA\<rbrace>\<^bsub>t\<^esub> t = \<lfloor>(x, ln)\<rfloor>" by(auto intro: redT_updTs_Some)
+      hence "correct_state_ts \<Phi> (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>) (shr s')" 
+        using `s' = (redT_updLs (locks s) t' \<lbrace>ta'\<rbrace>\<^bsub>l\<^esub>, (redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>(t' \<mapsto> (X', redT_updLns (locks s) t' no_wait_locks \<lbrace>ta'\<rbrace>\<^bsub>l\<^esub>)), M'), ws')`
+        by simp
+      moreover from tst `thread_oks (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub>`
+      have "redT_updTs (thr s) \<lbrace>ta'\<rbrace>\<^bsub>t\<^esub> t = \<lfloor>(x, ln)\<rfloor>" by(auto intro: redT_updTs_Some)
       ultimately show ?thesis by(auto dest: ts_okD)
     qed
     { fix L

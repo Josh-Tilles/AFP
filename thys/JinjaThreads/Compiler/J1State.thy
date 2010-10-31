@@ -53,7 +53,7 @@ where
 | "max_vars (FAss e\<^isub>1 F D e\<^isub>2) = max (max_vars e\<^isub>1) (max_vars e\<^isub>2)"
 | "max_vars (e\<bullet>M(es)) = max (max_vars e) (max_varss es)"
 | "max_vars ({V:T=vo; e}) = max_vars e + 1"
-(* sync and insync will need an extra local variable when compiling to bytecode to store the object that is being synchronized on until its release *)
+-- "sync and insync will need an extra local variable when compiling to bytecode to store the object that is being synchronized on until its release"
 | "max_vars (sync\<^bsub>V\<^esub> (e') e) = max (max_vars e') (max_vars e + 1)"
 | "max_vars (insync\<^bsub>V\<^esub> (a) e) = max_vars e + 1"
 | "max_vars (e\<^isub>1;;e\<^isub>2) = max (max_vars e\<^isub>1) (max_vars e\<^isub>2)"
@@ -236,7 +236,7 @@ lemma bsok_simps [simp]:
   and bsoks_simps [simp]:
   "bsoks [] n = True"
   "bsoks (e # es) n = (bsok e n \<and> bsoks es n)"
-by(auto simp add: bsok_def bsoks_def expand_fun_eq)
+by(auto simp add: bsok_def bsoks_def fun_eq_iff)
 
 lemma call1_callE:
   assumes "call1 (obj\<bullet>M(pns)) = \<lfloor>(a, M', vs)\<rfloor>"

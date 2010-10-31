@@ -1031,7 +1031,7 @@ lemma bisim1'_refl: "bsok e n \<Longrightarrow> P,e,n,h \<turnstile>' (e,xs) \<l
 apply(induct e and es arbitrary: n xs and n xs)
 apply(auto intro: bisim1'_bisims1'.intros simp add: nat_fun_sum_eq_conv)
 apply(case_tac option)
-apply(auto intro: bisim1'_bisims1'.intros simp add: expand_fun_eq split: split_if_asm)
+apply(auto intro: bisim1'_bisims1'.intros simp add: fun_eq_iff split: split_if_asm)
 done
 
 lemma bisim1_imp_bisim1': "P, e, n, h \<turnstile> exs \<leftrightarrow> s \<Longrightarrow> P, e, n, h \<turnstile>' exs \<leftrightarrow> s"
@@ -1069,7 +1069,8 @@ end
 (* FIXME: Take lemmas out of locale to speed up opening the context *)
 
 lemmas bisim1_bisims1_inducts = 
-  J1_JVM_heap_base.bisim1'_bisims1'.inducts[unfolded J1_JVM_heap_base.bisim1'_eq_bisim1 J1_JVM_heap_base.bisims1'_eq_bisims1, 
+  J1_JVM_heap_base.bisim1'_bisims1'.inducts
+  [unfolded J1_JVM_heap_base.bisim1'_eq_bisim1 J1_JVM_heap_base.bisims1'_eq_bisims1, 
   consumes 1,
   case_names bisim1Val2 bisim1New bisim1NewThrow
   bisim1NewArray bisim1NewArrayThrow bisim1NewArrayNegative bisim1NewArrayFail bisim1Cast bisim1CastThrow bisim1CastFail
@@ -1342,16 +1343,16 @@ next
   show ?case by(simp add: add_assoc matches_ex_entry_def)
 next
   case bisim1Sync12 thus ?case
-    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append nat_number, simp add: matches_ex_entry_def)
+    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append eval_nat_numeral, simp add: matches_ex_entry_def)
 next
   case bisim1Sync13 thus ?case
-    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append nat_number, simp add: matches_ex_entry_def)
+    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append eval_nat_numeral, simp add: matches_ex_entry_def)
 next
   case bisim1Sync14 thus ?case
-    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append nat_number, simp add: matches_ex_entry_def)
+    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append eval_nat_numeral, simp add: matches_ex_entry_def)
 next
   case bisim1Sync15 thus ?case
-    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append nat_number, simp add: matches_ex_entry_def)
+    by(auto dest: bisim1_ThrowD simp add: match_ex_table_append eval_nat_numeral, simp add: matches_ex_entry_def)
 qed(fastsimp dest: bisim1_ThrowD simp add: add_assoc[symmetric])+
 
 declare match_ex_table_append_not_pcs [simp del]
@@ -1400,7 +1401,7 @@ next
   have "\<tau>Exec_mover_a P t (sync\<^bsub>V\<^esub> (e1) e2) h ([v], xs, 5 + length (compE2 e1) + length (compE2 e2), None)
                                         ([v], xs, 9 + length (compE2 e1) + length (compE2 e2), None)"
     by(rule \<tau>Execr1step)(auto intro: exec_instr \<tau>move2Sync6 simp add: exec_move_def)
-  with bisim1Sync6 show ?case by(auto simp add: nat_number)
+  with bisim1Sync6 show ?case by(auto simp add: eval_nat_numeral)
 next
   case (bisim1Seq2 e2 n xs stk loc pc xcp e1)
   from `Suc (length (compE2 e1) + pc) < length (compE2 (e1;; e2))` have pc: "pc < length (compE2 e2)" by simp
@@ -4091,7 +4092,7 @@ next
      (stack_xlift (length STK) (compxE2 e1 0 0) @ shift (length ?pre) (stack_xlift (length STK) (compxE2 e2 0 0) @
       [(0, length (compE2 e2), None, 3 + length (compE2 e2), length STK)])) t
      h (stk @ STK, loc, length ?pre + pc, xcp) ta h' (stk', loc', pc', xcp')"
-      by(simp add: stack_xlift_compxE2 shift_compxE2 nat_number add_ac)
+      by(simp add: stack_xlift_compxE2 shift_compxE2 eval_nat_numeral add_ac)
     hence exec'': "exec_meth_d (compP2 P) (compE2 e2 @ [Load V, MExit, Goto 4, Load V, MExit, ThrowExc])
       (stack_xlift (length STK) (compxE2 e2 0 0) @ [(0, length (compE2 e2), None, 3 + length (compE2 e2), length STK)]) t
      h (stk @ STK, loc, pc, xcp) ta h' (stk', loc', pc' - length ?pre, xcp')"
@@ -4119,7 +4120,7 @@ next
       (compxE2 e1 0 0 @ shift (length ?pre) (compxE2 e2 0 0 @ [(0, length (compE2 e2), None, 3 + length (compE2 e2), 0)])) t
      h (stk, loc, length ?pre + pc, xcp) ta h' (stk'', loc', length ?pre + (pc' - length ?pre), xcp')"
         by(rule append_exec_meth_xt[where n=1]) auto
-      thus ?thesis using stk pc' pc'' by(simp add: nat_number shift_compxE2 add_ac)
+      thus ?thesis using stk pc' pc'' by(simp add: eval_nat_numeral shift_compxE2 add_ac)
     next
       case (Some a)
       with exec'' have [simp]: "h' = h" "xcp' = None" "loc' = loc" "ta = \<epsilon>"
@@ -4143,7 +4144,7 @@ next
 	h (stk, loc, length ?pre + pc, \<lfloor>a\<rfloor>) \<epsilon> h (Addr a # drop (length stk - 0) stk, loc,
 	length ?pre + (pc' - length ?pre), None)"
 	  by(rule append_exec_meth_xt[where n=1]) auto
-	with pc' Some show ?thesis by(simp add: nat_number shift_compxE2 add_ac)
+	with pc' Some show ?thesis by(simp add: eval_nat_numeral shift_compxE2 add_ac)
       next
 	case (Some pcd)
 	with `xcp = \<lfloor>a\<rfloor>` exec'' True
@@ -4164,14 +4165,14 @@ next
 	moreover from Some `xcp = \<lfloor>a\<rfloor>` exec'' True pc'
 	have "pc' = length (compE2 e1) + 3 + fst pcd" "stk' = Addr a # drop (length stk - snd pcd) stk @ STK"
 	  by(auto elim!: exec_meth.cases dest!: match_ex_table_stack_xliftD simp: match_ex_table_append split: split_if_asm)
-	ultimately show ?thesis using `xcp = \<lfloor>a\<rfloor>` by(auto simp add: nat_number shift_compxE2 add_ac)
+	ultimately show ?thesis using `xcp = \<lfloor>a\<rfloor>` by(auto simp add: eval_nat_numeral shift_compxE2 add_ac)
       qed
     qed
   next
     case False
     with pc have [simp]: "pc = length (compE2 e2)" by simp
     with exec show ?thesis
-      by(auto elim!: exec_meth.cases intro!: exec_meth.intros split: split_if_asm simp add: match_ex_table_append_not_pcs nat_number)(simp_all add: matches_ex_entry_def)
+      by(auto elim!: exec_meth.cases intro!: exec_meth.intros split: split_if_asm simp add: match_ex_table_append_not_pcs eval_nat_numeral)(simp_all add: matches_ex_entry_def)
   qed
 next
   case bisim1Sync5 thus ?case
@@ -4190,7 +4191,7 @@ next
   note exec = `?exec (sync\<^bsub>V\<^esub> (e1) e2) [Addr a] STK xs (8 + length (compE2 e1) + length (compE2 e2)) None stk' loc' pc' xcp'`
   let ?pre = "compE2 e1 @ Dup # Store V # MEnter # compE2 e2 @ [Load V, MExit, Goto 4, Load V, MExit]"
   from exec have exec': "exec_meth_d (compP2 P) (?pre @ [ThrowExc]) (stack_xlift (length STK) (compxE2 (sync\<^bsub>V\<^esub> (e1) e2) 0 0) @ shift (length ?pre) []) t h (Addr a # STK, xs, length ?pre + 0, None) ta h' (stk', loc', pc', xcp')"
-    by(simp add: nat_number)
+    by(simp add: eval_nat_numeral)
   hence "exec_meth_d (compP2 P) [ThrowExc] [] t h (Addr a # STK, xs, 0, None) ta h' (stk', loc', pc' - length ?pre, xcp')"
     by(rule exec_meth_drop_xt)(auto simp add: stack_xlift_compxE2)
   moreover from exec' have "pc' = 8 + length (compE2 e1) + length (compE2 e2)" "stk' = Addr a # STK"
@@ -4392,7 +4393,7 @@ next
     by(rule exec_meth_drop_xt_pc)(auto simp add: stack_xlift_compxE2)
   moreover hence "(Suc (Suc (pc' - Suc (Suc 0)))) = pc'" by simp
   ultimately show ?case using stk'
-    by(auto simp add: shift_compxE2 stack_xlift_compxE2 add_ac nat_number)
+    by(auto simp add: shift_compxE2 stack_xlift_compxE2 add_ac eval_nat_numeral)
 next
   case (bisim1CondThrow e n a xs stk loc pc e1 e2)
   note bisim = `P,e,n,h \<turnstile> (Throw a, xs) \<leftrightarrow> (stk, loc, pc, \<lfloor>a\<rfloor>)`
@@ -4673,7 +4674,7 @@ next
   moreover from exec' have "pc' \<ge> length ?pre"
     by(rule exec_meth_drop_xt_pc)(auto simp add: stack_xlift_compxE2)
   moreover hence "(Suc (Suc (pc' - Suc (Suc 0)))) = pc'" by simp
-  ultimately show ?case using stk' by(auto simp add: shift_compxE2 nat_number)
+  ultimately show ?case using stk' by(auto simp add: shift_compxE2 eval_nat_numeral)
 next
   case (bisim1TryFail e V a xs stk loc pc C' C'' e2)
   note bisim = `P,e,V,h \<turnstile> (Throw a, xs) \<leftrightarrow> (stk, loc, pc, \<lfloor>a\<rfloor>)`
@@ -4718,7 +4719,7 @@ next
   moreover from exec' have "pc' \<ge> length ?pre"
     by(rule exec_meth_drop_xt_pc)(auto simp add: stack_xlift_compxE2)
   moreover hence "(Suc (Suc (pc' - Suc (Suc 0)))) = pc'" by simp
-  ultimately show ?case using stk' by(auto simp add: shift_compxE2 nat_number)
+  ultimately show ?case using stk' by(auto simp add: shift_compxE2 eval_nat_numeral)
 next
   case bisims1Nil thus ?case by(auto elim: exec_meth.cases)
 next
@@ -5046,7 +5047,7 @@ where "no_calls2 es pc \<longleftrightarrow> (pc \<le> length (compEs2 es)) \<an
 
 locale J1_JVM_conf_read =
   J1_JVM_heap_conf_base empty_heap new_obj new_arr typeof_addr array_length heap_read heap_write hconf P +
-  JVM_conf_read         empty_heap new_obj new_arr typeof_addr array_length heap_read heap_write hconf "compP2 P" 
+  JVM_conf_read         empty_heap new_obj new_arr typeof_addr array_length heap_read heap_write hconf "compP2 P"
   for empty_heap :: "'heap"
   and new_obj :: "'heap \<Rightarrow> cname \<Rightarrow> ('heap \<times> addr option)"
   and new_arr :: "'heap \<Rightarrow> ty \<Rightarrow> nat \<Rightarrow> ('heap \<times> addr option)"
@@ -5074,6 +5075,5 @@ sublocale J1_JVM_conf_read < J1_JVM_heap_conf
 by(unfold_locales)
 
 sublocale J1_JVM_conf_read < J1_heap by(unfold_locales)
-
 
 end
