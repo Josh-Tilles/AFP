@@ -15,8 +15,7 @@ begin
 inductive  wf_state :: "expr \<Rightarrow> expr list \<Rightarrow> bool"
   for e :: "expr" and es :: "expr list"
   where
-  "\<lbrakk> fvs (e # es) = {}; list_all is_call es(*;
-    final (last (e # es)) \<or> (\<exists>v M vs. last (e # es) = Val v\<bullet>M(map Val vs)); es = [] \<Longrightarrow> final e *)  \<rbrakk>
+  "\<lbrakk> fvs (e # es) = {}; list_all is_call es \<rbrakk>
    \<Longrightarrow> wf_state e es"
 
 inductive bisim_red_red0 :: "(expr \<times> locals) \<times> 'heap \<Rightarrow> (expr \<times> expr list) \<times> 'heap \<Rightarrow> bool"
@@ -31,7 +30,7 @@ declare wf_state.intros [intro!]
 declare wf_state.cases [elim!]
 
 lemma wf_state_iff [code]:
-  "wf_state e es \<longleftrightarrow> fvs (e # es) = {} \<and> list_all is_call es (*\<and> (final (last (e # es)) \<or> (\<exists>v M vs. last (e # es) = Val v\<bullet>M(map Val vs))) \<and> (es = [] \<longrightarrow> final e) *)"
+  "wf_state e es \<longleftrightarrow> fvs (e # es) = {} \<and> list_all is_call es"
 by(blast)
 
 declare bisim_red_red0.intros[intro]
@@ -73,10 +72,7 @@ proof(cases)
       thus ?thesis using fv `length vs = length pns` by auto
     next
       case (red0Return E)
-      with icl have "is_call E" by simp
-      then obtain aMvs where "call E = \<lfloor>aMvs\<rfloor>" by(auto simp add: is_call_def)
-      with fv_inline_call[OF this, of e] red0Return
-      show ?thesis using fv by auto
+      with fv_inline_call[of e E] show ?thesis using fv by auto
     qed
   next
     from red icl show "list_all is_call es'"
@@ -335,7 +331,7 @@ next
   from IH[OF ic red'] obtain ee' vo' 
     where icl: "inline_call ee' exp = exp'" "x'' = fun_upd x V voo"
     and red'': "P,t \<turnstile> \<langle>ee,(h, empty)\<rangle> -ta\<rightarrow> \<langle>ee',(h', empty)\<rangle>" by blast
-  from `x'' = fun_upd x V voo` have "x'' V = voo" by(simp add: expand_fun_eq)
+  from `x'' = fun_upd x V voo` have "x'' V = voo" by(simp add: fun_eq_iff)
   with icl red'' `E' = {V:ty=x'' V; exp'}` `x' = fun_upd x'' V (x V)` red'
   show ?case by(auto simp del: fun_upd_apply)
 next
@@ -406,8 +402,7 @@ next
   hence "P,t \<turnstile> \<langle>fold_es (inline_call e E) es,(h, empty)\<rangle> -ta\<rightarrow>  \<langle>fold_es (inline_call e' E) es,(h', empty)\<rangle>"
   proof(rule IH)
     from fvs have "fv E = {}" "fv e = {}" by auto
-    with fv_inline_call[OF call, of e]
-    have "fv (inline_call e E) = {}" by auto
+    with fv_inline_call[of e E] have "fv (inline_call e E) = {}" by auto
     thus "fvs (inline_call e E # es) = {}" using fvs by auto
   next
     from icl show "list_all is_call es" by simp
@@ -443,7 +438,7 @@ next
   from red have "P,t \<turnstile> \<langle>fold_es (inline_call e E) es,(h, empty)\<rangle> -ta\<rightarrow> \<langle>e',(h', x')\<rangle>" by simp
   hence "\<exists>E'. e' = fold_es E' es \<and> P,t \<turnstile> \<langle>inline_call e E,(h, empty)\<rangle> -ta\<rightarrow> \<langle>E',(h', empty)\<rangle>"
   proof(rule IH)
-    from fvs fv_inline_call[OF call, of e]
+    from fvs fv_inline_call[of e E]
     show "fvs (inline_call e E # es) = {}" by simp
   next
     from icl show "list_all is_call es" by simp
@@ -883,63 +878,35 @@ proof -
     thus "(\<lambda>exs (e0, es0). is_call e0) x1'' x2''"
       by(cases x1')(cases x2', auto dest: Red_Suspend_is_call)
   next
-    fix t x1 m1 x2 m2 x1'
-    assume b: "bisim_red_red0 (x1, m1) (x2, m2)"
-      and c: "(\<lambda>exs (e0, es0). is_call e0) x1 x2"
-      and red1: "mred P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1)"
-    from c have "\<not> final (fst x2)" by(auto simp add: is_call_def)
-    moreover from red1 have "\<not> \<tau>move0 P m1 (fst x1)"
-      by(cases x1)(auto dest: red_\<tau>_taD[where extTA="extTA2J P", simplified] simp add: ta_upd_simps)
-    moreover from b have "m2 = m1" by(cases) auto
-    ultimately obtain e0' ta0 where "P,t \<turnstile>0 \<langle>fst x2/snd x2,m2\<rangle> -ta0\<rightarrow> \<langle>e0'/snd x2,m2\<rangle>"
-      "bisim_red_red0 ((fst x1', snd x1'), m1) ((e0', snd x2), m2)" "ta_bisim0 \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> ta0"
-      using red0_simulates_red_not_final[OF wf, of "fst x1" "snd x1" m1 "fst x2" "snd x2" m2 t "\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>" "fst x1'" m1 "snd x1'"]
-      using b red1 by(auto simp add: split_beta)
-    thus "\<exists>x2'. mred0 P t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2) \<and> bisim_red_red0 (x1', m1) (x2', m2)"
-      by(cases ta0)(auto simp add: split_beta ta_upd_simps ta_bisim_def split_paired_Ex)
-  next
-    fix t x1 m1 x2 m2 x2'
-    assume b: "bisim_red_red0 (x1, m1) (x2, m2)" 
-      and c: "(\<lambda>(e0, es0). is_call e0) x2"
-      and red2: "mred0 P t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2)"
-    from b have [simp]: "m1 = m2" by cases auto
-    with red_simulates_red0[OF wf b red2] obtain s1' ta1
-      where "mred P t (x1, m1) ta1 s1'" "bisim_red_red0 s1' (x2', m2)" "ta_bisim0 ta1 \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>"
-      by(auto simp add: ta_upd_simps)
-    moreover from `bisim_red_red0 s1' (x2', m2)` have "m2 = snd s1'" by cases auto
-    ultimately
-    show "\<exists>x1'. mred P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1) \<and> bisim_red_red0 (x1', m1) (x2', m2)"
-      by(cases ta1)(cases s1', auto simp add: split_beta ta_bisim_def ta_upd_simps split_paired_Ex, auto)
-  next
     fix t x1 m1 x2 m2 ta1 x1' m1'
     assume b: "bisim_red_red0 (x1, m1) (x2, m2)"
       and c: "(\<lambda>(e0, es0). is_call e0) x2"
       and red1: "mred P t (x1, m1) ta1 (x1', m1')"
-      and ii: "is_Interrupted_ta ta1"
+      and wakeup: "Notified \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub>"
     from c have "\<not> final (fst x2)" by(auto simp add: is_call_def)
-    moreover from red1 ii have "\<not> \<tau>move0 P m1 (fst x1)"
-      by(cases x1)(auto dest: red_\<tau>_taD[where extTA="extTA2J P", simplified] simp add: ta_upd_simps is_Interrupted_ta_def)
+    moreover from red1 wakeup have "\<not> \<tau>move0 P m1 (fst x1)"
+      by(cases x1)(auto dest: red_\<tau>_taD[where extTA="extTA2J P", simplified] simp add: ta_upd_simps)
     moreover from b have "m2 = m1" by(cases) auto
     ultimately obtain e0' ta0 where "P,t \<turnstile>0 \<langle>fst x2/snd x2,m2\<rangle> -ta0\<rightarrow> \<langle>e0'/snd x2,m1'\<rangle>"
       "bisim_red_red0 ((fst x1', snd x1'), m1') ((e0', snd x2), m1')" "ta_bisim0 ta1 ta0"
-      using red0_simulates_red_not_final[OF wf, of "fst x1" "snd x1" m1 "fst x2" "snd x2" m2 t "ta1" "fst x1'" m1' "snd x1'"]
+      using red0_simulates_red_not_final[OF wf, of "fst x1" "snd x1" m1 "fst x2" "snd x2" m2 t ta1 "fst x1'" m1' "snd x1'"]
       using b red1 by(auto simp add: split_beta)
-    thus "\<exists>x2' m2' ta2. mred0 P t (x2, m2) ta2 (x2', m2') \<and> bisim_red_red0 (x1', m1') (x2', m2') \<and> ta_bisim0 ta1 ta2"
-      by(cases ta0)(fastsimp simp add: split_beta split_paired_Ex)
+    thus "\<exists>ta2 x2' m2'. mred0 P t (x2, m2) ta2 (x2', m2') \<and> bisim_red_red0 (x1', m1') (x2', m2') \<and> ta_bisim0 ta1 ta2"
+      by(cases ta0)(fastsimp simp add: split_beta)
   next
-    fix t x1 m1 x2 ta2 m2 x2' m2'
+    fix t x1 m1 x2 m2 ta2 x2' m2'
     assume b: "bisim_red_red0 (x1, m1) (x2, m2)"
       and c: "(\<lambda>(e0, es0). is_call e0) x2"
       and red2: "mred0 P t (x2, m2) ta2 (x2', m2')"
-      and ii: "is_Interrupted_ta ta2"
+      and wakeup: "Notified \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub>"
     from b have [simp]: "m1 = m2" by cases auto
-    with red_simulates_red0[OF wf b red2] ii obtain s1' ta1
+    with red_simulates_red0[OF wf b red2] wakeup obtain s1' ta1
       where "mred P t (x1, m1) ta1 s1'" "bisim_red_red0 s1' (x2', m2')" "ta_bisim0 ta1 ta2"
-      by(cases ta2)(auto simp add: ta_upd_simps is_Interrupted_ta_def split_paired_Ex)
+      by(fastsimp simp add: split_paired_Ex)
     moreover from `bisim_red_red0 s1' (x2', m2')` have "m2' = snd s1'" by cases auto
     ultimately
-    show "\<exists>x1' m1' ta1. mred P t (x1, m1) ta1 (x1', m1') \<and> bisim_red_red0 (x1', m1') (x2', m2') \<and> ta_bisim0 ta1 ta2"
-      by(cases s1')(fastsimp simp add: split_beta ta_bisim_def ta_upd_simps)
+    show "\<exists>ta1 x1' m1'. mred P t (x1, m1) ta1 (x1', m1') \<and> bisim_red_red0 (x1', m1') (x2', m2') \<and> ta_bisim0 ta1 ta2"
+      by(cases ta1)(fastsimp simp add: split_beta)
   qed
 qed
 
@@ -951,6 +918,7 @@ sublocale J_heap_base < red_red0!:
     "mred P"
     final_expr0 
     "mred0 P"
+    convert_RA
     "\<lambda>t. bisim_red_red0" 
     "\<lambda>exs (e0, es0). is_call e0"
     "\<tau>MOVE P" "\<tau>MOVE0 P" 
@@ -960,17 +928,14 @@ by(unfold_locales)
 context J_heap_base begin
 
 lemma bisim_J_J0_start:
-  assumes wf: "wf_J_prog P"
+  assumes wf: "wwf_J_prog P"
   and sees: "P \<turnstile> C sees M:Ts\<rightarrow>T=(pns,body) in C"
   and vs: "length vs = length pns" and conf: "P,start_heap \<turnstile> vs [:\<le>] Ts"
   shows "red_red0.mbisim (J_start_state P C M vs) (J0_start_state P C M vs)"
 proof -
-  from sees_wf_mdecl[OF wf_prog_wwf_prog[OF wf] sees] 
+  from sees_wf_mdecl[OF wf sees] 
   have wwfCM: "wwf_J_mdecl P C (M, Ts, T, pns, body)"
     and len: "length pns = length Ts" by(auto simp add: wf_mdecl_def)
-  from sees_wf_mdecl[OF wf sees]
-  have wfCM: "wf_J_mdecl P C (M, Ts, T, pns, body)"
-    by(auto simp add: wf_mdecl_def)
   from wwfCM have fvbody: "fv body \<subseteq> {this} \<union> set pns"
     and pns: "length pns = length Ts" by simp_all
   with vs len have fv: "fv (blocks pns Ts vs body) \<subseteq> {this}" by auto

@@ -391,8 +391,8 @@ declare Nat.diff_is_0_eq' [simp del]
 (********************************* replaceFacesAt ****************************)
 subsection{* @{const replacefacesAt} *}
 
-consts replacefacesAt2 :: "nat list \<Rightarrow> face \<Rightarrow> face list \<Rightarrow> face list list \<Rightarrow> face list list"
-primrec "replacefacesAt2 [] f fs F = F"
+primrec replacefacesAt2 :: "nat list \<Rightarrow> face \<Rightarrow> face list \<Rightarrow> face list list \<Rightarrow> face list list" where
+ "replacefacesAt2 [] f fs F = F" |
  "replacefacesAt2 (n#ns) f fs F =
      (if n < |F|
       then replacefacesAt2 ns f fs (F [n:=replace f fs (F!n)])
@@ -646,7 +646,7 @@ apply(subgoal_tac "vertices f \<cong> vertices f'")
  apply(rule cong_if_is_nextElem_eq)
     apply assumption+
   apply(simp add:vertices_conv_Union_edges)
- apply(simp add:expand_set_eq)
+ apply(simp add:set_eq_iff)
 apply(subgoal_tac "\<V> f = \<V> f'")
  prefer 2 apply(simp add:vertices_conv_Union_edges)
 apply(frule minVertex_eq_if_vertices_eq)
@@ -1392,7 +1392,7 @@ apply (simp only: split_def Let_def)
 apply (simp only: snd_conv)
 apply (rule equalityI)
  apply (rule subsetI)
- apply (simp only: faceListAt.simps vertices.simps split:split_if_asm)
+ apply (simp only: faceListAt.simps vertices_graph.simps split:split_if_asm)
   apply (case_tac "v < |faceListAt g'| \<and> a < | faceListAt g'|")
    apply (simp only: nth_append split: split_if_asm)
     apply (case_tac "va < | faceListAt g' |")
@@ -1977,7 +1977,7 @@ proof -
   proof cases
     assume 2: "|faces g| = 2"
     with fg obtain f' where Fg: "\<F> g = {f,f'}"
-      by(fastsimp simp: nat_number length_Suc_conv)
+      by(fastsimp simp: eval_nat_numeral length_Suc_conv)
     moreover hence "f \<noteq> f'" using 2 distinct_card[OF distF] by auto
     ultimately have Fg': "\<F> g' = {f\<^isub>1,f\<^isub>2,f'}"
       using set_faces_splitFace[OF mgp fg pre fdg] by blast
@@ -2367,7 +2367,7 @@ proof -
 	note uvr = rotate_before_vFrom[OF distf rf nru ruv]
 	note bet = before_between[OF uvr distf vinf  nrv[symmetric]]
 	have "(a,b) \<notin> Edges (r # ?fru @ [u])"
-	  using abfvr Edges_disj[OF distf vinf uinf nrv[symmetric] nru bet];
+	  using abfvr Edges_disj[OF distf vinf uinf nrv[symmetric] nru bet]
 	  by fast
 	moreover have "(b,a) \<notin> Edges (r # ?fru @ [u])"
 	proof
@@ -2420,7 +2420,7 @@ proof -
     qed
     thus ?case by blast
   qed
-qed;
+qed
 
 
 lemma one_final_but_makeFaceFinal:
@@ -2607,7 +2607,7 @@ subsection{* Invariants of @{const Seed} *}
 lemma Seed_holds_facesAt_distinct: "facesAt_distinct (Seed p)"
 apply(simp add: Seed_def graph_def
                 facesAt_distinct_def normFaces_def facesAt_def normFace_def)
-apply(simp add: nat_number minVertex_zero1 minVertex_zero2 verticesFrom_Def
+apply(simp add: eval_nat_numeral minVertex_zero1 minVertex_zero2 verticesFrom_Def
    fst_splitAt_upt snd_splitAt_upt fst_splitAt_rev snd_splitAt_rev del:upt_Suc)
 apply(simp add:upt_conv_Cons del:upt_Suc)
 apply simp
@@ -2628,7 +2628,7 @@ by (fastsimp simp add: Seed_def graph_def edges_disj_def edges_graph_def)
 lemma Seed_holds_faces_distinct: "faces_distinct (Seed p)"
 apply(simp add: Seed_def graph_def
                 faces_distinct_def normFaces_def facesAt_def normFace_def)
-apply(simp add: nat_number minVertex_zero1 minVertex_zero2 verticesFrom_Def
+apply(simp add: eval_nat_numeral minVertex_zero1 minVertex_zero2 verticesFrom_Def
    fst_splitAt_upt snd_splitAt_upt fst_splitAt_rev snd_splitAt_rev del:upt_Suc)
 apply(simp add:upt_conv_Cons del:upt_Suc)
 apply simp
