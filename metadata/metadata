@@ -128,12 +128,19 @@ date = 2004-04-05
 topic = Computer Science/Data Structures
 abstract = The correctness is shown of binary search tree operations (lookup, insert and remove) implementing a set. Two versions are given, for both structured and linear (tactic-style) proofs. An implementation of integer-indexed maps is also verified.
 
+[Binomial-Queues]
+title = Functional Binomial Queues
+author = Ren&eacute; Neumann <mailto:neumannr@in.tum.de>
+date = 2010-10-28
+topic = Computer Science/Data Structures
+abstract = Priority queues are an important data structure and efficient implementations of them are crucial. We implement a functional variant of binomial queues in Isabelle/HOL and show its functional correctness. A verification against an abstract reference specification of priority queues has also been attempted, but could not be achieved to the full extent.
+
 [Binomial-Heaps]
 title = Binomial Heaps and Skew Binomial Heaps
 author = Rene Meis <mailto:rene.meis@uni-muenster.de>, Finn Nielsen <mailto:finn.nielsen@uni-muenster.de>, Peter Lammich <mailto:peter.lammich@uni-muenster.de>
 date = 2010-10-28
 topic = Computer Science/Data Structures
-abstract =
+abstract = 
  We implement and prove correct binomial heaps and skew binomial heaps.
  Both are data-structures for priority queues.
  While binomial heaps have logarithmic <em>findMin</em>, <em>deleteMin</em>,
@@ -175,6 +182,13 @@ author = Peter Lammich <mailto:peter.lammich@uni-muenster.de>
 date = 2009-11-25
 topic = Computer Science/Data Structures
 abstract = This development provides an efficient, extensible, machine checked collections framework. The library adopts the concepts of interface, implementation and generic algorithm from object-oriented programming and implements them in Isabelle/HOL. The framework features the use of data refinement techniques to refine an abstract specification (using high-level concepts like sets) to a more concrete implementation (using collection datastructures, like red-black-trees). The code-generator of Isabelle/HOL can be used to generate efficient code.
+extra-history = 
+  [2010-10-08]: New Interfaces: OrderedSet, OrderedMap, List
+    Fifo now implements list-interface: Function names changed: put/get --> enqueue/dequeue
+    New Implementations: ArrayList, ArrayHashMap, ArrayHashSet, TrieMap, TrieSet
+    Invariant-free datastructures: Invariant implicitely hidden in typedef.
+    Record-interfaces: All operations of an interface encapsulated as record.
+    Examples moved to examples subdirectory
 
 [FileRefinement]
 title = File Refinement
@@ -194,8 +208,23 @@ abstract = This theory provides functions for finding the index of an element in
 title = Executable Matrix Operations on Matrices of Arbitrary Dimensions
 topic = Computer Science/Data Structures
 date = 2010-06-17
-author = Christian Sternagel <mailto:christian.sternagel@uibk.ac.at>, Ren&eacute; Thiemann <mailto:rene.thiemann@uibk.ac.at>
-abstract = We provide the operations of matrix addition, multiplication, transposition, and matrix comparisons as executable functions over ordered semirings. Moreover, it is proven that strongly normalizing (monotone) orders can be lifted to strongly normalizing (monotone) orders over matrices. We further show that the standard semirings over the naturals, integers, and rationals, as well as the arctic semirings satisfy the axioms that are required by our matrix theory. Our formalization is part of the <a href="http://cl-informatik.uibk.ac.at/software/ceta">CeTA</a> system which contains several termination techniques. The provided theories have been essential to formalize matrix-interpretations and arctic interpretations.
+author = Christian Sternagel <http://cl-informatik.uibk.ac.at/~griff>, Ren&eacute; Thiemann <http://cl-informatik.uibk.ac.at/~thiemann>
+abstract =
+  We provide the operations of matrix addition, multiplication,
+  transposition, and matrix comparisons as executable functions over
+  ordered semirings. Moreover, it is proven that strongly normalizing
+  (monotone) orders can be lifted to strongly normalizing (monotone) orders
+  over matrices. We further show that the standard semirings over the
+  naturals, integers, and rationals, as well as the arctic semirings
+  satisfy the axioms that are required by our matrix theory. Our
+  formalization is part of the <a
+  href="http://cl-informatik.uibk.ac.at/software/ceta">CeTA</a> system
+  which contains several termination techniques. The provided theories have
+  been essential to formalize matrix-interpretations and arctic
+  interpretations.
+extra-history =
+  Change history: [2010-09-17]: Moved theory on arbitrary (ordered)
+  semirings to Abstract Rewriting.
 
 [Huffman]
 title = The Textbook Proof of Huffman's Algorithm 
@@ -475,8 +504,22 @@ abstract = This theory defines a type constructor representing the free Boolean 
 title = Abstract Rewriting
 topic = Logic/Rewriting
 date = 2010-06-14
-author = Christian Sternagel <mailto:christian.sternagel@uibk.ac.at>, Ren&eacute; Thiemann <mailto:rene.thiemann@uibk.ac.at>
-abstract = We present an Isabelle formalization of abstract rewriting (see, e.g., the book by Baader and Nipkow). First, we define standard relations like <i>joinability</i>, <i>meetability</i>, <i>conversion</i>, etc. Then, we formalize important properties of abstract rewrite systems, e.g., confluence and strong normalization. Our main concern is on strong normalization, since this formalization is the basis of <a href="http://cl-informatik.uibk.ac.at/software/ceta">CeTA</a> (which is mainly about strong normalization of term rewrite systems). Hence lemmas involving strong normalization constitute by far the biggest part of this theory. One of those is Newman's lemma.
+author = Christian Sternagel <http://cl-informatik.uibk.ac.at/~griff>, Ren&eacute; Thiemann <http://cl-informatik.uibk.ac.at/~thiemann>
+abstract =
+  We present an Isabelle formalization of abstract rewriting (see, e.g.,
+  the book by Baader and Nipkow). First, we define standard relations like
+  <i>joinability</i>, <i>meetability</i>, <i>conversion</i>, etc. Then, we
+  formalize important properties of abstract rewrite systems, e.g.,
+  confluence and strong normalization. Our main concern is on strong
+  normalization, since this formalization is the basis of <a
+  href="http://cl-informatik.uibk.ac.at/software/ceta">CeTA</a> (which is
+  mainly about strong normalization of term rewrite systems). Hence lemmas
+  involving strong normalization constitute by far the biggest part of this
+  theory. One of those is Newman's lemma.
+extra-history =
+  Change history: [2010-09-17]: Added theories defining several (ordered)
+  semirings related to strong normalization and giving some standard
+  instances.
 
 [Free-Groups]
 title = Free Groups
@@ -540,22 +583,24 @@ extra-note = Note: This article is of historical interest only. Lebesgue-style i
 
 [Polynomials]
 title = Executable Multivariate Polynomials
-author = Christian Sternagel and Ren&eacute; Thiemann
+author = Christian Sternagel <http://cl-informatik.uibk.ac.at/~griff>, Ren&eacute; Thiemann <http://cl-informatik.uibk.ac.at/~thiemann>
 date = 2010-08-10
 topic = Mathematics/Analysis
-abstract = We define multivariate polynomials over arbitrary (ordered)
-  semirings in combination with (executable) operations like addition,
-  multiplication,
-  and substitution. We also define (weak) monotonicity of polynomials
-  and comparison of polynomials where we provide standard estimations
-  like absolute positiveness or the more recent
-  approach of Neurauter, Zankl, and Middeldorp. Moreover, it is proven
-  that strongly normalizing (monotone) orders
-  can be lifted to strongly normalizing (monotone) orders over polynomials.
-  Our formalization was performed as part of the <a
+abstract =
+  We define multivariate polynomials over arbitrary (ordered) semirings in
+  combination with (executable) operations like addition, multiplication,
+  and substitution. We also define (weak) monotonicity of polynomials and
+  comparison of polynomials where we provide standard estimations like
+  absolute positiveness or the more recent approach of Neurauter, Zankl,
+  and Middeldorp. Moreover, it is proven that strongly normalizing
+  (monotone) orders can be lifted to strongly normalizing (monotone) orders
+  over polynomials. Our formalization was performed as part of the <a
   href="http://cl-informatik.uibk.ac.at/software/ceta">IsaFoR/CeTA-system</a>
   which contains several termination techniques. The provided theories have
   been essential to  formalize polynomial interpretations.
+extra-history =
+  Change history: [2010-09-17]: Moved theories on arbitrary (ordered)
+  semirings to Abstract Rewriting.
 
 [Fermat3_4]
 title = Fermat's Last Theorem for Exponents 3 and 4 and the Parametrisation of Pythagorean Triples

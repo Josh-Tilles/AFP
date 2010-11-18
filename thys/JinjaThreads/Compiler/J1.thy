@@ -7,7 +7,7 @@ header {* \isaheader{Semantics of the intermediate language} *}
 theory J1 imports
   "J1State"
   "J1Heap"
-  "/Framework/FWBisimulation"
+  "../Framework/FWBisimulation"
 begin
 
 abbreviation final_expr1 :: "(expr1 \<times> locals1) \<times> (expr1 \<times> locals1) list \<Rightarrow> bool" where
@@ -123,9 +123,9 @@ where
   \<Longrightarrow> P,t \<turnstile>1 \<langle>(addr a)\<lfloor>Val (Intg i)\<rceil>, s\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW ArrayIndexOutOfBounds, s\<rangle>"
 
 | Red1AAcc:
-  "\<lbrakk> typeof_addr (hp s) a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length (hp s) a);
-     heap_read (hp s) a (ACell (nat (sint i))) v \<rbrakk>
-  \<Longrightarrow> P,t \<turnstile>1 \<langle>(addr a)\<lfloor>Val (Intg i)\<rceil>, s\<rangle> -\<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>\<rightarrow> \<langle>Val v, s\<rangle>"
+  "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a);
+     heap_read h a (ACell (nat (sint i))) v \<rbrakk>
+  \<Longrightarrow> P,t \<turnstile>1 \<langle>(addr a)\<lfloor>Val (Intg i)\<rceil>, (h, xs)\<rangle> -\<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>\<rightarrow> \<langle>Val v, (h, xs)\<rangle>"
 
 | AAss1Red1:
   "P,t \<turnstile>1 \<langle>a, s\<rangle> -ta\<rightarrow> \<langle>a', s'\<rangle> \<Longrightarrow> P,t \<turnstile>1 \<langle>a\<lfloor>i\<rceil> := e, s\<rangle> -ta\<rightarrow> \<langle>a'\<lfloor>i\<rceil> := e, s'\<rangle>"
@@ -166,8 +166,8 @@ where
   "P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle> \<Longrightarrow> P,t \<turnstile>1 \<langle>e\<bullet>F{D}, s\<rangle> -ta\<rightarrow> \<langle>e'\<bullet>F{D}, s'\<rangle>"
 
 | Red1FAcc:
-  "heap_read (hp s) a (CField D F) v
-  \<Longrightarrow> P,t \<turnstile>1 \<langle>(addr a)\<bullet>F{D}, s\<rangle> -\<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>\<rightarrow> \<langle>Val v, s\<rangle>"
+  "heap_read h a (CField D F) v
+  \<Longrightarrow> P,t \<turnstile>1 \<langle>(addr a)\<bullet>F{D}, (h, xs)\<rangle> -\<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>\<rightarrow> \<langle>Val v, (h, xs)\<rangle>"
 
 | Red1FAccNull:
   "P,t \<turnstile>1 \<langle>null\<bullet>F{D}, s\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW NullPointer, s\<rangle>"
@@ -1481,9 +1481,15 @@ proof
   thus "False" by induct auto
 qed auto
 
-lemma red1_ta_Suspend_last: "P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle> \<Longrightarrow> Suspend w \<notin> set (butlast \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>)"
-  and reds1_ta_Suspend_last: "P,t \<turnstile>1 \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle> \<Longrightarrow> Suspend w \<notin> set (butlast \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>)"
-by(induct rule: red1_reds1.inducts)(auto dest: red_external_Suspend_last simp add: ta_upd_simps)
+lemma red1_ta_Wakeup_no_Join_no_Lock:
+  "\<lbrakk> P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; Notified \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
+  \<Longrightarrow> \<lbrace>ta\<rbrace>\<^bsub>c\<^esub> = [] \<and> collect_locks \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = {}"
+  and reds1_ta_Wakeup_no_Join_no_Lock:
+  "\<lbrakk> P,t \<turnstile>1 \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; Notified \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
+  \<Longrightarrow> \<lbrace>ta\<rbrace>\<^bsub>c\<^esub> = [] \<and> collect_locks \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = {}"
+apply(induct rule: red1_reds1.inducts)
+apply(auto simp add: ta_upd_simps dest: red_external_Wakeup_no_Join_no_Lock)
+done
 
 lemma red1_Suspend_is_call:
   "\<lbrakk> P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; Suspend w \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk> \<Longrightarrow> call1 e' \<noteq> None"
@@ -1495,12 +1501,17 @@ lemma Red1_Suspend_is_call:
   "\<lbrakk> P,t \<turnstile>1 \<langle>(e, xs)/exs, h\<rangle> -ta\<rightarrow> \<langle>(e', xs')/exs', h'\<rangle>; Suspend w \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk> \<Longrightarrow> call1 e' \<noteq> None"
 by(auto elim!: Red1.cases dest: red1_Suspend_is_call)
 
+lemma Red1_ta_Wakeup_no_Join_no_Lock:
+  "\<lbrakk> P,t \<turnstile>1 \<langle>(e, xs)/exs, h\<rangle> -ta\<rightarrow> \<langle>(e', xs')/exs', h'\<rangle>; Notified \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
+  \<Longrightarrow> \<lbrace>ta\<rbrace>\<^bsub>c\<^esub> = [] \<and> collect_locks \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = {}"
+by(auto elim!: Red1.cases dest: red1_ta_Wakeup_no_Join_no_Lock)
+
 lemma Red1'_mthr: "multithreaded (mred1' P)"
-by(unfold_locales)(fastsimp elim!: Red1.cases dest: red1_new_thread_heap red1_ta_Suspend_last)+
+by(unfold_locales)(fastsimp elim!: Red1.cases dest: red1_new_thread_heap red1_ta_Wakeup_no_Join_no_Lock)+
 
 lemma Red1_mthr: "multithreaded (mred1 P)"
 apply(unfold_locales)
-apply(fastsimp elim!: Red1.cases dest: red1_new_thread_heap red1_ta_Suspend_last)+
+apply(fastsimp elim!: Red1.cases dest: red1_new_thread_heap red1_ta_Wakeup_no_Join_no_Lock)+
 done
 
 lemma red1_\<tau>move1_heap_unchanged: "\<lbrakk> P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; \<tau>move1 P (hp s) e \<rbrakk> \<Longrightarrow> hp s' = hp s"
@@ -1511,7 +1522,7 @@ done
 
 lemma Red1_final_thread_wf: "final_thread_wf final_expr1 (mred1 P)"
 proof -
-  interpret multithreaded final_expr1 "mred1 P"
+  interpret multithreaded final_expr1 "mred1 P" convert_RA
     by(rule Red1_mthr)
   thus ?thesis
     by(unfold_locales)(auto elim!: Red1.cases simp add: final_iff)
@@ -1519,7 +1530,7 @@ qed
 
 lemma Red1'_final_thread_wf: "final_thread_wf final_expr1 (mred1' P)"
 proof -
-  interpret multithreaded final_expr1 "mred1' P"
+  interpret multithreaded final_expr1 "mred1' P" convert_RA
     by(rule Red1'_mthr)
   show ?thesis
     by(unfold_locales)(auto elim!: Red1.cases simp add: final_iff)
@@ -1527,7 +1538,7 @@ qed
 
 lemma Red1_\<tau>mthr_wf: "\<tau>multithreaded_wf final_expr1 (mred1 P) (\<tau>MOVE1 P) wfs"
 proof -
-  interpret final_thread_wf final_expr1 "mred1 P"
+  interpret final_thread_wf final_expr1 "mred1 P" convert_RA
     by(rule Red1_final_thread_wf)
   show ?thesis
   proof
@@ -1543,7 +1554,7 @@ qed
 
 lemma Red1'_\<tau>mthr_wf: "\<tau>multithreaded_wf final_expr1 (mred1' P) (\<tau>MOVE1 P) wfs"
 proof -
-  interpret final_thread_wf final_expr1 "mred1' P"
+  interpret final_thread_wf final_expr1 "mred1' P" convert_RA
     by(rule Red1'_final_thread_wf)
   show ?thesis
   proof
@@ -1562,7 +1573,8 @@ end
 sublocale J1_heap_base < Red1_mthr!: 
   \<tau>multithreaded_wf 
     final_expr1
-    "mred1 P" 
+    "mred1 P"
+    convert_RA
     "\<tau>MOVE1 P"
     wfs
   for P wfs
@@ -1572,6 +1584,7 @@ sublocale J1_heap_base < Red1'_mthr!:
   \<tau>multithreaded_wf
     final_expr1
     "mred1' P"
+    convert_RA
     "\<tau>MOVE1 P"
     wfs
   for P wfs

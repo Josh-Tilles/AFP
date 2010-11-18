@@ -22,6 +22,16 @@ by(unfold transp_def) blast
 lemma transpI: "(\<And>a b c. \<lbrakk> R a b; R b c \<rbrakk> \<Longrightarrow> R a c) \<Longrightarrow> transp R"
 unfolding transp_def by blast
 
+lemma id_respect [quot_respect]:
+  "(R ===> R) id id"
+  by (auto simp add: fun_eq_iff)
+
+lemma id_preserve [quot_preserve]:
+  assumes "Quotient R Abs Rep"
+  shows "(Rep ---> Abs) id = id"
+using Quotient_abs_rep[OF assms]
+by(simp add: fun_eq_iff)
+
 
 
 declare [[map llist = (lmap, llist_all2)]]
@@ -100,21 +110,18 @@ lemma LCons_preserve [quot_preserve]:
   assumes "Quotient R Abs Rep"
   shows "(Rep ---> (lmap Rep) ---> (lmap Abs)) LCons = LCons"
 using Quotient_abs_rep[OF assms]
-by(simp add: expand_fun_eq lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
 
 lemma LCons_respect [quot_respect]:
-  assumes "Quotient R Abs Rep"
-  shows "(R ===> llist_all2 R ===> llist_all2 R) LCons LCons"
-by simp
+  "(R ===> llist_all2 R ===> llist_all2 R) LCons LCons"
+  by (auto intro!: fun_relI)
 
 lemma LNil_preserve [quot_preserve]:
-  assumes "Quotient R Abs Rep"
-  shows "lmap Abs LNil = LNil"
+  "lmap Abs LNil = LNil"
 by simp
 
 lemma LNil_respect [quot_respect]:
-  assumes "Quotient R Abs Rep"
-  shows "llist_all2 R LNil LNil"
+  "llist_all2 R LNil LNil"
 by simp
 
 lemma lmap_preserve [quot_preserve]:
@@ -123,14 +130,12 @@ lemma lmap_preserve [quot_preserve]:
   shows "((abs1 ---> rep2) ---> (lmap rep1) ---> (lmap abs2)) lmap = lmap"
   and   "((abs1 ---> id) ---> lmap rep1 ---> id) lmap = lmap"
 using Quotient_abs_rep[OF a] Quotient_abs_rep[OF b]
-by(simp_all add: expand_fun_eq lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp_all add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
 
 lemma lmap_respect [quot_respect]:
-  assumes q1: "Quotient R1 Abs1 Rep1"
-  and     q2: "Quotient R2 Abs2 Rep2"
   shows "((R1 ===> R2) ===> (llist_all2 R1) ===> llist_all2 R2) lmap lmap"
   and   "((R1 ===> op =) ===> (llist_all2 R1) ===> op =) lmap lmap"
-by(simp_all add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2)
+  by (simp_all add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2 fun_rel_def)
 
 lemma llist_all2_rsp:
   assumes r: "\<forall>x y. R x y \<longrightarrow> (\<forall>a b. R a b \<longrightarrow> S x a = T y b)"
@@ -149,13 +154,13 @@ qed
 
 lemma llist_all2_respect [quot_respect]:
   "((R ===> R ===> op =) ===> llist_all2 R ===> llist_all2 R ===> op =) llist_all2 llist_all2"
-by(simp add: llist_all2_rsp)
+  by (simp add: llist_all2_rsp fun_rel_def)
 
 lemma llist_all2_preserve [quot_preserve]:
   assumes "Quotient R Abs Rep"
   shows "((Abs ---> Abs ---> id) ---> lmap Rep ---> lmap Rep ---> id) llist_all2 = llist_all2"
 using Quotient_abs_rep[OF assms]
-by(simp add: expand_fun_eq llist_all2_lmap1 llist_all2_lmap2)
+by(simp add: fun_eq_iff llist_all2_lmap1 llist_all2_lmap2)
 
 lemma llist_all2_eq [id_simps]: "llist_all2 (op =) = (op =)"
 proof(intro ext iffI)
@@ -179,7 +184,7 @@ qed
 lemma llist_all2_preserve2 [quot_preserve]:
   assumes "Quotient R Abs Rep"
   shows "(llist_all2 ((Rep ---> Rep ---> id) R) l m) = (l = m)"
-by(simp add: fun_map_def_raw Quotient_rel_rep[OF assms] llist_all2_eq)
+  by (simp add: fun_map_def_raw Quotient_rel_rep [OF assms] llist_all2_eq comp_def)
 
 lemma llist_corec_preserve [quot_preserve]: 
   assumes q1: "Quotient R1 Abs1 Rep1"

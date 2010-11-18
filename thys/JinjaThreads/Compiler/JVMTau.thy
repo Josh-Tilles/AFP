@@ -4,8 +4,10 @@
 
 header {* \isaheader{Unobservable steps for the JVM} *}
 
-theory JVMTau
-imports TypeComp "../JVM/JVMDefensive"
+theory JVMTau imports
+  TypeComp
+  "../JVM/JVMDefensive"
+  "../Framework/LTS"
 begin
 
 declare nth_append [simp del]
@@ -37,6 +39,7 @@ where
 | "\<tau>instr P h stk Return = True"
 | "\<tau>instr P h stk Pop = True"
 | "\<tau>instr P h stk Dup = True"
+| "\<tau>instr P h stk Swap = True"
 | "\<tau>instr P h stk (BinOpInstr bop) = True"
 | "\<tau>instr P h stk (Goto i) = True"
 | "\<tau>instr P h stk (IfFalse i) = True" 
@@ -139,7 +142,7 @@ where
 
 | \<tau>move2Cond:
   "\<tau>move2 P h stk e pc xcp \<Longrightarrow> \<tau>move2 P h stk (if (e) e1 else e2) pc xcp"
-| \<tau>move2CondRed: (* new *)
+| \<tau>move2CondRed:
   "\<tau>move2 P h stk (if (e) e1 else e2) (length (compE2 e)) None"
 | \<tau>move2CondThen:
   "\<tau>move2 P h stk e1 pc xcp
@@ -290,7 +293,7 @@ proof -
     hence "\<tau>moves2 P h stk es pc xcp" by(auto intro: \<tau>moves2xcp) }
   with rhs2lhs2 have "?rhs2 \<Longrightarrow> ?lhs2" by(cases xcp) auto
   moreover have "?lhs1 \<Longrightarrow> ?rhs1" and "?lhs2 \<Longrightarrow> ?rhs2"
-    by(induct rule: \<tau>move2_\<tau>moves2.inducts)(fastsimp simp add: nth_append nat_number)+
+    by(induct rule: \<tau>move2_\<tau>moves2.inducts)(fastsimp simp add: nth_append eval_nat_numeral)+
   ultimately show "?lhs1 \<longleftrightarrow> ?rhs1" "?lhs2 \<longleftrightarrow> ?rhs2" by blast+
 qed
 
@@ -390,7 +393,7 @@ lemma \<tau>Move2_iff:
      | (stk, loc, C, M, pc) # frs' \<Rightarrow> 
        (let (_,_,_,_,_,ins,xt) = method P C M
         in (pc < length ins \<and> (xcp = None \<longrightarrow> \<tau>instr P h stk (ins ! pc)))))"
-by(cases \<sigma>)(clarsimp split: list.splits simp add: expand_fun_eq split_beta)
+by(cases \<sigma>)(clarsimp split: list.splits simp add: fun_eq_iff split_beta)
 
 lemma \<tau>instr_compP [simp]: "\<tau>instr (compP f P) h stk i \<longleftrightarrow> \<tau>instr P h stk i"
 by(cases i) auto
@@ -398,7 +401,7 @@ by(cases i) auto
 lemma [simp]: fixes e :: "expr1" and es :: "expr1 list"
   shows \<tau>move2_compP: "\<tau>move2 (compP f P) h stk e = \<tau>move2 P h stk e"
   and \<tau>moves2_compP: "\<tau>moves2 (compP f P) h stk es = \<tau>moves2 P h stk es"
-by(auto simp add: \<tau>move2_iff \<tau>moves2_iff expand_fun_eq)
+by(auto simp add: \<tau>move2_iff \<tau>moves2_iff fun_eq_iff)
 
 lemma \<tau>Move2_compP2:
   "P \<turnstile> C sees M:Ts\<rightarrow>T=body in D \<Longrightarrow> 

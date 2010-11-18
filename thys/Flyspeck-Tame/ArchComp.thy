@@ -1,12 +1,12 @@
-(*  ID:         $Id: ArchComp.thy,v 1.7 2008-10-09 13:27:29 fhaftmann Exp $
-    Author:     Tobias Nipkow
-*)
+(*  Author:  Tobias Nipkow  *)
 
-header {* Comparing Enumeration and Archive" *}
+header "Comparing Enumeration and Archive"
 
 theory ArchComp
-imports ArchCompAux Efficient_Nat 
+imports ArchCompAux Efficient_Nat
 begin
+
+subsection {* Proofs by evaluation using generated code *}
 
 lemma pre_iso_test3: "\<forall>g \<in> set Tri. pre_iso_test g"
 by eval
@@ -20,28 +20,17 @@ by eval
 lemma pre_iso_test6: "\<forall>g \<in> set Hex. pre_iso_test g"
 by eval
 
-lemma pre_iso_test7: "\<forall>g \<in> set Hept. pre_iso_test g"
+(* w/o Filter to keep that variant `alive' as well *)
+lemma same3: "same (tameEnum 0 312764) Tri"
 by eval
 
-lemma pre_iso_test8: "\<forall>g \<in> set Oct. pre_iso_test g"
+lemma same4: "same (tameEnumFilter 1 134291356) Quad"
 by eval
 
-lemma same3: "same (tameEnum 0 800000) Tri"
+lemma same5: "same (tameEnumFilter 2 99334466383) Pent"
 by eval
 
-lemma same4: "same (tameEnum 1 8000000) Quad"
-by eval
-
-lemma same5: "same (tameEnum 2 20000000) Pent"
-by eval
-
-lemma same6: "same (tameEnum 3 4000000) Hex"
-by eval
-
-lemma same7: "same (tameEnum 4 1000000) Hept"
-by eval
-
-lemma same8: "same (tameEnum 5 2000000) Oct"
+lemma same6: "same (tameEnumFilter 3 334466383) Hex"
 by eval
 
 end
