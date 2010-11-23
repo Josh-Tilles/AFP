@@ -5,7 +5,6 @@ header {* A type class for computing the cardinality of a type's universe *}
 theory Card_Univ imports
   Main
   Infinite_Set
-  Enum
 begin
 
 subsection {* A type class for computing the cardinality of a type's universe *}
