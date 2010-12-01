@@ -274,7 +274,7 @@ proof (rule int_induct [of "?P" 1])
     proof
       assume "\<forall>n. f n = n + 1"
       hence "\<forall>n. f n = upOne n" by auto;
-      with expand_fun_eq[of f upOne,THEN sym] 
+      with fun_eq_iff[of f upOne,THEN sym] 
          have "f = upOne" by auto; 
       with Ex1.base_func show "f \<in> Ex1" by auto;
     qed
@@ -293,7 +293,7 @@ next
       from induct_hyp have h_Ex1: "?h \<in> Ex1" by auto;
       from  f_eq have "\<forall>n. f n = upOne (?h n)" by (unfold upOne_def,auto);;
       hence "\<forall>n. f n = (upOne \<circ> ?h) n" by auto;
-      with expand_fun_eq[THEN sym, of f "upOne \<circ> ?h"] 
+      with fun_eq_iff[THEN sym, of f "upOne \<circ> ?h"] 
          have "f = upOne \<circ> ?h" by auto;
       with h_Ex1 and Ex1.comp_func[of ?h] show "f \<in> Ex1" by auto;
     qed;
@@ -313,7 +313,7 @@ next;
       from inv_upOne_eq and f_eq 
         have "\<forall>n. f n = (inv upOne) (?h n)" by auto;
       hence "\<forall>n. f n = (inv upOne \<circ> ?h) n" by auto;
-      with expand_fun_eq[THEN sym, of f "inv upOne \<circ> ?h"] 
+      with fun_eq_iff[THEN sym, of f "inv upOne \<circ> ?h"] 
          have "f = inv upOne \<circ> ?h" by auto;
       with h_Ex1 and Ex1.comp_inv[of ?h] show "f \<in> Ex1" by auto;
     qed;
@@ -379,7 +379,7 @@ proof -
     assume f_prop : "\<forall>n. f(n) = n"
     have "(f x = id x) = (f x = x)" by simp;
     hence "(\<forall>x. (f x = id x)) = (\<forall>x. (f x = x))" by simp;
-    with expand_fun_eq[THEN sym, of f id] and f_prop show "f = id" by auto;
+    with fun_eq_iff[THEN sym, of f id] and f_prop show "f = id" by auto;
   qed;
   from f_Ex1 and Ex1_Normal_form have "\<exists>k. \<forall>n. f(n) = n + k" by auto;
   then obtain k where k_prop: "\<forall>n. f(n) = n + k" ..;
@@ -547,7 +547,7 @@ used to coerce the functions above to be on the natural numbers. *}
 abbreviation "ni_bij == int_decode"
 
 lemma bij_f_o_inf_f: "bij f \<Longrightarrow> f \<circ> inv f = id"
-by(simp add: bij_def surj_iff)
+  unfolding bij_def surj_iff by simp
 
 text {* The following theorem is a key theorem in showing that the
 group we are interested in is cofinitary.  It states that when you
@@ -662,8 +662,8 @@ qed;
 lemma comp_CONJ:
   "CONJ (f \<circ> g) = (CONJ f) \<circ> (CONJ g)" (is "?left = ?right")
 proof -;
-  from bij_int_decode have "surj ni_bij" using bij_def by auto;
-  with surj_iff have "ni_bij \<circ> (inv ni_bij) = id" by auto;
+  from bij_int_decode have "surj ni_bij" unfolding bij_def by auto;
+  then have "ni_bij \<circ> (inv ni_bij) = id" unfolding surj_iff by auto;
   moreover
   have "?left = (inv ni_bij) \<circ> (f \<circ> g) \<circ> ni_bij" by simp;
   hence "?left = (inv ni_bij) \<circ> ((f \<circ> id) \<circ> g) \<circ> ni_bij" by simp;

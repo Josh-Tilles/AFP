@@ -2,42 +2,14 @@
     Author:     Andreas Lochbihler
 *)
 
-header {* \isaheader{Method calls in expressions} *}
+header {*
+  \chapter{Compilation}\label{cha:comp}
+  \isaheader{Method calls in expressions} 
+*}
 
 theory CallExpr imports 
   "../J/Expr"
 begin
-
-primrec call :: "('a,'b) exp \<Rightarrow> (addr \<times> mname \<times> val list) option"
-  and calls :: "('a,'b) exp list \<Rightarrow> (addr \<times> mname \<times> val list) option"
-where
-  "call (new C) = None"
-| "call (newA T\<lfloor>e\<rceil>) = call e"
-| "call (Cast C e) = call e"
-| "call (e instanceof T) = call e"
-| "call (Val v) = None"
-| "call (Var V) = None"
-| "call (V:=e) = call e"
-| "call (e \<guillemotleft>bop\<guillemotright> e') = (if is_val e then call e' else call e)"
-| "call (a\<lfloor>i\<rceil>) = (if is_val a then call i else call a)"
-| "call (AAss a i e) = (if is_val a then (if is_val i then call e else call i) else call a)"
-| "call (a\<bullet>length) = call a"
-| "call (e\<bullet>F{D}) = call e"
-| "call (FAss e F D e') = (if is_val e then call e' else call e)"
-| "call (e\<bullet>M(es)) = (if is_val e then
-                     (if is_vals es \<and> is_addr e then \<lfloor>(THE a. e = addr a, M, THE vs. es = map Val vs)\<rfloor> else calls es) 
-                     else call e)"
-| "call ({V:T=vo; e}) = call e"
-| "call (sync\<^bsub>V\<^esub> (o') e) = call o'"
-| "call (insync\<^bsub>V\<^esub> (a) e) = call e"
-| "call (e;;e') = call e"
-| "call (if (e) e1 else e2) = call e"
-| "call (while(b) e) = None"
-| "call (throw e) = call e"
-| "call (try e1 catch(C V) e2) = call e1"
-
-| "calls [] = None"
-| "calls (e#es) = (if is_val e then calls es else call e)"
 
 primrec inline_call :: "('a,'b) exp \<Rightarrow> ('a,'b) exp \<Rightarrow> ('a,'b) exp"
   and inline_calls :: "('a,'b) exp \<Rightarrow> ('a,'b) exp list \<Rightarrow> ('a,'b) exp list"
@@ -80,66 +52,6 @@ where "is_call e = (call e \<noteq> None)"
 
 definition is_calls :: "('a, 'b) exp list \<Rightarrow> bool"
 where "is_calls es = (calls es \<noteq> None)"
-
-lemma calls_append [simp]:
-  "calls (es @ es') = (if calls es = None \<and> is_vals es then calls es' else calls es)"
-by(induct es) auto
-
-lemma call_callE [consumes 1, case_names CallObj CallParams Call]:
-  "\<lbrakk> call (obj\<bullet>M(pns)) = \<lfloor>(a, M', vs)\<rfloor>;
-     call obj = \<lfloor>(a, M', vs)\<rfloor> \<Longrightarrow> thesis; 
-     \<And>v. \<lbrakk> obj = Val v; calls pns = \<lfloor>(a, M', vs)\<rfloor> \<rbrakk> \<Longrightarrow> thesis;
-     \<lbrakk> obj = addr a; pns = map Val vs; M = M' \<rbrakk> \<Longrightarrow> thesis \<rbrakk> \<Longrightarrow> thesis"
-by(auto split: split_if_asm simp add: is_vals_conv)
-
-lemma calls_conv:
-  "calls es = \<lfloor>aMvs\<rfloor> \<longleftrightarrow> (\<exists>vs e es'. es = map Val vs @ e # es' \<and> call e = \<lfloor>aMvs\<rfloor>)"
-proof(induct es)
-  case Nil thus ?case by simp
-next
-  case (Cons e es)
-  note IH = `(calls es = \<lfloor>aMvs\<rfloor>) = (\<exists>vs e es'. es = map Val vs @ e # es' \<and> call e = \<lfloor>aMvs\<rfloor>)`
-  show ?case
-  proof(cases "is_val e")
-    case True
-    then obtain v where e: "e = Val v" by auto
-    hence "calls (e # es) = calls es" by(auto)
-    moreover from e
-    have "(calls es = \<lfloor>aMvs\<rfloor>) = (\<exists>vs e' es'. e # es = map Val (v # vs) @ e' # es' \<and> call e' = \<lfloor>aMvs\<rfloor>)"
-      unfolding IH by(auto)
-    also from e have "\<dots> = (\<exists>vs e' es'. e # es = map Val vs @ e' # es' \<and> call e' = \<lfloor>aMvs\<rfloor>)"
-      apply(auto simp add: Cons_eq_append_conv)
-      apply(rule_tac x="v # vs" in exI)
-      by(clarsimp)
-    finally show ?thesis .
-  next
-    case False
-    show ?thesis
-    proof(rule iffI)
-      assume "calls (e # es) = \<lfloor>aMvs\<rfloor>"
-      with False have "call e = \<lfloor>aMvs\<rfloor>" by(auto)
-      hence "e # es = map Val [] @ e # es" "call e = \<lfloor>aMvs\<rfloor>" by auto
-      thus "\<exists>vs e' es'. e # es = map Val vs @ e' # es' \<and> call e' = \<lfloor>aMvs\<rfloor>" by blast
-    next
-      assume "\<exists>vs e' es'. e # es = map Val vs @ e' # es' \<and> call e' = \<lfloor>aMvs\<rfloor>"
-      then obtain vs e' es' where "e # es = map Val vs @ e' # es'" "call e' = \<lfloor>aMvs\<rfloor>" by(blast)
-      moreover
-      with False have "vs = []" 
-	by-(erule contrapos_np, auto simp add: neq_Nil_conv)
-      ultimately show "calls (e # es) = \<lfloor>aMvs\<rfloor>" by(auto)
-    qed
-  qed
-qed
-
-lemma calls_map_Val [simp]:
-  "calls (map Val vs) = None"
-by(induct vs) auto
-
-lemma call_not_is_val [dest]: "call e = \<lfloor>aMvs\<rfloor> \<Longrightarrow> \<not> is_val e"
-by(cases e) auto
-
-lemma is_calls_not_is_vals [dest]: "calls es = \<lfloor>aMvs\<rfloor> \<Longrightarrow> \<not> is_vals es"
-by(induct es) auto
 
 
 
@@ -222,8 +134,8 @@ done
 
 declare option.split [split] split_if [split] split_if_asm [split del]
 
-lemma fv_inline_call: "call e = \<lfloor>aMvs\<rfloor> \<Longrightarrow> fv (inline_call e' e) \<subseteq> fv e \<union> fv e'"
-  and fvs_inline_calls: "calls es = \<lfloor>aMvs\<rfloor> \<Longrightarrow> fvs (inline_calls e' es) \<subseteq> fvs es \<union> fv e'"
+lemma fv_inline_call: "fv (inline_call e' e) \<subseteq> fv e \<union> fv e'"
+  and fvs_inline_calls: "fvs (inline_calls e' es) \<subseteq> fvs es \<union> fv e'"
 by(induct e and es)(fastsimp split: split_if_asm)+
 
 lemma contains_insync_inline_call_conv:
@@ -247,7 +159,10 @@ lemma fold_es_conv_foldl:
 by(induct es arbitrary: e) simp_all
 
 lemma fv_fold_es: "list_all is_call es \<Longrightarrow> fv (fold_es e es) \<subseteq> fvs (e # es)"
-by(induct es arbitrary: e) (auto simp add: is_call_def dest: fv_inline_call)
+apply(induct es arbitrary: e)
+apply(insert fv_inline_call)
+apply(fastsimp dest: subsetD)+
+done
 
 lemma final_inline_callD: "\<lbrakk> final (inline_call E e); is_call e \<rbrakk> \<Longrightarrow> final E"
 by(induct e)(auto simp add: is_call_def split: split_if_asm)

@@ -11,10 +11,6 @@ theory Correctness1 imports
   "../J/DefAssPreservation"
 begin
 
-lemma if_split: -- "Move to Aux"
-  "\<lbrakk> P \<Longrightarrow> A; \<not> P \<Longrightarrow> B \<rbrakk> \<Longrightarrow> if P then A else B"
-by(auto)
-
 context J_heap_base begin
 
 lemma \<tau>red0r_preserves_defass:
@@ -74,6 +70,7 @@ locale J0_J1_heap_base =
   and new_arr :: "'heap \<Rightarrow> ty \<Rightarrow> nat \<Rightarrow> ('heap \<times> addr option)"
   and typeof_addr :: "'heap \<Rightarrow> addr \<rightharpoonup> ty"
   and array_length :: "'heap \<Rightarrow> addr \<Rightarrow> nat"
+  and is_volatile :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> bool"
   and heap_read :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> val \<Rightarrow> 'heap \<Rightarrow> bool"
 begin
@@ -189,14 +186,17 @@ apply(clarsimp simp add: sim_move01_def sim_moves01_def \<tau>reds1'r_map_Val \<
  apply(rule conjI, fastsimp)
  apply(split split_if)
  apply(rule conjI)
-  apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
- apply(rule conjI impI)+
-  apply fastsimp
+  apply(clarsimp simp add: finals_def)
+ apply(clarify)
  apply(split split_if)
  apply(rule conjI)
-  apply(rule impI)
+  apply(simp del: call_calls.simps call1_calls1.simps)
+  apply(rule conjI)
+   apply clarify
+   apply(simp split: split_if_asm)
+   apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
   apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
- apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val \<tau>reds1't_map_Val \<tau>reds1'r_map_Val is_vals_conv intro: Call_\<tau>red1'r_param Call1Params split: split_if_asm)
+ apply(fastsimp split: split_if_asm simp add: is_vals_conv \<tau>reds1'r_map_Val)
 apply(rule conjI, fastsimp)
 apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val \<tau>reds1't_map_Val \<tau>reds1'r_map_Val is_vals_conv intro: Call_\<tau>red1'r_param Call1Params split: split_if_asm)
 done
@@ -225,7 +225,8 @@ lemma sim_move01_reds:
   \<Longrightarrow> sim_move01 P t \<epsilon> (addr a\<lfloor>Val (Intg i)\<rceil>) ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW ArrayIndexOutOfBounds) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a);
      heap_read h a (ACell (nat (sint i))) v;
-     ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
+     ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>; 
+     ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (addr a\<lfloor>Val (Intg i)\<rceil>) ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs ta (Val v) h xs"
   "sim_move01 P t \<epsilon> (null\<lfloor>Val v\<rceil> := Val v') (null\<lfloor>Val v\<rceil> := Val v') h xs \<epsilon> (THROW NullPointer) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; i <s 0 \<or> sint i \<ge> int (array_length h a) \<rbrakk>
@@ -300,7 +301,7 @@ lemma sim_move01_SyncLocks:
   \<Longrightarrow> sim_move01 P t ta0 (insync(a') (Val v)) (insync\<^bsub>V\<^esub> (a) (Val v)) h xs ta (Val v) h xs"
   "\<lbrakk> xs ! V = Addr a'; V < length xs; ta0 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a' \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a' \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (insync(a') (Throw a'')) (insync\<^bsub>V\<^esub> (a) (Throw a'')) h xs ta (Throw a'') h xs"
-by(fastsimp simp add: sim_move01_def ta_bisim_def expand_finfun_eq expand_fun_eq finfun_upd_apply ta_upd_simps  intro: red1_reds1.intros[simplified] split: split_if_asm)+
+by(fastsimp simp add: sim_move01_def ta_bisim_def expand_finfun_eq fun_eq_iff finfun_upd_apply ta_upd_simps  intro: red1_reds1.intros[simplified] split: split_if_asm)+
 
 lemma sim_move01_TryFail:
   "\<lbrakk> typeof_addr h a = \<lfloor>Class D\<rfloor>; \<not> P \<turnstile> D \<preceq>\<^sup>* C \<rbrakk>
@@ -400,7 +401,7 @@ next
     `length Vs + max_vars (Val a\<lfloor>i\<rceil>) \<le> length xs` `?synth (Val a\<lfloor>i\<rceil>) s` `extTA2J0 P,P,t \<turnstile> \<langle>i,s\<rangle> -ta\<rightarrow> \<langle>i',s'\<rangle>`
   show ?case by(fastsimp elim!: sim_move01_expr)
 next
-  case RedAAcc thus ?case by auto
+  case RedAAcc thus ?case by(auto simp del: split_paired_Ex)
 next
   case (AAssRed1 a s ta a' s' i e Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs a e2 XS; fv a \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars a \<le> length XS;
@@ -764,7 +765,7 @@ next
   have "compP1 P,t \<turnstile>1 \<langle>insync\<^bsub>length Vs\<^esub> (a) Throw ad, (hp s, xs)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, (hp s, xs)\<rangle>"
     by-(rule Synchronized1Throw2, auto)
   hence "sim_move01 (compP1 P) t \<epsilon>\<lbrace>\<^bsub>l\<^esub>Unlock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (insync(a) Throw ad) (insync\<^bsub>length Vs\<^esub> (a) Throw ad) (hp s) xs \<epsilon>\<lbrace>\<^bsub>l\<^esub>Unlock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (Throw ad) (hp s) xs"
-    by(fastsimp simp add: sim_move01_def ta_bisim_def expand_fun_eq expand_finfun_eq finfun_upd_apply ta_upd_simps split: split_if_asm)
+    by(fastsimp simp add: sim_move01_def ta_bisim_def fun_eq_iff expand_finfun_eq finfun_upd_apply ta_upd_simps split: split_if_asm)
   moreover note `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `bisim Vs (insync(a) Throw ad) E2 xs`
   ultimately show ?case by(fastsimp)
 next
@@ -893,50 +894,35 @@ lemma sim_move10_CallParams:
   \<Longrightarrow> sim_move10 P t ta1 (Val v\<bullet>M(es1)) (Val v\<bullet>M(es1')) (Val v\<bullet>M(es)) h xs ta (Val v\<bullet>M(es')) h' xs'"
 unfolding sim_move10_def sim_moves10_def
 apply(simp split: split_if_asm split del: split_if add: is_vals_conv)
-apply(safe intro!: if_split del: disjCI)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(clarsimp split: split_if_asm simp add: is_vals_conv)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(clarsimp split: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm)
-apply(rule exI conjI)+
-apply(erule Call_\<tau>red0r_param)
+  apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
+ apply(rule conjI)
+  apply fastsimp
+ apply(rule if_split)
+  apply fastsimp
+ apply(clarsimp split del: split_if)
+ apply(rule if_split)
+  apply(clarsimp split: split_if_asm simp add: is_vals_conv)
+   apply(erule disjE)
+    apply clarsimp
+    apply(rule exI conjI)+
+     apply(erule Call_\<tau>red0r_param)
+    apply(fastsimp intro: CallParams)
+   apply(fastsimp simp add: \<tau>reds0r_map_Val)
+  apply(rule exI conjI)+
+   apply(erule Call_\<tau>red0r_param)
+  apply(fastsimp intro!: CallParams)
+ apply(clarsimp split del: split_if split: split_if_asm simp add: is_vals_conv \<tau>reds0r_map_Val)
+ apply fastsimp
 apply(rule conjI)
-apply(erule CallParams)
-apply fastsimp
-apply(force simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val is_vals_conv intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
+ apply fastsimp
+apply(rule if_split)
+ apply fastsimp
+apply(rule conjI)
+ apply fastsimp
+apply(rule if_split)
+ apply(clarsimp split: split_if_asm)
+apply(clarsimp split: split_if_asm split del: split_if simp add: is_vals_conv)
+apply(fastsimp intro: CallParams)
 done
 
 lemma sim_move10_Block:
@@ -992,7 +978,8 @@ lemma sim_move10_reds:
   \<Longrightarrow> sim_move10 P t ta1 (AAss (addr a) (Val (Intg i)) (Val v)) e1' (AAss (addr a) (Val (Intg i)) (Val v)) h xs ta unit h' xs"
   "typeof_addr h a = \<lfloor>Array T\<rfloor> \<Longrightarrow> sim_move10 P t \<epsilon> (addr a\<bullet>length) e1' (addr a\<bullet>length) h xs \<epsilon> (Val (Intg (word_of_int (int (array_length h a))))) h xs"
   "sim_move10 P t \<epsilon> (null\<bullet>length) e1' (null\<bullet>length) h xs \<epsilon> (THROW NullPointer) h xs"
-  "\<lbrakk> heap_read h a (CField D F) v; ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace> \<rbrakk>
+  "\<lbrakk> heap_read h a (CField D F) v; ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>;
+     ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (addr a\<bullet>F{D}) e1' (addr a\<bullet>F{D}) h xs ta (Val v) h xs"
   "sim_move10 P t \<epsilon> (null\<bullet>F{D}) e1' (null\<bullet>F{D}) h xs \<epsilon> (THROW NullPointer) h xs"
   "\<lbrakk> heap_write h a (CField D F) v h'; ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace> \<rbrakk>
@@ -1780,10 +1767,9 @@ next
     from bisim' fin bisim
     have "bisim [] (inline_call e1 e) (inline_call E' E) xs"
       using call by(rule bisim_inline_call)(simp add: fv)
-    moreover from fv_inline_call[OF call, of e1] fv fin 
+    moreover from fv_inline_call[of e1 e] fv fin 
     have "fv (inline_call e1 e) = {}" by auto
-    moreover from fin have "\<D> e1 \<lfloor>{}\<rfloor>" by auto
-    hence "\<D> (inline_call e1 e) \<lfloor>{}\<rfloor>"
+    moreover from fin have "\<D> (inline_call e1 e) \<lfloor>{}\<rfloor>"
       using call D by(rule defass_inline_call)
     moreover have "max_vars ?e2' \<le> max_vars E + max_vars E'" by(rule inline_call_max_vars1)
     with `final E'` length have "max_vars ?e2' \<le> length xs" by(auto elim!: final.cases)
@@ -1988,9 +1974,8 @@ next
     by(rule bisim_inline_call)(simp add: fv)
   with bsl have "bisim_list1 (inline_call e e', es') (ex2', exs2')" unfolding ex2'
   proof(rule bisim_list1I)
-    from fin' fv_inline_call[OF call, of e] fv show "fv (inline_call e e') = {}" by auto
-    from fin' have "\<D> e \<lfloor>{}\<rfloor>" by auto
-    thus "\<D> (inline_call e e') \<lfloor>{}\<rfloor>" using call D by(rule defass_inline_call)
+    from fin' fv_inline_call[of e e'] fv show "fv (inline_call e e') = {}" by auto
+    from fin' show "\<D> (inline_call e e') \<lfloor>{}\<rfloor>" using call D by(rule defass_inline_call)
     
     from call1_imp_call[OF call1]
     have "max_vars (inline_call E' E) \<le> max_vars E + max_vars E'"
@@ -2004,10 +1989,16 @@ qed
 
 end
 
-sublocale J0_J1_heap_base < red0_Red1'!: 
-  FWdelay_bisimulation_base final_expr0 "mred0 P" final_expr1 "mred1' (compP1 P)"
-                            "\<lambda>t. bisim_red0_Red1" bisim_wait01
-                            "\<tau>MOVE0 P" "\<tau>MOVE1 (compP1 P)"
+sublocale J0_J1_heap_base < red0_Red1'!: FWdelay_bisimulation_base
+  final_expr0
+  "mred0 P"
+  final_expr1
+  "mred1' (compP1 P)"
+  convert_RA
+  "\<lambda>t. bisim_red0_Red1" 
+  bisim_wait01
+  "\<tau>MOVE0 P"
+  "\<tau>MOVE1 (compP1 P)"
   for P
 .
 
@@ -2199,46 +2190,11 @@ proof -
     from red0 red1 Suspend show "bisim_wait01 x1'' x2''"
       by(cases x2')(cases x2'', auto dest: Red_Suspend_is_call Red1_Suspend_is_call simp add: split_beta bisim_wait01_def is_call_def)
   next
-    fix t x1 m1 x2 m2 x1'
-    assume "bisim_red0_Red1 (x1, m1) (x2, m2)"
-      and "bisim_wait01 x1 x2"
-      and "mred0 P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1)"
-    moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
-    moreover obtain e0' es0' where [simp]: "x1' = (e0', es0')" by(cases x1')
-    moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
-    ultimately have bisim: "bisim_list1 (e0, es0) ((e1, xs1), exs1)"
-      and m1: "m2 = m1"
-      and call: "call e0 \<noteq> None" "call1 e1 \<noteq> None"
-      and red: "P,t \<turnstile>0 \<langle>e0/es0, m1\<rangle> -\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>\<rightarrow> \<langle>e0'/es0', m1\<rangle>"
-      by(auto simp add: bisim_wait01_def bisim_red0_Red1_def)
-    from red have "\<not> \<tau>Move0 P m1 (e0, es0)"
-      by(auto simp add: ta_upd_simps elim!: red0.cases dest: red_\<tau>_taD[where extTA="extTA2J0 P", simplified])
-    with Red1_simulates_red0[OF wf red bisim] call m1
-    show "\<exists>x2'. mred1' (compP1 P) t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2) \<and> bisim_red0_Red1 (x1', m1) (x2', m2)"
-      by(fastsimp simp add: bisim_red0_Red1_def ta_bisim_def ta_upd_simps)
-  next
-    fix t x1 m1 x2 m2 x2'
-    assume "bisim_red0_Red1 (x1, m1) (x2, m2)" "bisim_wait01 x1 x2" "mred1' (compP1 P) t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2)"
-    moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
-    moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
-    moreover obtain e1' xs1' exs1' where [simp]: "x2' = ((e1', xs1'), exs1')" by(cases x2') auto
-    ultimately have bisim: "bisim_list1 (e0, es0) ((e1, xs1), exs1)"
-      and m1: "m2 = m1"
-      and call: "call e0 \<noteq> None" "call1 e1 \<noteq> None"
-      and red: "compP1 P,t \<turnstile>1 \<langle>(e1, xs1)/exs1, m1\<rangle> -\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>\<rightarrow> \<langle>(e1', xs1')/exs1', m1\<rangle>"
-      and IUF: "\<not> IUFL (e1, xs1) exs1 (\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> :: 'heap J1_thread_action) (e1', xs1') exs1'"
-      by(auto simp add: bisim_wait01_def bisim_red0_Red1_def)
-    from red have "\<not> \<tau>Move1 P m1 ((e1, xs1), exs1)"
-      by(auto elim!: Red1.cases dest: red1_\<tau>_taD simp add: ta_upd_simps)
-    with red0_simulates_Red1[OF wf red bisim IUF] m1 call
-    show "\<exists>x1'. mred0 P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1) \<and> bisim_red0_Red1 (x1', m1) (x2', m2)"
-      by(fastsimp simp add: bisim_red0_Red1_def ta_bisim_def ta_upd_simps)
-  next
     fix t x1 m1 x2 m2 ta1 x1' m1'
     assume "bisim_red0_Red1 (x1, m1) (x2, m2)"
       and "bisim_wait01 x1 x2"
       and "mred0 P t (x1, m1) ta1 (x1', m1')"
-      and "is_Interrupted_ta ta1"
+      and wakeup: "Notified \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
     moreover obtain e0' es0' where [simp]: "x1' = (e0', es0')" by(cases x1')
     moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
@@ -2247,15 +2203,17 @@ proof -
       and call: "call e0 \<noteq> None" "call1 e1 \<noteq> None"
       and red: "P,t \<turnstile>0 \<langle>e0/es0, m1\<rangle> -ta1\<rightarrow> \<langle>e0'/es0', m1'\<rangle>"
       by(auto simp add: bisim_wait01_def bisim_red0_Red1_def)
-    from red `is_Interrupted_ta ta1` have "\<not> \<tau>Move0 P m1 (e0, es0)"
-      by(auto elim!: red0.cases dest: red_\<tau>_taD[where extTA="extTA2J0 P", simplified] simp add: is_Interrupted_ta_def)
+    from red wakeup have "\<not> \<tau>Move0 P m1 (e0, es0)"
+      by(auto elim!: red0.cases dest: red_\<tau>_taD[where extTA="extTA2J0 P", simplified])
     with Red1_simulates_red0[OF wf red bisim] call m1
-    show "\<exists>x2' m2' ta2. mred1' (compP1 P) t (x2, m2) ta2 (x2', m2') \<and> bisim_red0_Red1 (x1', m1') (x2', m2') \<and> ta_bisim01 ta1 ta2"
+    show "\<exists>ta2 x2' m2'. mred1' (compP1 P) t (x2, m2) ta2 (x2', m2') \<and> bisim_red0_Red1 (x1', m1') (x2', m2') \<and> ta_bisim01 ta1 ta2"
       by(auto simp add: bisim_red0_Red1_def)
   next
     fix t x1 m1 x2 m2 ta2 x2' m2'
-    assume "bisim_red0_Red1 (x1, m1) (x2, m2)" "bisim_wait01 x1 x2"
-      and "mred1' (compP1 P) t (x2, m2) ta2 (x2', m2')" "is_Interrupted_ta ta2"
+    assume "bisim_red0_Red1 (x1, m1) (x2, m2)"
+      and "bisim_wait01 x1 x2" 
+      and "mred1' (compP1 P) t (x2, m2) ta2 (x2', m2')"
+      and wakeup: "Notified \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
     moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
     moreover obtain e1' xs1' exs1' where [simp]: "x2' = ((e1', xs1'), exs1')" by(cases x2') auto
@@ -2265,10 +2223,10 @@ proof -
       and red: "compP1 P,t \<turnstile>1 \<langle>(e1, xs1)/exs1, m1\<rangle> -ta2\<rightarrow> \<langle>(e1', xs1')/exs1', m2'\<rangle>"
       and IUF: "\<not> IUFL (e1, xs1) exs1 ta2 (e1', xs1') exs1'"
       by(auto simp add: bisim_wait01_def bisim_red0_Red1_def)
-    from red `is_Interrupted_ta ta2` have "\<not> \<tau>Move1 P m1 ((e1, xs1), exs1)"
-      by(auto elim!: Red1.cases dest: red1_\<tau>_taD simp add: is_Interrupted_ta_def)
+    from red wakeup have "\<not> \<tau>Move1 P m1 ((e1, xs1), exs1)"
+      by(auto elim!: Red1.cases dest: red1_\<tau>_taD)
     with red0_simulates_Red1[OF wf red bisim IUF] m1 call
-    show "\<exists>x1' m1' ta1. mred0 P t (x1, m1) ta1 (x1', m1') \<and> bisim_red0_Red1 (x1', m1') (x2', m2') \<and> ta_bisim01 ta1 ta2"
+    show "\<exists>ta1 x1' m1'. mred0 P t (x1, m1) ta1 (x1', m1') \<and> bisim_red0_Red1 (x1', m1') (x2', m2') \<and> ta_bisim01 ta1 ta2"
       by(auto simp add: bisim_red0_Red1_def)
   qed
 qed

@@ -32,7 +32,7 @@ end
 text {*
 It would be unwieldly to always write out @{text "abs_<type> x"}. We would rather like to write @{text "|x|"} if the type of @{text x} is known, as Shivers does it as well. Isabelle allows one to use the same syntax for different symbols. In that case, it generates more than one parse tree and picks the (hopefully unique) tree that typechecks.
 
-Unfortunately, this does not work well in our case: There are eight @{text "abs_<type>"} functions and some expressions later have multiple occurences of these, causing an exponential blow-up of combinations.
+Unfortunately, this does not work well in our case: There are eight @{text "abs_<type>"} functions and some expressions later have multiple occurrences of these, causing an exponential blow-up of combinations.
 
 Therefore, we use a module by Christian Sternagel and Alexander Krauss for ad-hoc overloading, where the choice of the concrete function is done at parse time and immediately. This is used in the following to set up the the symbol @{text "|_|"} for the family of abstraction functions.
 *}
@@ -74,7 +74,7 @@ definition abs_ccache :: "ccache \<Rightarrow> 'c::contour_a \<accache>"
 setup {* Adhoc_Overloading.add_variant @{const_name abs} @{const_name abs_ccache} *}
 
 fun abs_fstate :: "fstate \<Rightarrow> 'c::contour_a \<afstate>"
-  where "abs_fstate (d,ds,ve,b) = (contents |d|, map abs_d ds, |ve|, |b| )"
+  where "abs_fstate (d,ds,ve,b) = (the_elem |d|, map abs_d ds, |ve|, |b| )"
 
 setup {* Adhoc_Overloading.add_variant @{const_name abs} @{const_name abs_fstate} *}
 
@@ -95,9 +95,9 @@ unfolding abs_benv_def by simp
 lemma abs_benv_upd[simp]: "|\<beta>(c\<mapsto>b)| = |\<beta>| (c \<mapsto> |b| )"
   unfolding abs_benv_def by simp
 
-lemma contents_is_Proc:
+lemma the_elem_is_Proc:
   assumes "isProc cnt"
-  shows "contents |cnt| \<in> |cnt|"
+  shows "the_elem |cnt| \<in> |cnt|"
 using assms by (cases cnt)auto
 
 lemma [simp]: "|{}| = {}" unfolding abs_ccache_def by auto
@@ -151,7 +151,7 @@ setup {* Adhoc_Overloading.add_variant @{const_name approx} @{const_name cstate_
 subsection {* Lemmas about the approximation relation *}
 
 text {*
-Most of the following lemmas reduce an approximation statement about larger structures, as they are occuring the semantics functions, to statements about the components.
+Most of the following lemmas reduce an approximation statement about larger structures, as they are occurring the semantics functions, to statements about the components.
 *}
 
 lemma venv_approx_trans[trans]:
@@ -211,7 +211,7 @@ lemma ds_approx_empty[simp]: "[] \<lessapprox> []"
 subsection {* Lemma 7 *}
 
 text {*
-Shivers’ lemma 7 says that @{text \<aA>} safely approximates @{text \<A>}.
+Shivers' lemma 7 says that @{text \<aA>} safely approximates @{text \<A>}.
 *}
 
 lemma lemma7:
@@ -234,7 +234,7 @@ qed (auto simp add:d_approx_def)
 subsection {* Lemmas 8 and 9 *}
 
 text {*
-The main goal of this secion is to show that @{text \<aF>} safely approximates @{text \<F>} and that @{text \<aC>} safely approximates @{text \<C>}. This has to be shown at once, as the functions are mutually recursive and requires a fixed point induction. To that end, we have to augment the set of continuity lemmas.
+The main goal of this section is to show that @{text \<aF>} safely approximates @{text \<F>} and that @{text \<aC>} safely approximates @{text \<C>}. This has to be shown at once, as the functions are mutually recursive and requires a fixed point induction. To that end, we have to augment the set of continuity lemmas.
 *}
 
 lemma cont2cont_abs_ccache[cont2cont,simp]:
@@ -245,7 +245,7 @@ using assms
 by (rule cont2cont)(rule cont_const)
 
 text {*
-Shivers proofs these lemmas using parallel fixed point induction over the two fixed points (the one from the exact semantics and the one from the abstract semantics). But it is simpler and equivalent to just do induction over the exact semantics and keep the abstract semantics functions fixed, so this is what I am doing.
+Shivers proves these lemmas using parallel fixed point induction over the two fixed points (the one from the exact semantics and the one from the abstract semantics). But it is simpler and equivalent to just do induction over the exact semantics and keep the abstract semantics functions fixed, so this is what I am doing.
 *}
 
 
@@ -271,7 +271,7 @@ case 1
   obtain proc ds_a ve_a b_a where fstate_a: "fstate_a = (proc,ds_a,ve_a,b_a)"
     by (cases fstate_a, auto)
   ultimately
-  have abs_d: "contents |d| = proc"
+  have abs_d: "the_elem |d| = proc"
    and abs_ds: "map abs_d ds \<lessapprox> ds_a"
    and abs_ve: "|ve| \<lessapprox> ve_a"
    and abs_b: "|b| = b_a"
@@ -342,16 +342,16 @@ case 1
     by (auto simp add:ccache_approx_def d_approx_def)
 
   have prem: "|(cnt, [DI (a1 + a2)], ve, nb b lab)| \<lessapprox>
-              (contents |cnt|, [{}], ve_a, \<anb> b_a lab)"
+              (the_elem |cnt|, [{}], ve_a, \<anb> b_a lab)"
     using abs_ve and abs_b
     by (auto intro:fstate_approx.intros simp add:ds_approx_def)
 
   have "|(evalF\<cdot>(Discr (cnt, [DI (a1 + a2)], ve, nb b lab)))|
-       \<lessapprox> \<aF>\<cdot>(Discr (contents |cnt|, [{}], ve_a, \<anb> b_a lab))"
+       \<lessapprox> \<aF>\<cdot>(Discr (the_elem |cnt|, [{}], ve_a, \<anb> b_a lab))"
     by (rule Next.hyps(1)[OF prem])
   also have "\<dots> \<lessapprox> (\<Union>cnt\<in>cnt_a. \<aF>\<cdot>(Discr (cnt, [{}], ve_a, \<anb> b_a lab)))"
     using abs_cnt
-    by (auto intro: contents_is_Proc[OF `isProc cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
+    by (auto intro: the_elem_is_Proc[OF `isProc cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
   finally
   have old_elems: "|(evalF\<cdot>(Discr (cnt, [DI (a1 + a2)], ve, nb b lab)))|
        \<lessapprox> (\<Union>cnt\<in>cnt_a. \<aF>\<cdot>(Discr (cnt, [{}], ve_a, \<anb> b_a lab)))".
@@ -391,16 +391,16 @@ case 1
     by (auto simp add:ccache_approx_def d_approx_def)
 
   have prem: "|(?cnt, [], ve, nb b ?c)| \<lessapprox>
-              (contents |?cnt|, [], ve_a, \<anb> b_a ?c)"
+              (the_elem |?cnt|, [], ve_a, \<anb> b_a ?c)"
     using abs_ve and abs_b
     by (auto intro:fstate_approx.intros)
 
   have "|evalF\<cdot>(Discr (?cnt, [], ve, nb b ?c))|
-       \<lessapprox> \<aF>\<cdot>(Discr (contents |?cnt|, [], ve_a, \<anb> b_a ?c))"
+       \<lessapprox> \<aF>\<cdot>(Discr (the_elem |?cnt|, [], ve_a, \<anb> b_a ?c))"
     by (rule Next.hyps(1)[OF prem])
   also have "\<dots> \<lessapprox> (\<Union>cnt\<in>?cnt_a. \<aF>\<cdot>(Discr (cnt, [], ve_a, \<anb> b_a ?c)))"
     using abs_cntt and abs_cntf
-    by (auto intro: contents_is_Proc[OF `isProc ?cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
+    by (auto intro: the_elem_is_Proc[OF `isProc ?cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
 
   finally
   have old_elems: "|evalF\<cdot>(Discr (?cnt, [], ve, nb b ?c))|
@@ -448,16 +448,16 @@ case 1
     by (auto simp add:ccache_approx_def d_approx_def)
 
   have prem: "|(?cnt, [], ve, nb b ?c)| \<lessapprox>
-              (contents |?cnt|, [], ve_a, \<anb> b_a ?c)"
+              (the_elem |?cnt|, [], ve_a, \<anb> b_a ?c)"
     using abs_ve and abs_b
     by (auto intro:fstate_approx.intros)
 
   have "|evalF\<cdot>(Discr (?cnt, [], ve, nb b ?c))|
-       \<lessapprox> \<aF>\<cdot>(Discr (contents |?cnt|, [], ve_a, \<anb> b_a ?c))"
+       \<lessapprox> \<aF>\<cdot>(Discr (the_elem |?cnt|, [], ve_a, \<anb> b_a ?c))"
     by (rule Next.hyps(1)[OF prem])
   also have "\<dots> \<lessapprox> (\<Union>cnt\<in>?cnt_a. \<aF>\<cdot>(Discr (cnt, [], ve_a, \<anb> b_a ?c)))"
     using abs_cntt and abs_cntf
-    by (auto intro: contents_is_Proc[OF `isProc ?cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
+    by (auto intro: the_elem_is_Proc[OF `isProc ?cnt`] simp del: a_evalF.simps simp add:ccache_approx_def d_approx_def)
 
   finally
   have old_elems: "|evalF\<cdot>(Discr (?cnt, [], ve, nb b ?c))|
@@ -514,12 +514,12 @@ case 2
     by (auto intro!: list_all2I simp add:set_zip ds_approx_def)
 
   hence "|evalF\<cdot>(Discr (?d, map (\<lambda>v. \<A> v \<beta> ve) vs, ve, nb b lab))|
-     \<lessapprox> \<aF>\<cdot>(Discr(contents |?d|, map (\<lambda>v. \<aA> v \<beta>_a ve_a) vs, ve_a, \<anb> |b| lab))"
+     \<lessapprox> \<aF>\<cdot>(Discr(the_elem |?d|, map (\<lambda>v. \<aA> v \<beta>_a ve_a) vs, ve_a, \<anb> |b| lab))"
     using abs_ve and abs_cnt_nb and abs_b
     by -(rule Next.hyps(1),auto intro:fstate_approx.intros)
   also have "\<dots> \<lessapprox> (\<Union>f'\<in>\<aA> f \<beta>_a ve_a.
               \<aF>\<cdot>(Discr(f', map (\<lambda>v. \<aA> v \<beta>_a ve_a) vs, ve_a, \<anb> |b| lab)))"
-    using lemma7[OF abs_ve] contents_is_Proc[OF `isProc ?d`] abs_\<beta>
+    using lemma7[OF abs_ve] the_elem_is_Proc[OF `isProc ?d`] abs_\<beta>
     by (auto simp del: a_evalF.simps simp add:d_approx_def ccache_approx_def)
   finally
   have old_elems: "
