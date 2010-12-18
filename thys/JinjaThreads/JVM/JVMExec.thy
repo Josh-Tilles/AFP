@@ -33,7 +33,7 @@ lemma exception_step_def_raw:
                                                    | \<lfloor>a\<rfloor> \<Rightarrow> (case match_ex_table P (cname_of h a) pc (ex_table_of P C M) of
                                                                  None \<Rightarrow> (ta, \<lfloor>a\<rfloor>, h, frs')
                                                       | Some (pc', d) \<Rightarrow> (ta, None, h, (Addr a # drop (size stk - d) stk, loc, C, M, pc') # frs'))))"
-by(auto simp add: expand_fun_eq split: list.split)
+by(auto simp add: fun_eq_iff split: list.split)
 
 fun exec :: "jvm_prog \<Rightarrow> thread_id \<Rightarrow> 'heap jvm_state \<Rightarrow> 'heap jvm_ta_state set" where
   "exec P t (xcp, h, []) = {}"
@@ -69,8 +69,8 @@ where
 definition JVM_start_state' :: "jvm_prog \<Rightarrow> cname \<Rightarrow> mname \<Rightarrow> val list \<Rightarrow> 'heap jvm_state"
 where
   "JVM_start_state' P C M vs \<equiv>
-   let (Ts, T, D, mxs, mxl0, b) = method P C M
-   in (None, start_heap, [([], Null # vs @ replicate mxl0 undefined, C, M, 0)])"
+   let (D, Ts, T, mxs, mxl0, b) = method P C M
+   in (None, start_heap, [([], Null # vs @ replicate mxl0 undefined, D, M, 0)])"
 
 end
 

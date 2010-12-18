@@ -1370,7 +1370,7 @@ proof (rule allI, rule allI, rule allI)
   fix n x y show "nat_to_pr n (c_pair x y) = nat_to_pr (s1_1 n x) y"
   proof -
     have "(\<lambda> y. (nat_to_pr n) (c_pair x y)) = nat_to_pr (s1_1 n x)" by (rule s1_1_th)
-    then show ?thesis by (simp add: expand_fun_eq)
+    then show ?thesis by (simp add: fun_eq_iff)
   qed
 qed
 
@@ -1413,19 +1413,6 @@ definition
 definition
   many_reducible_to :: "(nat set) \<Rightarrow> (nat set) \<Rightarrow> bool" where
   "many_reducible_to = (\<lambda> A B. \<exists> f. many_reducible_to_via A B f)"
-
-lemma inj_comp: "\<lbrakk> inj f; inj g \<rbrakk> \<Longrightarrow> inj (f o g)"
-proof (rule datatype_injI)
-  fix x assume f_inj: "inj f" assume g_inj: "inj g" show "\<forall>y. (f \<circ> g) x = (f \<circ> g) y \<longrightarrow> x = y"
-  proof fix y show "(f \<circ> g) x = (f \<circ> g) y \<longrightarrow> x = y"
-    proof
-      assume "(f \<circ> g) x = (f \<circ> g) y"
-      then have "f (g x) = f (g y)" by simp
-      with f_inj have "g x = g y" by (rule injD)
-      with g_inj show "x = y" by (rule injD)
-    qed
-  qed
-qed
 
 lemma one_reducible_to_via_trans: "\<lbrakk> one_reducible_to_via A B f; one_reducible_to_via B C g \<rbrakk> \<Longrightarrow> one_reducible_to_via A C (g o f)"
 proof -
@@ -1576,13 +1563,10 @@ proof -
   have f_is_pr: "f \<in> PrimRec1" unfolding f_def by prec
   then have f_tr: "total_recursive f" by (rule pr_is_total_rec)
   have f_inj: "inj f"
-  proof (rule datatype_injI)
-    fix x show "\<forall>y. f x = f y \<longrightarrow> x = y"
-    proof (rule allI, rule impI)
-      fix y assume A: "f x = f y"
-      then have "c_pair n x = c_pair n y" by (unfold f_def)
-      then show "x = y" by (rule c_pair_inj2)
-    qed
+  proof (rule injI)
+    fix x y assume A: "f x = f y"
+    then have "c_pair n x = c_pair n y" by (unfold f_def)
+    then show "x = y" by (rule c_pair_inj2)
   qed
   have "\<forall> x. (x \<in> (nat_to_ce_set n)) = (f x \<in> univ_ce)"
   proof fix x show "(x \<in> nat_to_ce_set n) = (f x \<in> univ_ce)" by (unfold f_def, simp add: univ_ce_lm_1)
@@ -1694,15 +1678,11 @@ proof -
   from s_ce_is_pr have f_is_pr: "f \<in> PrimRec1" unfolding f_def by prec
   then have f_tr: "total_recursive f" by (rule pr_is_total_rec)
   have f_inj: "inj f"
-  proof (rule datatype_injI)
-    fix x show "\<forall>y. f x = f y \<longrightarrow> x = y"
-    proof fix y show "f x = f y \<longrightarrow> x = y"
-      proof
-	assume "f x = f y"
-	then have "s_ce n x = s_ce n y" by (unfold f_def)
-	then show "x = y" by (rule s_ce_inj2)
-      qed
-    qed
+  proof (rule injI)
+    fix x y
+    assume "f x = f y"
+    then have "s_ce n x = s_ce n y" by (unfold f_def)
+    then show "x = y" by (rule s_ce_inj2)
   qed
   have loc_lm_3: "\<forall> x y. (c_pair x y \<in> we_n) = (y \<in> nat_to_ce_set (f x))"
   proof (rule allI, rule allI)

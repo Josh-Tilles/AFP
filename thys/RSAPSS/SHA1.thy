@@ -1,7 +1,6 @@
 (*  Title:      RSAPSS/SHA1.thy
-    ID:         $Id: SHA1.thy,v 1.4 2008-06-12 06:57:26 lsf37 Exp $
-    Author:     Christina Lindenberg, Kai Wirt, Technische Universit‰t Darmstadt
-    Copyright:  2005 - Technische Universit‰t Darmstadt
+    Author:     Christina Lindenberg, Kai Wirt, Technische Universit√§t Darmstadt
+    Copyright:  2005 - Technische Universit√§t Darmstadt
 *)
 
 header  "Formal definition of the secure hash algorithm"

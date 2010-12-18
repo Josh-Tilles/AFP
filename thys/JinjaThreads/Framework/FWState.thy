@@ -18,19 +18,18 @@ datatype lock_action =
 
 datatype ('t,'x,'m) new_thread_action =
     NewThread 't 'x 'm
-  | NewThreadFail
   | ThreadExists 't
 
 datatype 't conditional_action = 
     Join 't
-  | Notified
-  | Interrupted
 
 datatype ('t, 'w) wait_set_action =
     Suspend 'w
   | Notify 'w
   | NotifyAll 'w
   | Interrupt 't
+  | Notified
+  | Interrupted
 
 types 'l lock_actions = "'l \<Rightarrow>\<^isub>f lock_action list"
 
@@ -46,15 +45,15 @@ print_translation {*
     fun tr'
        [Const (@{type_syntax finfun}, _) $ l $
           (Const (@{type_syntax list}, _) $ Const (@{type_syntax lock_action}, _)),
-        Const (@{type_syntax "*"}, _) $
+        Const (@{type_syntax "prod"}, _) $
           (Const (@{type_syntax list}, _) $ (Const (@{type_syntax new_thread_action}, _) $ t1 $ x $ m)) $
-          (Const (@{type_syntax "*"}, _) $
+          (Const (@{type_syntax "prod"}, _) $
             (Const (@{type_syntax list}, _) $ (Const (@{type_syntax conditional_action}, _) $ t2)) $
-            (Const (@{type_syntax "*"}, _) $
+            (Const (@{type_syntax "prod"}, _) $
               (Const (@{type_syntax list}, _) $ (Const (@{type_syntax wait_set_action}, _) $ t3 $ w)) $ o1))] =
       if t1 = t2 andalso t2 = t3 then Syntax.const @{type_syntax thread_action} $ l $ t1 $ x $ m $ w $ o1
       else raise Match;
-  in [(@{type_syntax "*"}, tr')]
+  in [(@{type_syntax "prod"}, tr')]
   end
 *}
 typ "('l,'t,'x,'m,'w,'o) thread_action"
@@ -110,8 +109,8 @@ abbreviation empty_ta :: "('l,'t,'x,'m,'w,'o list) thread_action" ("\<epsilon>")
   "empty_ta \<equiv> (\<lambda>\<^isup>f [], [], [], [], [])"
 
 
-nonterminals
-  locklets locklet
+nonterminal locklets and locklet
+
 syntax
   "_locklet"  :: "lock_action \<Rightarrow> 'l \<Rightarrow> locklet"             ("(2_/\<rightarrow>_)")
   ""         :: "locklet \<Rightarrow> locklets"             ("_")
@@ -123,8 +122,8 @@ translations
   "ta\<lbrace>\<^bsub>l\<^esub>x\<rightarrow>y\<rbrace>"                         == "CONST ta_update_locks ta x y"
 
 
-nonterminals
-  ntlets ntlet
+nonterminal ntlets and ntlet
+
 syntax
   "_ntlet"  :: "('t,'m,'x) new_thread_action \<Rightarrow> ntlet"             ("(_)")
   ""         :: "ntlet \<Rightarrow> ntlets"             ("_")
@@ -136,8 +135,8 @@ translations
   "ta\<lbrace>\<^bsub>t\<^esub>nt\<rbrace>"                       == "CONST ta_update_NewThread ta nt"
 
 
-nonterminals
-  jlets jlet
+nonterminal jlets and jlet
+
 syntax
   "_jlet"  :: "'t conditional_action \<Rightarrow> jlet"             ("(_)")
   ""         :: "jlet \<Rightarrow> jlets"             ("_")
@@ -149,8 +148,8 @@ translations
   "ta\<lbrace>\<^bsub>c\<^esub>nt\<rbrace>"                    == "CONST ta_update_Conditional ta nt"
 
 
-nonterminals
-  wslets wslet
+nonterminal wslets and wslet
+
 syntax
   "_wslet"  :: "('t, 'w) wait_set_action \<Rightarrow> wslet"             ("(_)")
   ""         :: "wslet \<Rightarrow> wslets"             ("_")
@@ -161,8 +160,9 @@ translations
   "_wsUpdate ta (_wslets b bs)"  == "_wsUpdate (_wsUpdate ta b) bs"
   "ta\<lbrace>\<^bsub>w\<^esub>ws\<rbrace>"                      == "CONST ta_update_wait_set ta ws"
 
-nonterminals
-  oalets oalet
+
+nonterminal oalets and oalet
+
 syntax
   "_oalet"  :: "'o \<Rightarrow> oalet"             ("(_)")
   ""         :: "oalet \<Rightarrow> oalets"             ("_")
@@ -179,13 +179,22 @@ lemmas ta_upd_simps =
 
 declare ta_upd_simps [simp del]
 
+datatype wake_up_status =
+  WSNotified
+| WSInterrupted
+
+datatype 'w wait_set_status =
+  InWS 'w
+| WokenUp wake_up_status
+
 types
   't lock = "('t \<times> nat) option"
   ('l,'t) locks = "'l \<Rightarrow>\<^isub>f 't lock"
   'l released_locks = "'l \<Rightarrow>\<^isub>f nat"
   ('l,'t,'x) thread_info = "'t \<rightharpoonup> ('x \<times> 'l released_locks)"
-  ('w,'t) wait_sets = "'t \<rightharpoonup> 'w"
+  ('w,'t) wait_sets = "'t \<rightharpoonup> 'w wait_set_status"
   ('l,'t,'x,'m,'w) state = "('l,'t) locks \<times> (('l,'t,'x) thread_info \<times> 'm) \<times> ('w,'t) wait_sets"
+
 translations
   (type) "('l, 't) locks" <= (type) "'l \<Rightarrow>\<^isub>f ('t \<times> nat) option"
   (type) "('l, 't, 'x) thread_info" <= (type) "'t \<rightharpoonup> ('x \<times> ('l \<Rightarrow>\<^isub>f nat))"
@@ -196,21 +205,22 @@ print_translation {*
     fun tr'
        [Const (@{type_syntax finfun}, _) $ l1 $
         (Const (@{type_syntax option}, _) $
-          (Const (@{type_syntax "*"}, _) $ t1 $ Const (@{type_syntax nat}, _))),
-        Const (@{type_syntax "*"}, _) $
-          (Const (@{type_syntax "*"}, _) $
+          (Const (@{type_syntax "prod"}, _) $ t1 $ Const (@{type_syntax nat}, _))),
+        Const (@{type_syntax "prod"}, _) $
+          (Const (@{type_syntax "prod"}, _) $
             (Const (@{type_syntax fun}, _) $ t2 $
               (Const (@{type_syntax option}, _) $
-                (Const (@{type_syntax "*"}, _) $ x $
+                (Const (@{type_syntax "prod"}, _) $ x $
                   (Const (@{type_syntax finfun}, _) $ l2 $ Const (@{type_syntax nat}, _))))) $ m) $
-               (Const (@{type_syntax fun}, _) $ t3 $ (Const (@{type_syntax option}, _) $ w))] =
+               (Const (@{type_syntax fun}, _) $ t3 $ 
+                  (Const (@{type_syntax option}, _) $ (Const (@{type_syntax wait_set_status}, _) $ w)))] =
       if t1 = t2 andalso t1 = t3 andalso l1 = l2
       then Syntax.const @{type_syntax state} $ l1 $ t1 $ x $ m $ w
       else raise Match;
-  in [(@{type_syntax "*"}, tr')]
+  in [(@{type_syntax "prod"}, tr')]
   end
 *}
-(* typ "('l,'t,'x,'m,'w) state" *)
+typ "('l,'t,'x,'m,'w) state"
 
 lemma ta_upd_proj_simps [simp]:
   shows ta_obs_proj_simps:
@@ -231,24 +241,28 @@ where "no_wait_locks \<equiv> (\<lambda>\<^isup>f 0)"
 
 lemma neq_no_wait_locks_conv:
   "ln \<noteq> no_wait_locks \<longleftrightarrow> (\<exists>l. ln\<^sub>f l > 0)"
-by(auto simp add: expand_finfun_eq expand_fun_eq)
+by(auto simp add: expand_finfun_eq fun_eq_iff)
 
 lemma neq_no_wait_locksE:
   assumes "ln \<noteq> no_wait_locks" obtains l where "ln\<^sub>f l > 0"
 using assms
 by(auto simp add: neq_no_wait_locks_conv)
 
+text {*
+  Use type variables for components instead of @{typ "('l,'t,'x,'m,'w) state"} in types for state projections
+  to allow to reuse them for refined state implementations for code generation.
+*}
 
-definition locks :: "('l,'t,'x,'m,'w) state \<Rightarrow> ('l,'t) locks" where
+definition locks :: "('locks \<times> ('thread_info \<times> 'm) \<times> 'wsets) \<Rightarrow> 'locks" where
   "locks lstsmws \<equiv> fst lstsmws"
 
-definition thr :: "('l,'t,'x,'m,'w) state \<Rightarrow> ('l,'t,'x) thread_info" where
+definition thr :: "('locks \<times> ('thread_info \<times> 'm) \<times> 'wsets) \<Rightarrow> 'thread_info" where
   "thr lstsmws \<equiv> fst (fst (snd lstsmws))"
 
-definition shr :: "('l,'t,'x,'m,'w) state \<Rightarrow> 'm" where
+definition shr :: "('locks \<times> ('thread_info \<times> 'm) \<times> 'wsets) \<Rightarrow> 'm" where
   "shr lstsmws \<equiv> snd (fst (snd lstsmws))"
 
-definition wset :: "('l,'t,'x,'m,'w) state \<Rightarrow> ('w,'t) wait_sets" where
+definition wset :: "('locks \<times> ('thread_info \<times> 'm) \<times> 'wsets) \<Rightarrow> 'wsets" where
   "wset lstsmws \<equiv> snd (snd lstsmws)"
 
 lemma locks_conv [simp]: "locks (ls, tsmws) = ls"
@@ -267,21 +281,17 @@ primrec convert_new_thread_action :: "('x \<Rightarrow> 'x') \<Rightarrow> ('t,'
 where
   "convert_new_thread_action f (NewThread t x m) = NewThread t (f x) m"
 | "convert_new_thread_action f (ThreadExists t) = ThreadExists t"
-| "convert_new_thread_action f NewThreadFail = NewThreadFail"
 
 lemma convert_new_thread_action_inv [simp]:
   "NewThread t x h = convert_new_thread_action f nta \<longleftrightarrow> (\<exists>x'. nta = NewThread t x' h \<and> x = f x')"
   "ThreadExists t = convert_new_thread_action f nta \<longleftrightarrow> nta = ThreadExists t"
-  "NewThreadFail = convert_new_thread_action f nta \<longleftrightarrow> nta = NewThreadFail"
   "convert_new_thread_action f nta = NewThread t x h \<longleftrightarrow> (\<exists>x'. nta = NewThread t x' h \<and> x = f x')"
   "convert_new_thread_action f nta = ThreadExists t \<longleftrightarrow> nta = ThreadExists t"
-  "convert_new_thread_action f nta = NewThreadFail \<longleftrightarrow> nta = NewThreadFail"
 by(cases nta, auto)+
 
 lemma convert_new_thread_action_eqI: 
   "\<lbrakk> \<And>t x m. nta = NewThread t x m \<Longrightarrow> nta' = NewThread t (f x) m;
-     \<And>t. nta = ThreadExists t \<Longrightarrow> nta' = ThreadExists t;
-     nta = NewThreadFail \<Longrightarrow> nta' = NewThreadFail \<rbrakk>
+     \<And>t. nta = ThreadExists t \<Longrightarrow> nta' = ThreadExists t \<rbrakk>
   \<Longrightarrow> convert_new_thread_action f nta = nta'"
 apply(cases nta)
 apply auto
@@ -293,6 +303,16 @@ apply(cases ta)
 apply(simp_all add: convert_new_thread_action_def)
 done
 
+lemma inj_convert_new_thread_action [simp]: 
+  "inj (convert_new_thread_action f) = inj f"
+apply(rule iffI)
+ apply(rule injI)
+ apply(drule_tac x="NewThread undefined x undefined" in injD)
+ apply auto[2]
+apply(rule injI)
+apply(case_tac x)
+apply(auto dest: injD)
+done
 
 definition convert_extTA :: "('x \<Rightarrow> 'x') \<Rightarrow> ('l,'t,'x,'m,'w,'o) thread_action \<Rightarrow> ('l,'t,'x','m,'w,'o) thread_action"
 where "convert_extTA f ta = (\<lbrace>ta\<rbrace>\<^bsub>l\<^esub>, map (convert_new_thread_action f) \<lbrace>ta\<rbrace>\<^bsub>t\<^esub>, snd (snd ta))"
@@ -323,66 +343,40 @@ by(simp add: convert_extTA_def)
 lemma obs_a_convert_extTA [simp]: "obs_a (convert_extTA f ta) = obs_a ta"
 by(cases ta) simp
 
-datatype ('l,'o) observable =
-    ReacquireLocks "'l released_locks"
-  | Observable 'o
+text {* Actions for thread start/finish *}
 
-abbreviation observable_of :: "'o list \<Rightarrow> ('l, 'o) observable list"
-where "observable_of obs \<equiv> map Observable obs"
+datatype 'o action =
+    NormalAction 'o
+  | InitialThreadAction
+  | ThreadFinishAction
 
-definition observable_ta_of :: "('l,'t,'x,'m,'w,'o list) thread_action \<Rightarrow> ('l, 'o) observable list \<Rightarrow> ('l,'t,'x,'m,'w,('l,'o) observable list) thread_action"
-where "observable_ta_of ta obs = (\<lbrace>ta\<rbrace>\<^bsub>l\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>t\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>c\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>, observable_of \<lbrace>ta\<rbrace>\<^bsub>o\<^esub> @ obs)"
+definition convert_obs_initial :: "('l,'t,'x,'m,'w,'o list) thread_action \<Rightarrow> ('l,'t,'x,'m,'w,'o action list) thread_action"
+where 
+  "convert_obs_initial ta = (\<lbrace>ta\<rbrace>\<^bsub>l\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>t\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>c\<^esub>, \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>, map NormalAction \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)"
 
-lemma locks_a_observable_ta_of [simp]:
-  "\<lbrace>observable_ta_of ta obs\<rbrace>\<^bsub>l\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>l\<^esub>"
-by(simp add: observable_ta_of_def)
+lemma inj_NormalAction [simp]: "inj NormalAction"
+by(rule injI) auto
 
-lemma thr_a_observable_ta_of [simp]:
-  "\<lbrace>observable_ta_of ta obs\<rbrace>\<^bsub>t\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>t\<^esub>"
-by(simp add: observable_ta_of_def)
+lemma convert_obs_initial_inject [simp]:
+  "convert_obs_initial ta = convert_obs_initial ta' \<longleftrightarrow> ta = ta'"
+by(cases ta)(cases ta', auto simp add: convert_obs_initial_def)
 
-lemma cond_a_observable_ta_of [simp]:
-  "\<lbrace>observable_ta_of ta obs\<rbrace>\<^bsub>c\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>c\<^esub>"
-by(simp add: observable_ta_of_def)
+lemma convert_obs_initial_empty_TA [simp]:
+  "convert_obs_initial \<epsilon> = \<epsilon>"
+by(simp add: convert_obs_initial_def)
 
-lemma wset_a_observable_ta_of [simp]:
-  "\<lbrace>observable_ta_of ta obs\<rbrace>\<^bsub>w\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>"
-by(simp add: observable_ta_of_def)
+lemma convert_obs_initial_eq_empty_TA [simp]:
+  "convert_obs_initial ta = \<epsilon> \<longleftrightarrow> ta = \<epsilon>"
+  "\<epsilon> = convert_obs_initial ta \<longleftrightarrow> ta = \<epsilon>"
+by(case_tac [!] ta)(auto simp add: convert_obs_initial_def)
 
-lemma obs_a_observable_ta_of [simp]:
-  "\<lbrace>observable_ta_of ta obs\<rbrace>\<^bsub>o\<^esub> = observable_of \<lbrace>ta\<rbrace>\<^bsub>o\<^esub> @ obs"
-by(simp add: observable_ta_of_def)
-
-lemma observable_of_inject [simp]:
-  "observable_of obs = observable_of obs' \<longleftrightarrow> obs = obs'"
-apply(induct obs arbitrary: obs')
- apply fastsimp
-apply(case_tac obs')
-apply fastsimp+
-done
-
-lemma observable_ta_of_inject1 [simp]:
-  "observable_ta_of ta obs = observable_ta_of ta' obs \<longleftrightarrow> ta = ta'"  
-by(cases ta, cases ta')(auto simp add: observable_ta_of_def)
-
-lemma observable_ta_of_inject2 [simp]:
-  "observable_ta_of ta obs = observable_ta_of ta obs' \<longleftrightarrow> obs = obs'"  
-by(auto simp add: observable_ta_of_def)
-
-lemma observable_ta_of_empty_Nil [simp]: "observable_ta_of \<epsilon> [] = \<epsilon>"
-by(simp add: observable_ta_of_def)
-
-lemma observable_ta_of_eq_empty [simp]: 
-  "observable_ta_of ta obs = \<epsilon> \<longleftrightarrow> ta = \<epsilon> \<and> obs = []"
-by(cases ta)(simp add: observable_ta_of_def)
-
-lemma empty_eq_observable_ta_of [simp]: 
-  "\<epsilon> = observable_ta_of ta obs \<longleftrightarrow> ta = \<epsilon> \<and> obs = []"
-by(cases ta)(auto simp add: observable_ta_of_def)
-
-definition is_Interrupted_ta :: "('l,'t,'x,'m,'w,'o list) thread_action \<Rightarrow> bool"
-where "is_Interrupted_ta ta \<longleftrightarrow> \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = (\<lambda>\<^isup>f []) \<and> \<lbrace>ta\<rbrace>\<^bsub>t\<^esub> = [] \<and> \<lbrace>ta\<rbrace>\<^bsub>c\<^esub> = [Interrupted] \<and> \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> = []"
-
+lemma convert_obs_initial_simps [simp]:
+  "\<lbrace>convert_obs_initial ta\<rbrace>\<^bsub>o\<^esub> = map NormalAction \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>"
+  "\<lbrace>convert_obs_initial ta\<rbrace>\<^bsub>l\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>l\<^esub>"
+  "\<lbrace>convert_obs_initial ta\<rbrace>\<^bsub>t\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>t\<^esub>"
+  "\<lbrace>convert_obs_initial ta\<rbrace>\<^bsub>c\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>c\<^esub>"
+  "\<lbrace>convert_obs_initial ta\<rbrace>\<^bsub>w\<^esub> = \<lbrace>ta\<rbrace>\<^bsub>w\<^esub>"
+by(simp_all add: convert_obs_initial_def)
 
 types
   ('l,'t,'x,'m,'w,'o) semantics =
@@ -394,19 +388,19 @@ print_translation {*
     fun tr'
        [t4,
         Const (@{type_syntax fun}, _) $
-          (Const (@{type_syntax "*"}, _) $ x1 $ m1) $
+          (Const (@{type_syntax "prod"}, _) $ x1 $ m1) $
           (Const (@{type_syntax fun}, _) $
-            (Const (@{type_syntax "*"}, _) $
+            (Const (@{type_syntax "prod"}, _) $
               (Const (@{type_syntax finfun}, _) $ l $
                 (Const (@{type_syntax list}, _) $ Const (@{type_syntax lock_action}, _))) $
-              (Const (@{type_syntax "*"}, _) $
+              (Const (@{type_syntax "prod"}, _) $
                 (Const (@{type_syntax list}, _) $ (Const (@{type_syntax new_thread_action}, _) $ t1 $ x2 $ m2)) $
-                (Const (@{type_syntax "*"}, _) $
+                (Const (@{type_syntax "prod"}, _) $
                   (Const (@{type_syntax list}, _) $ (Const (@{type_syntax conditional_action}, _) $ t2)) $
-                  (Const (@{type_syntax "*"}, _) $
-                    (Const (@{type_syntax list}, _) $ (Const (@{type_syntax wait_set_action}, _) $ t3 $ w)) $
-                    (Const (@{type_syntax list}, _) $ o1))))) $
-            (Const (@{type_syntax fun}, _) $ (Const (@{type_syntax "*"}, _) $ x3 $ m3) $
+                  (Const (@{type_syntax "prod"}, _) $
+                    (Const (@{type_syntax list}, _) $ (Const (@{type_syntax wait_set_action}, _) $ t3 $ w)) $ 
+                      (Const (@{type_syntax list}, _) $ o1))))) $
+            (Const (@{type_syntax fun}, _) $ (Const (@{type_syntax "prod"}, _) $ x3 $ m3) $
               Const (@{type_syntax bool}, _)))] =
       if x1 = x2 andalso x1 = x3 andalso m1 = m2 andalso m1 = m3 andalso t1 = t2 andalso t2 = t3 andalso t3 = t4
       then Syntax.const @{type_syntax semantics} $ l $ t1 $ x1 $ m1 $ w $ o1
@@ -414,18 +408,6 @@ print_translation {*
   in [(@{type_syntax fun}, tr')]
   end
 *}
-(* typ "('l,'t,'x,'m,'w,'o) semantics" *)
-
-types ('a, 'b) trsys = "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> bool"
-types ('a, 'b) bisim = "'a \<Rightarrow> 'b \<Rightarrow> bool"
-
-locale trsys = 
-  fixes trsys :: "('s, 'tl) trsys" ("_/ -_\<rightarrow>/ _" [50, 0, 50] 60)
-begin
-
-abbreviation Trsys :: "('s, 'tl list) trsys" ("_/ -_\<rightarrow>*/ _" [50,0,50] 60)
-where "\<And>tl. s -tl\<rightarrow>* s' \<equiv> rtrancl3p trsys s tl s'"
-
-end
+typ "('l,'t,'x,'m,'w,'o) semantics"
 
 end

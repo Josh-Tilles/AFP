@@ -4,8 +4,10 @@
 
 header {* \isaheader{Unobservable steps for the JVM} *}
 
-theory JVMTau
-imports TypeComp "../JVM/JVMDefensive"
+theory JVMTau imports
+  TypeComp
+  "../JVM/JVMThreaded"
+  "../Framework/FWLTS"
 begin
 
 declare nth_append [simp del]
@@ -37,6 +39,7 @@ where
 | "\<tau>instr P h stk Return = True"
 | "\<tau>instr P h stk Pop = True"
 | "\<tau>instr P h stk Dup = True"
+| "\<tau>instr P h stk Swap = True"
 | "\<tau>instr P h stk (BinOpInstr bop) = True"
 | "\<tau>instr P h stk (Goto i) = True"
 | "\<tau>instr P h stk (IfFalse i) = True" 
@@ -139,7 +142,7 @@ where
 
 | \<tau>move2Cond:
   "\<tau>move2 P h stk e pc xcp \<Longrightarrow> \<tau>move2 P h stk (if (e) e1 else e2) pc xcp"
-| \<tau>move2CondRed: (* new *)
+| \<tau>move2CondRed:
   "\<tau>move2 P h stk (if (e) e1 else e2) (length (compE2 e)) None"
 | \<tau>move2CondThen:
   "\<tau>move2 P h stk e1 pc xcp
@@ -290,7 +293,7 @@ proof -
     hence "\<tau>moves2 P h stk es pc xcp" by(auto intro: \<tau>moves2xcp) }
   with rhs2lhs2 have "?rhs2 \<Longrightarrow> ?lhs2" by(cases xcp) auto
   moreover have "?lhs1 \<Longrightarrow> ?rhs1" and "?lhs2 \<Longrightarrow> ?rhs2"
-    by(induct rule: \<tau>move2_\<tau>moves2.inducts)(fastsimp simp add: nth_append nat_number)+
+    by(induct rule: \<tau>move2_\<tau>moves2.inducts)(fastsimp simp add: nth_append eval_nat_numeral)+
   ultimately show "?lhs1 \<longleftrightarrow> ?rhs1" "?lhs2 \<longleftrightarrow> ?rhs2" by blast+
 qed
 
@@ -390,7 +393,7 @@ lemma \<tau>Move2_iff:
      | (stk, loc, C, M, pc) # frs' \<Rightarrow> 
        (let (_,_,_,_,_,ins,xt) = method P C M
         in (pc < length ins \<and> (xcp = None \<longrightarrow> \<tau>instr P h stk (ins ! pc)))))"
-by(cases \<sigma>)(clarsimp split: list.splits simp add: expand_fun_eq split_beta)
+by(cases \<sigma>)(clarsimp split: list.splits simp add: fun_eq_iff split_beta)
 
 lemma \<tau>instr_compP [simp]: "\<tau>instr (compP f P) h stk i \<longleftrightarrow> \<tau>instr P h stk i"
 by(cases i) auto
@@ -398,7 +401,7 @@ by(cases i) auto
 lemma [simp]: fixes e :: "expr1" and es :: "expr1 list"
   shows \<tau>move2_compP: "\<tau>move2 (compP f P) h stk e = \<tau>move2 P h stk e"
   and \<tau>moves2_compP: "\<tau>moves2 (compP f P) h stk es = \<tau>moves2 P h stk es"
-by(auto simp add: \<tau>move2_iff \<tau>moves2_iff expand_fun_eq)
+by(auto simp add: \<tau>move2_iff \<tau>moves2_iff fun_eq_iff)
 
 lemma \<tau>Move2_compP2:
   "P \<turnstile> C sees M:Ts\<rightarrow>T=body in D \<Longrightarrow> 
@@ -408,6 +411,57 @@ by(clarsimp simp add: \<tau>move2_iff compP2_def compMb2_def nth_append nth_Cons
 
 abbreviation \<tau>MOVE2 :: "jvm_prog \<Rightarrow> ((addr option \<times> frame list) \<times> 'heap, 'heap jvm_thread_action) trsys"
 where "\<tau>MOVE2 P \<equiv> \<lambda>((xcp, frs), h) ta s. \<tau>Move2 P (xcp, h, frs) \<and> ta = \<epsilon>"
+
+lemma \<tau>jvmd_heap_unchanged: 
+  "\<lbrakk> P,t \<turnstile> Normal (xcp, h, frs) -\<epsilon>-jvmd\<rightarrow> Normal (xcp', h', frs'); \<tau>Move2 P (xcp, h, frs) \<rbrakk>
+  \<Longrightarrow> h = h'"
+apply(erule jvmd_NormalE)
+apply(clarsimp)
+apply(cases xcp)
+ apply(rename_tac stk loc C M pc FRS M' Ts T mxs mxl ins xt)
+ apply(case_tac "ins ! pc")
+ apply(auto simp add: split_beta split: split_if_asm dest: \<tau>external_red_external_aggr_heap_unchanged)
+done
+
+lemma mexecd_\<tau>mthr_wf:
+  "\<tau>multithreaded_wf JVM_final (mexecd P) (\<tau>MOVE2 P)"
+proof
+  fix t x h ta x' h'
+  assume "mexecd P t (x, h) ta (x', h')"
+    and "\<tau>MOVE2 P (x, h) ta (x', h')"
+  thus "h = h'"
+    by(cases x)(cases x', auto dest: \<tau>jvmd_heap_unchanged)
+next
+  fix s ta s'
+  assume "\<tau>MOVE2 P s ta s'" thus "ta = \<epsilon>" by(simp add: split_beta)
+qed
+
+end
+
+sublocale JVM_heap_base < execd_mthr!: 
+  \<tau>multithreaded_wf 
+    JVM_final
+    "mexecd P"
+    convert_RA
+    "\<tau>MOVE2 P"
+  for P
+by(rule mexecd_\<tau>mthr_wf)
+
+context JVM_heap_base begin
+
+lemma \<tau>exec_1_taD:
+  assumes exec: "exec_1_d P t (Normal (xcp, h, frs)) ta (Normal (xcp', h', frs'))"
+  and \<tau>: "\<tau>Move2 P (xcp, h, frs)"
+  shows "ta = \<epsilon>"
+using assms
+apply(auto elim!: jvmd_NormalE simp add: split_beta)
+apply(cases xcp)
+apply auto
+apply(rename_tac stk loc C M pc FRS)
+apply(case_tac "instrs_of P C M ! pc")
+apply(simp_all split: split_if_asm)
+apply(auto dest: \<tau>external_red_external_aggr_TA_empty) 
+done
 
 end
 

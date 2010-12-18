@@ -1,7 +1,6 @@
 (*  Title:      RSAPSS/Cryptinverts.thy
-    ID:         $Id: Cryptinverts.thy,v 1.8 2009-03-03 21:42:26 nipkow Exp $
-    Author:     Christina Lindenberg, Kai Wirt, Technische Universit‰t Darmstadt
-    Copyright:  2005 - Technische Universit‰t Darmstadt 
+    Author:     Christina Lindenberg, Kai Wirt, Technische Universit√§t Darmstadt
+    Copyright:  2005 - Technische Universit√§t Darmstadt 
 *)
 
 header "Correctness proof for RSA"

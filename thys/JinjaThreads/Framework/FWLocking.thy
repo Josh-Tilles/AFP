@@ -78,6 +78,10 @@ lemma may_acquire_all_has_locks_acquire_locks [simp]:
   "\<lbrakk> may_acquire_all ls t ln; t \<noteq> t' \<rbrakk> \<Longrightarrow> has_locks (acquire_locks (ls\<^sub>f l) t (ln\<^sub>f l)) t' = has_locks (ls\<^sub>f l) t'"
 by(cases "ln\<^sub>f l > 0")(auto dest: may_acquire_allD)
 
+lemma may_acquire_all_code [code]:
+  "may_acquire_all ls t ln \<longleftrightarrow> finfun_All ((\<lambda>(lock, n). n > 0 \<longrightarrow> may_lock lock t) \<circ>\<^isub>f (ls, ln)\<^sup>f)"
+by(auto simp add: may_acquire_all_def finfun_All_All o_def)
+
 definition collect_locks :: "'l lock_actions \<Rightarrow> 'l set" where
   "collect_locks las = {l. Lock \<in> set (las\<^sub>f l)}"
 
@@ -274,5 +278,9 @@ proof(rule lock_ok_lasI)
       by(auto intro!: clml collect_locksI elim: must_acquire_lock_contains_lock )
   qed
 qed
+
+lemma lock_ok_las'_into_lock_on_las:
+  "\<lbrakk>lock_ok_las' ls t las; \<And>l. l \<in> collect_locks' las \<Longrightarrow> may_lock (ls\<^sub>f l) t\<rbrakk> \<Longrightarrow> lock_ok_las ls t las"
+by (metis lock_ok_las'_collect_locks'_may_lock lock_ok_las'_collect_locks_lock_ok_las)
 
 end

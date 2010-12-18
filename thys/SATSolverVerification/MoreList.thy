@@ -1,5 +1,4 @@
 (*    Title:              SATSolverVerification/MoreList.thy
-      ID:                 $Id: MoreList.thy,v 1.5 2008-11-13 16:09:44 filipmaric Exp $
       Author:             Filip Maric
       Maintainer:         Filip Maric <filip at matf.bg.ac.yu>
 *)

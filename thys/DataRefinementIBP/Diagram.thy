@@ -69,7 +69,7 @@ theorem mono_mono_dgr [simp]: "dmono D \<Longrightarrow> mono_mono (dgr D)"
   apply (simp add: mono_mono_def mono_def)
   apply safe
   apply (simp_all add: dgr_def)
-  apply (simp_all add: le_fun_def inf_fun_eq)
+  apply (simp_all add: le_fun_def inf_fun_def)
   apply safe
   apply (rule_tac y = "(step D (x xa) xb)" in order_trans)
   apply simp_all
@@ -192,7 +192,7 @@ lemma SUP_LE_P_least:
 
 lemma SUP_SUP_L [simp]:
   "SUP (SUP_LE_P X) = SUP X"
-  apply (simp add: expand_fun_eq SUP_fun_eq, clarify)
+  apply (simp add: fun_eq_iff SUP_fun_eq, clarify)
   apply (rule antisym)
   apply (rule SUP_least)
   apply (rule SUP_LE_P_least)
@@ -204,7 +204,7 @@ lemma SUP_SUP_L [simp]:
 
 lemma SUP_L_SUP_LE_P [simp]:
   "SUP_L (SUP_LE_P X) = SUP_L_P X"
-  apply (simp add: expand_fun_eq SUP_fun_eq SUP_L_fun_eq, clarify)
+  apply (simp add: fun_eq_iff SUP_fun_eq SUP_L_fun_eq, clarify)
   apply (rule antisym)
   apply (rule SUP_L_least)
   apply (rule SUP_LE_P_least)
@@ -290,16 +290,16 @@ definition
 
 theorem dangelic_udisjunctive:
   "dangelic R ((SUP P)::('b\<Rightarrow>('a::distributive_complete_lattice))) = SUP (\<lambda> w . dangelic R (P w))"
-  by (simp add: expand_fun_eq SUP_fun_eq dangelic_def angelic_udisjunctive)
+  by (simp add: fun_eq_iff SUP_fun_eq dangelic_def angelic_udisjunctive)
 
 theorem dangelic_udisjunctive1:
   "dangelic R ((Sup P)::('b\<Rightarrow>('a::distributive_complete_lattice))) = (SUP p:P . dangelic R p)"
-  apply (simp add: expand_fun_eq SUPR_def Sup_fun_def dangelic_def angelic_udisjunctive1 Sup_bool_def)
+  apply (simp add: fun_eq_iff SUPR_def Sup_fun_def dangelic_def angelic_udisjunctive1 Sup_bool_def)
   by auto
 
 theorem (in DiagramTermination) dangelic_udisjunctive2:
   "SUP_L_P (\<lambda>w. (dangelic R) ((P w)::('b \<Rightarrow> ('u::distributive_complete_lattice))) )(pair u i) = dangelic R (SUP_L_P P (pair u i))"
-  apply (simp add: expand_fun_eq)
+  apply (simp add: fun_eq_iff)
   apply (simp add: dangelic_def)
   apply (simp add: SUP_L_P_def)
   apply (unfold SUPR_def)
@@ -316,7 +316,7 @@ lemma  grd_dgr:
   apply (unfold INFI_def)
   apply (unfold compl_Inf)
   apply (unfold SUPR_def)
-  apply (simp_all add: bot_fun_eq)
+  apply (simp_all add: bot_fun_def)
   apply (case_tac "(uminus ` range (\<lambda>j\<Colon>'b. D (i, j) \<bottom>)) = {P\<Colon>'a. \<exists>j\<Colon>'b. P = - D (i, j) \<bottom>}")
   by auto
 

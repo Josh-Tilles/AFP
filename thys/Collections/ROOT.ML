@@ -1,29 +1,30 @@
-no_document use_thy "common/Misc";
+no_document use_thys 
+  ["common/Misc",
+   "common/Assoc_List",
+   "common/RBT_add",
+   "common/Dlist_add",
+   "common/Array",
+   "Efficient_Nat",
+   "While_Combinator",
+   "../Binomial-Heaps/BinomialHeap",
+   "../Binomial-Heaps/SkewBinomialHeap",
+   "../Finger-Trees/FingerTree"
+   ];
 
-(* Specifications *)
-use_thys ["MapSpec", "SetSpec", "Fifo"];
+use_thys 
+   [ (* Specifications *)
+    "MapSpec", "OrderedMap", "SetSpec", "OrderedSet", "ListSpec", "AnnotatedListSpec", "PrioSpec", "PrioUniqueSpec",
+     (* Generic Algorithms *)
+    "MapGA", "SetGA", "SetByMap", "ListGA", "SetIndex", "Algos", "AnnotatedListGAPrioImpl", "AnnotatedListGAPrioUniqueImpl",
+     (* Implementations *)
+    "MapStdImpl", "SetStdImpl",
+    "Fifo", "BinoPrioImpl", "SkewPrioImpl", "FTAnnotatedListImpl", "FTPrioImpl", "FTPrioUniqueImpl"
+    ];
 
-(* Generic algorithms *)
-use_thys ["MapGA", "SetGA", "SetByMap", "Algos", "SetIndex"];
-
-(* Implementations *)
-no_document use_thys
- ["While_Combinator", "AssocList", "RBT", "Efficient_Nat"];
+no_document use_thys ["StdInst"];
 
 use_thys
-  ["ListMapImpl", "ListSetImpl", "RBTMapImpl", "RBTSetImpl",
-   "HashCode", "HashMap", "HashSet"];
-
-no_document use_thy "StdInst";
-
-use_thy "Collections";
-
-(* Userguide *)
-use_thy "Userguide";
-
-(* Example *)
-no_document use_thy "While_Combinator";
-use_thys ["DatRef", "Exploration", "Exploration_Example"];
-
-(* Test *)
-(* no_document use _ thy "Test"; *)
+   ["Collections",
+    "Userguide",
+    (* Examples *)
+    "examples/itp_2010", "examples/Exploration", "examples/Exploration_DFS", "All"];

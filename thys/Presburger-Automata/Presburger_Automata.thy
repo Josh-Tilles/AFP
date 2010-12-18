@@ -8,43 +8,34 @@ begin
 
 section {* General automata *}
 
-fun steps :: "('a \<Rightarrow> 'b \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> 'b list \<Rightarrow> 'a"
-where
-  "steps tr q [] = q"
-| "steps tr q (a # as) = steps tr (tr q a) as"
-
-lemma steps_append:
-  "steps tr q (a @ b) = steps tr (steps tr q a) b"
-  by (induct tr q a rule: steps.induct) simp+
-
 definition
-  "reach tr p as q \<equiv> (q = steps tr p as)"
+  "reach tr p as q \<equiv> (q = foldl tr p as)"
 
 lemma reach_nil: "reach tr p [] p" by (simp add: reach_def)
 
 lemma reach_snoc: "reach tr p bs q \<Longrightarrow> reach tr p (bs @ [b]) (tr q b)"
-  by (simp add: reach_def steps_append)
+  by (simp add: reach_def)
 
 lemma reach_nil_iff: "reach tr p [] q = (p = q)" by (auto simp add: reach_def)
 
 lemma reach_snoc_iff: "reach tr p (bs @ [b]) k = (\<exists>q. reach tr p bs q \<and> k = tr q b)"
-  by (auto simp add: reach_def steps_append)
+  by (auto simp add: reach_def)
 
 lemma reach_induct [consumes 1, case_names Nil snoc, induct set: reach]:
   assumes "reach tr p w q"
   and "P [] p"
   and  "\<And>k x y. \<lbrakk>reach tr p x k; P x k\<rbrakk> \<Longrightarrow> P (x @ [y]) (tr k y)"
   shows "P w q"
-using assms by (induct w arbitrary: q rule: rev_induct) (simp add: reach_def steps_append)+
+using assms by (induct w arbitrary: q rule: rev_induct) (simp add: reach_def)+
 
 lemma reach_trans: "\<lbrakk>reach tr p a r; reach tr r b q\<rbrakk> \<Longrightarrow> reach tr p (a @ b) q" 
-  by (simp add: reach_def steps_append)
+  by (simp add: reach_def)
 
 lemma reach_inj: "\<lbrakk>reach tr p a q; reach tr p a q'\<rbrakk> \<Longrightarrow> q = q'"
   by (simp add: reach_def)
 
 definition
-  "accepts tr P s as \<equiv> P (steps tr s as)"
+  "accepts tr P s as \<equiv> P (foldl tr s as)"
 
 locale Automaton =
   fixes trans :: "'a \<Rightarrow> 'b \<Rightarrow> 'a"
@@ -56,8 +47,8 @@ begin
 lemma steps_is_node:
   assumes "is_node q"
   and "list_all is_alpha w"
-  shows "is_node (steps trans q w)"
-using assms by (induct tr \<equiv> trans q w rule: steps.induct) (simp add: trans_is_node)+
+  shows "is_node (foldl trans q w)"
+  using assms by (induct w arbitrary: q) (simp add: trans_is_node)+
 
 lemma reach_is_node: "\<lbrakk>reach trans p w q; is_node p; list_all is_alpha w\<rbrakk> \<Longrightarrow> is_node q"
   by (simp add: steps_is_node reach_def)
@@ -198,20 +189,13 @@ lemma bdd_all_bdd_binop:
   shows "bdd_all R (bdd_binop f bdd bdd')"
   using assms by (induct f bdd bdd' rule: bdd_binop.induct) simp+
 
-definition insert_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "insert_list x xs \<equiv> if x mem xs then xs else x # xs"
-
-lemma insert_list_set[simp]:
-  "set (insert_list x xs) = insert x (set xs)"
-  by (auto simp add: insert_list_def mem_iff)
-
 lemma insert_list_idemp[simp]:
-  "insert_list x (insert_list x xs) = insert_list x xs"
-  by (simp add: insert_list_def)
+  "List.insert x (List.insert x xs) = List.insert x xs"
+  by simp
 
 primrec add_leaves :: "'a bdd \<Rightarrow> 'a list \<Rightarrow> 'a list"
 where
-  "add_leaves (Leaf x) xs = insert_list x xs"
+  "add_leaves (Leaf x) xs = List.insert x xs"
 | "add_leaves (Branch b c) xs = add_leaves c (add_leaves b xs)"
 
 lemma add_leaves_bdd_lookup:
@@ -236,8 +220,8 @@ lemma add_leaves_bdd_lookup:
   done
 
 lemma add_leaves_bdd_all_eq:
-  "list_all P (add_leaves tr xs) = (bdd_all P tr \<and> list_all P xs)"
-  by (induct tr arbitrary: xs) (auto simp add: insert_list_def mem_iff list_all_iff)
+  "list_all P (add_leaves tr xs) \<longleftrightarrow> bdd_all P tr \<and> list_all P xs"
+  by (induct tr arbitrary: xs) (auto simp add: list_all_iff)
 
 lemmas add_leaves_bdd_all_eq' =
   add_leaves_bdd_all_eq [where xs="[]", simplified, symmetric]
@@ -251,12 +235,12 @@ lemma add_leaves_binop_subset:
    (\<Union>x\<in>set (add_leaves b xs). \<Union>y\<in>set (add_leaves b' ys). {f x y})"
   apply (induct f b b' arbitrary: xs ys rule: bdd_binop.induct)
   apply auto
-  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> insert_list y ys]" in
+  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> List.insert y ys]" in
     rev_subsetD [OF _ add_leaves_mono, standard])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
-  apply (drule_tac ys="[f x y. x \<leftarrow> insert_list x xs, y \<leftarrow> add_leaves l ys]" in
+  apply (drule_tac ys="[f x y. x \<leftarrow> List.insert x xs, y \<leftarrow> add_leaves l ys]" in
     rev_subsetD [OF _ add_leaves_mono, standard])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
@@ -319,7 +303,7 @@ lemmas dfa_trans_is_node = aut_dfa.trans_is_node [OF aut_dfa.intro]
 lemmas dfa_steps_is_node = aut_dfa.steps_is_node [OF aut_dfa.intro]
 lemmas dfa_reach_is_node = aut_dfa.reach_is_node [OF aut_dfa.intro]
 
-abbreviation "dfa_steps A \<equiv> steps (dfa_trans A)"
+abbreviation "dfa_steps A \<equiv> foldl (dfa_trans A)"
 abbreviation "dfa_accepts A \<equiv> accepts (dfa_trans A) (dfa_accepting A) 0"
 abbreviation "dfa_reach A \<equiv> reach (dfa_trans A)"
 
@@ -1751,7 +1735,7 @@ lemmas nfa_trans_is_node = aut_nfa.trans_is_node [OF aut_nfa.intro]
 lemmas nfa_steps_is_node = aut_nfa.steps_is_node [OF aut_nfa.intro]
 lemmas nfa_reach_is_node = aut_nfa.reach_is_node [OF aut_nfa.intro]
 
-abbreviation "nfa_steps A \<equiv> steps (nfa_trans A)"
+abbreviation "nfa_steps A \<equiv> foldl (nfa_trans A)"
 abbreviation "nfa_accepts A \<equiv> accepts (nfa_trans A) (nfa_accepting A) (nfa_startnode A)"
 abbreviation "nfa_reach A \<equiv> reach (nfa_trans A)"
 
@@ -1928,7 +1912,7 @@ lemma prod_dfs_mono:
     
 lemma prod_dfs_start:
   "\<lbrakk>dfa_is_node A i; dfa_is_node B j\<rbrakk> \<Longrightarrow> fst (prod_dfs A B (i, j)) ! i ! j = Some 0"
-  apply (simp add: prod_dfs_def empt prod_is_node_def gen_dfs.simps)
+  apply (simp add: prod_dfs_def empt prod_is_node_def gen_dfs_simps)
   apply (rule prod_dfs_mono)
   apply (rule ins_invariant)
   apply (simp add: prod_is_node_def dfa_is_node_def)
@@ -2638,7 +2622,7 @@ proof -
     with H step `q0\<noteq>x` have V: "\<And>v. bdd_lookup (bddinsert (fst S) x v) q0 = bdd_lookup (fst S) q0" by (simp add: bdd_lookup_bddinsert nfa_is_node_def)
     with step show "bdd_lookup (fst (subset_ins x S)) q0 = Some 0" by (auto simp: subset_ins_def split_beta)
   qed
-  thus ?thesis unfolding subset_dfs_def by (auto simp: nfa_is_node_def step subset_memb_def subset_empt_def)
+  thus ?thesis unfolding subset_dfs_def by (auto simp: nfa_is_node_def gen_dfs_simps subset_memb_def subset_empt_def)
 qed
 
 lemma subset_dfs_is_node:
@@ -3013,7 +2997,7 @@ lemma subsetbdd_set_of_bv:
   and "nfa_is_node N q"
   shows "set_of_bv (bdd_lookup (subsetbdd (fst N) q (nfa_emptybdd (length q))) ws) = (\<Union>i\<in>set_of_bv q. set_of_bv (bdd_lookup (fst N ! i) ws))"
   (is "set_of_bv ?q = _")
-proof (simp only: expand_set_eq, rule allI)
+proof (simp only: set_eq_iff, rule allI)
   fix x :: nat
   from assms have "bdd_all (nfa_is_node N) (subsetbdd (fst N) q (nfa_emptybdd (length q)))"
     by (simp add: wf_nfa_def bdd_all_is_node_subsetbdd)
@@ -3051,7 +3035,7 @@ proof -
     by (simp add: subsetbdd_set_of_bv)
   also from assms have "\<dots> = (\<Union>i\<in>set_of_bv q.  set_of_bv (bdd_lookup (quantify_bdd v (fst N ! i)) w))" by (auto simp: quantify_nfa_def split_beta nfa_is_node_def set_of_bv_def)
   also have "\<dots> = (\<Union>i\<in>set_of_bv q. \<Union>b. set_of_bv (bdd_lookup (fst N ! i) (insertl v b w)))"
-  proof (simp only: expand_set_eq, rule allI)
+  proof (simp only: set_eq_iff, rule allI)
     fix x
     have "x \<in> (\<Union>i\<in>set_of_bv q. set_of_bv (bdd_lookup (quantify_bdd v (fst N ! i)) w)) = (\<exists>i\<in>set_of_bv q. x \<in> set_of_bv (bdd_lookup (quantify_bdd v (fst N ! i)) w))" by simp
     also have "\<dots> = ({i. i \<in> set_of_bv q \<and> x \<in> set_of_bv (bdd_lookup (quantify_bdd v (fst N ! i)) w)} \<noteq> {})" by auto
@@ -3117,7 +3101,7 @@ next
   } note N2 = this
 
   have "set_of_bv (nfa_steps (quantify_nfa v N) q (xs @ [x])) = set_of_bv (nfa_steps (quantify_nfa v N) ?q [x])"
-    by (simp add: steps_append)
+    by simp
   also have "\<dots> = set_of_bv (nfa_trans (quantify_nfa v N) ?q x)" by simp
   also from snoc N have "\<dots> = (\<Union>b. set_of_bv (nfa_trans N ?q (insertl v b x)))" by (simp add: nfa_trans_quantify_nfa)
   also have "\<dots> = (\<Union>b. set_of_bv (bdd_lookup (subsetbdd (fst N) ?q (nfa_emptybdd (length ?q))) (insertl v b x)))" by (simp add: nfa_trans_def)
@@ -3129,10 +3113,10 @@ next
   also from N2 B have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_trans N (nfa_steps N q (insertll v (butlast bs) xs)) (insertl v (last bs) x)))" (is "?L = ?R")
     by (simp add: subsetbdd_set_of_bv[folded nfa_trans_def] cong: strong_UN_cong)
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs) xs @ [insertl v (last bs) x])))"
-    by (simp add: steps_append)
+    by simp
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs @ [last bs]) (xs @ [x]))))" by (auto simp: insertll_append)
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v bs (xs @ [x]))))"
-  proof (rule set_ext)
+  proof (rule set_eqI)
     fix xa
     have "(xa \<in> (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs @ [last bs]) (xs @ [x]))))) =
       (\<exists>bs \<in> {x. length x = Suc (length xs)}. bs \<noteq> [] \<and> xa \<in> set_of_bv (nfa_steps N q (insertll v (butlast bs @ [last bs]) (xs @ [x]))))" by auto
@@ -3358,7 +3342,7 @@ proof -
   
   have "dfa_accepts (rquot A n) bss = dfa_accepting (rquot A n) (dfa_steps (rquot A n) 0 bss)" by (simp add: accepts_def)
   also from assms q have "\<dots> = (\<exists>m. dfa_accepting A (dfa_steps A (dfa_steps A 0 bss) (zeros m n)))" by (simp add: rquot_accepting rquot_steps)
-  also have "\<dots> = (\<exists>m. dfa_accepting A (dfa_steps A 0 (bss @ zeros m n)))" by (simp add: steps_append)
+  also have "\<dots> = (\<exists>m. dfa_accepting A (dfa_steps A 0 (bss @ zeros m n)))" by simp
   also have "\<dots> = (\<exists>m. dfa_accepts A (bss @ zeros m n))" by (simp add: accepts_def)
   finally show ?thesis .
 qed
@@ -3556,7 +3540,7 @@ proof -
     also have "\<bar>int (x mod 2)\<bar> \<le> 1" by simp
     finally have "\<bar>k * int (x mod 2) + eval_dioph ks (map (\<lambda>x. x mod 2) xs)\<bar> \<le>
       \<bar>k\<bar> + \<bar>eval_dioph ks (map (\<lambda>x. x mod 2) xs)\<bar>"
-      by (auto simp add: mult_mono1)
+      by (auto simp add: mult_left_mono)
     with 1 show ?case by simp
   qed (simp_all add: listsum_abs_ge_0)
   finally have ineq: "\<bar>(l - eval_dioph ks (map (\<lambda>x. x mod 2) xs)) div 2\<bar> \<le>
@@ -3654,7 +3638,7 @@ lemma mk_nat_vecs_mod_eq: "xs \<in> set (mk_nat_vecs n) \<Longrightarrow> map (\
   done
 
 definition
-  "dioph_succs n ks m \<equiv> filtermap (\<lambda>xs.
+  "dioph_succs n ks m \<equiv> List.map_filter (\<lambda>xs.
      if eval_dioph ks xs mod 2 = m mod 2
      then Some ((m - eval_dioph ks xs) div 2)
      else None) (mk_nat_vecs n)"
@@ -3699,7 +3683,7 @@ next
 next
   case goal3
   then show ?case
-    apply (simp add: dioph_succs_def filtermap_conv list_all_iff dioph_is_node_def)
+    apply (simp add: dioph_succs_def map_filter_def list_all_iff dioph_is_node_def)
     apply (rule allI impI)+
     apply (erule subst [OF mk_nat_vecs_mod_eq])
     apply (drule dioph_rhs_invariant)
@@ -3934,7 +3918,7 @@ lemma dioph_dfs_mono:
 
 lemma dioph_dfs_start:
   "fst (dioph_dfs n ks l) ! int_encode l = Some 0"
-  apply (simp add: dioph_dfs_def gen_dfs.simps dioph_dfs.empt dioph_is_node_def)
+  apply (simp add: dioph_dfs_def gen_dfs_simps dioph_dfs.empt dioph_is_node_def)
   apply (rule dioph_dfs_mono [of _ l])
   apply (rule dioph_dfs.ins_invariant)
   apply (simp add: dioph_is_node_def)
@@ -3994,7 +3978,7 @@ next
     moreover have "(l, (m - eval_dioph ks (map nat_of_bool bs)) div 2) \<in> (succsr (dioph_succs n ks))\<^sup>*"
       apply (rule rtrancl_into_rtrancl)
       apply (rule Cons)
-      apply (simp add: dioph_succs_def succsr_def filtermap_conv)
+      apply (simp add: dioph_succs_def succsr_def map_filter_def)
       apply (rule image_eqI [of _ _ "map nat_of_bool bs"])
       using Cons
       apply (simp_all add: True nat_of_bool_mk_nat_vecs is_alph_def)
@@ -4048,13 +4032,13 @@ proof -
       by (simp add: dioph_dfs.dfs_eq_rtrancl dioph_dfs_def)
     then have "(l, (x - eval_dioph ks ys) div 2) \<in> (succsr (dioph_succs n ks))\<^sup>*"
       apply (rule rtrancl_into_rtrancl)
-      apply (simp add: succsr_def dioph_succs_def filtermap_conv)
+      apply (simp add: succsr_def dioph_succs_def map_filter_def)
       apply (rule image_eqI [of _ _ ys])
       apply (simp_all add: ys ys')
       done
     moreover from dioph_dfs.succs_is_node [OF k', of n] ys ys'
     have x': "dioph_is_node ks l ((x - eval_dioph ks ys) div 2)"
-      by (auto simp add: dioph_succs_def filtermap_conv list_all_iff)
+      by (auto simp add: dioph_succs_def map_filter_def list_all_iff)
     ultimately have "dioph_memb ((x - eval_dioph ks ys) div 2) (dioph_dfs n ks l)"
       by (simp add: dioph_dfs.dfs_eq_rtrancl dioph_dfs_def ll)
     then obtain k' where k': "fst (dioph_dfs n ks l) !
@@ -4097,7 +4081,7 @@ next
 next
   case goal3
   then show ?case
-    apply (simp add: dioph_ineq_succs_def filtermap_conv list_all_iff dioph_is_node_def)
+    apply (simp add: dioph_ineq_succs_def map_filter_def list_all_iff dioph_is_node_def)
     apply (rule ballI)
     apply (erule subst [OF mk_nat_vecs_mod_eq])
     apply (drule dioph_rhs_invariant)
@@ -4169,7 +4153,7 @@ lemma dioph_ineq_dfs_mono:
 
 lemma dioph_ineq_dfs_start:
   "fst (dioph_ineq_dfs n ks l) ! int_encode l = Some 0"
-  apply (simp add: dioph_ineq_dfs_def gen_dfs.simps dioph_ineq_dfs.empt dioph_is_node_def)
+  apply (simp add: dioph_ineq_dfs_def gen_dfs_simps dioph_ineq_dfs.empt dioph_is_node_def)
   apply (rule dioph_ineq_dfs_mono [of _ l])
   apply (rule dioph_ineq_dfs.ins_invariant)
   apply (simp add: dioph_is_node_def)
