@@ -5,12 +5,19 @@ no_document use_thys
    "Transitive_Closure_Table",
    "Code_Char",
    "Predicate_Compile_Alternative_Defs",
-   "Fset",
+   "Cset",
    "Zorn",
+   "Monad_Syntax",
    "../Jinja/DFA/Typing_Framework_err",
    "../Jinja/DFA/LBVCorrect",
    "../Jinja/DFA/LBVComplete",
    "../FinFun/FinFun",
-   "../Coinductive/TLList"];
+   "../Coinductive/TLList",
+   "../Collections/SetSpec",
+   "../Collections/RBTMapImpl",
+   "../Collections/TrieMapImpl",
+   "../Collections/ListMapImpl",
+   "../Collections/Fifo"
+  ];
 
 use_thy "JinjaThreads";
