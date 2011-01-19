@@ -1,5 +1,4 @@
 (*  Title:      HOL/MicroJava/BV/LBVSpec.thy
-    ID:         $Id: LBVSpec.thy,v 1.8 2009-01-01 22:24:32 makarius Exp $
     Author:     Gerwin Klein
     Copyright   1999 Technische Universitaet Muenchen
 *)
@@ -13,44 +12,43 @@ begin
 types
   's certificate = "'s list"   
 
-consts
-merge :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> (nat \<times> 's) list \<Rightarrow> 's \<Rightarrow> 's"
-primrec
+primrec merge :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> nat \<Rightarrow> (nat \<times> 's) list \<Rightarrow> 's \<Rightarrow> 's"
+where
   "merge cert f r T pc []     x = x"
-  "merge cert f r T pc (s#ss) x = merge cert f r T pc ss (let (pc',s') = s in 
+| "merge cert f r T pc (s#ss) x = merge cert f r T pc ss (let (pc',s') = s in 
                                   if pc'=pc+1 then s' \<squnion>\<^sub>f x
                                   else if s' \<sqsubseteq>\<^sub>r cert!pc' then x
                                   else T)"
 
-constdefs
-  wtl_inst :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow>
+definition wtl_inst :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow>
               's step_type \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> 's"
-  "wtl_inst cert f r T step pc s \<equiv> merge cert f r T pc (step pc s) (cert!(pc+1))"
+where
+  "wtl_inst cert f r T step pc s = merge cert f r T pc (step pc s) (cert!(pc+1))"
 
-  wtl_cert :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow>
+definition wtl_cert :: "'s certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow>
               's step_type \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> 's"
-  "wtl_cert cert f r T B step pc s \<equiv>
-  if cert!pc = B then 
+where
+  "wtl_cert cert f r T B step pc s =
+  (if cert!pc = B then 
     wtl_inst cert f r T step pc s
   else
-    if s \<sqsubseteq>\<^sub>r cert!pc then wtl_inst cert f r T step pc (cert!pc) else T"
+    if s \<sqsubseteq>\<^sub>r cert!pc then wtl_inst cert f r T step pc (cert!pc) else T)"
 
-consts 
-  wtl_inst_list :: "'a list \<Rightarrow> 's certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow>
+primrec wtl_inst_list :: "'a list \<Rightarrow> 's certificate \<Rightarrow> 's binop \<Rightarrow> 's ord \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow>
                     's step_type \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> 's"
-primrec
+where
   "wtl_inst_list []     cert f r T B step pc s = s"
-  "wtl_inst_list (i#is) cert f r T B step pc s = 
+| "wtl_inst_list (i#is) cert f r T B step pc s = 
     (let s' = wtl_cert cert f r T B step pc s in
       if s' = T \<or> s = T then T else wtl_inst_list is cert f r T B step (pc+1) s')"
 
-constdefs
-  cert_ok :: "'s certificate \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's set \<Rightarrow> bool"
-  "cert_ok cert n T B A \<equiv> (\<forall>i < n. cert!i \<in> A \<and> cert!i \<noteq> T) \<and> (cert!n = B)"
+definition cert_ok :: "'s certificate \<Rightarrow> nat \<Rightarrow> 's \<Rightarrow> 's \<Rightarrow> 's set \<Rightarrow> bool"
+where
+  "cert_ok cert n T B A \<longleftrightarrow> (\<forall>i < n. cert!i \<in> A \<and> cert!i \<noteq> T) \<and> (cert!n = B)"
 
-constdefs
-  bottom :: "'a ord \<Rightarrow> 'a \<Rightarrow> bool"
-  "bottom r B \<equiv> \<forall>x. B \<sqsubseteq>\<^sub>r x"
+definition bottom :: "'a ord \<Rightarrow> 'a \<Rightarrow> bool"
+where
+  "bottom r B \<longleftrightarrow> (\<forall>x. B \<sqsubseteq>\<^sub>r x)"
 
 
 locale lbv = Semilat +
@@ -76,12 +74,12 @@ locale lbv = Semilat +
 
 
 lemma (in lbv) wti:
-  "wti c pc s \<equiv> merge c pc (step pc s) (c!(pc+1))"
+  "wti c pc s = merge c pc (step pc s) (c!(pc+1))"
   (*<*) by (simp add: wti_def mrg_def wtl_inst_def) (*>*)
 
 lemma (in lbv) wtc: 
-  "wtc c pc s \<equiv> if c!pc = \<bottom> then wti c pc s else if s \<sqsubseteq>\<^sub>r c!pc then wti c pc (c!pc) else \<top>"
-  (*<*) by (unfold wtc_def wti_def wtl_cert_def) (*>*)
+  "wtc c pc s = (if c!pc = \<bottom> then wti c pc s else if s \<sqsubseteq>\<^sub>r c!pc then wti c pc (c!pc) else \<top>)"
+  (*<*) by (unfold wtc_def wti_def wtl_cert_def) rule (*>*)
 
 lemma cert_okD1 [intro?]:
   "cert_ok c n T B A \<Longrightarrow> pc < n \<Longrightarrow> c!pc \<in> A"

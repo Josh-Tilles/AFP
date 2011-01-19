@@ -1,6 +1,4 @@
-(*  ID:         $Id: EnumeratorProps.thy,v 1.7 2009-04-24 19:28:46 fhaftmann Exp $
-    Author:     Gertrud Bauer, Tobias Nipkow
-*)
+(*  Author:  Gertrud Bauer, Tobias Nipkow  *)
 
 header{* Properties of Patch Enumeration*}
 
@@ -82,21 +80,6 @@ lemmas enumBase_simps = enumBase_length enumBase_bound
 
 
 (********** enumAppend ************)
-
-lemma enumAppend_length: "(\<forall> ls \<in> set lss. length ls = k) \<Longrightarrow> (\<forall> ls2 \<in> set (enumAppend nmax lss). length ls2 = Suc k)"
-by (auto simp: enumAppend_def)
-
-lemma enumAppend_length_rec: "(\<forall> ls \<in> set lss. length ls = k) \<Longrightarrow>
-  (\<forall> ls2 \<in> set (((enumAppend nmax) ^^ n) lss).  length ls2 = k + n)"
-apply (induct n) by (auto intro!: enumAppend_length)
-
-lemma enumAppend_length_rec2: "(\<forall> ls \<in> set lss. length ls = k)
-  \<Longrightarrow> ls2 \<in> set (((enumAppend nmax) ^^ n) lss) \<Longrightarrow>  length ls2 = k + n"
-by (auto dest: enumAppend_length_rec)
-
-lemma enumAppend_length_rec3: "(\<forall> ls \<in> set lss. length ls = 1)
-  \<Longrightarrow> ls2 \<in> set (((enumAppend nmax) ^^ n) lss) \<Longrightarrow>  length ls2 = Suc n"
-by (auto dest: enumAppend_length_rec2)
 
 lemma enumAppend_bound: "ls \<in> set ((enumAppend nmax) lss) \<Longrightarrow>
  \<forall> y \<in> set lss. \<forall> z \<in> set y. z \<le> nmax \<Longrightarrow> x \<in> set ls \<Longrightarrow> x \<le>  nmax"

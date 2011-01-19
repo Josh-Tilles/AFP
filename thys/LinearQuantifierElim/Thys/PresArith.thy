@@ -119,25 +119,6 @@ by(simp add:lbounds_def)
 
 subsection{*LCM and lemmas*}
 
-(* FIXME move into Library *)
-
-lemma zdiv_eq_0_iff:
- "(i::int) div k = 0 \<longleftrightarrow> k=0 \<or> 0\<le>i \<and> i<k \<or> i\<le>0 \<and> k<i"
-apply(auto simp: div_pos_pos_trivial div_neg_neg_trivial)
-  apply (metis int_0_neq_1 linorder_not_less neg_imp_zdiv_nonneg_iff zdiv_mono1 zdiv_self zero_le_one zle_antisym zle_refl zless_linear)
-  apply (metis int_0_neq_1 linorder_not_less pos_imp_zdiv_nonneg_iff zdiv_mono1_neg zdiv_self zero_le_one zle_antisym zle_refl zless_linear)
-apply (metis int_0_neq_1 zdiv_self zless_linear)
-done
-
-lemma pos_imp_zdiv_pos_iff:
-  "0<k \<Longrightarrow> 0 < (i::int) div k \<longleftrightarrow> k \<le> i"
-using pos_imp_zdiv_nonneg_iff[of k i] zdiv_eq_0_iff[of i k]
-by arith
-
-lemma zmod_le_nonneg_dividend: "(m::int) \<ge> 0 \<Longrightarrow> m mod k \<le> m"
-apply(cases "k=0") apply simp
-by(metis linorder_not_le mod_pos_pos_trivial neg_mod_conj pos_mod_conj zle_refl zle_trans zless_le)
-
 fun zlcms :: "int list \<Rightarrow> int" where
 "zlcms [] = 1" |
 "zlcms (i#is) = lcm i (zlcms is)"
@@ -294,7 +275,7 @@ shows "qfree \<phi> \<Longrightarrow> \<forall> a \<in> set(Z.atoms\<^isub>0 \<p
  Z.I (map\<^bsub>fm\<^esub> (hd_coeff1 m) \<phi>) (m*x#xs) = Z.I \<phi> (x#xs)"
 proof(induct \<phi>)
   case (Atom a)
-  thus ?case using I_hd_coeff1_mult_a[OF `m>0`] by(simp split:split_if_asm)
+  thus ?case using I_hd_coeff1_mult_a[OF `m>0`] by auto
 qed simp_all
 
 end

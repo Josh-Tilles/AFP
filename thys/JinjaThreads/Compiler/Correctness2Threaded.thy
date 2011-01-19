@@ -45,8 +45,13 @@ sublocale J1_JVM_heap_conf_base < Red1_exec!:
   for t
 .
 
-sublocale J1_JVM_heap_conf_base < Red1_execd!:
-  delay_bisimulation_base "mred1 P t" "mexecd (compP2 P) t" "wbisim1 t" "ta_bisim wbisim1" "\<tau>MOVE1 P" "\<tau>MOVE2 (compP2 P)" 
+sublocale J1_JVM_heap_conf_base < Red1_execd!: delay_bisimulation_base
+  "mred1 P t"
+  "mexecd (compP2 P) t"
+  "wbisim1 t"
+  "ta_bisim wbisim1" 
+  "\<tau>MOVE1 P"
+  "\<tau>MOVE2 (compP2 P)" 
   for t
 .
 
@@ -213,8 +218,9 @@ next
   hence "wf (inv_image {(xcpfrs, xcpfrs'). sim21_size (compP2 P) xcpfrs xcpfrs'} fst)" by(rule wf_inv_image)
   also have "inv_image {(xcpfrs, xcpfrs'). sim21_size (compP2 P) xcpfrs xcpfrs'} fst =
     {((xcpfrs, h), (xcpfrs', h)). sim21_size (compP2 P) xcpfrs xcpfrs'}" by auto
+  also have "\<dots> = {(x, y). (\<lambda>(xcpfrs, h) (xcpfrs', h). sim21_size (compP2 P) xcpfrs xcpfrs') x y}" by(auto)
   finally show "wfP (\<lambda>(xcpfrs, h) (xcpfrs', h). sim21_size (compP2 P) xcpfrs xcpfrs')"
-    unfolding wfP_def by(auto simp add: split_def)
+    unfolding wfP_def .
 qed
 
 end
@@ -228,6 +234,7 @@ sublocale J1_JVM_heap_conf_base < Red1_execd!:
     "mred1 P"
     JVM_final
     "mexecd (compP2 P)"
+    convert_RA
     wbisim1
     "bisim_wait1JVM (compP2 P)" 
 .
@@ -236,6 +243,7 @@ sublocale JVM_heap_base < execd_mthr!:
   \<tau>multithreaded
     JVM_final
     "mexecd P"
+    convert_RA
     "\<tau>MOVE2 P"
   for P
 by(unfold_locales)
@@ -246,84 +254,12 @@ sublocale J1_JVM_heap_conf_base < Red1_execd!:
     "mred1 P"
     JVM_final
     "mexecd (compP2 P)"
+    convert_RA
     "wbisim1"
     "bisim_wait1JVM (compP2 P)" 
     "\<tau>MOVE1 P"
     "\<tau>MOVE2 (compP2 P)"
 by(unfold_locales)
-
-context J1_JVM_heap_conf_base begin
-
-lemma \<tau>exec_1_heap_unchanged:
-  assumes exec: "exec_1_d (compP2 P) t (Normal (xcp, h, frs)) \<epsilon> (Normal (xcp', h', frs'))"
-  and bl: "bisim1_list1 t h ex exs xcp frs"
-  and \<tau>: "\<tau>Move2 (compP2 P) (xcp, h, frs)"
-  shows "h' = h"
-using bl exec \<tau>
-apply(cases)
-apply(auto elim!: jvmd_NormalE)
-apply(cases xcp)
-apply auto
-apply(rename_tac stk loc C M pc FRS)
-apply(case_tac "instrs_of (compP2 P) C M ! pc")
-apply(simp_all split: split_if_asm)
-apply(auto dest: \<tau>external_red_external_aggr_heap_unchanged simp add: split_beta)
-done
-
-lemma mexecd_\<tau>mthr_wf:
-  "\<tau>multithreaded_wf JVM_final (mexecd (compP2 P)) (\<tau>MOVE2 (compP2 P)) (\<lambda>t s2. \<exists>s1. wbisim1 t s1 s2)"
-proof
-  fix t x2 m2 ta2 x2' m2'
-  assume "\<exists>s1. wbisim1 t s1 (x2, m2)" "mexecd (compP2 P) t (x2, m2) ta2 (x2', m2')"
-    and "\<tau>MOVE2 (compP2 P) (x2, m2) ta2 (x2', m2')"
-  thus "m2 = m2'" by(cases x2, cases x2')(auto dest: \<tau>exec_1_heap_unchanged)
-next
-  fix s ta s'
-  assume "\<tau>MOVE2 (compP2 P) s ta s'"
-  thus "ta = \<epsilon>" by(simp add: split_beta)
-qed
-
-end
-
-sublocale J1_JVM_heap_conf_base < mexecd_mthr!:
-  \<tau>multithreaded_wf 
-    JVM_final
-    "mexecd (compP2 P)"
-    "\<tau>MOVE2 (compP2 P)" 
-    "\<lambda>t s2. \<exists>s1. wbisim1 t s1 s2" 
-by(rule mexecd_\<tau>mthr_wf)
-
-
-context JVM_heap_base begin
-
-lemma mexecd_Suspend_Invoke:
-  "\<lbrakk> mexecd P t (x, m) ta (x', m'); Suspend w \<in> set \<lbrace>ta\<rbrace>\<^bsub>w\<^esub> \<rbrakk>
-  \<Longrightarrow> \<exists>xcp stk loc C M pc frs' M' n. x' = (xcp, (stk, loc, C, M, pc) # frs') \<and> instrs_of P C M ! pc = Invoke M' n"
-apply(cases x')
-apply(auto elim!: jvmd_NormalE simp add: split_beta)
-apply(cases "fst x")
-apply(auto simp add: split_beta)
-apply(rename_tac stk loc C M pc frs)
-apply(case_tac "instrs_of P C M ! pc")
-apply(auto split: split_if_asm simp add: split_beta dest!: red_external_aggr_Suspend_StaySame)
-done
-
-lemma \<tau>exec_1_taD:
-  assumes exec: "exec_1_d (compP2 P) t (Normal (xcp, h, frs)) ta (Normal (xcp', h', frs'))"
-  and \<tau>: "\<tau>Move2 (compP2 P) (xcp, h, frs)"
-  shows "ta = \<epsilon>"
-using assms
-apply(auto elim!: jvmd_NormalE simp add: split_beta)
-apply(cases xcp)
-apply auto
-apply(rename_tac stk loc C M pc FRS)
-apply(case_tac "instrs_of (compP2 P) C M ! pc")
-apply(simp_all split: split_if_asm)
-apply(auto dest: \<tau>external_red_external_aggr_TA_empty) 
-done
-
-end
-
 
 context J1_JVM_conf_read begin
 
@@ -443,7 +379,7 @@ proof -
     moreover from b' \<tau>red red have tconf: "compP2 P,m2 \<turnstile> t \<surd>t"
       by(cases x1, cases x2)(auto elim!: bisim1_list1.cases Red1.cases simp add: correct_state_def \<tau>mreds1_Val_Nil \<tau>mreds1_Throw_Nil)
     from \<tau>exec have \<tau>exec': "\<tau>Exec_1_dr (compP2 P) t (fst x2, m2, snd x2) (fst x2', m2, snd x2')"
-      unfolding \<tau>Exec_1_dr_conv_rtranclp by(simp add: split_def)
+      unfolding \<tau>Exec_1_dr_conv_rtranclp by simp
     with b' tconf have "compTP P \<turnstile> t: (fst x2', m2, snd x2') \<surd>"
       using `preallocated m2`
       apply(cases x1, cases x2)
@@ -479,49 +415,11 @@ proof -
     ultimately show "bisim_wait1JVM (compP2 P) x1'' x2''"
       by(simp add: bisim_wait1JVM_def split_beta)
   next
-    fix t x1 m1 x2 m2 x1'
-    assume "wbisim1 t (x1, m1) (x2, m2)"
-      and "bisim_wait1JVM (compP2 P) x1 x2"
-      and "mred1 P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1)"
-    moreover obtain e1 xs1 exs1 where [simp]: "x1 = ((e1, xs1), exs1)" by(cases x1) auto
-    moreover obtain xcp frs where [simp]: "x2 = (xcp, frs)" by(cases x2)
-    moreover obtain e1' xs1' exs1' where [simp]: "x1' = ((e1', xs1'), exs1')" by(cases x1') auto
-    ultimately have [simp]: "m1 = m2" 
-      and bisim: "bisim1_list1 t m2 (e1, xs1) exs1 xcp frs"
-      and red: "P,t \<turnstile>1 \<langle>(e1, xs1)/exs1, m2\<rangle> -\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>\<rightarrow> \<langle>(e1', xs1')/exs1', m1\<rangle>"
-      and call: "call1 e1 \<noteq> None" 
-                "case frs of [] \<Rightarrow> False | (stk, loc, C, M, pc) # frs' \<Rightarrow> \<exists>M' n. instrs_of (compP2 P) C M ! pc = Invoke M' n"
-      by(auto simp add: bisim_wait1JVM_def)
-    from red have "\<not> \<tau>Move1 P m2 ((e1, xs1), exs1)"
-      by(auto elim!: Red1.cases dest: red1_\<tau>_taD simp add: split_beta ta_upd_simps)
-    from exec_1_simulates_Red1_not_\<tau>[OF wf red bisim this] call
-    show "\<exists>x2'. mexecd (compP2 P) t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2) \<and> wbisim1 t (x1', m1) (x2', m2)"
-      by(auto simp del: not_None_eq simp add: split_paired_Ex ta_bisim_def ta_upd_simps split: list.split_asm)
-  next
-    fix t x1 m1 x2 m2 x2'
-    assume "wbisim1 t (x1, m1) (x2, m2)"
-      and "bisim_wait1JVM (compP2 P) x1 x2"
-      and "mexecd (compP2 P) t (x2, m2) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x2', m2)"
-    moreover obtain e1 xs1 exs1 where [simp]: "x1 = ((e1, xs1), exs1)" by(cases x1) auto
-    moreover obtain xcp frs where [simp]: "x2 = (xcp, frs)" by(cases x2)
-    moreover obtain xcp' frs' where [simp]: "x2' = (xcp', frs')" by(cases x2')
-    ultimately have [simp]: "m1 = m2" 
-      and bisim: "bisim1_list1 t m2 (e1, xs1) exs1 xcp frs"
-      and exec: "compP2 P,t \<turnstile> Normal (xcp, m2, frs) -\<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace>-jvmd\<rightarrow> Normal (xcp', m2, frs')"
-      and call: "call1 e1 \<noteq> None" 
-                "case frs of [] \<Rightarrow> False | (stk, loc, C, M, pc) # frs' \<Rightarrow> \<exists>M' n. instrs_of (compP2 P) C M ! pc = Invoke M' n"
-      by(auto simp add: bisim_wait1JVM_def)
-    from exec have "\<not> \<tau>Move2 (compP2 P) (xcp, m2, frs)"
-      by(auto dest: \<tau>exec_1_taD simp add: split_beta ta_upd_simps)
-    from \<tau>Red1_simulates_exec_1_not_\<tau>[OF wf exec bisim this] call
-    show "\<exists>x1'. mred1 P t (x1, m1) \<epsilon>\<lbrace>\<^bsub>c\<^esub>Notified\<rbrace> (x1', m1) \<and> wbisim1 t (x1', m1) (x2', m2)"
-      by(auto simp del: not_None_eq simp add: split_paired_Ex ta_bisim_def ta_upd_simps split: list.split_asm)
-  next
     fix t x1 m1 x2 m2 ta1 x1' m1'
-    assume "wbisim1 t (x1, m1) (x2, m2)" 
+    assume "wbisim1 t (x1, m1) (x2, m2)"
       and "bisim_wait1JVM (compP2 P) x1 x2"
       and "mred1 P t (x1, m1) ta1 (x1', m1')"
-      and "is_Interrupted_ta ta1"
+      and wakeup: "Notified \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e1 xs1 exs1 where [simp]: "x1 = ((e1, xs1), exs1)" by(cases x1) auto
     moreover obtain xcp frs where [simp]: "x2 = (xcp, frs)" by(cases x2)
     moreover obtain e1' xs1' exs1' where [simp]: "x1' = ((e1', xs1'), exs1')" by(cases x1') auto
@@ -530,18 +428,18 @@ proof -
       and red: "P,t \<turnstile>1 \<langle>(e1, xs1)/exs1, m2\<rangle> -ta1\<rightarrow> \<langle>(e1', xs1')/exs1', m1'\<rangle>"
       and call: "call1 e1 \<noteq> None" 
                 "case frs of [] \<Rightarrow> False | (stk, loc, C, M, pc) # frs' \<Rightarrow> \<exists>M' n. instrs_of (compP2 P) C M ! pc = Invoke M' n"
-      by(auto simp add: bisim_wait1JVM_def)
-    from red `is_Interrupted_ta ta1` have "\<not> \<tau>Move1 P m2 ((e1, xs1), exs1)"
-      by(auto elim!: Red1.cases dest: red1_\<tau>_taD simp add: ta_upd_simps is_Interrupted_ta_def)
+      by(auto simp add: bisim_wait1JVM_def split_def)
+    from red wakeup have "\<not> \<tau>Move1 P m2 ((e1, xs1), exs1)"
+      by(auto elim!: Red1.cases dest: red1_\<tau>_taD simp add: split_beta ta_upd_simps)
     from exec_1_simulates_Red1_not_\<tau>[OF wf red bisim this] call
-    show "\<exists>x2' m2' ta2. mexecd (compP2 P) t (x2, m2) ta2 (x2', m2') \<and> wbisim1 t (x1', m1') (x2', m2') \<and> ta_bisim wbisim1 ta1 ta2"
-      by(fastsimp simp del: not_None_eq simp add: split_paired_Ex split: list.split_asm)
+    show "\<exists>ta2 x2' m2'. mexecd (compP2 P) t (x2, m2) ta2 (x2', m2') \<and> wbisim1 t (x1', m1') (x2', m2') \<and> ta_bisim wbisim1 ta1 ta2"
+      by(auto simp del: not_None_eq simp add: split_paired_Ex ta_bisim_def ta_upd_simps split: list.split_asm)
   next
     fix t x1 m1 x2 m2 ta2 x2' m2'
     assume "wbisim1 t (x1, m1) (x2, m2)"
       and "bisim_wait1JVM (compP2 P) x1 x2"
       and "mexecd (compP2 P) t (x2, m2) ta2 (x2', m2')"
-      and "is_Interrupted_ta ta2"
+      and wakeup: "Notified \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e1 xs1 exs1 where [simp]: "x1 = ((e1, xs1), exs1)" by(cases x1) auto
     moreover obtain xcp frs where [simp]: "x2 = (xcp, frs)" by(cases x2)
     moreover obtain xcp' frs' where [simp]: "x2' = (xcp', frs')" by(cases x2')
@@ -550,12 +448,12 @@ proof -
       and exec: "compP2 P,t \<turnstile> Normal (xcp, m2, frs) -ta2-jvmd\<rightarrow> Normal (xcp', m2', frs')"
       and call: "call1 e1 \<noteq> None" 
                 "case frs of [] \<Rightarrow> False | (stk, loc, C, M, pc) # frs' \<Rightarrow> \<exists>M' n. instrs_of (compP2 P) C M ! pc = Invoke M' n"
-      by(auto simp add: bisim_wait1JVM_def)
-    from exec `is_Interrupted_ta ta2` have "\<not> \<tau>Move2 (compP2 P) (xcp, m2, frs)"
-      by(auto dest: \<tau>exec_1_taD simp add: ta_upd_simps is_Interrupted_ta_def)
+      by(auto simp add: bisim_wait1JVM_def split_def)
+    from exec wakeup have "\<not> \<tau>Move2 (compP2 P) (xcp, m2, frs)"
+      by(auto dest: \<tau>exec_1_taD simp add: split_beta ta_upd_simps)
     from \<tau>Red1_simulates_exec_1_not_\<tau>[OF wf exec bisim this] call
-    show "\<exists>x1' m1' ta1. mred1 P t (x1, m1) ta1 (x1', m1') \<and> wbisim1 t (x1', m1') (x2', m2') \<and> ta_bisim wbisim1 ta1 ta2"
-      by(fastsimp simp del: not_None_eq simp add: split_paired_Ex split: list.split_asm)
+    show "\<exists>ta1 x1' m1'. mred1 P t (x1, m1) ta1 (x1', m1') \<and> wbisim1 t (x1', m1') (x2', m2') \<and> ta_bisim wbisim1 ta1 ta2"
+      by(auto simp del: not_None_eq simp add: split_paired_Ex ta_bisim_def ta_upd_simps split: list.split_asm)
   qed
 qed
 
@@ -567,6 +465,7 @@ sublocale J1_JVM_heap_conf_base < Red1_mexecd!:
     "mred1 P"
     JVM_final
     "mexecd (compP2 P)"
+    convert_RA
     "wbisim1"
     "bisim_wait1JVM (compP2 P)"
 .
@@ -576,16 +475,16 @@ context J1_JVM_heap_conf begin
 lemma bisim_J1_JVM_start:
   assumes wf: "wf_J1_prog P"
   and start: "start_heap_ok"
-  and sees: "P \<turnstile> C sees M:Ts\<rightarrow>T=body in C"
+  and sees: "P \<turnstile> C sees M:Ts\<rightarrow>T=body in D"
   and conf: "P,start_heap \<turnstile> vs [:\<le>] Ts"
   shows "Red1_execd.mbisim (J1_start_state P C M vs) (JVM_start_state (compP2 P) C M vs)"
 proof -
-  let ?e = "blocks1 0 (Class C#Ts) body"
+  let ?e = "blocks1 0 (Class D#Ts) body"
   let ?xs = "Null # vs @ replicate (max_vars body) undefined"
 
   from sees_wf_mdecl[OF wf sees] obtain T'
     where B: "\<B> body (Suc (length Ts))"
-    and wt: "P,Class C # Ts \<turnstile>1 body :: T'"
+    and wt: "P,Class D # Ts \<turnstile>1 body :: T'"
     and da: "\<D> body \<lfloor>{..length Ts}\<rfloor>"
     and sv: "syncvars body"
     by(auto simp add: wf_mdecl_def)
@@ -597,13 +496,13 @@ proof -
   moreover
   from wf have wf': "wf_jvm_prog\<^bsub>compTP P\<^esub> (compP2 P)" by(rule wt_compTP_compP2)
   from sees_method_compP[OF sees, of "\<lambda>C M Ts T. compMb2"]
-  have sees': "compP2 P \<turnstile> C sees M: Ts\<rightarrow>T = compMb2 body in C" by(simp add: compP2_def)
+  have sees': "compP2 P \<turnstile> C sees M: Ts\<rightarrow>T = compMb2 body in D" by(simp add: compP2_def)
   from conf have "compP2 P,start_heap \<turnstile> vs [:\<le>] Ts" by(simp add: compP2_def heap_base.compP_confs)
   from BV_correct_initial[OF wf' start sees' this] sees'
-  have "compTP P \<turnstile> start_tid:(None, start_heap, [([], ?xs, C, M, 0)]) \<surd>"
+  have "compTP P \<turnstile> start_tid:(None, start_heap, [([], ?xs, D, M, 0)]) \<surd>"
       by(simp add: JVM_start_state'_def compP2_def compMb2_def)
-  hence "bisim1_list1 start_tid start_heap (?e, ?xs) [] None [([], ?xs, C, M, 0)]"
-    using sees
+  hence "bisim1_list1 start_tid start_heap (?e, ?xs) [] None [([], ?xs, D, M, 0)]"
+    using sees_method_idemp[OF sees]
   proof
     from `bsok ?e 0` show "P,?e,0,start_heap \<turnstile> (?e, ?xs) \<leftrightarrow> ([], ?xs, 0, None)"
       by(rule bisim1_refl)

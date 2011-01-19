@@ -1,6 +1,6 @@
 (*  Title:       Much Ado about Two
-    Author:      Sascha Böhme <boehmes@informatik.tu-muenchen.de>, 2007
-    Maintainer:  Sascha Böhme <boehmes@informatik.tu-muenchen.de>
+    Author:      Sascha BÃ¶hme <boehmes@informatik.tu-muenchen.de>, 2007
+    Maintainer:  Sascha BÃ¶hme <boehmes@informatik.tu-muenchen.de>
 *)
 
 
@@ -544,7 +544,7 @@ lemma L3: "take k (map f xs) = map f (take k xs)"
 using List.take_map by auto
 
 lemma L4: "map f \<circ> wrap = wrap \<circ> f"
-by (simp add: Fun.expand_fun_eq)
+by (simp add: Fun.fun_eq_iff)
 
 lemma L5: "map f (xs @ ys) = (map f xs) @ (map f ys)"
 using List.map_append by simp

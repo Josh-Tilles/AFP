@@ -308,8 +308,8 @@ declare is_type_simps[simp] subsetI[intro!]
 (*>*)
 
 
-constdefs
-  shift :: "nat \<Rightarrow> ex_table \<Rightarrow> ex_table"
+definition shift :: "nat \<Rightarrow> ex_table \<Rightarrow> ex_table"
+where
   "shift n xt \<equiv> map (\<lambda>(from,to,C,handler,depth). (from+n,to+n,C,handler+n,depth)) xt"
 
 
@@ -743,6 +743,7 @@ by (simp add:shift_def)
 
 (*<*)
 declare nth_append[simp del]
+declare [[simproc del: list_to_set_comprehension]]
 (*>*)
 
 lemma (in TC2) wt_instrs_xapp[trans]:
@@ -782,6 +783,7 @@ apply (simp add: nth_append is_relevant_entry_def split: split_if_asm)
  apply (fastsimp simp add: ty\<^isub>i'_def)
 done
 
+declare [[simproc add: list_to_set_comprehension]]
 declare nth_append[simp]
 (*>*)
 

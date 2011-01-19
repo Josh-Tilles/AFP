@@ -1,7 +1,6 @@
 (*  Title:      RSAPSS/SHA1Padding.thy
-    ID:         $Id: SHA1Padding.thy,v 1.4 2008-06-12 06:57:26 lsf37 Exp $
-    Author:     Christina Lindenberg, Kai Wirt, Technische Universit‰t Darmstadt
-    Copyright:  2005 - Technische Universit‰t Darmstadt
+    Author:     Christina Lindenberg, Kai Wirt, Technische Universit√§t Darmstadt
+    Copyright:  2005 - Technische Universit√§t Darmstadt
 *)
 
 

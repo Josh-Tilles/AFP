@@ -1,9 +1,8 @@
 (*  Title:      HOL/MicroJava/BV/Listn.thy
-    ID:         $Id: Listn.thy,v 1.10 2008-12-30 15:30:13 ballarin Exp $
     Author:     Tobias Nipkow
     Copyright   2000 TUM
 
-Lists of a fixed length
+Lists of a fixed length.
 *)
 
 header {* \isaheader{Fixed Length Lists} *}
@@ -12,12 +11,13 @@ theory Listn
 imports Err
 begin
 
-constdefs
-  list :: "nat \<Rightarrow> 'a set \<Rightarrow> 'a list set"
-  "list n A \<equiv> {xs. size xs = n \<and> set xs \<subseteq> A}"
+definition list :: "nat \<Rightarrow> 'a set \<Rightarrow> 'a list set"
+where
+  "list n A = {xs. size xs = n \<and> set xs \<subseteq> A}"
 
-  le :: "'a ord \<Rightarrow> ('a list)ord"
-  "le r \<equiv> list_all2 (\<lambda>x y. x \<sqsubseteq>\<^sub>r y)"
+definition le :: "'a ord \<Rightarrow> ('a list)ord"
+where
+  "le r = list_all2 (\<lambda>x y. x \<sqsubseteq>\<^sub>r y)"
 
 (*<*)
 abbreviation
@@ -47,9 +47,9 @@ abbreviation (input)
   "x [\<sqsubset>\<^sub>r] y == x [\<sqsubset>\<^bsub>r\<^esub>] y"
 (*>*)
 
-constdefs
-  map2 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> 'a list \<Rightarrow> 'b list \<Rightarrow> 'c list"
-  "map2 f \<equiv> (\<lambda>xs ys. map (split f) (zip xs ys))"
+definition map2 :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> 'a list \<Rightarrow> 'b list \<Rightarrow> 'c list"
+where
+  "map2 f = (\<lambda>xs ys. map (split f) (zip xs ys))"
 
 (*<*)
 abbreviation
@@ -71,25 +71,27 @@ abbreviation (input)
 (*>*)
 
 
-consts coalesce :: "'a err list \<Rightarrow> 'a list err"
-primrec
+primrec coalesce :: "'a err list \<Rightarrow> 'a list err"
+where
   "coalesce [] = OK[]"
-  "coalesce (ex#exs) = Err.sup (op #) ex (coalesce exs)"
+| "coalesce (ex#exs) = Err.sup (op #) ex (coalesce exs)"
 
-constdefs
-  sl :: "nat \<Rightarrow> 'a sl \<Rightarrow> 'a list sl"
-  "sl n \<equiv> \<lambda>(A,r,f). (list n A, le r, map2 f)"
+definition sl :: "nat \<Rightarrow> 'a sl \<Rightarrow> 'a list sl"
+where
+  "sl n = (\<lambda>(A,r,f). (list n A, le r, map2 f))"
 
-  sup :: "('a \<Rightarrow> 'b \<Rightarrow> 'c err) \<Rightarrow> 'a list \<Rightarrow> 'b list \<Rightarrow> 'c list err"
-  "sup f \<equiv> \<lambda>xs ys. if size xs = size ys then coalesce(xs [\<squnion>\<^bsub>f\<^esub>] ys) else Err"
+definition sup :: "('a \<Rightarrow> 'b \<Rightarrow> 'c err) \<Rightarrow> 'a list \<Rightarrow> 'b list \<Rightarrow> 'c list err"
+where
+  "sup f = (\<lambda>xs ys. if size xs = size ys then coalesce(xs [\<squnion>\<^bsub>f\<^esub>] ys) else Err)"
 
-  upto_esl :: "nat \<Rightarrow> 'a esl \<Rightarrow> 'a list esl"
-  "upto_esl m \<equiv> \<lambda>(A,r,f). (Union{list n A |n. n \<le> m}, le r, sup f)"
+definition upto_esl :: "nat \<Rightarrow> 'a esl \<Rightarrow> 'a list esl"
+where
+  "upto_esl m = (\<lambda>(A,r,f). (Union{list n A |n. n \<le> m}, le r, sup f))"
 
 
 lemmas [simp] = set_update_subsetI
 
-lemma unfold_lesub_list: "xs [\<sqsubseteq>\<^bsub>r\<^esub>] ys \<equiv> Listn.le r xs ys"
+lemma unfold_lesub_list: "xs [\<sqsubseteq>\<^bsub>r\<^esub>] ys = Listn.le r xs ys"
 (*<*) by (simp add: lesub_def) (*>*)
 
 lemma Nil_le_conv [iff]: "([] [\<sqsubseteq>\<^bsub>r\<^esub>] ys) = (ys = [])"
@@ -108,9 +110,7 @@ done
 
 lemma Cons_le_Cons [iff]: "x#xs [\<sqsubseteq>\<^bsub>r\<^esub>] y#ys = (x \<sqsubseteq>\<^sub>r y \<and> xs [\<sqsubseteq>\<^bsub>r\<^esub>] ys)"
 (*<*)
-apply (unfold lesub_def Listn.le_def)
-apply simp
-done
+by (simp add: lesub_def Listn.le_def)
 (*>*)
 
 lemma Cons_less_Conss [simp]:
@@ -133,15 +133,12 @@ done
 
 lemma le_listD: "\<lbrakk> xs [\<sqsubseteq>\<^bsub>r\<^esub>] ys; p < size xs \<rbrakk> \<Longrightarrow> xs!p \<sqsubseteq>\<^sub>r ys!p"
 (*<*)
-apply (unfold Listn.le_def lesub_def)
-apply (simp add: list_all2_nthD)
-done
+by (simp add: Listn.le_def lesub_def list_all2_nthD)
 (*>*)
 
 lemma le_list_refl: "\<forall>x. x \<sqsubseteq>\<^sub>r x \<Longrightarrow> xs [\<sqsubseteq>\<^bsub>r\<^esub>] xs"
 (*<*)
-apply (unfold unfold_lesub_list lesub_def Listn.le_def)
-apply (simp add: list_all2_refl)
+apply (simp add: unfold_lesub_list lesub_def Listn.le_def list_all2_refl)
 done
 (*>*)
 
@@ -194,11 +191,16 @@ apply (rule list_all2_appendI, assumption+)
 done
 (*>*)
 
-lemma le_listI: "size a = size b \<Longrightarrow> (\<And>n. n < size a \<Longrightarrow> a!n \<sqsubseteq>\<^sub>r b!n) \<Longrightarrow> a [\<sqsubseteq>\<^bsub>r\<^esub>] b"
+lemma le_listI:
+  assumes "length a = length b"
+  assumes "\<And>n. n < length a \<Longrightarrow> a!n \<sqsubseteq>\<^sub>r b!n"
+  shows "a [\<sqsubseteq>\<^bsub>r\<^esub>] b"
 (*<*)
-  apply (unfold lesub_def Listn.le_def)
-  apply (simp add: list_all2_all_nthI)
-  done
+proof -
+  from assms have "list_all2 r a b"
+    by (simp add: list_all2_all_nthI lesub_def)
+  then show ?thesis by (simp add: Listn.le_def lesub_def)
+qed
 (*>*)
 
 lemma listI: "\<lbrakk> size xs = n; set xs \<subseteq> A \<rbrakk> \<Longrightarrow> xs \<in> list n A"

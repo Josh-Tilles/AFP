@@ -33,15 +33,15 @@ text {* The following two lemmas are useful for experimenting with the
 lemma Ivl4:
   "{0..<4::nat} = {0, 1, 2, 3}"
 proof -
-  have "{0..<4::nat} = {0..<Suc (Suc (Suc (Suc 0)))}" by (simp add: nat_number)
+  have "{0..<4::nat} = {0..<Suc (Suc (Suc (Suc 0)))}" by (simp add: eval_nat_numeral)
   also have "... = {0, 1, 2, 3}"
-    by (simp add: atLeastLessThanSuc nat_number insert_commute)
+    by (simp add: atLeastLessThanSuc eval_nat_numeral insert_commute)
   finally show ?thesis .
 qed
 
 lemma Sum4:
   "(\<Sum>i=0..<4::nat. x i) = x 0 + x 1 + x 2 + x 3"
-  by (simp add: Ivl4 nat_number)
+  by (simp add: Ivl4 eval_nat_numeral)
 
 
 text {* A number of specialised lemmas for the summation operator,
@@ -465,19 +465,17 @@ section {* Discrete, Fast Fourier Transformation *}
 text {* @{text "FFT k a"} is the transform of vector @{text a}
   of length @{text "2 ^ k"}, @{text IFFT} its inverse. *}
 
-consts
-  FFT :: "nat => (nat => complex) => (nat => complex)"
-  IFFT :: "nat => (nat => complex) => (nat => complex)"
-primrec
+primrec FFT :: "nat => (nat => complex) => (nat => complex)" where
   "FFT 0 a = a"
-  "FFT (Suc k) a =
+| "FFT (Suc k) a =
      (let (x, y) = (FFT k (%i. a (2*i)), FFT k (%i. a (2*i+1)))
       in (%i. if i < 2^k
             then x i + (root (2 ^ (Suc k))) ^ i * y i
             else x (i- 2^k) - (root (2 ^ (Suc k))) ^ (i- 2^k) * y (i- 2^k)))"
-primrec
+
+primrec IFFT :: "nat => (nat => complex) => (nat => complex)" where
   "IFFT 0 a = a"
-  "IFFT (Suc k) a =
+| "IFFT (Suc k) a =
      (let (x, y) = (IFFT k (%i. a (2*i)), IFFT k (%i. a (2*i+1)))
       in (%i. if i < 2^k
             then x i + (1 / root (2 ^ (Suc k))) ^ i * y i

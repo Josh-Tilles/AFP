@@ -1,5 +1,4 @@
 (*  Title:      HOL/MicroJava/BV/SemilatAlg.thy
-    ID:         $Id: SemilatAlg.thy,v 1.8 2008-12-30 15:30:13 ballarin Exp $
     Author:     Gerwin Klein
     Copyright   2002 Technische Universitaet Muenchen
 *)
@@ -21,28 +20,29 @@ notation (xsymbols)
 defs lesubstep_type_def:
   "A {\<sqsubseteq>\<^bsub>r\<^esub>} B \<equiv> \<forall>(p,\<tau>) \<in> A. \<exists>\<tau>'. (p,\<tau>') \<in> B \<and> \<tau> \<sqsubseteq>\<^sub>r \<tau>'"
 
-consts
-  pluslussub :: "'a list \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> 'a" 
+primrec pluslussub :: "'a list \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> 'a" 
+where
+  "pluslussub [] f y = y"
+| "pluslussub (x#xs) f y = pluslussub xs f (x \<squnion>\<^sub>f y)"
 (*<*)
 notation
   pluslussub  ("(_ /++'__ _)" [65, 1000, 66] 65)
 (*>*)
 notation (xsymbols)
   pluslussub  ("(_ /\<Squnion>\<^bsub>_\<^esub> _)" [65, 0, 66] 65)
-primrec
-  "[] \<Squnion>\<^bsub>f\<^esub> y = y"
-  "(x#xs) \<Squnion>\<^bsub>f\<^esub> y = xs \<Squnion>\<^bsub>f\<^esub> (x \<squnion>\<^sub>f y)"
 
-constdefs
-  bounded :: "'s step_type \<Rightarrow> nat \<Rightarrow> bool"
-  "bounded step n \<equiv> \<forall>p<n. \<forall>\<tau>. \<forall>(q,\<tau>') \<in> set (step p \<tau>). q<n"  
+definition bounded :: "'s step_type \<Rightarrow> nat \<Rightarrow> bool"
+where
+  "bounded step n \<longleftrightarrow> (\<forall>p<n. \<forall>\<tau>. \<forall>(q,\<tau>') \<in> set (step p \<tau>). q<n)"
 
-  pres_type :: "'s step_type \<Rightarrow> nat \<Rightarrow> 's set \<Rightarrow> bool"
-  "pres_type step n A \<equiv> \<forall>\<tau>\<in>A. \<forall>p<n. \<forall>(q,\<tau>') \<in> set (step p \<tau>). \<tau>' \<in> A"
+definition pres_type :: "'s step_type \<Rightarrow> nat \<Rightarrow> 's set \<Rightarrow> bool"
+where
+  "pres_type step n A \<longleftrightarrow> (\<forall>\<tau>\<in>A. \<forall>p<n. \<forall>(q,\<tau>') \<in> set (step p \<tau>). \<tau>' \<in> A)"
 
-  mono :: "'s ord \<Rightarrow> 's step_type \<Rightarrow> nat \<Rightarrow> 's set \<Rightarrow> bool"
-  "mono r step n A \<equiv> 
-  \<forall>\<tau> p \<tau>'. \<tau> \<in> A \<and> p<n \<and> \<tau> \<sqsubseteq>\<^sub>r \<tau>' \<longrightarrow> set (step p \<tau>) {\<sqsubseteq>\<^bsub>r\<^esub>} set (step p \<tau>')"
+definition mono :: "'s ord \<Rightarrow> 's step_type \<Rightarrow> nat \<Rightarrow> 's set \<Rightarrow> bool"
+where
+  "mono r step n A \<longleftrightarrow>
+    (\<forall>\<tau> p \<tau>'. \<tau> \<in> A \<and> p<n \<and> \<tau> \<sqsubseteq>\<^sub>r \<tau>' \<longrightarrow> set (step p \<tau>) {\<sqsubseteq>\<^bsub>r\<^esub>} set (step p \<tau>'))"
 
 lemma [iff]: "{} {\<sqsubseteq>\<^bsub>r\<^esub>} B" 
   (*<*) by (simp add: lesubstep_type_def) (*>*)
@@ -82,6 +82,7 @@ lemma list_update_le_listI [rule_format]:
 (*<*)
   apply (unfold Listn.le_def lesub_def semilat_def)
   apply (simp add: list_all2_conv_all_nth nth_list_update)
+  apply (simp add: lesub_def)
   done
 (*>*)
 

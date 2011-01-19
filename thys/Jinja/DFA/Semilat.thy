@@ -1,9 +1,8 @@
 (*  Title:      HOL/MicroJava/BV/Semilat.thy
-    ID:         $Id: Semilat.thy,v 1.10 2008-07-25 15:07:17 fhaftmann Exp $
     Author:     Tobias Nipkow
     Copyright   2000 TUM
 
-Semilattices
+Semilattices.
 *)
 
 header {* 
@@ -55,37 +54,44 @@ defs
   lesssub_def: "x \<sqsubset>\<^sub>r y \<equiv> x \<sqsubseteq>\<^sub>r y \<and> x \<noteq> y"
   plussub_def: "x \<squnion>\<^sub>f y \<equiv> f x y"
 
-constdefs
-  ord :: "('a \<times> 'a) set \<Rightarrow> 'a ord"
-  "ord r \<equiv> \<lambda>x y. (x,y) \<in> r"
+definition ord :: "('a \<times> 'a) set \<Rightarrow> 'a ord"
+where
+  "ord r = (\<lambda>x y. (x,y) \<in> r)"
 
-  order :: "'a ord \<Rightarrow> bool"
-  "order r \<equiv> (\<forall>x. x \<sqsubseteq>\<^sub>r x) \<and> (\<forall>x y. x \<sqsubseteq>\<^sub>r y \<and> y \<sqsubseteq>\<^sub>r x \<longrightarrow> x=y) \<and> (\<forall>x y z. x \<sqsubseteq>\<^sub>r y \<and> y \<sqsubseteq>\<^sub>r z \<longrightarrow> x \<sqsubseteq>\<^sub>r z)"
+definition order :: "'a ord \<Rightarrow> bool"
+where
+  "order r \<longleftrightarrow> (\<forall>x. x \<sqsubseteq>\<^sub>r x) \<and> (\<forall>x y. x \<sqsubseteq>\<^sub>r y \<and> y \<sqsubseteq>\<^sub>r x \<longrightarrow> x=y) \<and> (\<forall>x y z. x \<sqsubseteq>\<^sub>r y \<and> y \<sqsubseteq>\<^sub>r z \<longrightarrow> x \<sqsubseteq>\<^sub>r z)"
 
-  top :: "'a ord \<Rightarrow> 'a \<Rightarrow> bool"
-  "top r T \<equiv> \<forall>x. x \<sqsubseteq>\<^sub>r T"
+definition top :: "'a ord \<Rightarrow> 'a \<Rightarrow> bool"
+where
+  "top r T \<longleftrightarrow> (\<forall>x. x \<sqsubseteq>\<^sub>r T)"
   
-  acc :: "'a ord \<Rightarrow> bool"
-  "acc r \<equiv> wf {(y,x). x \<sqsubset>\<^sub>r y}"
+definition acc :: "'a ord \<Rightarrow> bool"
+where
+  "acc r \<longleftrightarrow> wf {(y,x). x \<sqsubset>\<^sub>r y}"
 
-  closed :: "'a set \<Rightarrow> 'a binop \<Rightarrow> bool"
-  "closed A f \<equiv> \<forall>x\<in>A. \<forall>y\<in>A. x \<squnion>\<^sub>f y \<in> A"
+definition closed :: "'a set \<Rightarrow> 'a binop \<Rightarrow> bool"
+where
+  "closed A f \<longleftrightarrow> (\<forall>x\<in>A. \<forall>y\<in>A. x \<squnion>\<^sub>f y \<in> A)"
 
-  semilat :: "'a sl \<Rightarrow> bool"
-  "semilat \<equiv> \<lambda>(A,r,f). order r \<and> closed A f \<and> 
+definition semilat :: "'a sl \<Rightarrow> bool"
+where
+  "semilat = (\<lambda>(A,r,f). order r \<and> closed A f \<and> 
                        (\<forall>x\<in>A. \<forall>y\<in>A. x \<sqsubseteq>\<^sub>r x \<squnion>\<^sub>f y) \<and>
                        (\<forall>x\<in>A. \<forall>y\<in>A. y \<sqsubseteq>\<^sub>r x \<squnion>\<^sub>f y) \<and>
-                       (\<forall>x\<in>A. \<forall>y\<in>A. \<forall>z\<in>A. x \<sqsubseteq>\<^sub>r z \<and> y \<sqsubseteq>\<^sub>r z \<longrightarrow> x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z)"
+                       (\<forall>x\<in>A. \<forall>y\<in>A. \<forall>z\<in>A. x \<sqsubseteq>\<^sub>r z \<and> y \<sqsubseteq>\<^sub>r z \<longrightarrow> x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z))"
 
+definition is_ub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool"
+where
+  "is_ub r x y u \<longleftrightarrow> (x,u)\<in>r \<and> (y,u)\<in>r"
 
-  is_ub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool"
-  "is_ub r x y u \<equiv> (x,u)\<in>r \<and> (y,u)\<in>r"
+definition is_lub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool"
+where
+  "is_lub r x y u \<longleftrightarrow> is_ub r x y u \<and> (\<forall>z. is_ub r x y z \<longrightarrow> (u,z)\<in>r)"
 
-  is_lub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> bool"
-  "is_lub r x y u \<equiv> is_ub r x y u \<and> (\<forall>z. is_ub r x y z \<longrightarrow> (u,z)\<in>r)"
-
-  some_lub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a"
-  "some_lub r x y \<equiv> SOME z. is_lub r x y z"
+definition some_lub :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a"
+where
+  "some_lub r x y = (SOME z. is_lub r x y z)"
 
 locale Semilat =
   fixes A :: "'a set"
@@ -115,7 +121,7 @@ lemma top_le_conv [simp]: "\<lbrakk> order r; top r T \<rbrakk> \<Longrightarrow
   (*<*) by (blast intro: order_antisym) (*>*)
 
 lemma semilat_Def:
-"semilat(A,r,f) \<equiv> order r \<and> closed A f \<and> 
+"semilat(A,r,f) \<longleftrightarrow> order r \<and> closed A f \<and> 
                  (\<forall>x\<in>A. \<forall>y\<in>A. x \<sqsubseteq>\<^sub>r x \<squnion>\<^sub>f y) \<and> 
                  (\<forall>x\<in>A. \<forall>y\<in>A. y \<sqsubseteq>\<^sub>r x \<squnion>\<^sub>f y) \<and> 
                  (\<forall>x\<in>A. \<forall>y\<in>A. \<forall>z\<in>A. x \<sqsubseteq>\<^sub>r z \<and> y \<sqsubseteq>\<^sub>r z \<longrightarrow> x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z)"
@@ -151,31 +157,42 @@ lemma (in Semilat) ub2 [simp, intro?]: "\<lbrakk> x \<in> A; y \<in> A \<rbrakk>
   (*<*) by (insert semilat) (unfold semilat_Def, simp) (*>*)
 
 lemma (in Semilat) lub [simp, intro?]:
-  "\<lbrakk> x \<sqsubseteq>\<^sub>r z; y \<sqsubseteq>\<^sub>r z; x \<in> A; y \<in> A; z \<in> A \<rbrakk> \<Longrightarrow> x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z";
+  "\<lbrakk> x \<sqsubseteq>\<^sub>r z; y \<sqsubseteq>\<^sub>r z; x \<in> A; y \<in> A; z \<in> A \<rbrakk> \<Longrightarrow> x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z"
   (*<*) by (insert semilat) (unfold semilat_Def, simp) (*>*)
 
 lemma (in Semilat) plus_le_conv [simp]:
   "\<lbrakk> x \<in> A; y \<in> A; z \<in> A \<rbrakk> \<Longrightarrow> (x \<squnion>\<^sub>f y \<sqsubseteq>\<^sub>r z) = (x \<sqsubseteq>\<^sub>r z \<and> y \<sqsubseteq>\<^sub>r z)"
   (*<*) by (blast intro: ub1 ub2 lub order_trans) (*>*)
 
-lemma (in Semilat) le_iff_plus_unchanged: "\<lbrakk> x \<in> A; y \<in> A \<rbrakk> \<Longrightarrow> (x \<sqsubseteq>\<^sub>r y) = (x \<squnion>\<^sub>f y = y)"
+lemma (in Semilat) le_iff_plus_unchanged:
+  assumes "x \<in> A" and "y \<in> A"
+  shows "x \<sqsubseteq>\<^sub>r y \<longleftrightarrow> x \<squnion>\<^sub>f y = y" (is "?P \<longleftrightarrow> ?Q")
 (*<*)
-apply (rule iffI)
- apply (blast intro: antisym_r refl_r lub ub2)
-apply (erule subst)
-apply simp
-done
+proof
+  assume ?P
+  with assms show ?Q by (blast intro: antisym_r lub ub2)
+next
+  assume ?Q
+  then have "y = x \<squnion>\<^bsub>f\<^esub> y" by simp
+  moreover from assms have "x \<sqsubseteq>\<^bsub>r\<^esub> x \<squnion>\<^bsub>f\<^esub> y" by simp
+  ultimately show ?P by simp
+qed
 (*>*)
 
-lemma (in Semilat) le_iff_plus_unchanged2: "\<lbrakk> x \<in> A; y \<in> A \<rbrakk> \<Longrightarrow> (x \<sqsubseteq>\<^sub>r y) = (y \<squnion>\<^sub>f x = y)"
+lemma (in Semilat) le_iff_plus_unchanged2:
+  assumes "x \<in> A" and "y \<in> A"
+  shows "x \<sqsubseteq>\<^sub>r y \<longleftrightarrow> y \<squnion>\<^sub>f x = y" (is "?P \<longleftrightarrow> ?Q")
 (*<*)
-apply (rule iffI)
- apply (blast intro: order_antisym lub order_refl ub1)
-apply (erule subst)
-apply simp
-done 
+proof
+  assume ?P
+  with assms show ?Q by (blast intro: antisym_r lub ub1)
+next
+  assume ?Q
+  then have "y = y \<squnion>\<^bsub>f\<^esub> x" by simp
+  moreover from assms have "x \<sqsubseteq>\<^bsub>r\<^esub> y \<squnion>\<^bsub>f\<^esub> x" by simp
+  ultimately show ?P by simp
+qed
 (*>*)
-
 
 lemma (in Semilat) plus_assoc [simp]:
   assumes a: "a \<in> A" and b: "b \<in> A" and c: "c \<in> A"
@@ -298,6 +315,7 @@ lemma some_lub_conv:
 (*<*)
 apply (unfold some_lub_def is_lub_def)
 apply (rule someI2)
+ apply (unfold is_lub_def)
  apply assumption
 apply (blast intro: antisymD dest!: acyclic_impl_antisym_rtrancl)
 done
@@ -305,14 +323,14 @@ done
 
 lemma is_lub_some_lub:
   "\<lbrakk> single_valued r; acyclic r; (x,u)\<in>r^*; (y,u)\<in>r^* \<rbrakk> 
-  \<Longrightarrow> is_lub (r^* ) x y (some_lub (r^* ) x y)";
+  \<Longrightarrow> is_lub (r^* ) x y (some_lub (r^* ) x y)"
   (*<*) by (fastsimp dest: single_valued_has_lubs simp add: some_lub_conv) (*>*)
 
 subsection{*An executable lub-finder*}
 
-constdefs
- exec_lub :: "('a * 'a) set \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a binop"
-"exec_lub r f x y \<equiv> while (\<lambda>z. (x,z) \<notin> r\<^sup>*) f y"
+definition exec_lub :: "('a * 'a) set \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a binop"
+where
+  "exec_lub r f x y = while (\<lambda>z. (x,z) \<notin> r\<^sup>*) f y"
 
 lemma exec_lub_refl: "exec_lub r f T T = T"
 by (simp add: exec_lub_def while_unfold)
@@ -338,7 +356,7 @@ done
 
 lemma exec_lub_conv:
   "\<lbrakk> acyclic r; \<forall>x y. (x,y) \<in> r \<longrightarrow> f x = y; is_lub (r\<^sup>*) x y u \<rbrakk> \<Longrightarrow>
-  exec_lub r f x y = u";
+  exec_lub r f x y = u"
 (*<*)
 apply(unfold exec_lub_def)
 apply(rule_tac P = "\<lambda>z. (y,z) \<in> r\<^sup>* \<and> (z,u) \<in> r\<^sup>*" and
@@ -350,9 +368,9 @@ apply(rule_tac P = "\<lambda>z. (y,z) \<in> r\<^sup>* \<and> (z,u) \<in> r\<^sup
    apply(blast dest:rtrancl_into_rtrancl)
   apply(rename_tac s)
   apply(subgoal_tac "is_ub (r\<^sup>*) x y s")
-   prefer 2; apply(simp add:is_ub_def)
+   prefer 2 apply(simp add:is_ub_def)
   apply(subgoal_tac "(u, s) \<in> r\<^sup>*")
-   prefer 2; apply(blast dest:is_lubD)
+   prefer 2 apply(blast dest:is_lubD)
   apply(erule converse_rtranclE)
    apply blast
   apply(simp only:acyclic_def)

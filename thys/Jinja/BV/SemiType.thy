@@ -10,21 +10,20 @@ theory SemiType
 imports "../Common/WellForm" "../DFA/Semilattices"
 begin
 
-constdefs
-  super :: "'a prog \<Rightarrow> cname \<Rightarrow> cname"
-  "super P C \<equiv> fst (the (class P C))"
+definition super :: "'a prog \<Rightarrow> cname \<Rightarrow> cname"
+where "super P C \<equiv> fst (the (class P C))"
 
 lemma superI:
   "(C,D) \<in> subcls1 P \<Longrightarrow> super P C = D"
   by (unfold super_def) (auto dest: subcls1D)
 
-consts
-  the_Class :: "ty \<Rightarrow> cname"
-primrec
+
+primrec the_Class :: "ty \<Rightarrow> cname"
+where
   "the_Class (Class C) = C"
 
-constdefs 
-  sup :: "'c prog \<Rightarrow> ty \<Rightarrow> ty \<Rightarrow> ty err"
+definition sup :: "'c prog \<Rightarrow> ty \<Rightarrow> ty \<Rightarrow> ty err"
+where
   "sup P T\<^isub>1 T\<^isub>2 \<equiv>
   if is_refT T\<^isub>1 \<and> is_refT T\<^isub>2 then 
   OK (if T\<^isub>1 = NT then T\<^isub>2 else
@@ -33,14 +32,22 @@ constdefs
   else 
   (if T\<^isub>1 = T\<^isub>2 then OK T\<^isub>1 else Err)"
 
-
+lemma sup_def':
+  "sup P = (\<lambda>T\<^isub>1 T\<^isub>2.
+  if is_refT T\<^isub>1 \<and> is_refT T\<^isub>2 then 
+  OK (if T\<^isub>1 = NT then T\<^isub>2 else
+      if T\<^isub>2 = NT then T\<^isub>1 else
+      (Class (exec_lub (subcls1 P) (super P) (the_Class T\<^isub>1) (the_Class T\<^isub>2))))
+  else 
+  (if T\<^isub>1 = T\<^isub>2 then OK T\<^isub>1 else Err))"
+  by (simp add: sup_def fun_eq_iff)
 
 abbreviation
   subtype :: "'c prog \<Rightarrow> ty \<Rightarrow> ty \<Rightarrow> bool"
   where "subtype P \<equiv> widen P"
 
-constdefs
-  esl :: "'c prog \<Rightarrow> ty esl"
+definition esl :: "'c prog \<Rightarrow> ty esl"
+where
   "esl P \<equiv> (types P, subtype P, sup P)"
 
 
@@ -142,7 +149,7 @@ lemma exec_lub_refl [simp]: "exec_lub r f T T = T"
 lemma closed_err_types:
   "wf_prog wf_mb P \<Longrightarrow> closed (err (types P)) (lift2 (sup P))"
 (*<*)
-  apply (unfold closed_def plussub_def lift2_def sup_def)
+  apply (unfold closed_def plussub_def lift2_def sup_def')
   apply (frule acyclic_subcls1)
   apply (frule single_valued_subcls1)
   apply (auto simp: is_type_def is_refT_def is_class_is_subcls split: err.split ty.splits)

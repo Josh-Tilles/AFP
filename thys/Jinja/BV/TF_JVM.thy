@@ -10,8 +10,8 @@ theory TF_JVM
 imports "../DFA/Typing_Framework_err" EffectMono BVSpec
 begin
 
-constdefs
-  exec :: "jvm_prog \<Rightarrow> nat \<Rightarrow> ty \<Rightarrow> ex_table \<Rightarrow> instr list \<Rightarrow> ty\<^isub>i' err step_type"
+definition exec :: "jvm_prog \<Rightarrow> nat \<Rightarrow> ty \<Rightarrow> ex_table \<Rightarrow> instr list \<Rightarrow> ty\<^isub>i' err step_type"
+where 
   "exec G maxs rT et bs \<equiv>
   err_step (size bs) (\<lambda>pc. app (bs!pc) G maxs rT pc (size bs) et) 
                      (\<lambda>pc. eff (bs!pc) G pc et)"
@@ -107,13 +107,6 @@ theorem (in start_context) exec_pres_type:
   apply (fastsimp simp add: typeof_lit_is_type)
 
   -- New
-  apply clarsimp
-  apply (erule disjE)
-   apply clarsimp
-  apply clarsimp
-  apply (erule allE)+
-  apply (erule impE, blast)
-  apply (erule impE, blast)
   apply fastsimp
 
   -- Getfield

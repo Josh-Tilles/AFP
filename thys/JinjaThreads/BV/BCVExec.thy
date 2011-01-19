@@ -9,9 +9,6 @@ theory BCVExec imports
   "BVExec"
 begin
 
-code_const "undefined :: cname"
-  (SML "\"\"")
-
 lemmas [code_inline] = exec_lub_def
 
 lemmas [code] = JVM_le_unfold[THEN meta_eq_to_obj_eq]
@@ -47,8 +44,8 @@ unfolding JVM_SemiType.sup_def JVM_SemiType.sl_def Opt.esl_def Err.sl_def
   SemiType.esl_def Err.esl_def 
 by simp
 
-(* FIXME: why is @{thm sup_fun_eq} declared [code del] in Lattices.thy? *)
-declare sup_fun_eq [code] 
+(* FIXME: why is @{thm sup_fun_def} declared [code del] in Lattices.thy? *)
+declare sup_fun_def [code] 
 
 lemma [code]: "states P mxs mxl = fst(sl P mxs mxl)"
 unfolding states_def ..
@@ -59,10 +56,11 @@ unfolding check_types_def by(auto simp add: list_all_iff mem_def)
 
 lemma wf_jvm_prog_code [code_inline]:
   "wf_jvm_prog = wf_jvm_prog\<^isub>k"
-by(simp add: expand_fun_eq jvm_kildall_correct)
+by(simp add: fun_eq_iff jvm_kildall_correct)
 
 definition "wf_jvm_prog' = wf_jvm_prog"
 
-export_code wf_jvm_prog' in SML
+(* Formal code generation test *)
+ML {* @{code wf_jvm_prog'} *}
 
 end

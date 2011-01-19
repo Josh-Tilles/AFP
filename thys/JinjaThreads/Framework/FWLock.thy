@@ -11,7 +11,9 @@ fun has_locks :: "'t lock \<Rightarrow> 't \<Rightarrow> nat" where
 | "has_locks \<lfloor>(t', n)\<rfloor> t = (if t = t' then Suc n else 0)"
 
 lemma has_locks_iff: 
-  "has_locks l t = n \<longleftrightarrow> (l = None \<and> n = 0) \<or> (\<exists>n'. l = \<lfloor>(t, n')\<rfloor> \<and> Suc n' = n) \<or> (\<exists>t' n'. l = \<lfloor>(t', n')\<rfloor> \<and> t' \<noteq> t \<and> n = 0)"
+  "has_locks l t = n \<longleftrightarrow>
+  (l = None \<and> n = 0) \<or> 
+  (\<exists>n'. l = \<lfloor>(t, n')\<rfloor> \<and> Suc n' = n) \<or> (\<exists>t' n'. l = \<lfloor>(t', n')\<rfloor> \<and> t' \<noteq> t \<and> n = 0)"
 by(cases l, auto)
 
 lemma has_locksE:
@@ -20,7 +22,7 @@ lemma has_locksE:
      \<And>n'. \<lbrakk> l = \<lfloor>(t, n')\<rfloor>; Suc n' = n \<rbrakk> \<Longrightarrow> P;
      \<And>t' n'. \<lbrakk> l = \<lfloor>(t', n')\<rfloor>; t' \<noteq> t; n = 0 \<rbrakk> \<Longrightarrow> P \<rbrakk>
   \<Longrightarrow> P"
-by(auto simp add: has_locks_iff split: split_if_asm Product_Type.split_asm)
+by(auto simp add: has_locks_iff split: split_if_asm prod.split_asm)
 
 
 inductive may_lock :: "'t lock \<Rightarrow> 't \<Rightarrow> bool" where
@@ -107,7 +109,7 @@ by(cases l, auto)
 
 lemma unlock_lock_SomeD:
   "unlock_lock l = \<lfloor>(t', n)\<rfloor> \<Longrightarrow> l = \<lfloor>(t', Suc n)\<rfloor>"
-by(cases l, auto split: Nat.split_asm)
+by(cases l, auto split: nat.split_asm)
 
 lemma has_locks_Suc_lock_lock_has_locks_Suc_Suc:
   "has_locks l t = Suc n \<Longrightarrow> has_locks (lock_lock l t) t = Suc (Suc n)"
@@ -130,7 +132,7 @@ by(induct n arbitrary: l, auto)
 
 lemma may_lock_unlock_lock_conv [simp]:
   "has_lock l t \<Longrightarrow> may_lock (unlock_lock l) t = may_lock l t"
-apply(cases l, auto split: split_if_asm elim!: may_lock.cases intro: may_lock.intros split:Nat.split_asm )
+apply(cases l, auto split: split_if_asm elim!: may_lock.cases intro: may_lock.intros split: nat.split_asm)
 apply(case_tac n, auto intro: may_lock.intros)
 done
 
@@ -140,7 +142,7 @@ by(cases l, auto split: split_if_asm intro!: may_lockI elim: may_lockE)
 
 lemma may_lock_t_may_lock_unlock_lock_t: 
   "may_lock l t \<Longrightarrow> may_lock (unlock_lock l) t"
-by(auto intro: may_lock.intros elim!: may_lockE split:Nat.split)
+by(auto intro: may_lock.intros elim!: may_lockE split: nat.split)
 
 
 lemma may_lock_has_locks_lock_lock_0: 
@@ -464,7 +466,9 @@ lemma lock_actions_ok'E[consumes 1, case_names ok Lock]:
 by(auto simp add: lock_actions_ok'_iff)
 
 lemma not_lock_actions_ok'_conv: 
-  "(\<not> lock_actions_ok' l t las) \<longleftrightarrow> \<not> lock_actions_ok l t las \<and> (\<forall>xs ys. las = xs @ Lock # ys \<and> lock_actions_ok l t xs \<longrightarrow> may_lock (upd_locks l t xs) t)"
+  "(\<not> lock_actions_ok' l t las) \<longleftrightarrow>
+   \<not> lock_actions_ok l t las \<and> 
+  (\<forall>xs ys. las = xs @ Lock # ys \<and> lock_actions_ok l t xs \<longrightarrow> may_lock (upd_locks l t xs) t)"
 by(auto simp add: lock_actions_ok'_iff)
 
 end

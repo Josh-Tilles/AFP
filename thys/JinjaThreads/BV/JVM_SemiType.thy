@@ -4,9 +4,12 @@
     Based on the theory Jinja/BV/JVM_SemiType
 *)
 
-header {* \isaheader{The JVM Type System as Semilattice} *}
+header {* 
+  \chapter{Bytecode verifier}
+  \isaheader{The JVM Type System as Semilattice} 
+*}
 
-theory JVM_SemiType imports SemiType begin
+theory JVM_SemiType imports "../Common/SemiType" begin
 
 types ty\<^isub>l = "ty err list"
 types ty\<^isub>s = "ty list"
@@ -67,8 +70,8 @@ notation (xsymbols)
 section "Unfolding"
 
 lemma JVM_states_unfold: 
-  "states P mxs mxl \<equiv> err(opt((Union {list n (is_type P) |n. n <= mxs}) <*>
-                                 list mxl (err(is_type P))))"
+  "states P mxs mxl \<equiv> err(opt((Union {list n (types P) |n. n <= mxs}) <*>
+                                 list mxl (err(types P))))"
 (*<*)
   apply (unfold states_def sl_def Opt.esl_def Err.sl_def
          stk_esl_def loc_sl_def Product.esl_def
@@ -188,7 +191,7 @@ lemmas sup_loc_Cons1 [iff] = list_all2_Cons1 [of "sup_ty_opt P", standard]
 
 lemma sup_loc_def:
   "P \<turnstile> LT [\<le>\<^sub>\<top>] LT' \<equiv> Listn.le (sup_ty_opt P) LT LT'"
-(*<*) by (unfold Listn.le_def lesub_def) (*>*)
+(*<*) by (simp add: Listn.le_def lesub_def) (*>*)
 
 lemma sup_loc_widens_conv [iff]:
   "P \<turnstile> map OK Ts [\<le>\<^sub>\<top>] map OK Ts' = P \<turnstile> Ts [\<le>] Ts'"

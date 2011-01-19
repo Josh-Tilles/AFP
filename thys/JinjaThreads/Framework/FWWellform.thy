@@ -4,7 +4,7 @@
 
 header {* \isaheader{Wellformedness conditions for the multithreaded state } *}
 
-theory FWWellform imports FWLocking FWThread begin
+theory FWWellform imports FWLocking FWThread FWWait begin
 
 text{* Well-formedness property: Locks are held by real threads *}
 
@@ -102,7 +102,7 @@ lemma acquire_all_preserves_lock_thread_ok:
   "\<lbrakk> lock_thread_ok ls ts; ts t = \<lfloor>(x, ln)\<rfloor> \<rbrakk> \<Longrightarrow> lock_thread_ok (acquire_all ls t ln) (ts(t \<mapsto> xw))"
 by(rule lock_thread_okI, auto dest!: has_lock_acquire_locks_implies_has_lock dest: lock_thread_okD)
 
-text {* Well-formedness condition: Wait sets contain only real sets *}
+text {* Well-formedness condition: Wait sets contain only real threads *}
 
 definition wset_thread_ok :: "('w, 't) wait_sets \<Rightarrow> ('l, 't, 'x) thread_info \<Rightarrow> bool"
 where "wset_thread_ok ws ts \<equiv> \<forall>t. ts t = None \<longrightarrow> ws t = None"
@@ -114,6 +114,10 @@ by(simp add: wset_thread_ok_def)
 lemma wset_thread_okD:
   "\<lbrakk> wset_thread_ok ws ts; ts t = None \<rbrakk> \<Longrightarrow> ws t = None"
 by(simp add: wset_thread_ok_def)
+
+lemma wset_thread_ok_conv_dom:
+  "wset_thread_ok ws ts \<longleftrightarrow> dom ws \<subseteq> dom ts"
+by(auto simp add: wset_thread_ok_def)
 
 lemma wset_thread_ok_upd:
   "wset_thread_ok ls ts \<Longrightarrow> wset_thread_ok ls (ts(t \<mapsto> xw))"
@@ -127,6 +131,14 @@ lemma wset_thread_ok_upd_Some:
   "wset_thread_ok ws ts \<Longrightarrow> wset_thread_ok (ws(t := wo)) (ts(t \<mapsto> xln))"
 by(auto intro!: wset_thread_okI dest: wset_thread_okD split: split_if_asm)
 
+lemma wset_thread_ok_upd_ws:
+  "\<lbrakk> wset_thread_ok ws ts; ts t = \<lfloor>xln\<rfloor> \<rbrakk> \<Longrightarrow> wset_thread_ok (ws(t := w)) ts"
+by(auto intro!: wset_thread_okI dest: wset_thread_okD)
+
+lemma wset_thread_ok_NotifyAllI: 
+  "wset_thread_ok ws ts \<Longrightarrow> wset_thread_ok (\<lambda>t. if ws t = \<lfloor>w t\<rfloor> then \<lfloor>w' t\<rfloor> else ws t) ts"
+by(simp add: wset_thread_ok_def)
+
 lemma redT_updTs_preserves_wset_thread_ok:
   assumes wto: "wset_thread_ok ws ts"
   shows "wset_thread_ok ws (redT_updTs ts nts)"
@@ -136,5 +148,14 @@ proof(rule wset_thread_okI)
   hence "ts t = None" by(rule redT_updTs_None)
   with wto show "ws t = None" by(rule wset_thread_okD)
 qed
+
+lemma redT_updW_preserve_wset_thread_ok: 
+  "\<lbrakk> wset_thread_ok ws ts; redT_updW t ws wa ws'; ts t = \<lfloor>xln\<rfloor> \<rbrakk> \<Longrightarrow> wset_thread_ok ws' ts"
+by(fastsimp simp add: redT_updW.simps intro: wset_thread_okI wset_thread_ok_NotifyAllI wset_thread_ok_upd_ws dest: wset_thread_okD)
+
+lemma redT_updWs_preserve_wset_thread_ok:
+  "\<lbrakk> wset_thread_ok ws ts; redT_updWs t ws was ws'; ts t = \<lfloor>xln\<rfloor> \<rbrakk> \<Longrightarrow> wset_thread_ok ws' ts"
+unfolding redT_updWs_def apply(rotate_tac 1)
+by(induct rule: rtrancl3p_converse_induct)(auto intro: redT_updW_preserve_wset_thread_ok)
 
 end

@@ -8,6 +8,8 @@ theory JVMJ1 imports
   J1JVMBisim
 begin
 
+declare split_paired_Ex[simp del]
+
 context J1_JVM_heap_base begin
 
 lemma assumes ha: "typeof_addr h a = \<lfloor>Class D\<rfloor>"
@@ -365,7 +367,7 @@ lemma conf_xcp_conf_xcp':
 by(cases xcp) auto
 
 lemma conf_xcp'_compP [simp]: "conf_xcp' (compP f P) = conf_xcp' P"
-by(simp add: expand_fun_eq conf_xcp'_def option_case_def[symmetric])
+by(simp add: fun_eq_iff conf_xcp'_def option_case_def[symmetric])
 
 end
 
@@ -1658,7 +1660,7 @@ next
         have "call1 (obj'\<bullet>M'(ps)) \<noteq> None \<Longrightarrow> Val v\<bullet>M'(ps) = obj'\<bullet>M'(ps) \<and> loc = xs"
           by(auto split: split_if_asm)
 	ultimately show ?thesis using red \<tau> pc xcp stk Ta call
-          apply(auto simp del: split_paired_Ex call1_calls1.simps)
+          apply(auto simp del: call1_calls1.simps)
           apply(fastsimp intro: rtranclp.rtrancl_into_rtrancl rtranclp_into_tranclp1)+
           done
       qed
@@ -1946,7 +1948,7 @@ next
   hence V: "V < length xs" by simp
   have \<tau>: "\<not> \<tau>move2 (compP2 P) h [v] (sync\<^bsub>V\<^esub> (e1) e2) (Suc (Suc (length (compE2 e1)))) None" by(simp add: \<tau>move2_iff)
   from exec have "(\<exists>a. v = Addr a \<and> stk' = [] \<and> loc' = xs[V := v] \<and> ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> \<and> xcp' = None \<and> pc' = Suc (Suc (Suc (length (compE2 e1))))) \<or> (v = Null \<and> stk' = [v] \<and> loc' = xs[V := v] \<and> ta = \<epsilon> \<and> xcp' = \<lfloor>addr_of_sys_xcpt NullPointer\<rfloor> \<and> pc' = Suc (Suc (length (compE2 e1))))" (is "?c1 \<or> ?c2")
-    by(fastsimp elim!: exec_meth.cases simp add: is_Ref_def expand_finfun_eq expand_fun_eq finfun_upd_apply exec_move_def)
+    by(fastsimp elim!: exec_meth.cases simp add: is_Ref_def expand_finfun_eq fun_eq_iff finfun_upd_apply exec_move_def)
   thus ?case
   proof
     assume ?c1
@@ -1986,7 +1988,7 @@ next
   from exec have exec': "exec_meth_d (compP2 P) (?pre @ compE2 e2 @ ?post)
     (compxE2 e1 0 0 @ shift (length ?pre) (compxE2 e2 0 0 @ [(0, length (compE2 e2), None, 3 + length (compE2 e2), 0)])) t
     h (stk, loc, length ?pre + pc, xcp) ta h' (stk', loc', pc', xcp')"
-    by(simp add: add_ac nat_number shift_compxE2 exec_move_def)
+    by(simp add: add_ac eval_nat_numeral shift_compxE2 exec_move_def)
   hence pc': "pc' \<ge> length ?pre"
     by(rule exec_meth_drop_xt_pc[where n'=1]) auto
   from exec' have exec'': "exec_meth_d (compP2 P) (compE2 e2 @ ?post) 
@@ -2014,7 +2016,7 @@ next
       have "P, sync\<^bsub>V\<^esub> (e1) e2, V, h \<turnstile> (insync\<^bsub>V\<^esub> (a) Throw a', loc) \<leftrightarrow> ([Addr a'], loc, 6 + length (compE2 e1) + length (compE2 e2), None)"
 	by(rule bisim1Sync7)
       ultimately show ?thesis using exec True pc Some ha' subcls
-	apply(auto elim!: exec_meth.cases simp add: add_ac nat_number match_ex_table_append matches_ex_entry_def compP2_def exec_move_def)
+	apply(auto elim!: exec_meth.cases simp add: add_ac eval_nat_numeral match_ex_table_append matches_ex_entry_def compP2_def exec_move_def)
 
 	apply(simp_all only: compxE2_size_convs, auto dest: match_ex_table_shift_pcD match_ex_table_pc_length_compE2)
 	apply(fastsimp elim!: InSync_\<tau>red1r_xt)
@@ -2036,7 +2038,7 @@ next
 	"Suc (Suc (Suc (pc' - Suc (Suc (Suc 0))))) = pc'"
 	by simp_all
       ultimately show ?thesis using red' \<tau>
-	by(fastsimp intro: Synchronized1Red2 simp add: nat_number no_call2_def elim!: InSync_\<tau>red1r_xt InSync_\<tau>red1t_xt split: split_if_asm)
+	by(fastsimp intro: Synchronized1Red2 simp add: eval_nat_numeral no_call2_def elim!: InSync_\<tau>red1r_xt InSync_\<tau>red1t_xt split: split_if_asm)
     qed
   next
     case False
@@ -2049,7 +2051,7 @@ next
     have "P,sync\<^bsub>V\<^esub> (e1) e2,V,h \<turnstile> (insync\<^bsub>V\<^esub> (a) (Val v), loc) \<leftrightarrow> ([loc ! V, v], loc, 4 + length (compE2 e1) + length (compE2 e2), None)"
       by(rule bisim1Sync5)
     ultimately show ?thesis using exec
-      by(auto elim!: exec_meth.cases simp add: nat_number exec_move_def) blast
+      by(auto elim!: exec_meth.cases simp add: eval_nat_numeral exec_move_def) blast
   qed
 next
   case (bisim1Sync5 e1 V e2 a v xs)
@@ -2095,7 +2097,7 @@ next
     by-(rule bisim1Val2, auto)
   moreover have "nat (9 + (int (length (compE2 e1)) + int (length (compE2 e2)))) = 9 + length (compE2 e1) + length (compE2 e2)" by arith
   ultimately show ?case using exec
-    by(fastsimp elim!: exec_meth.cases simp add: nat_number exec_move_def)
+    by(fastsimp elim!: exec_meth.cases simp add: eval_nat_numeral exec_move_def)
 next
   case (bisim1Sync7 e1 V e2 a a' xs)
   note bisim1 = `P,e1,V,h \<turnstile> (e1, xs) \<leftrightarrow> ([], xs, 0, None)`
@@ -2108,7 +2110,7 @@ next
     by(rule bisim1Sync8)
   moreover have "\<tau>move2 (compP2 P) h [Addr a'] (sync\<^bsub>V\<^esub> (e1) e2) (6 + length (compE2 e1) + length (compE2 e2)) None"
     by(simp add: \<tau>move2_iff)
-  ultimately show ?case by(fastsimp elim!: exec_meth.cases simp add: nat_number exec_move_def)
+  ultimately show ?case by(fastsimp elim!: exec_meth.cases simp add: eval_nat_numeral exec_move_def)
 next
   case (bisim1Sync8 e1 V e2 a a' xs)
   note bisim1 = `P,e1,V,h \<turnstile> (e1, xs) \<leftrightarrow> ([], xs, 0, None)`
@@ -2135,7 +2137,7 @@ next
       using V by(rule Synchronized1Throw2Null) }
   moreover have "\<not> \<tau>move1 P h (insync\<^bsub>V\<^esub> (a) Throw a')" by fastsimp
   ultimately show ?case
-    by(fastsimp elim!: exec_meth.cases simp add: nat_number is_Ref_def ta_bisim_def ta_upd_simps exec_move_def split: split_if_asm)
+    by(fastsimp elim!: exec_meth.cases simp add: eval_nat_numeral is_Ref_def ta_bisim_def ta_upd_simps exec_move_def split: split_if_asm)
 next
   case (bisim1Sync9 e1 V e2 a xs)
   note bisim1 = `P,e1,V,h \<turnstile> (e1, xs) \<leftrightarrow> ([], xs, 0, None)`
@@ -2147,7 +2149,7 @@ next
   moreover have "\<tau>move2 (compP2 P) h [Addr a] (sync\<^bsub>V\<^esub> (e1) e2) (8 + length (compE2 e1) + length (compE2 e2)) None"
     by(rule \<tau>move2Sync8)
   ultimately show ?case
-    by(fastsimp elim!: exec_meth.cases simp add: nat_number exec_move_def split: split_if_asm)
+    by(fastsimp elim!: exec_meth.cases simp add: eval_nat_numeral exec_move_def split: split_if_asm)
 next
   case (bisim1Sync10 e1 V e2 a xs)
   from `?exec (sync\<^bsub>V\<^esub> (e1) e2) [Addr a] xs (8 + length (compE2 e1) + length (compE2 e2)) \<lfloor>a\<rfloor> stk' loc' pc' xcp'`
@@ -2300,7 +2302,7 @@ next
     moreover have "nat (int (length (compE2 e)) + (2 + int (length (compE2 e1)))) = Suc (Suc (length (compE2 e) + length (compE2 e1) + 0))" by simp
     moreover from exec xcp stk have "typeof\<^bsub>h\<^esub> v = \<lfloor>Boolean\<rfloor>" by(auto simp add: exec_move_def exec_meth_instr)
     ultimately show ?thesis using exec stk xcp
-      by(fastsimp elim!: exec_meth.cases intro: Red1CondT Red1CondF elim!: rtranclp.rtrancl_into_rtrancl simp add: nat_number exec_move_def)
+      by(fastsimp elim!: exec_meth.cases intro: Red1CondT Red1CondF elim!: rtranclp.rtrancl_into_rtrancl simp add: eval_nat_numeral exec_move_def)
   qed
 next
   case (bisim1CondThen e1 n e' xs stk loc pc xcp e e2)
@@ -2381,7 +2383,7 @@ next
   moreover from exec' have "pc' \<ge> length ?pre"
     by(rule exec_meth_drop_xt_pc) auto
   moreover hence "Suc (Suc (pc' - Suc (Suc 0))) = pc'" by simp
-  ultimately show ?case using red by(fastsimp simp add: nat_number no_call2_def split: split_if_asm)
+  ultimately show ?case using red by(fastsimp simp add: eval_nat_numeral no_call2_def split: split_if_asm)
 next
   case (bisim1CondThrow e n a xs stk loc pc e1 e2)
   note exec = `?exec (if (e) e1 else e2) stk loc pc \<lfloor>a\<rfloor> stk' loc' pc' xcp'`
@@ -2466,7 +2468,7 @@ next
       by(auto simp add: exec_meth_instr exec_move_def)
     moreover have "nat (int (length (compE2 c)) + (3 + int (length (compE2 e)))) = Suc (Suc (Suc (length (compE2 c) + length (compE2 e))))" by simp
     ultimately show ?thesis using exec stk xcp
-      by(fastsimp elim!: exec_meth.cases rtranclp_trans intro: Red1CondT Red1CondF simp add: nat_number exec_move_def)
+      by(fastsimp elim!: exec_meth.cases rtranclp_trans intro: Red1CondT Red1CondF simp add: eval_nat_numeral exec_move_def)
   qed
 next
   case (bisim1While4 e n e' xs stk loc pc xcp c)
@@ -2523,7 +2525,7 @@ next
     have "P,while (c) e,n,h \<turnstile> (while(c) e, loc) \<leftrightarrow> ([], loc, Suc (Suc (length (compE2 c) + length (compE2 e))), None)"
       by(rule bisim1While6)
     ultimately show ?thesis using exec stk xcp
-      by(fastsimp elim!: exec_meth.cases rtranclp_trans intro: Red1Seq simp add: nat_number exec_move_def)
+      by(fastsimp elim!: exec_meth.cases rtranclp_trans intro: Red1Seq simp add: eval_nat_numeral exec_move_def)
   qed
 next
   case (bisim1While6 c n e xs)
@@ -2673,7 +2675,7 @@ next
       have "P,try e catch(C' V) e2,V,h \<turnstile> ({V:Class C'=None; e2}, loc[V := Addr a']) \<leftrightarrow> ([Addr a'], loc, Suc (length (compE2 e)), None)"
 	by(rule bisim1TryCatch1)
       ultimately show ?thesis using exec True pc Some ha' subclsThrow
-	apply(auto elim!: exec_meth.cases simp add: add_ac nat_number match_ex_table_append matches_ex_entry_def compP2_def exec_move_def cname_of_def)
+	apply(auto elim!: exec_meth.cases simp add: add_ac eval_nat_numeral match_ex_table_append matches_ex_entry_def compP2_def exec_move_def cname_of_def)
 	apply fastsimp
 	apply(simp_all only: compxE2_size_convs, auto dest: match_ex_table_shift_pcD)
 	done
@@ -2761,7 +2763,7 @@ next
   moreover hence "Suc (Suc (pc' - Suc (Suc 0))) = pc'" by simp
   moreover have "no_call2 e2 pc \<Longrightarrow> no_call2 (try e catch(C' V) e2) (Suc (Suc (length (compE2 e) + pc)))"
     by(simp add: no_call2_def)
-  ultimately show ?case using red V by(fastsimp simp add: nat_number split: split_if_asm)
+  ultimately show ?case using red V by(fastsimp simp add: eval_nat_numeral split: split_if_asm)
 next
   case (bisim1TryFail e V a xs stk loc pc C'' C' e2)
   note bisim = `P,e,V,h \<turnstile> (Throw a, xs) \<leftrightarrow> (stk, loc, pc, \<lfloor>a\<rfloor>)`
@@ -3331,7 +3333,6 @@ qed
 end
 
 declare split_beta [simp del]
-
 
 context J1_JVM_conf_read begin
 

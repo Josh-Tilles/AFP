@@ -37,7 +37,8 @@ apply(clarsimp simp:nolb_def)
 apply blast
 done
 
-declare[[simp_depth_limit=3]]
+declare[[simp_depth_limit=4]]
+
 lemma innermost_intvl:
   "\<lbrakk> nqfree f; nolb f xs l x; l < x; x \<notin> EQ f xs; R.I f (x#xs); l < y; y \<le> x\<rbrakk>
   \<Longrightarrow> R.I f (y#xs)"

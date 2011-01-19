@@ -9,6 +9,7 @@ header {* \isaheader{Kildall's Algorithm}\label{sec:Kildall} *}
 
 theory Kildall imports
   "../../Jinja/DFA/SemilatAlg" 
+  "../Common/Aux"
 begin
 
 locale Kildall_base =
@@ -52,13 +53,6 @@ where
   "merges f []      \<tau>s = \<tau>s"
 | "merges f (p'#ps) \<tau>s = (let (p,\<tau>) = p' in merges f ps (\<tau>s[p := \<tau> \<squnion>\<^bsub>f\<^esub> \<tau>s!p]))"
 
-lemma foldr_filter_conv: -- "Move to Aux"
-  "foldr f (filter P xs) = foldr (\<lambda>x s. if P x then f x s else s) xs"
-by(induct xs)(auto intro: ext)
-
-lemma foldr_insert_conv_set: -- "Move to Aux"
-  "foldr insert xs A = A \<union> set xs"
-by(induct xs arbitrary: A) auto
 
 locale Kildall =
   Kildall_base +
@@ -199,6 +193,7 @@ lemma (in Semilat) list_update_le_listI [rule_format]:
   apply(insert semilat)
   apply (unfold Listn.le_def lesub_def semilat_def)
   apply (simp add: list_all2_conv_all_nth nth_list_update)
+  apply (auto simp add: Listn.le_def lesub_def plussub_def)
   done
 (*>*)
 
@@ -438,7 +433,7 @@ proof -
   apply(simp add: stables_def split_paired_all)
   apply(rename_tac ss w)
   apply(subgoal_tac "s_choose w \<in> s_\<alpha> w")
-   prefer 2; apply(erule choose_spec)
+   prefer 2 apply(erule choose_spec)
   apply(subgoal_tac "\<forall>(q,t) \<in> set (step (s_choose w) (ss ! (s_choose w))). q < length ss \<and> t \<in> A")
    prefer 2
    apply clarify
@@ -500,7 +495,7 @@ proof -
   apply(simp add: stables_def split_paired_all)
   apply(rename_tac ss w)
   apply(subgoal_tac "s_choose w \<in> s_\<alpha> w")
-   prefer 2; apply (erule choose_spec)
+   prefer 2 apply (erule choose_spec)
   apply(subgoal_tac "\<forall>(q,t) \<in> set (step (s_choose w) (ss ! (s_choose w))). q < length ss \<and> t \<in> A")
    prefer 2
    apply clarify

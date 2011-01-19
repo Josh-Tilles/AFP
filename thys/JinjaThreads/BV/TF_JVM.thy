@@ -35,7 +35,7 @@ locale start_context = JVM_sl +
   fixes p and C
   assumes wf: "wf_prog p P"
   assumes C:  "is_class P C"
-  assumes Ts: "set Ts \<subseteq> is_type P"
+  assumes Ts: "set Ts \<subseteq> types P"
 
   fixes first :: ty\<^isub>i' and start
   defines [simp]: 
@@ -60,8 +60,8 @@ lemma ex_in_list [iff]:
   by (unfold list_def) auto
 
 lemma singleton_list: 
-  "(\<exists>n. [Class C] \<in> list n (is_type P) \<and> n \<le> mxs) = (is_class P C \<and> 0 < mxs)"
-  by(auto)(auto simp add: mem_def)
+  "(\<exists>n. [Class C] \<in> list n (types P) \<and> n \<le> mxs) = (is_class P C \<and> 0 < mxs)"
+  by(auto)
 
 lemma set_drop_subset:
   "set xs \<subseteq> A \<Longrightarrow> set (drop n xs) \<subseteq> A"
@@ -78,15 +78,17 @@ lemma in_listE:
 declare is_relevant_entry_def [simp]
 declare set_drop_subset [simp]
 
+(*
 lemma [simp]: "x \<in> is_type P \<longleftrightarrow> is_type P x"
 by(simp add: mem_def)
+*)
 
 lemma (in start_context) [simp, intro!]: "is_class P Throwable"
 apply(rule converse_subcls_is_class[OF wf])
  apply(rule xcpt_subcls_Throwable[OF _ wf])
  prefer 2
  apply(rule is_class_xcpt[OF _ wf])
-apply(fastsimp simp add: sys_xcpts_def)+
+apply(fastsimp simp add: sys_xcpts_def sys_xcpts_list_def)+
 done
 
 declare option.splits[split del]
@@ -139,7 +141,6 @@ theorem (in start_context) exec_pres_type:
   apply (clarsimp)
   apply (erule allE)+
   apply(erule impE, blast)
-  apply(erule impE, blast)
   apply(force split: option.splits)
 
   -- ALoad
@@ -147,7 +148,6 @@ theorem (in start_context) exec_pres_type:
    apply(rule conjI)
     apply(fastsimp split: option.splits)
    apply(erule allE)+
-   apply(erule impE, blast)
    apply(erule impE, blast)
    apply arith
   apply(erule disjE)
@@ -157,7 +157,6 @@ theorem (in start_context) exec_pres_type:
    apply(fastsimp split: option.splits)
   apply(erule allE)+
   apply(erule impE, blast)
-  apply(erule impE, blast)
   apply arith
 
   -- AStore
@@ -166,7 +165,6 @@ theorem (in start_context) exec_pres_type:
     apply(fastsimp split: option.splits)
    apply(erule allE)+
    apply(erule impE, blast)
-   apply(erule impE, blast)
    apply arith
   apply(erule disjE)
    apply(fastsimp)
@@ -174,7 +172,6 @@ theorem (in start_context) exec_pres_type:
   apply(rule conjI)
    apply(fastsimp split: option.splits)
   apply(erule allE)+
-  apply(erule impE, blast)
   apply(erule impE, blast)
   apply arith
 
@@ -184,7 +181,6 @@ theorem (in start_context) exec_pres_type:
     apply(fastsimp split: option.splits)
    apply(erule allE)+
    apply(erule impE, blast)
-   apply(erule impE, blast)
    apply arith
   apply(erule disjE)
    apply(fastsimp)
@@ -192,7 +188,6 @@ theorem (in start_context) exec_pres_type:
   apply(rule conjI)
    apply(fastsimp split: option.splits)
   apply(erule allE)+
-  apply(erule impE, blast)
   apply(erule impE, blast)
   apply arith
 
@@ -256,6 +251,15 @@ theorem (in start_context) exec_pres_type:
    apply(fastsimp split: option.splits)
   apply fastsimp
 
+  -- Swap
+  apply(clarsimp)
+  apply(erule disjE)
+   apply(fastsimp)
+  apply clarsimp
+  apply(rule conjI)
+   apply(fastsimp split: option.splits)
+  apply fastsimp
+
   -- BinOpInstr
   apply(clarsimp)
   apply(erule disjE)
@@ -283,7 +287,6 @@ theorem (in start_context) exec_pres_type:
   apply(clarsimp)
   apply(rule conjI)
    apply(erule allE)+
-   apply(erule impE, blast)
    apply(erule impE, blast)
    apply(clarsimp split: option.splits)
   apply fastsimp
@@ -335,7 +338,6 @@ theorem (in start_context) exec_pres_type:
   apply(clarsimp)
   apply(erule allE)+
   apply(rotate_tac -2)
-  apply(erule impE, blast)
   apply(erule impE, blast)
   apply(clarsimp split: option.splits)
   done

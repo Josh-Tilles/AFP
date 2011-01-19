@@ -72,10 +72,10 @@ fun bdt_fn :: "dag \<Rightarrow> (ref \<Rightarrow> nat) \<Rightarrow> bdt optio
          |(Some b2) \<Rightarrow> Some (Bdt_Node b1 (bdtvar vref) b2)))))"
 
 (*
-Kongruenzregeln sind das Feintuning f¸r den Simplifier (siehe Kapitel 9 im Isabelle
-Tutorial). Im Fall von case wird standardm‰ﬂig nur die case bedingung nicht
-aber die einzelnen F‰lle simplifiziert, analog dazu beim if. Dies simuliert die
-Auswertungsstrategie einer Programmiersprache, da wird auch zun‰chst nur die
+Kongruenzregeln sind das Feintuning f√ºr den Simplifier (siehe Kapitel 9 im Isabelle
+Tutorial). Im Fall von case wird standardm√§√üig nur die case bedingung nicht
+aber die einzelnen F√§lle simplifiziert, analog dazu beim if. Dies simuliert die
+Auswertungsstrategie einer Programmiersprache, da wird auch zun√§chst nur die
 Bedingung vereinfacht. Will man mehr so kann man die entsprechenden Kongruenz 
 regeln dazunehmen.
 *)
@@ -1384,7 +1384,7 @@ lemma reduced_children_parent:
  \<Longrightarrow> reduced (Node l p r)"
   by simp
 
-(*Die allgemeine Form mit i <=j \<Longrightarrow> Nodes i levellista \<subseteq> Nodes j levellista w‰re schˆner, aber wie beweist man das? *)
+(*Die allgemeine Form mit i <=j \<Longrightarrow> Nodes i levellista \<subseteq> Nodes j levellista w√§re sch√∂ner, aber wie beweist man das? *)
 lemma Nodes_subset: "Nodes i levellista \<subseteq> Nodes (Suc i) levellista"
   apply (simp add: Nodes_def)
   apply (simp add: set_split)
@@ -1800,9 +1800,6 @@ qed
 
 (*theorems for the proof of share_reduce_rep_list*)
 
-lemma set_take_le: "\<And>i j. i \<le> j \<Longrightarrow> set (take i xs) \<subseteq> set (take j xs)"
-  by (induct xs)(auto simp add: take_Cons split: nat.splits)
-
 
 
 
@@ -1811,7 +1808,7 @@ proof -
   assume no_in_taken: "no \<in> set (take n nodeslist)"
   have "set (take n nodeslist) \<subseteq> set (take (Suc n) nodeslist)"
     apply -
-    apply (rule set_take_le)
+    apply (rule set_take_subset_set_take)
     apply simp
     done
   with no_in_taken show ?thesis
