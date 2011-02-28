@@ -11,7 +11,7 @@
 *)
 header {* \isaheader{Map Implementation by Red-Black-Trees} *}
 theory RBTMapImpl
-imports OrderedMap More_List "common/RBT_add" MapGA 
+imports OrderedMap "~~/src/HOL/Library/More_List" "common/RBT_add" MapGA 
 begin
 text_raw {*\label{thy:RBTMapImpl}*}
 
@@ -20,7 +20,7 @@ text {*
   The abbreviations used by this implementation are rm,r.
 *}
 
-types ('k,'v) rm = "('k,'v) RBT.rbt"
+type_synonym ('k,'v) rm = "('k,'v) RBT.rbt"
 
 subsection "Definitions"
 definition "rm_\<alpha> == RBT.lookup"
