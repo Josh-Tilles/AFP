@@ -108,7 +108,7 @@ few lemmas first. *}
 lemma [iff]: "\<And>A. \<lbrakk> length Vs = length Ts; length vs = length Ts\<rbrakk> \<Longrightarrow>
  \<D> (blocks (Vs,Ts,vs,e)) A = \<D> e (A \<squnion> \<lfloor>set Vs\<rfloor>)"
 (*<*)
-apply(induct Vs Ts vs e rule:blocks.induct)
+apply(induct Vs Ts vs e rule:blocks_induct)
 apply(simp_all add:hyperset_defs)
 done
 (*>*)
@@ -194,8 +194,8 @@ lemma wt_blocks:
        (P,E,h \<turnstile> blocks(Vs,Ts,vs,e) : T) =
        (P,E(Vs[\<mapsto>]Ts),h \<turnstile> e:T \<and> (\<exists>Ts'. map (typeof\<^bsub>h\<^esub>) vs = map Some Ts' \<and> P \<turnstile> Ts' [\<le>] Ts))"
 (*<*)
-apply(induct Vs Ts vs e rule:blocks.induct)
-prefer 5 apply (force simp add:rel_list_all2_Cons2)
+apply(induct Vs Ts vs e rule:blocks_induct)
+apply (force simp add:rel_list_all2_Cons2)
 apply simp_all
 done
 (*>*)
@@ -314,7 +314,7 @@ next
       by auto
     -- "Now distinguish what @{term U} can be."
     { assume "U = NT" hence ?case using wte'
-	by(blast intro:WTrtFAccNT widen_refl) }
+        by(blast intro:WTrtFAccNT widen_refl) }
     moreover
     { fix C' assume U: "U = Class C'" and C'subC: "P \<turnstile> C' \<preceq>\<^sup>* C"
       from has_field_mono[OF has C'subC] wte' U
@@ -358,12 +358,12 @@ next
       by(rule WTrt_hext_mono[OF wt\<^isub>2 red_hext_incr[OF red]])
     -- "Is @{term U} the null type or a class type?"
     { assume "U = NT" with wt\<^isub>1' wt\<^isub>2' void have ?case
-	by(blast intro!:WTrtFAssNT) }
+        by(blast intro!:WTrtFAssNT) }
     moreover
     { fix C' assume UClass: "U = Class C'" and "subclass": "P \<turnstile> C' \<preceq>\<^sup>* C"
       have "P,E,h' \<turnstile> e' : Class C'" using wt\<^isub>1' UClass by auto
       moreover have "P \<turnstile> C' has F:TF in D"
-	by(rule has_field_mono[OF has "subclass"])
+        by(rule has_field_mono[OF has "subclass"])
       ultimately have ?case using wt\<^isub>2' sub void by(blast intro:WTrtFAss) }
     ultimately have ?case using UsubC by(auto simp add:widen_Class) }
   ultimately show ?case using wt by blast
@@ -425,19 +425,19 @@ next
     -- "Is @{term U} the null type or a class type?"
     { assume "U = NT"
       moreover have "P,E,h' \<turnstile> es [:] Us"
-	by(rule WTrts_hext_mono[OF wtes red_hext_incr[OF red]])
+        by(rule WTrts_hext_mono[OF wtes red_hext_incr[OF red]])
       ultimately have ?case using wte' by(blast intro!:WTrtCallNT) }
     moreover
     { fix C' assume UClass: "U = Class C'" and "subclass": "P \<turnstile> C' \<preceq>\<^sup>* C"
       have "P,E,h' \<turnstile> e' : Class C'" using wte' UClass by auto
       moreover obtain Ts' T' pns' body' D'
-	where method': "P \<turnstile> C' sees M:Ts'\<rightarrow>T' = (pns',body') in D'"
-	and subs': "P \<turnstile> Ts [\<le>] Ts'" and sub': "P \<turnstile> T' \<le> T"
-	using Call_lemma[OF method "subclass" wf] by fast
+        where method': "P \<turnstile> C' sees M:Ts'\<rightarrow>T' = (pns',body') in D'"
+        and subs': "P \<turnstile> Ts [\<le>] Ts'" and sub': "P \<turnstile> T' \<le> T"
+        using Call_lemma[OF method "subclass" wf] by fast
       moreover have "P,E,h' \<turnstile> es [:] Us"
-	by(rule WTrts_hext_mono[OF wtes red_hext_incr[OF red]])
+        by(rule WTrts_hext_mono[OF wtes red_hext_incr[OF red]])
       ultimately have ?case
-	using subs by(blast intro:WTrtCall rtrancl_trans widens_trans) }
+        using subs by(blast intro:WTrtCall rtrancl_trans widens_trans) }
     ultimately have ?case using UsubC by(auto simp add:widen_Class) }
   ultimately show ?case using wt by auto
 next
