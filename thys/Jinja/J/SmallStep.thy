@@ -9,19 +9,17 @@ theory SmallStep
 imports Expr State
 begin
 
-consts blocks :: "vname list * ty list * val list * expr \<Rightarrow> expr"
-recdef blocks "measure(\<lambda>(Vs,Ts,vs,e). size Vs)"
+fun blocks :: "vname list * ty list * val list * expr \<Rightarrow> expr"
+where
  "blocks(V#Vs, T#Ts, v#vs, e) = {V:T := Val v; blocks(Vs,Ts,vs,e)}"
- "blocks([],[],[],e) = e"
+|"blocks([],[],[],e) = e"
 
+lemmas blocks_induct = blocks.induct[split_format (complete)]
 
 lemma [simp]:
   "\<lbrakk> size vs = size Vs; size Ts = size Vs \<rbrakk> \<Longrightarrow> fv(blocks(Vs,Ts,vs,e)) = fv e - set Vs"
 (*<*)
-apply(induct rule:blocks.induct)
-apply simp_all
-apply blast
-done
+by (induct rule:blocks_induct) auto
 (*>*)
 
 
@@ -256,7 +254,7 @@ proof -
       thus ?case by(blast intro:red\<^isub>1)
     qed
     }
-  with prems show ?thesis by fastsimp
+  with assms show ?thesis by fastsimp
 qed
 (*>*)
 
@@ -345,7 +343,7 @@ qed (simp_all add:red_reds.intros)
 lemma Red_lcl_add:
 assumes "P \<turnstile> \<langle>e,(h,l)\<rangle> \<rightarrow>* \<langle>e',(h',l')\<rangle>" shows "P \<turnstile> \<langle>e,(h,l\<^isub>0++l)\<rangle> \<rightarrow>* \<langle>e',(h',l\<^isub>0++l')\<rangle>"
 (*<*)
-using prems
+using assms
 proof(induct rule:converse_rtrancl_induct_red)
   case 1 thus ?case by simp
 next
