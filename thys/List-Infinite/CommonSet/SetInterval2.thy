@@ -7,7 +7,7 @@ header {* Sets of natural numbers *}
 
 theory SetInterval2
 imports 
-  "$ISABELLE_HOME/src/HOL/Library/Infinite_Set"
+  "~~/src/HOL/Library/Infinite_Set"
   Util_Set
   "../CommonArith/Util_MinMax"
   "../CommonArith/Util_NatInf"
@@ -244,14 +244,14 @@ apply (case_tac n)
 apply (simp only: inat_defs)
 apply (rename_tac n1)
 apply (induct_tac n1)
-apply (simp add: inat_splits)+
+apply (simp add: inat.splits)+
 done
 
 
 
 lemma iSuc_imp_Suc_aux_0:
   "\<lbrakk> \<And>n. P n \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
-by (simp only: inat_defs inat_splits)
+by (simp only: inat_defs inat.splits)
 lemma iSuc_imp_Suc_aux_n0:
   "\<lbrakk> \<And>n. \<lbrakk>Fin n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
 thm inat_defs
