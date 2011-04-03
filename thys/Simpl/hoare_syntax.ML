@@ -706,7 +706,7 @@ fun is_pos t =
 
 
 fun infer_type ctxt t =
-  Syntax.check_term ctxt (ProofContext.decode_term ctxt t);
+  Syntax.check_term ctxt (#2 (ProofContext.decode_term ctxt t));
 
 
 (* NOTE: operations on actual terms *)
@@ -1010,7 +1010,7 @@ fun gen_call_tr prfx dyn grd ctxt p actuals has_args cont =
       | Call false true (SOME c) = Const (@{const_syntax fcall}, dummyT)
       | Call _ _ _ = raise TERM ("gen_call_tr: no proper procedure call", []);
 
-    val (pn, pt) = dest_procname ctxt prfx dyn p;
+    val (pn, pt) = dest_procname ctxt prfx dyn (Syntax.strip_positions p);
   in
     (case Hoare.get_params pn ctxt of
       SOME formals =>
