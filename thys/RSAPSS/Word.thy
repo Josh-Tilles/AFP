@@ -1969,9 +1969,7 @@ proof -
           by simp
         hence "n < length ys --> ys ! (length ys - Suc n) = rev ys ! n" ..
         from this and noty
-        have "ys ! (length ys - Suc n) = rev ys ! n" ..
-        thus "(y # ys) ! (length ys - n) = rev ys ! n"
-          by (simp add: nth_Cons' noty linorder_not_less [symmetric])
+        show "ys ! (length ys - Suc n) = rev ys ! n" ..
       next
         assume "~ n < length ys"
         hence x: "length ys \<le> n" by simp
@@ -2282,7 +2280,7 @@ let
   (*lcp** val simproc1 = Simplifier.simproc_global thy "nat_to_bv" ["Word.nat_to_bv (number_of w)"] f *)
   val simproc2 = Simplifier.simproc_global @{theory} "bv_to_nat" ["Word.bv_to_nat (x # xs)"] g
 in
-  Simplifier.map_simpset (fn ss => ss addsimprocs [(*lcp*simproc1,*)simproc2])
+  Simplifier.map_simpset_global (fn ss => ss addsimprocs [(*lcp*simproc1,*)simproc2])
 end*}
 
 declare bv_to_nat1 [simp del]

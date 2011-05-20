@@ -151,18 +151,19 @@ proof(cases a)
       case (1 n)
       show ?case
       proof(cases "n < array_length (Array A)")
-	case False
-	thus ?thesis by(simp add: assoc_list_of_array_code.simps)
+        case False
+        thus ?thesis by(simp add: assoc_list_of_array_code.simps)
       next
-	case True
-	hence "zip [Suc n..<length A] (drop (Suc n) A) = assoc_list_of_array_code (Array A) (Suc n)" by(rule 1)
-	moreover from True have "n < length A" by simp
-	moreover then obtain a A' where A: "drop n A = a # A'" by(cases "drop n A") auto
-	moreover with `n < length A` have [simp]: "a = A ! n"
-	  by(subst append_take_drop_id[symmetric, where n=n])(simp add: nth_append min_def)
-	moreover from A have "drop (Suc n) A = A'"
-	  by(induct A arbitrary: n)(simp_all add: drop_Cons split: nat.split_asm)
-	ultimately show ?thesis by(subst upt_rec)(simp add: assoc_list_of_array_code.simps)
+        case True
+        hence "zip [Suc n..<length A] (drop (Suc n) A) = assoc_list_of_array_code (Array A) (Suc n)"
+          by(rule 1)
+        moreover from True have "n < length A" by simp
+        moreover then obtain a A' where A: "drop n A = a # A'" by(cases "drop n A") auto
+        moreover with `n < length A` have [simp]: "a = A ! n"
+          by(subst append_take_drop_id[symmetric, where n=n])(simp add: nth_append min_def)
+        moreover from A have "drop (Suc n) A = A'"
+          by(induct A arbitrary: n)(simp_all add: drop_Cons split: nat.split_asm)
+        ultimately show ?thesis by(subst upt_rec)(simp add: assoc_list_of_array_code.simps)
       qed
     qed }
   note this[of 0]
@@ -246,8 +247,8 @@ lemma prod_array_foldl_conv:
 by(cases a)(simp add: array_foldl_def foldl_map prod_foldl_conv split_def)
 
 lemma array_foldl_array_foldr_comm:
-  "fun_left_comm (\<lambda>(h, v) b. f h b v) \<Longrightarrow> array_foldl f b a = array_foldr (\<lambda>h v b. f h b v) a b"
-by(cases a)(simp add: array_foldl_def array_foldr_def split_def fun_left_comm.foldr_conv_foldl)
+  "comp_fun_commute (\<lambda>(h, v) b. f h b v) \<Longrightarrow> array_foldl f b a = array_foldr (\<lambda>h v b. f h b v) a b"
+by(cases a)(simp add: array_foldl_def array_foldr_def split_def comp_fun_commute.foldr_conv_foldl)
 
 lemma array_map_conv_array_foldl:
   "array_map f a = array_foldl (\<lambda>h a v. array_set a h (f h v)) a a"

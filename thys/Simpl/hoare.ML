@@ -70,12 +70,11 @@ struct
 
 (* Misc *)
 
-val (use_generalise, setup_use_generalise) = Attrib.config_bool "hoare_use_generalise" (K false);
-val (sort_variables, setup_sort_variables) = Attrib.config_bool "hoare_sort_variables" (K true);
-val (use_cond_inv_modifies, setup_use_cond_inv_modifies) =
-  Attrib.config_bool "hoare_use_cond_inv_modifies" (K true);
+val use_generalise = Attrib.setup_config_bool @{binding hoare_use_generalise} (K false);
+val sort_variables = Attrib.setup_config_bool @{binding hoare_sort_variables} (K true);
+val use_cond_inv_modifies = Attrib.setup_config_bool @{binding hoare_use_cond_inv_modifies} (K true);
 
-val (hoare_trace, setup_hoare_trace) = Attrib.config_bool "hoare_trace" (K false);
+val hoare_trace = Attrib.setup_config_bool @{binding hoare_trace} (K false);
 
 val call_prfx = "_Call_";
 val call_ass_prfx = "_CallAss_";
@@ -785,7 +784,7 @@ fun add_declaration name decl thy =
   |> Named_Target.init I name
   |> Local_Theory.declaration false decl
   |> Local_Theory.exit
-  |> ProofContext.theory_of;
+  |> Proof_Context.theory_of;
 
 (* data kind 'HOL/hoare' *)
 
@@ -852,16 +851,11 @@ val get_data = Hoare_Data.get o Context.Proof;
 
 (* access 'params' *)
 
-fun lookupI eq xs n =
-  (case AList.lookup eq xs n of
-     SOME v => v
-   | NONE => n);
-
 fun mk_free ctxt name =
   let
     val ctxt' = Context.proof_of ctxt;
-    val n' = lookupI (op =) (Variable.fixes_of ctxt') name
-    val T' = ProofContext.infer_type ctxt' (n', dummyT) handle ERROR _ => dummyT
+    val n' = Variable.intern_fixed ctxt' name;
+    val T' = Proof_Context.infer_type ctxt' (n', dummyT) handle ERROR _ => dummyT
   in (Free (n',T')) end;
 
 
@@ -1009,7 +1003,7 @@ fun generate_guard ctxt = snd (#generate_guard (get_data ctxt)) ctxt;
 fun check_procedures_definition procs thy =
     let
         val _ = Theory.requires thy "Hoare" "Hoare definitions";
-        val ctxt = ProofContext.init_global thy;
+        val ctxt = Proof_Context.init_global thy;
 
         fun already_defined name =
             if is_some (get_params name ctxt)
@@ -1091,7 +1085,7 @@ fun add_variable_statespaces prep_typ (cname,(inpars,outpars,locvars)) thy =
     val inpars'  = if forall (fn (_,T) => T = "") inpars then [] else inpars;
     val outpars' = if forall (fn (_,T) => T = "") outpars then [] else outpars;
     fun prep_comp (n,T) env =
-      let val (T', env') = prep_typ (ProofContext.init_global thy) T env handle ERROR msg =>
+      let val (T', env') = prep_typ (Proof_Context.init_global thy) T env handle ERROR msg =>
        cat_error msg ("The error(s) above occured in component " ^ quote n)
       in ((n,T'), env') end;
 
@@ -1109,8 +1103,8 @@ fun add_variable_statespaces prep_typ (cname,(inpars,outpars,locvars)) thy =
   in if null inpars' andalso null outpars' andalso null locvars
      then
        thy
-       |> add_locale_cmd parSP ([],[]) [] |>  ProofContext.theory_of
-       |> add_locale_cmd varSP ([],[]) [] |> ProofContext.theory_of
+       |> add_locale_cmd parSP ([],[]) [] |> Proof_Context.theory_of
+       |> add_locale_cmd varSP ([],[]) [] |> Proof_Context.theory_of
      else
        thy
        |> StateSpace.define_statespace_i (SOME statetypeN) in_out_args parSP [] in_outs'
@@ -1144,7 +1138,7 @@ fun add_abbrev loc mode name spec thy =
       in Local_Theory.abbrev mode ((Binding.name name, NoSyn), t) lthy end)
   |> #2
   |> Local_Theory.exit
-  |> ProofContext.theory_of;
+  |> Proof_Context.theory_of;
 
 
 exception TOPSORT of string
@@ -1285,7 +1279,7 @@ fun procedures_definition locname procs thy =
         val sN = suffix signatureN  name';
       in thy
          |> add_locale sN pE fixes
-         |> ProofContext.theory_of
+         |> Proof_Context.theory_of
          |> (fn thy => add_declaration (Locale.intern thy sN) parameter_info_decl thy)
       end;
 
@@ -1321,14 +1315,14 @@ fun procedures_definition locname procs thy =
 
         fun add_decl_and_def lname ctxt =
             ctxt
-            |> ProofContext.theory_of
+            |> Proof_Context.theory_of
             |> Named_Target.init I lname
             |> Local_Theory.declaration false parameter_info_decl
             |> (fn lthy => if has_body name
                            then snd (Local_Theory.define (def lthy) lthy)
                            else lthy)
             |> Local_Theory.exit
-            |> ProofContext.theory_of;
+            |> Proof_Context.theory_of;
 
       in thy
          |> add_locale' (suffix bodyN name') pE fixes
@@ -1385,13 +1379,13 @@ fun procedures_definition locname procs thy =
             val parent = mk_loc_exp [parentN];
           in thy
              |> add_locale_cmd implN parent []
-             |> ProofContext.theory_of
+             |> Proof_Context.theory_of
              |> (fn thy => Expression.sublocale I parentN
                   (mk_loc_exp [Locale.intern thy implN]) [] thy)
              |> Proof.global_terminal_proof
                  (Method.Basic (fn ctxt => Method.SIMPLE_METHOD
                                  (Locale.intro_locales_tac false ctxt [])),NONE)
-             |> ProofContext.theory_of
+             |> Proof_Context.theory_of
           end;
 
       in thy
@@ -1399,7 +1393,7 @@ fun procedures_definition locname procs thy =
          |> Theory.checkpoint
          |> (fn thy =>
               add_locale_cmd cliqN (pE thy) (elems thy) thy)
-         |> ProofContext.theory_of
+         |> Proof_Context.theory_of
          |> fold add_impl_locale clique
          |> (fn thy => add_declaration (Locale.intern thy cliqN) proc_declaration thy)
          |> (fn thy => add_declaration (Locale.intern thy cliqN)
@@ -1429,7 +1423,7 @@ fun procedures_definition locname procs thy =
             val elem = Element.Assumes [((Binding.name thm_name, []), [(spec', [])])];
           in thy
              |> add_locale thm_name pE' [elem]
-             |> ProofContext.theory_of
+             |> Proof_Context.theory_of
              |> (fn thy =>
                   add_declaration (Locale.intern thy thm_name) proc_declaration thy)
              |> error_to_warning ("abbreviation: '" ^ thm_name  ^ "' not added")
@@ -1457,9 +1451,6 @@ fun procedures_definition locname procs thy =
 (*********************  theory extender interface ********************************)
 
 (** package setup **)
-
-
-
 
 (* outer syntax *)
 
@@ -1750,7 +1741,7 @@ fun split_pair_apps thm =
  *)
 fun mk_split_thms ctxt (vars as _::_)  =
   let
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     val names = map fst vars;
     val types = map snd vars;
     val free_vars = map Free vars;
@@ -1811,7 +1802,7 @@ fun rename_aux_var name rule =
  *)
 fun adapt_aux_var ctxt split_app (vars as (_::_::_)) tvar_rules =
      let
-       val thy = ProofContext.theory_of ctxt;
+       val thy = Proof_Context.theory_of ctxt;
        fun get_maxidx thm = let val {maxidx=m,...} = rep_thm thm in m end;
        val max_idx = fold Integer.max (map (get_maxidx o snd) tvar_rules) 0;
        val types = map (fn i => TVar (("z",i),Sign.defaultS thy))
@@ -1825,7 +1816,7 @@ fun adapt_aux_var ctxt split_app (vars as (_::_::_)) tvar_rules =
   | adapt_aux_var _ _ ([name]) tvar_rules = map (rename_aux_var name o snd) tvar_rules
   | adapt_aux_var ctxt _ ([]) tvar_rules =
       let
-        val thy = ProofContext.theory_of ctxt;
+        val thy = Proof_Context.theory_of ctxt;
         fun ctyp n = ctyp_of thy (TVar (n,Sign.defaultS thy));
         val uT = ctyp_of thy HOLogic.unitT;
         val rules' = map (fn (z,r) => (instantiate ([(ctyp z,uT)],[]) r)) tvar_rules;
@@ -2114,7 +2105,7 @@ fun gen_context_thms ctxt thy mode params G T F =
         val hoare =
           (case mode of Partial => @{const_name HoarePartialDef.hoarep}
           | Total => @{const_name HoareTotalDef.hoaret});
-        (* FIXME: Use future ProofContext.rename_vars or make closed term and remove by hand *)
+        (* FIXME: Use future Proof_Context.rename_vars or make closed term and remove by hand *)
         (*
         fun free_params ps t = foldr (fn ((x,xT),t) => snd (variant_abs (x,xT,t))) (ps,t);
         val PpQA' = mkCallQuadruple (strip_qnt_body "all" (free_params params (Term.list_all (vars,PpQA))));
@@ -2230,11 +2221,11 @@ in
 fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
                  pname return has_args F =
   let
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     val pname' = unsuffix proc_deco pname;
     val spec = (case AList.lookup (op =) asms pname of
                  SOME s => SOME s
-               | NONE =>  try (ProofContext.get_thm ctxt) (suffix spec_sfx pname'));
+               | NONE =>  try (Proof_Context.get_thm ctxt) (suffix spec_sfx pname'));
 
     fun auxvars_for p t =
          (case first_subterm_dest (try dest_call) t of
@@ -2527,11 +2518,12 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
           fun solve_modifies_tac i =
                 (clarsimp_tac
-                  (global_claset_of @{theory Set},
-                     (Simplifier.context ctxt (global_simpset_of @{theory Set}))
-                     addsimps ([mex_def,meq_def,upd_globals_def]@K_convs)
-                     addsimprocs (state_upd_simproc Record::(state_simprocs state_kind))
-                     addcongs K_congs) i)
+                  (put_claset (global_claset_of @{theory Set}) ctxt
+                    |> map_simpset (fn _ =>
+                       (Simplifier.context ctxt (global_simpset_of @{theory Set}))
+                       addsimps ([mex_def,meq_def,upd_globals_def]@K_convs)
+                       addsimprocs (state_upd_simproc Record::(state_simprocs state_kind))
+                       addcongs K_congs)) i)
                 THEN_MAYBE
                 EVERY [trace_tac ctxt "modify_tac: splitting record",
                        state_split_simp_tac [] state_space i];
@@ -2569,7 +2561,7 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
   val test_modify_in_ctxt_tac =
     let val mname = (suffix modifysfx pname');
-        val mspec = (case try (ProofContext.get_thm ctxt) mname of
+        val mspec = (case try (Proof_Context.get_thm ctxt) mname of
                       SOME s => SOME s
                      | NONE => (case AList.lookup (op =) asms pname of
                                  SOME s => if is_modifies_clause (concl_of s)
@@ -2587,10 +2579,10 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
     end;
 
   fun inline_bdy_tac has_args i =
-    (case try (ProofContext.get_thm ctxt) (suffix bodyP pname') of
+    (case try (Proof_Context.get_thm ctxt) (suffix bodyP pname') of
        NONE => no_tac
      | SOME impl =>
-        (case try (ProofContext.get_thm ctxt) (suffix (body_def_sfx^"_def") pname') of
+        (case try (Proof_Context.get_thm ctxt) (suffix (body_def_sfx^"_def") pname') of
            NONE => no_tac
          | SOME bdy =>
             (tracing ("No specification found for procedure \"" ^ pname' ^
@@ -2685,7 +2677,7 @@ fun while_annotate_tac ctxt inv i st =
   let
     val annotateWhile = Thm.lift_rule (Thm.cprem_of st i) ReannotateWhileNoGuard;
     val lifted_inv = list_abs ((Logic.strip_params (Logic.get_goal (prop_of st) i)),inv);
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     val invVar = (#1 o strip_comb o #3 o dest_whileAnno o #2 o dest_hoare)
                   (List.last (prems_of annotateWhile));
     val annotate = cterm_instantiate
@@ -2699,7 +2691,7 @@ fun cond_annotate_tac ctxt inv mode (_,i) st =
   let
     val annotateCond = Thm.lift_rule (Thm.cprem_of st i) (CondInv' mode);
     val lifted_inv = list_abs ((Logic.strip_params (Logic.get_goal (prop_of st) i)),inv);
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     val invVar = List.last (prems_of annotateCond) |> dest_hoare |> #3 |> strip_comb |> #1;
     val annotate = cterm_instantiate
                            [(cterm_of thy invVar,cterm_of thy lifted_inv)] annotateCond;
@@ -2761,7 +2753,7 @@ fun whileAnnoG_tac ctxt strip_guards mode t i st =
     val grds' = map_filter (leave_grd (extract_faults F)) (HOLogic.dest_list grds);
     val pars = (Logic.strip_params (Logic.get_goal (prop_of st) i));
     val J = list_abs (pars,I_recomb (fold_rev (mk_Int (map snd (pars@I_vs))) grds' I'));
-    val cterm = Thm.cterm_of (ProofContext.theory_of ctxt);
+    val cterm = Thm.cterm_of (Proof_Context.theory_of ctxt);
     val WhileG = Thm.lift_rule (Thm.cprem_of st i) Rule;
     val invVar = (fst o strip_comb o #3 o dest_whileAnno o (fn xs => nth xs 1) o snd
       o strip_comb o #2 o dest_hoare) (List.last (prems_of WhileG));
@@ -2828,7 +2820,7 @@ fun lemAnno_tac ctxt state_kind mode (t,i) st =
     fun dest_lemAnno ctxt (Const (@{const_name Language.lem},_)$n$c) =
       let val x = Long_Name.base_name (dest_name n);
       in
-         (case try (ProofContext.get_thm ctxt) x of
+         (case try (Proof_Context.get_thm ctxt) x of
             NONE => error ("No lemma: '" ^ x ^ "' found.")
           | SOME spec => (strip_qnt_vars @{const_name All}
                            (HOLogic.dest_Trueprop (Thm.concl_of spec)),spec))
@@ -3099,7 +3091,7 @@ fun fld_idx xs x = idx fld_eq xs x;
 
 fun sort_vars ctxt T vars =
   let
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     val (flds,_) = Record.get_recT_fields thy T;
     val gT = the (AList.lookup (fn (x:string,y) => x=y) flds globals);
     val (gflds,_) = (Record.get_recT_fields thy gT
@@ -3470,7 +3462,7 @@ in
 
 fun solve_modifies_tac ctxt state_kind state_space i =
   let
-    val thy = ProofContext.theory_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
     fun is_split_state (trm as (Const (@{const_name all},_)$Abs(x,T,t))) =
       if state_space trm <> 0 then
        (let
@@ -3504,11 +3496,12 @@ fun solve_modifies_tac ctxt state_kind state_space i =
                      (REPEAT_ALL_NEW (resolve_tac [conjI,impI,refl]) k))) i
   in
     (trace_tac ctxt "solve_modifies_tac" THEN
-     clarsimp_tac (global_claset_of HOL.thy,
-                        (Simplifier.context ctxt (global_simpset_of @{theory Set}))
-                         addsimps ([mex_def,meq_def]@K_convs)
-                         addsimprocs (state_upd_simproc Record::(state_simprocs Record))
-                         addcongs K_congs) i)
+     clarsimp_tac (put_claset (global_claset_of @{theory HOL}) ctxt
+        |> map_simpset (fn _ =>
+            (Simplifier.context ctxt (global_simpset_of @{theory Set}))
+             addsimps ([mex_def,meq_def]@K_convs)
+             addsimprocs (state_upd_simproc Record::(state_simprocs Record))
+             addcongs K_congs)) i)
     THEN_MAYBE
      try_solve state_kind i
   end;
@@ -3520,7 +3513,7 @@ fun proc_lookup_simp_tac ctxt i st =
           |> dest_hoare |> #2 |> strip_comb |> #2 |> last |> strip_comb |> #2 |> last;
           (* the$(Gamma$name) or the$(strip$Gamma$name) *)
     val pname = (unsuffix proc_deco (dest_string' name));
-    val thms =  map_filter I (map (try (ProofContext.get_thm ctxt))
+    val thms =  map_filter I (map (try (Proof_Context.get_thm ctxt))
                             [suffix bodyP pname,
                              suffix (body_def_sfx^"_def") pname,
                              suffix procL pname^"."^ (suffix (body_def_sfx^"_def") pname)]);
@@ -3532,7 +3525,7 @@ fun proc_lookup_in_dom_simp_tac ctxt i st =
     val _$name$_  = (HOLogic.dest_Trueprop (Logic.concl_of_goal (prop_of st) i));
         (* name : Gamma *)
     val pname = (unsuffix proc_deco (dest_string' name));
-    val thms =  map_filter I (map (try (ProofContext.get_thm ctxt))
+    val thms =  map_filter I (map (try (Proof_Context.get_thm ctxt))
                                [suffix bodyP pname]);
   in simp_tac (HOL_basic_ss addsimps (lookup_Some_in_dom::dom_strip::thms)) i st end
   handle _ => all_tac st;    (* FIXME avoid handle _ !!! *)
@@ -3702,7 +3695,7 @@ fun hoare_rule_tac ctxt thms i st =
 
 (*** Methods ***)
 
-val hoare_rule = RuleInsts.method HoareRuleTac hoare_rule_tac;
+val hoare_rule = Rule_Insts.method HoareRuleTac hoare_rule_tac;
 
 val argP = Args.name --| P.$$$ "=" -- Args.name
 val argsP = Scan.repeat argP
@@ -3728,8 +3721,6 @@ val vcg_step = gen_simp_method hoare_step_tac;
 (* setup theory *)
 
 val setup =
-  setup_use_generalise #> setup_sort_variables #> setup_use_cond_inv_modifies #>
-  setup_hoare_trace #>
   Attrib.setup @{binding vcg_simp} (Attrib.add_del vcg_simp_add vcg_simp_del)
     "declaration of Simplifier rule for vcg"
  (*#> add_wp_tacs initial_wp_tacs*)

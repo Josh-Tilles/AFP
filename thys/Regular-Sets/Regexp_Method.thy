@@ -1,7 +1,7 @@
 header {* Proving Relation (In)equalities via Regular Expressions *}
 
 theory Regexp_Method
-imports Equivalence_Checking Relation_Interpretation Reflection
+imports Equivalence_Checking Relation_Interpretation "~~/src/HOL/Library/Reflection"
 begin
 
 primrec rel_of_regexp :: "('a * 'a) set list \<Rightarrow> nat rexp \<Rightarrow> ('a * 'a) set" where
@@ -43,8 +43,7 @@ in
         (K (Conv.concl_conv (~1) regexp_conv)) ctxt)
       THEN' rtac TrueI)))
 end
-*}
-"Decides relation equalities via regular expressions"
+*} "decide relation equalities via regular expressions"
 
 text {* Example: *}
 
