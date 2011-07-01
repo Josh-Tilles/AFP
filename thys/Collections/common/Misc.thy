@@ -412,7 +412,7 @@ subsubsection {* Union, difference and intersection *}
   lemma mset_left_cancel_union: "\<lbrakk>a :# A+B; ~(a :# A)\<rbrakk> \<Longrightarrow> a:#B"
     by (simp)
   
-  lemmas mset_cancel_union = mset_right_cancel_union mset_left_cancel_union;
+  lemmas mset_cancel_union = mset_right_cancel_union mset_left_cancel_union
 
   lemma mset_right_cancel_elem: "\<lbrakk>a :# A+{#b#}; a~=b\<rbrakk> \<Longrightarrow> a:#A"
     apply(subgoal_tac "~(a :# {#b#})")
@@ -424,7 +424,7 @@ subsubsection {* Union, difference and intersection *}
     apply(auto)
   done
 
-  lemmas mset_cancel_elem = mset_right_cancel_elem mset_left_cancel_elem;
+  lemmas mset_cancel_elem = mset_right_cancel_elem mset_left_cancel_elem
 
   lemma mset_diff_cancel1elem[simp]: "~(a :# B) \<Longrightarrow> {#a#}-B = {#a#}" proof -
     assume A: "~(a :# B)"
@@ -1139,7 +1139,7 @@ lemma foldr_length_aux: "foldr (\<lambda>x i. Suc i) l a = a + length l"
 
 lemmas foldr_length[simp] = foldr_length_aux[where a=0, simplified]
 
-context fun_left_comm begin
+context comp_fun_commute begin
 
 lemma foldl_f_commute: "f a (foldl (\<lambda>a b. f b a) b xs) = foldl (\<lambda>a b. f b a) (f a b) xs"
 by(induct xs arbitrary: b)(simp_all add: fun_left_comm)
@@ -2211,9 +2211,5 @@ next
     qed
   qed
 qed
-
-
-
-
 
 end

@@ -1699,7 +1699,7 @@ fun split_pair_apps thm =
                 val idxs = (len - 1) downto 0;
                 val (argTs, bdyTs) = chop len (binder_types vT);
                 val bdyT = bdyTs ---> body_type vT;
-                val z = Name.variant (fold Term.add_free_names args []) "z";
+                val (z, _) = Name.variant "z" (fold Term.declare_term_frees args Name.context);
                 val frees = map (apfst (fn i => z^string_of_int i))
                                 (0 upto (len - 1) ~~ argTs);
                 fun splitT (Type (@{type_name Product_Type.prod}, [T1, T2])) = T1::splitT T2
@@ -1733,7 +1733,7 @@ fun split_pair_apps thm =
   val subst = map (fn (v,t) => (cterm_of thy v,cterm_of thy t)) (mk_subst [] t);
 
   in full_simplify (HOL_basic_ss addsimps [@{thm fst_conv}, @{thm snd_conv}])
-       (instantiate ([],subst) thm)
+       (Drule.instantiate_normalize ([],subst) thm)
   end;
 
 (* Generates split theorems, for !!,!,? quantifiers and for UN, e.g.
@@ -1746,17 +1746,17 @@ fun mk_split_thms ctxt (vars as _::_)  =
     val types = map snd vars;
     val free_vars = map Free vars;
     val pT = foldr1 HOLogic.mk_prodT types;
-    val x = (Name.variant names "x",pT);
+    val x = (singleton (Name.variant_list names) "x", pT);
     val xp = foldr1 HOLogic.mk_prod free_vars;
     val tfree_names = Library.foldr OldTerm.add_term_tfree_names (free_vars,[]);
-    val zeta = TFree (Name.variant tfree_names "z", Sign.defaultS thy);
+    val zeta = TFree (singleton (Name.variant_list tfree_names) "z", Sign.defaultS thy);
 
     val split_meta_prop =
-      let val P = Free (Name.variant names "P",pT --> Term.propT)
+      let val P = Free (singleton (Name.variant_list names) "P", pT --> Term.propT)
       in Logic.mk_equals (All [x] (P $ Free x), All vars (P $ xp))
       end;
 
-    val P = Free (Name.variant names "P",pT --> HOLogic.boolT);
+    val P = Free (singleton (Name.variant_list names) "P", pT --> HOLogic.boolT);
 
     val split_object_prop =
       let fun ALL vs t = Library.foldr (fn ((v,T),t) => HOLogic.mk_all (v,T,t)) (vs,t)
@@ -1769,7 +1769,7 @@ fun mk_split_thms ctxt (vars as _::_)  =
       end;
 
     val split_UN_prop =
-      let val P = Free (Name.variant names "P",pT --> HOLogic.mk_setT zeta);
+      let val P = Free (singleton (Name.variant_list names) "P", pT --> HOLogic.mk_setT zeta);
           fun UN vs t = Library.foldr (fn ((v,T),t) => mk_UN (v,T,t)) (vs,t)
       in (UN [x] (P $ Free x)) === (UN vars (P $ xp))
       end;
@@ -1809,7 +1809,7 @@ fun adapt_aux_var ctxt split_app (vars as (_::_::_)) tvar_rules =
                     (max_idx + 1 upto (max_idx + length vars));
        fun ctyp n = ctyp_of thy (TVar (n,Sign.defaultS thy));
        val pT = ctyp_of thy (foldr1 HOLogic.mk_prodT types);
-       val rules' = map (fn (z,r) => (instantiate ([(ctyp z,pT)],[]) r)) tvar_rules;
+       val rules' = map (fn (z,r) => (Drule.instantiate_normalize ([(ctyp z,pT)],[]) r)) tvar_rules;
        val splits = mk_split_thms ctxt (vars ~~ types);
        val rules'' = map (full_simplify (HOL_basic_ss addsimps splits)) rules';
      in if split_app then (map split_pair_apps rules'') else rules'' end
@@ -1819,7 +1819,7 @@ fun adapt_aux_var ctxt split_app (vars as (_::_::_)) tvar_rules =
         val thy = Proof_Context.theory_of ctxt;
         fun ctyp n = ctyp_of thy (TVar (n,Sign.defaultS thy));
         val uT = ctyp_of thy HOLogic.unitT;
-        val rules' = map (fn (z,r) => (instantiate ([(ctyp z,uT)],[]) r)) tvar_rules;
+        val rules' = map (fn (z,r) => (Drule.instantiate_normalize ([(ctyp z,uT)],[]) r)) tvar_rules;
         val splits = [unit_meta,unit_object,unit_ex,unit_UN];
         val rules'' = map (full_simplify (HOL_basic_ss addsimps splits)) rules';
       in rules'' end
@@ -2518,11 +2518,12 @@ fun gen_call_tac cont_tac mode cmode state_kind state_space ctxt asms spec_sfx
 
           fun solve_modifies_tac i =
                 (clarsimp_tac
-                  (global_claset_of @{theory Set},
-                     (Simplifier.context ctxt (global_simpset_of @{theory Set}))
-                     addsimps ([mex_def,meq_def,upd_globals_def]@K_convs)
-                     addsimprocs (state_upd_simproc Record::(state_simprocs state_kind))
-                     addcongs K_congs) i)
+                  (put_claset (global_claset_of @{theory Set}) ctxt
+                    |> map_simpset (fn _ =>
+                       (Simplifier.context ctxt (global_simpset_of @{theory Set}))
+                       addsimps ([mex_def,meq_def,upd_globals_def]@K_convs)
+                       addsimprocs (state_upd_simproc Record::(state_simprocs state_kind))
+                       addcongs K_congs)) i)
                 THEN_MAYBE
                 EVERY [trace_tac ctxt "modify_tac: splitting record",
                        state_split_simp_tac [] state_space i];
@@ -2777,7 +2778,7 @@ fun gen_Anno_tac dest rules tac cont_tac ctxt state_kind (t,i) st =
   in EVERY [resolve_tac rules' i,
             tac,
             simp_tac (HOL_basic_ss' addsimps ([@{thm split_conv}, refl, triv_All_eq]@anno_defs)
-                      addsimprocs [split_beta_proc]) (i+2),
+                      addsimprocs [@{simproc split_beta}]) (i+2),
             simp_tac (HOL_basic_ss' addsimps [@{thm split_conv}]) (i+1),
             simp_tac (HOL_basic_ss' addsimps [@{thm split_conv}]) i,
             REPEAT (rtac allI (i+1)),
@@ -3495,11 +3496,12 @@ fun solve_modifies_tac ctxt state_kind state_space i =
                      (REPEAT_ALL_NEW (resolve_tac [conjI,impI,refl]) k))) i
   in
     (trace_tac ctxt "solve_modifies_tac" THEN
-     clarsimp_tac (global_claset_of @{theory HOL},
-                        (Simplifier.context ctxt (global_simpset_of @{theory Set}))
-                         addsimps ([mex_def,meq_def]@K_convs)
-                         addsimprocs (state_upd_simproc Record::(state_simprocs Record))
-                         addcongs K_congs) i)
+     clarsimp_tac (put_claset (global_claset_of @{theory HOL}) ctxt
+        |> map_simpset (fn _ =>
+            (Simplifier.context ctxt (global_simpset_of @{theory Set}))
+             addsimps ([mex_def,meq_def]@K_convs)
+             addsimprocs (state_upd_simproc Record::(state_simprocs Record))
+             addcongs K_congs)) i)
     THEN_MAYBE
      try_solve state_kind i
   end;
@@ -3533,7 +3535,7 @@ fun HoareRuleTac ctxt insts st =
   let
     val HOL_basic_ss' = Simplifier.context ctxt HOL_basic_ss
     val annotate_simp_tac = simp_tac (HOL_basic_ss' addsimps (anno_defs@normalize_simps)
-                                                   addsimprocs [split_beta_proc]);
+                                                   addsimprocs [@{simproc split_beta}]);
     fun is_com_eq (Const (@{const_name Trueprop},_)$(Const (@{const_name HOL.eq},T)$_$_)) =
           (case (binder_types T) of
              (Type (@{type_name Language.com},_)::_) => true
@@ -3693,7 +3695,7 @@ fun hoare_rule_tac ctxt thms i st =
 
 (*** Methods ***)
 
-val hoare_rule = RuleInsts.method HoareRuleTac hoare_rule_tac;
+val hoare_rule = Rule_Insts.method HoareRuleTac hoare_rule_tac;
 
 val argP = Args.name --| P.$$$ "=" -- Args.name
 val argsP = Scan.repeat argP
