@@ -119,8 +119,10 @@ syntax
   "_guards"        :: "grds \<Rightarrow> ('s,'p,'f) com \<Rightarrow> ('s,'p,'f) com" 
                                             ("(_/\<longmapsto> _)" [60, 21] 23)                                                           
   "_quote"       :: "'b => ('a => 'b)"       (*("(.'(_').)" [0] 1000)*)
-  "_antiquoteCur"  :: "('a => 'b) => 'b"       ("\<acute>_" [1000] 1000)
-  "_antiquoteOld"  :: "('a => 'b) => 'a => 'b"       ("\<^bsup>_\<^esup>_" [1000,1000] 1000)
+  "_antiquoteCur0"  :: "('a => 'b) => 'b"       ("\<acute>_" [1000] 1000)
+  "_antiquoteCur"  :: "('a => 'b) => 'b"
+  "_antiquoteOld0"  :: "('a => 'b) => 'a => 'b"       ("\<^bsup>_\<^esup>_" [1000,1000] 1000)
+  "_antiquoteOld"  :: "('a => 'b) => 'a => 'b"
   "_Assert"      :: "'a => 'a set"           ("({|_|})" [0] 1000)
   "_AssertState" :: "idt \<Rightarrow> 'a \<Rightarrow> 'a set"    ("({|_. _|})" [1000,0] 1000)
   "_Assign"      :: "'b => 'b => ('a,'p,'f) com"    ("(_ :==/ _)" [30, 30] 23)
@@ -263,7 +265,7 @@ translations
   "_last_grd g" => "[g]"
   "_guards gs c" == "CONST guards gs c"
 
-  "{|s. P|}"                   == "{|\<acute>(op = s) \<and> P |}"
+  "{|s. P|}"                   == "{|_antiquoteCur(op = s) \<and> P |}"
   "{|b|}"                   => "CONST Collect (_quote b)"
   "IF b THEN c1 ELSE c2 FI" => "CONST Cond {|b|} c1 c2"
   "IF b THEN c1 FI"         ==  "IF b THEN c1 ELSE SKIP FI"
@@ -307,10 +309,25 @@ translations
  "(_switchcasesCons b bs)" => "CONST Cons b bs"
  "(_Switch v vs)" => "CONST switch (_quote v) vs"
 
+parse_ast_translation {*
+let
+fun tr c asts = Ast.mk_appl (Ast.Constant c) (map Ast.strip_positions asts)
+in [(@{syntax_const "_antiquoteCur0"}, tr @{syntax_const "_antiquoteCur"}),
+    (@{syntax_const "_antiquoteOld0"}, tr @{syntax_const "_antiquoteOld"})]
+end
+*}
 
 print_ast_translation {*
 let
-fun dest_abs (Appl [Constant @{syntax_const "_abs"},x,t]) = (x,t)
+fun tr c asts = Ast.mk_appl (Ast.Constant c) asts
+in [(@{syntax_const "_antiquoteCur"}, tr @{syntax_const "_antiquoteCur0"}),
+    (@{syntax_const "_antiquoteOld"}, tr @{syntax_const "_antiquoteOld0"})]
+end
+*}
+
+print_ast_translation {*
+let
+fun dest_abs (Ast.Appl [Ast.Constant @{syntax_const "_abs"},x,t]) = (x,t)
   | dest_abs _ = raise Match;
 fun spec_tr' [P,c,Q,A] =
   let 
@@ -318,15 +335,15 @@ fun spec_tr' [P,c,Q,A] =
     val (_ ,c') = dest_abs c;
     val (_ ,Q') = dest_abs Q;
     val (_ ,A') = dest_abs A; 
-  in if (A'=Constant @{const_syntax bot})
-     then Syntax.mk_appl (Constant @{syntax_const "_SpecNoAbrupt"}) [x', P', c', Q'] 
-     else Syntax.mk_appl (Constant @{syntax_const "_Spec"}) [x', P', c', Q', A'] end;
+  in if (A' = Ast.Constant @{const_syntax bot})
+     then Ast.mk_appl (Ast.Constant @{syntax_const "_SpecNoAbrupt"}) [x', P', c', Q'] 
+     else Ast.mk_appl (Ast.Constant @{syntax_const "_Spec"}) [x', P', c', Q', A'] end;
 fun whileAnnoFix_tr' [b,I,V,c] =
   let
     val (x',I') = dest_abs I;
     val (_ ,V') = dest_abs V;
     val (_ ,c') = dest_abs c;
-  in Syntax.mk_appl (Constant @{syntax_const "_WhileFix_inv_var"}) [b,x',I',V',c']
+  in Ast.mk_appl (Ast.Constant @{syntax_const "_WhileFix_inv_var"}) [b,x',I',V',c']
   end;
 in [(@{const_syntax specAnno}, spec_tr'),
     (@{const_syntax whileAnnoFix}, whileAnnoFix_tr')]

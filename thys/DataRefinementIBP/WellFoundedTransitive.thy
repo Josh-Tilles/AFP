@@ -1,9 +1,7 @@
 header {*  Well founded and transitive relations  *}
 
 theory WellFoundedTransitive
-
 imports Preliminaries
-
 begin
 
 class well_founded_transitive = ord +
@@ -37,19 +35,15 @@ definition
 
 lemma SUP_L_upper:
   "v < w \<Longrightarrow> P v \<le> SUP_L P w"
-  by (simp add: SUP_L_def SUPR_def Sup_upper)
-
+  by (simp add: SUP_L_def le_SUPI2)
 
 lemma SUP_L_least:
   "(!! v . v < w \<Longrightarrow> P v \<le> Q) \<Longrightarrow> SUP_L P w \<le> Q"
-  by (simp add: SUP_L_def SUPR_def, rule Sup_least, auto)
+  by (auto simp add: SUP_L_def intro: SUP_leI)
 
 lemma SUP_L_fun_eq:
   "((SUP_L P w) i) = (SUP_L (\<lambda> v . P v i)) w"
-  apply (simp add: SUP_L_def SUPR_def)
-  apply (simp add: Sup_fun_def)
-  apply (case_tac "{y . \<exists>f<w. y = P f i} = (\<lambda>v . P v i) ` {v. v < w}")
-  by auto
+  by (simp add: SUP_L_def SUP_apply)
 
 end
 

@@ -7,7 +7,7 @@ header {* Sets of natural numbers *}
 
 theory SetInterval2
 imports 
-  "$ISABELLE_HOME/src/HOL/Library/Infinite_Set"
+  "~~/src/HOL/Library/Infinite_Set"
   Util_Set
   "../CommonArith/Util_MinMax"
   "../CommonArith/Util_NatInf"
@@ -236,63 +236,63 @@ thm
   nat_induct'[where ?n0.0=0, simplified]
   nat_induct
 
-lemma inat_induct: "
-  \<lbrakk> P 0; P \<infinity>; \<And>n. P n \<Longrightarrow> P (iSuc n)\<rbrakk> \<Longrightarrow> P n"
+lemma enat_induct: "
+  \<lbrakk> P 0; P \<infinity>; \<And>n. P n \<Longrightarrow> P (eSuc n)\<rbrakk> \<Longrightarrow> P n"
 apply (case_tac n)
  prefer 2 
  apply simp
-apply (simp only: inat_defs)
+apply (simp only: enat_defs)
 apply (rename_tac n1)
 apply (induct_tac n1)
-apply (simp add: inat_splits)+
+apply (simp add: enat.splits)+
 done
 
 
 
-lemma iSuc_imp_Suc_aux_0:
-  "\<lbrakk> \<And>n. P n \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
-by (simp only: inat_defs inat_splits)
-lemma iSuc_imp_Suc_aux_n0:
-  "\<lbrakk> \<And>n. \<lbrakk>Fin n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
-thm inat_defs
+lemma eSuc_imp_Suc_aux_0:
+  "\<lbrakk> \<And>n. P n \<Longrightarrow> P (eSuc n); n0' \<le> n'; P (enat n')\<rbrakk> \<Longrightarrow> P (enat (Suc n'))"
+by (simp only: enat_defs enat.splits)
+lemma eSuc_imp_Suc_aux_n0:
+  "\<lbrakk> \<And>n. \<lbrakk>enat n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (eSuc n); n0' \<le> n'; P (enat n')\<rbrakk> \<Longrightarrow> P (enat (Suc n'))"
+thm enat_defs
 proof -
-  assume IA: "\<And>n. \<lbrakk>Fin n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (iSuc n)"
+  assume IA: "\<And>n. \<lbrakk>enat n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (eSuc n)"
     and n0_n: "n0' \<le> n'"
-    and Pn: "P (Fin n')"
+    and Pn: "P (enat n')"
   from n0_n
-  have "(Fin n0' \<le> Fin n')" by simp
+  have "(enat n0' \<le> enat n')" by simp
   with Pn IA
-  have "P (iSuc (Fin n'))" by blast
-  thus "P (Fin (Suc n'))" by (simp only: iSuc_Fin)
+  have "P (eSuc (enat n'))" by blast
+  thus "P (enat (Suc n'))" by (simp only: eSuc_enat)
 qed
 
-lemma inat_induct': "
-  \<lbrakk> P (n0::inat); P \<infinity>; \<And>n. \<lbrakk> n0 \<le> n;  P n \<rbrakk> \<Longrightarrow> P (iSuc n); n0 \<le> n \<rbrakk> \<Longrightarrow> P n"
+lemma enat_induct': "
+  \<lbrakk> P (n0::enat); P \<infinity>; \<And>n. \<lbrakk> n0 \<le> n;  P n \<rbrakk> \<Longrightarrow> P (eSuc n); n0 \<le> n \<rbrakk> \<Longrightarrow> P n"
 apply (case_tac n)
  prefer 2 apply simp
 apply (case_tac n0)
- prefer 2 apply (simp add: inat_defs)
+ prefer 2 apply (simp add: enat_defs)
 apply (rename_tac n' n0', simp)
 
-thm nat_induct'[where ?n0.0="n0'" and n=n' and P="\<lambda>n. P (Fin n)"]
-apply (rule_tac ?n0.0="n0'" and n=n' and P="\<lambda>n. P (Fin n)" in nat_induct')
+thm nat_induct'[where ?n0.0="n0'" and n=n' and P="\<lambda>n. P (enat n)"]
+apply (rule_tac ?n0.0="n0'" and n=n' and P="\<lambda>n. P (enat n)" in nat_induct')
   apply simp
- apply (simp add: iSuc_Fin[symmetric])
+ apply (simp add: eSuc_enat[symmetric])
 apply simp
 done
 
 thm 
-  inat_induct'
-  inat_induct'[where ?n0.0=0, simplified]
-  inat_induct
-thm inat_induct'
+  enat_induct'
+  enat_induct'[where ?n0.0=0, simplified]
+  enat_induct
+thm enat_induct'
 
 thm 
   nat_induct
   nat_induct'
 thm
-  inat_induct
-  inat_induct'
+  enat_induct
+  enat_induct'
 
 
 thm wellorder_class.intro
@@ -874,12 +874,12 @@ by (rule ssubst[OF iMin_Min_conv], assumption+, rule Min_le_Max)
 
 
 
-subsubsection {* @{text Max} for sets over @{text inat} *}
+subsubsection {* @{text Max} for sets over @{text enat} *}
 
 definition
-  iMax :: "nat set \<Rightarrow> inat"
+  iMax :: "nat set \<Rightarrow> enat"
 where
-  "iMax i \<equiv> if (finite i) then (Fin (Max i)) else \<infinity>"
+  "iMax i \<equiv> if (finite i) then (enat (Max i)) else \<infinity>"
 
 lemma iMax_finite_conv: "finite I = (iMax I \<noteq> \<infinity>)"
 by (simp add: iMax_def)
@@ -1058,7 +1058,7 @@ thm linorder_class.Min_singleton linorder_class.Max_singleton
 thm singletonI[THEN iMinI, THEN singletonD]
 lemma iMin_singleton[simp]: "iMin {a} = a"
 by (rule singletonI[THEN iMinI, THEN singletonD])
-lemma iMax_singleton[simp]: "iMax {a} = Fin a"
+lemma iMax_singleton[simp]: "iMax {a} = enat a"
 by (simp add: iMax_def)
 
 lemma Max_le_Min_imp_singleton: "

@@ -69,7 +69,7 @@ datatype p_edge_kind =
 | CEdge "pname \<times> expr list \<times> vname list"
 
 
-types p_edge = "(label \<times> p_edge_kind \<times> label)"
+type_synonym p_edge = "(label \<times> p_edge_kind \<times> label)"
 
 inductive Proc_CFG :: "cmd \<Rightarrow> label \<Rightarrow> p_edge_kind \<Rightarrow> label \<Rightarrow> bool"
 ("_ \<turnstile> _ -_\<rightarrow>\<^isub>p _")
@@ -1034,8 +1034,8 @@ subsubsection {* Statements containing calls *}
 text {* A procedure is a tuple composed of its name, its input and output variables
   and its method body *}
 
-types proc = "(pname \<times> vname list \<times> vname list \<times> cmd)"
-types procs = "proc list"
+type_synonym proc = "(pname \<times> vname list \<times> vname list \<times> cmd)"
+type_synonym procs = "proc list"
 
 
 text {* @{text "containsCall"} guarantees that a call to procedure p is in
@@ -1107,13 +1107,13 @@ proof(induct procs prog ps p rule:containsCall_induct)
         ps' = psx@[qx] \<and> (qx,insx,outsx,cx) \<in> set procs \<and>
         containsCall procs cx [] p \<and> containsCall procs c psx qx"
       then obtain qx insx outsx cx psx
-	where "ps' = psx@[qx]" and "(qx,insx,outsx,cx) \<in> set procs"
-	and "containsCall procs cx [] p"
-	and "containsCall procs c psx qx" by blast
+        where "ps' = psx@[qx]" and "(qx,insx,outsx,cx) \<in> set procs"
+        and "containsCall procs cx [] p"
+        and "containsCall procs c psx qx" by blast
       from `(q,ins,outs,c) \<in> set procs` `containsCall procs c psx qx`
       have "containsCall procs (Call q es' rets') (q#psx) qx" by fastsimp
       with `ps' = psx@[qx]` `ps = q#ps'` `(qx,insx,outsx,cx) \<in> set procs`
-	`containsCall procs cx [] p` show ?thesis by fastsimp
+        `containsCall procs cx [] p` show ?thesis by fastsimp
     qed
   qed
 qed auto
@@ -1224,8 +1224,8 @@ qed
 
 subsubsection{* The edges of the combined CFG *}
 
-types node = "(pname \<times> label)"
-types edge = "(node \<times> (vname,val,node,pname) edge_kind \<times> node)"
+type_synonym node = "(pname \<times> label)"
+type_synonym edge = "(node \<times> (vname,val,node,pname) edge_kind \<times> node)"
 
 fun get_proc :: "node \<Rightarrow> pname"
   where "get_proc (p,l) = p"

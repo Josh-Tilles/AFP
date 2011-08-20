@@ -2,7 +2,7 @@ header {* Basics on order-like relations *}
 
 (* author: Andrei Popescu *)
 
-theory Order_Relation2 imports Order_Relation
+theory Order_Relation2 imports "~~/src/HOL/Library/Order_Relation"
 begin
 
 
@@ -13,7 +13,7 @@ from the theory @{text "Order_Relation"}.  We also
 further define upper and lower bounds operators. *}
 
 
-types 'a rel = "('a * 'a) set"
+type_synonym 'a rel = "('a * 'a) set"
 
 locale rel = fixes r :: "'a rel"
 

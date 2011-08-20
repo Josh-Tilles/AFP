@@ -7,8 +7,8 @@ header {* Terminated coinductive lists *}
 
 theory TLList imports
   Quotient_Coinductive_List
-  Quotient_Product
-  Quotient_Sum
+  "~~/src/HOL/Library/Quotient_Product"
+  "~~/src/HOL/Library/Quotient_Sum"
 begin
 
 text {*
@@ -235,7 +235,7 @@ where
         xs = llist_corec a f'
     in (xs, 
         if lfinite xs
-        then THE c. (g ^^ (Suc (THE n. llength xs = Fin n))) (Inl a) = Inr c
+        then THE c. (g ^^ (Suc (THE n. llength xs = enat n))) (Inl a) = Inr c
         else undefined))"
 
 lemma tllist_corec_aux:
@@ -251,7 +251,7 @@ next
   proof(induct xs\<equiv>"llist_corec a (\<lambda>a. case f a of Inl ba \<Rightarrow> Some ba | Inr c \<Rightarrow> None)" arbitrary: a)
     case lfinite_LNil[symmetric]
     thus ?case
-      by(simp add: llist_corec tllist_corec_aux_def zero_inat_def TNIL_def split: sum.split_asm prod.split_asm)
+      by(simp add: llist_corec tllist_corec_aux_def zero_enat_def TNIL_def split: sum.split_asm prod.split_asm)
   next
     case (lfinite_LConsI xs x)
     from `LCons x xs = llist_corec a (\<lambda>a. case f a of Inl ba \<Rightarrow> Some ba | Inr c \<Rightarrow> None)`
@@ -261,7 +261,7 @@ next
     from xs have "tllist_corec_aux a' f = sum_case (prod_case (\<lambda>b a'. TCONS b (tllist_corec_aux a' f))) TNIL (f a')"
       by(rule lfinite_LConsI)
     thus ?case using `lfinite xs` a' xs
-      by(auto simp add: tllist_corec_aux_def TCONS_def TNIL_def Let_def iSuc_Fin funpow_Suc_tail_rec llist_corec dest!: lfinite_llength_Fin simp del: funpow.simps)
+      by(auto simp add: tllist_corec_aux_def TCONS_def TNIL_def Let_def eSuc_enat funpow_Suc_tail_rec llist_corec dest!: lfinite_llength_enat simp del: funpow.simps)
   qed
 qed
 
@@ -340,10 +340,10 @@ where "TNTH (xs, b) = lnth xs"
 quotient_definition "tnth :: ('a, 'b) tllist \<Rightarrow> nat \<Rightarrow> 'a"
 is "TNTH"
 
-primrec TLENGTH :: "('a llist \<times> 'b) \<Rightarrow> inat"
+primrec TLENGTH :: "('a llist \<times> 'b) \<Rightarrow> enat"
 where "TLENGTH (xs, b) = llength xs"
 
-quotient_definition "tlength :: ('a, 'b) tllist \<Rightarrow> inat"
+quotient_definition "tlength :: ('a, 'b) tllist \<Rightarrow> enat"
 is "TLENGTH"
 
 primrec TDROPn :: "nat \<Rightarrow> ('a llist \<times> 'b) \<Rightarrow> ('a llist \<times> 'b)"
@@ -525,11 +525,11 @@ by(induct) simp_all
 
 subsection {* Filtering terminated lazy lists @{term tfilter} *}
 
-lemma tfilter_TNil [code, simp]:
+lemma tfilter_TNil [simp]:
   "tfilter b' P (TNil b) = TNil b"
 by(descending)(simp add: TNIL_def)
 
-lemma tfilter_TCons [code, simp]:
+lemma tfilter_TCons [simp]:
   "tfilter b P (TCons a tr) = (if P a then TCons a (tfilter b P tr) else tfilter b P tr)"
 by(descending)(auto simp add: TCONS_def)
 
@@ -545,14 +545,44 @@ lemma tfilter_eq_TConsD:
    \<exists>us vs. ys = lappendt us (TCons x vs) \<and> lfinite us \<and> (\<forall>u\<in>lset us. \<not> P u) \<and> P x \<and> xs = tfilter a P vs"
 by(descending)(fastsimp simp add: TCONS_def apfst_def map_pair_def split_def split_paired_Ex dest: lfilter_eq_LConsD)
 
+text {* Use a version of @{term "tfilter"} for code generation that does not evaluate the first argument *}
+
+definition tfilter' :: "(unit \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
+where [simp, code del]: "tfilter' b = tfilter (b ())"
+
+lemma tfilter_code [code, code_inline]:
+  "tfilter = (\<lambda>b. tfilter' (\<lambda>_. b))" 
+by simp
+
+lemma tfilter'_code [code]:
+  "tfilter' b' P (TNil b) = TNil b"
+  "tfilter' b' P (TCons a tr) = (if P a then TCons a (tfilter' b' P tr) else tfilter' b' P tr)"
+by simp_all
+
+hide_const (open) tfilter'
 
 subsection {* Concatenating a terminated lazy list of lazy lists @{term tconcat} *}
 
-lemma tconcat_TNil [code, simp]: "tconcat b (TNil b') = TNil b'"
+lemma tconcat_TNil [simp]: "tconcat b (TNil b') = TNil b'"
 by(descending)(simp add: TNIL_def)
 
-lemma tconcat_TCons [code, simp]: "tconcat b (TCons a tr) = lappendt a (tconcat b tr)"
+lemma tconcat_TCons [simp]: "tconcat b (TCons a tr) = lappendt a (tconcat b tr)"
 by(descending)(clarsimp simp add: TCONS_def)
+
+text {* Use a version of @{term "tconcat"} for code generation that does not evaluate the first argument *}
+
+definition tconcat' :: "(unit \<Rightarrow> 'b) \<Rightarrow> ('a llist, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
+where [simp, code del]: "tconcat' b = tconcat (b ())"
+
+lemma tconcat_code [code, code_inline]: "tconcat = (\<lambda>b. tconcat' (\<lambda>_. b))"
+by simp
+
+lemma tconcat'_code [code]:
+  "tconcat' b (TNil b') = TNil b'"
+  "tconcat' b (TCons a tr) = lappendt a (tconcat' b tr)"
+by simp_all
+
+hide_const (open) tconcat'
 
 subsection {* @{term tllist_all2} *}
 
@@ -617,7 +647,7 @@ proof descending
       case (lfinite_LConsI xs x)
       with step[OF `X (LCons x xs, b) (ys, b')`]
       show ?thesis 
-        by(clarsimp simp add: TNIL_def TCONS_def)(auto simp add: lfinite_conv_llength_Fin)
+        by(clarsimp simp add: TNIL_def TCONS_def)(auto simp add: lfinite_conv_llength_enat)
     qed
   }
   ultimately show "TLLIST_ALL2 P R xsb ysb" by simp
@@ -729,7 +759,7 @@ subsection {* The length of a terminated lazy list @{term "tlength"} *}
 
 lemma [simp, code, nitpick_simp]:
   shows tlength_TNil: "tlength (TNil b) = 0"
-  and tlength_TCons: "tlength (TCons x xs) = iSuc (tlength xs)"
+  and tlength_TCons: "tlength (TCons x xs) = eSuc (tlength xs)"
  apply(descending, simp add: TNIL_def)
 apply(descending, auto simp add: TCONS_def)
 done
@@ -752,7 +782,7 @@ lemma tdropn_Suc [nitpick_simp]: "tdropn (Suc n) xs = (case xs of TNil b \<Right
 by(cases xs) simp_all -- "FIXME: Ask Cezary/Christian why descending / lifting raises a type error here"
 
 lemma lappendt_ltake_tdropn:
-  "lappendt (ltake (Fin n) (llist_of_tllist xs)) (tdropn n xs) = xs"
+  "lappendt (ltake (enat n) (llist_of_tllist xs)) (tdropn n xs) = xs"
 by descending (auto)
 
 lemma llist_of_tllist_tdropn [simp]:
@@ -760,13 +790,13 @@ lemma llist_of_tllist_tdropn [simp]:
 by descending auto
 
 lemma tdropn_Suc_conv_tdropn:
-  "Fin n < tlength xs \<Longrightarrow> TCons (tnth xs n) (tdropn (Suc n) xs) = tdropn n xs" 
+  "enat n < tlength xs \<Longrightarrow> TCons (tnth xs n) (tdropn (Suc n) xs) = tdropn n xs" 
 by descending(auto simp add: TCONS_def ldropn_Suc_conv_ldropn)
 
-lemma tlength_tdropn [simp]: "tlength (tdropn n xs) = tlength xs - Fin n"
+lemma tlength_tdropn [simp]: "tlength (tdropn n xs) = tlength xs - enat n"
 by descending auto
 
-lemma tnth_tdropn [simp]: "Fin (n + m) < tlength xs \<Longrightarrow> tnth (tdropn n xs) m = tnth xs (m + n)"
+lemma tnth_tdropn [simp]: "enat (n + m) < tlength xs \<Longrightarrow> tnth (tdropn n xs) m = tnth xs (m + n)"
 by descending auto
 
 subsection {* @{term "tset"} *}

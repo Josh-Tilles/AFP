@@ -21,7 +21,7 @@ text {*
 
 subsubsection {* Appending a functions to a list *}
 
-types 'a ilist = "nat \<Rightarrow> 'a"
+type_synonym 'a ilist = "nat \<Rightarrow> 'a"
 
 definition
   i_append :: "'a list \<Rightarrow> 'a ilist \<Rightarrow> 'a ilist" (infixr "\<frown>" 65)
@@ -32,11 +32,11 @@ syntax (HTML output)
   "i_append" :: "'a list \<Rightarrow> 'a ilist \<Rightarrow> 'a ilist" (infixr "\<frown>" 65)
 
 text {* 
-  Synonym for the lemma @{text Fun.fun_eq_iff} 
+  Synonym for the lemma @{text fun_eq_iff} 
   from the HOL library to unify lemma names for finite and infinite lists,
   providing @{text list_eq_iff} for finite and
   @{text ilist_eq_iff} for infinite lists. *}
-lemmas expand_ilist_eq = Fun.fun_eq_iff
+lemmas expand_ilist_eq = fun_eq_iff
 lemmas ilist_eq_iff = expand_ilist_eq
 
 lemma i_append_nth: "(xs \<frown> f) n = (if n < length xs then xs ! n else f (n - length xs))"
@@ -946,10 +946,10 @@ thm list.simps
 term nth
 
 definition
-  glength :: "'a glist \<Rightarrow> inat"
+  glength :: "'a glist \<Rightarrow> enat"
 where
   "glength a \<equiv> case a of
-    FL xs \<Rightarrow> Fin (length xs) |
+    FL xs \<Rightarrow> enat (length xs) |
     IL f  \<Rightarrow> \<infinity>"
 definition
   gCons   :: "'a \<Rightarrow> 'a glist \<Rightarrow> 'a glist"        (infixr "#\<^sub>g" 65)
@@ -970,18 +970,18 @@ where
     FL xs \<Rightarrow> FL (map f xs) |
     IL g  \<Rightarrow> IL (f \<circ> g)"
 definition
-  gtake   :: "inat \<Rightarrow> 'a glist \<Rightarrow> 'a glist"
+  gtake   :: "enat \<Rightarrow> 'a glist \<Rightarrow> 'a glist"
 where
   "gtake n a \<equiv> case n of
-    Fin m \<Rightarrow> FL (case a of 
+    enat m \<Rightarrow> FL (case a of 
       FL xs \<Rightarrow> xs \<down> m |
       IL f  \<Rightarrow> f \<Down> m) |
     \<infinity> \<Rightarrow> a"
 definition
-  gdrop   :: "inat \<Rightarrow> 'a glist \<Rightarrow> 'a glist"
+  gdrop   :: "enat \<Rightarrow> 'a glist \<Rightarrow> 'a glist"
 where
   "gdrop n a \<equiv> case n of
-    Fin m \<Rightarrow> (case a of 
+    enat m \<Rightarrow> (case a of 
       FL xs \<Rightarrow> FL (xs \<up> m) |
       IL f  \<Rightarrow> IL (f \<Up> m)) |
     \<infinity> \<Rightarrow> FL []"
@@ -999,22 +999,22 @@ where
     IL f  \<Rightarrow> f n"
 
 abbreviation (xsymbols)
-  "g_take'" :: "'a glist \<Rightarrow> inat \<Rightarrow> 'a glist" (infixl "\<down>\<^sub>g" 100)
+  "g_take'" :: "'a glist \<Rightarrow> enat \<Rightarrow> 'a glist" (infixl "\<down>\<^sub>g" 100)
 where 
   "a \<down>\<^sub>g n \<equiv> gtake n a"
 abbreviation (xsymbols)
-  "g_drop'" :: "'a glist \<Rightarrow> inat \<Rightarrow> 'a glist" (infixl "\<up>\<^sub>g" 100)
+  "g_drop'" :: "'a glist \<Rightarrow> enat \<Rightarrow> 'a glist" (infixl "\<up>\<^sub>g" 100)
 where
   "a \<up>\<^sub>g n \<equiv> gdrop n a"
 syntax (HTML output)
-  "g_take'" :: "'a glist \<Rightarrow> inat \<Rightarrow> 'a glist"   (infixl "\<down>\<^sub>g" 100)
-  "g_drop'" :: "'a glist \<Rightarrow> inat \<Rightarrow> 'a glist"   (infixl "\<up>\<^sub>g" 100)
+  "g_take'" :: "'a glist \<Rightarrow> enat \<Rightarrow> 'a glist"   (infixl "\<down>\<^sub>g" 100)
+  "g_drop'" :: "'a glist \<Rightarrow> enat \<Rightarrow> 'a glist"   (infixl "\<up>\<^sub>g" 100)
 
 
 
 subsubsection {* @{text glength} *}
 
-lemma glength_fin[simp]: "glength (FL xs) = Fin (length xs)"
+lemma glength_fin[simp]: "glength (FL xs) = enat (length xs)"
 by (simp add: glength_def)
 
 lemma glength_infin[simp]: "glength (IL f) = \<infinity>"
@@ -1033,21 +1033,21 @@ lemma glength_greater_0_conv[simp]: "(0 < glength a) = (a \<noteq> FL [])"
 by (simp add: glength_0_conv[symmetric])
 
 lemma glength_gSuc_conv: "
-  (glength a = iSuc n) =
+  (glength a = eSuc n) =
   (\<exists>x b. a = x #\<^sub>g b \<and> glength b = n)"
 apply (unfold glength_def gCons_def, rule iffI)
  apply (case_tac a, rename_tac a')
   apply (case_tac n, rename_tac n')
    apply (rule_tac x="hd a'" in exI)
    apply (rule_tac x="FL (tl a')" in exI)
-   apply (simp add: iSuc_Fin)
+   apply (simp add: eSuc_enat)
    apply (subgoal_tac "a' \<noteq> []")
     prefer 2
     apply (rule ccontr, simp)
    apply simp
   apply simp
  apply (rename_tac f)
- apply (case_tac n, simp add: iSuc_Fin)
+ apply (case_tac n, simp add: eSuc_enat)
  apply (rule_tac x="f 0" in exI)
  apply (rule_tac x="IL (f \<Up> Suc 0)" in exI)
  thm i_take_first
@@ -1055,13 +1055,13 @@ apply (unfold glength_def gCons_def, rule iffI)
 apply (clarsimp, rename_tac x b)
 apply (case_tac a)
  apply (case_tac b)
-  apply (simp add: iSuc_Fin)+
+  apply (simp add: eSuc_enat)+
 apply (case_tac b)
-apply (simp add: iSuc_Fin)+
+apply (simp add: eSuc_enat)+
 done
 
 lemma gSuc_glength_conv: "
-  (iSuc n = glength a) =
+  (eSuc n = glength a) =
   (\<exists>x b. a = x #\<^sub>g b \<and> glength b = n)"
 by (simp add: eq_commute[of _ "glength a"] glength_gSuc_conv)
 
@@ -1175,8 +1175,8 @@ by (unfold gCons_def gnth_def, case_tac a, simp+)
 thm nth_append
 lemma gnth_gappend: "
   (a @\<^sub>g b) !\<^sub>g n = 
-  (if Fin n < glength a then a !\<^sub>g n 
-  else b !\<^sub>g (n - the_Fin (glength a)))"
+  (if enat n < glength a then a !\<^sub>g n 
+  else b !\<^sub>g (n - the_enat (glength a)))"
 apply (unfold glength_def gappend_def gCons_def gnth_def)
 apply (case_tac a, case_tac b)
 apply (simp add: nth_append)+
@@ -1187,11 +1187,11 @@ lemma gnth_gappend_length_plus[simp]: "(FL xs @\<^sub>g b) !\<^sub>g (length xs 
 by (simp add: gnth_gappend)
 
 thm nth_map
-lemma gmap_gnth[simp]: "Fin n < glength a \<Longrightarrow> gmap f a !\<^sub>g n = f (a !\<^sub>g n)"
+lemma gmap_gnth[simp]: "enat n < glength a \<Longrightarrow> gmap f a !\<^sub>g n = f (a !\<^sub>g n)"
 by (unfold gmap_def gnth_def, case_tac a, simp+)
 
 thm in_set_conv_nth
-lemma in_gset_cong_gnth: "(x \<in> gset a) = (\<exists>i. Fin i < glength a \<and> a !\<^sub>g i = x)"
+lemma in_gset_cong_gnth: "(x \<in> gset a) = (\<exists>i. enat i < glength a \<and> a !\<^sub>g i = x)"
 apply (unfold gset_def gnth_def, case_tac a)
 apply (fastsimp simp: in_set_conv_nth)+
 done
@@ -1222,29 +1222,29 @@ lemma gdrop_all[simp]: "glength a \<le> n \<Longrightarrow> a \<up>\<^sub>g n = 
 by (unfold gdrop_def, case_tac a, case_tac n, simp+)
 
 thm take_Suc_Cons
-lemma gtake_iSuc_gCons[simp]: "(x #\<^sub>g a) \<down>\<^sub>g (iSuc n) = x #\<^sub>g a \<down>\<^sub>g n"
-by (unfold gtake_def gCons_def, case_tac n, case_tac a, simp_all add: iSuc_Fin)
+lemma gtake_eSuc_gCons[simp]: "(x #\<^sub>g a) \<down>\<^sub>g (eSuc n) = x #\<^sub>g a \<down>\<^sub>g n"
+by (unfold gtake_def gCons_def, case_tac n, case_tac a, simp_all add: eSuc_enat)
 
 thm drop_Suc_Cons
-lemma gdrop_iSuc_gCons[simp]: "(x #\<^sub>g a) \<up>\<^sub>g (iSuc n) = a \<up>\<^sub>g n"
-by (unfold gdrop_def gCons_def, case_tac n, case_tac a, simp_all add: iSuc_Fin)
+lemma gdrop_eSuc_gCons[simp]: "(x #\<^sub>g a) \<up>\<^sub>g (eSuc n) = a \<up>\<^sub>g n"
+by (unfold gdrop_def gCons_def, case_tac n, case_tac a, simp_all add: eSuc_enat)
 
 thm take_Suc
-lemma gtake_iSuc: "a \<noteq> FL [] \<Longrightarrow> a \<down>\<^sub>g (iSuc n) = a !\<^sub>g 0 #\<^sub>g (a \<up>\<^sub>g (iSuc 0) \<down>\<^sub>g n)"
+lemma gtake_eSuc: "a \<noteq> FL [] \<Longrightarrow> a \<down>\<^sub>g (eSuc n) = a !\<^sub>g 0 #\<^sub>g (a \<up>\<^sub>g (eSuc 0) \<down>\<^sub>g n)"
 apply (unfold gtake_def gdrop_def gnth_def gCons_def)
 apply (case_tac n)
  apply (case_tac a)
- apply (simp add: iSuc_Fin take_Suc hd_eq_first take_drop i_take_Suc)+
+ apply (simp add: eSuc_enat take_Suc hd_eq_first take_drop i_take_Suc)+
 apply (case_tac a)
 apply (simp add: hd_eq_first drop_eq_tl i_drop_Suc_conv_tl)+
 done
 
 thm drop_Suc
-lemma gdrop_iSuc: "a \<up>\<^sub>g (iSuc n) = a \<up>\<^sub>g (iSuc 0) \<up>\<^sub>g n"
-by (unfold gtake_def gdrop_def gnth_def gCons_def, case_tac n, case_tac a, simp_all add: iSuc_Fin)
+lemma gdrop_eSuc: "a \<up>\<^sub>g (eSuc n) = a \<up>\<^sub>g (eSuc 0) \<up>\<^sub>g n"
+by (unfold gtake_def gdrop_def gnth_def gCons_def, case_tac n, case_tac a, simp_all add: eSuc_enat)
 
 thm nth_via_drop
-lemma gnth_via_grop: "a \<up>\<^sub>g (Fin n) = x #\<^sub>g b \<Longrightarrow> a !\<^sub>g n = x"
+lemma gnth_via_grop: "a \<up>\<^sub>g (enat n) = x #\<^sub>g b \<Longrightarrow> a !\<^sub>g n = x"
 apply (unfold gdrop_def gnth_def gCons_def)
 apply (case_tac a, case_tac b)
 apply (simp add: nth_via_drop)+
@@ -1255,16 +1255,16 @@ done
 
 thm take_Suc_conv_app_nth[no_vars]
 thm i_take_Suc_conv_app_nth
-lemma gtake_iSuc_conv_gapp_gnth: "
-  Fin n < glength a \<Longrightarrow> a \<down>\<^sub>g Fin (Suc n) = a \<down>\<^sub>g (Fin n) @\<^sub>g FL [a !\<^sub>g n]"
+lemma gtake_eSuc_conv_gapp_gnth: "
+  enat n < glength a \<Longrightarrow> a \<down>\<^sub>g enat (Suc n) = a \<down>\<^sub>g (enat n) @\<^sub>g FL [a !\<^sub>g n]"
 apply (unfold glength_def gtake_def gappend_def gnth_def)
 apply (case_tac a)
 apply (simp add: take_Suc_conv_app_nth i_take_Suc_conv_app_nth)+
 done
 
 thm drop_Suc_conv_tl
-lemma gdrop_iSuc_conv_tl: "
-  Fin n < glength a \<Longrightarrow> a !\<^sub>g n #\<^sub>g a \<up>\<^sub>g Fin (Suc n) = a \<up>\<^sub>g Fin n"
+lemma gdrop_eSuc_conv_tl: "
+  enat n < glength a \<Longrightarrow> a !\<^sub>g n #\<^sub>g a \<up>\<^sub>g enat (Suc n) = a \<up>\<^sub>g enat n"
 apply (unfold glength_def gdrop_def gappend_def gnth_def gCons_def)
 apply (case_tac a)
 apply (simp add: drop_Suc_conv_tl i_drop_Suc_conv_tl)+
@@ -1275,7 +1275,7 @@ lemma glength_gtake[simp]: "glength (a \<down>\<^sub>g n) = min (glength a) n"
 by (unfold glength_def gtake_def, case_tac n, case_tac a, simp+)
 
 thm length_drop
-lemma glength_drop[simp]: "glength (a \<up>\<^sub>g (Fin n)) = glength a - (Fin n)"
+lemma glength_drop[simp]: "glength (a \<up>\<^sub>g (enat n)) = glength a - (enat n)"
 by (unfold glength_def gdrop_def, case_tac a, case_tac n, simp+)
 
 

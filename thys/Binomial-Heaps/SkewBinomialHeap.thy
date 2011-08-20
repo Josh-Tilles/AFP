@@ -1,7 +1,7 @@
 header "Skew Binomial Heaps"
 
 theory SkewBinomialHeap
-imports Main Multiset
+imports Main "~~/src/HOL/Library/Multiset"
 begin
 
 text {* Skew Binomial Queues as specified by Brodal and Okasaki \cite{BrOk96}
@@ -31,7 +31,7 @@ subsection "Datatype"
 datatype ('e, 'a) SkewBinomialTree = 
   Node 'e "'a::linorder" nat "('e , 'a) SkewBinomialTree list"
 
-types ('e, 'a) SkewBinomialQueue = "('e, 'a::linorder) SkewBinomialTree list"
+type_synonym ('e, 'a) SkewBinomialQueue = "('e, 'a::linorder) SkewBinomialTree list"
 
 locale SkewBinomialHeapStruc_loc
 begin
@@ -1422,7 +1422,7 @@ qed
 lemma first_less: "rank_invar (t # bq) \<Longrightarrow> \<forall>t' \<in> set bq. rank t < rank t'" 
   apply(induct bq arbitrary: t) 
   apply (simp)
-  apply (metis List.set.simps(2) insert_code mem_def not_leE 
+  apply (metis List.set.simps(2) insert_iff not_leE 
     not_less_iff_gr_or_eq order_less_le_trans rank_invar.simps(3) 
     rank_invar_cons_down)
   done
@@ -1431,7 +1431,7 @@ lemma first_less_eq:
   "rank_skew_invar (t # bq) \<Longrightarrow> \<forall>t' \<in> set bq. rank t \<le> rank t'" 
   apply(induct bq arbitrary: t) 
   apply (simp)
-  apply (metis List.set.simps(2) insert_code le_trans mem_def 
+  apply (metis List.set.simps(2) insert_iff le_trans
     rank_invar_rank_skew rank_skew_invar.simps(3) rank_skew_rank_invar)
   done
 
@@ -1644,7 +1644,7 @@ text {* Multiset Union *}
 (*MOVE*)
 definition "mset_Union M = fold_mset op + {#} M"
 
-interpretation mplus_left_comm: fun_left_comm 
+interpretation mplus_left_comm: comp_fun_commute 
   "op + :: 'a multiset \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset"
   by unfold_locales
      (auto simp add: union_ac)
@@ -1729,9 +1729,8 @@ and
 ('e,'a) BsSkewElem =
   Element 'e 'a "('e,'a) BsSkewBinomialTree list"
 
-types 
-  ('e,'a) BsSkewHeap = "unit + ('e,'a) BsSkewElem"
-  ('e,'a) BsSkewBinomialQueue = "('e,'a) BsSkewBinomialTree list"
+type_synonym ('e,'a) BsSkewHeap = "unit + ('e,'a) BsSkewElem"
+type_synonym ('e,'a) BsSkewBinomialQueue = "('e,'a) BsSkewBinomialTree list"
 
 
 

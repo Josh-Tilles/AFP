@@ -6,7 +6,7 @@ header {* \chapter{Isabelle Collections Framework Userguide} *}
 theory Userguide
 imports 
   Collections
-  Efficient_Nat
+  "~~/src/HOL/Library/Efficient_Nat"
 begin
 text_raw {*\label{thy:Userguide}*}
 
@@ -368,7 +368,7 @@ text_raw {*\label{sec:userguide.ext}*}
     then the implemented function's arguments.
 
     Consider, for example, the generic algorithm to convert a list to a set\footnote{To keep the presentation simple, 
-    we use a non-tail-recursive version here}. This function requires implementations of the {\em empty} and {\em ins} functions\footnote{Due to name-clashes with @{const [long_names] Map.empty} we have to
+    we use a non-tail-recursive version here}. This function requires implementations of the {\em empty} and {\em ins} functions\footnote{Due to name-clashes with @{const [names_long] Map.empty} we have to
       use slightly different parameter names here}:
     *}
 
@@ -422,7 +422,7 @@ text_raw {*\label{sec:userguide.ext}*}
     *}
 
   -- "The type of the data structure should be available as the two-letter abbreviation: "
-  types 'a lsi' = "'a list"
+  type_synonym 'a lsi' = "'a list"
   -- "The abstraction function:"
   definition "lsi'_\<alpha> == set"
   -- "The invariant: In our case we constrain the lists to be distinct:"

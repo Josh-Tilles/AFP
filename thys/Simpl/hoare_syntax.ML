@@ -78,8 +78,8 @@ end;
 structure Hoare_Syntax: HOARE_SYNTAX =
 struct
 
-val (use_call_tr', setup_use_call_tr') = Attrib.config_bool "hoare_use_call_tr'" (K true);
-val (hide_guards, setup_hide_guards) = Attrib.config_bool "hoare_hide_guards" (K false);
+val use_call_tr' = Attrib.setup_config_bool @{binding hoare_use_call_tr'} (K true);
+val hide_guards = Attrib.setup_config_bool @{binding hoare_hide_guards} (K false);
 
 val globalsN = "globals";
 val localsN = "locals";
@@ -154,8 +154,8 @@ val antiquoteOld = @{syntax_const "_antiquoteOld"};
 
 fun is_global ctxt name =
   let
-    val thy = ProofContext.theory_of ctxt;
-    val consts = ProofContext.consts_of ctxt;
+    val thy = Proof_Context.theory_of ctxt;
+    val consts = Proof_Context.consts_of ctxt;
   in
     (case Sign.const_type thy (Consts.intern_syntax consts name) of
       NONE => is_global_comp ctxt name
@@ -192,8 +192,8 @@ fun statespace_update_tr ctxt ps id n v s =
 
 local
   fun is_record_sel ctxt =
-    let val consts = ProofContext.consts_of ctxt;
-    in can (Consts.the_type consts) o Consts.intern_syntax consts end;
+    let val consts = Proof_Context.consts_of ctxt;
+    in can (Consts.the_const consts) o Consts.intern_syntax consts end;
 in
 
 fun lookup_comp ctxt ps name =
@@ -706,7 +706,7 @@ fun is_pos t =
 
 
 fun infer_type ctxt t =
-  Syntax.check_term ctxt (ProofContext.decode_term ctxt t);
+  Syntax.check_term ctxt (Exn.release (#2 (Syntax_Phases.decode_term ctxt ([], Exn.Res t))));
 
 
 (* NOTE: operations on actual terms *)
@@ -777,7 +777,6 @@ end;
 (* FIXME: make guard function a parameter of all parse-translations that need it.*)
 
 val setup =
-  setup_use_call_tr' #> setup_hide_guards #>
   Context.theory_map (Hoare.install_generate_guard mk_guard);
 
 
@@ -1010,7 +1009,7 @@ fun gen_call_tr prfx dyn grd ctxt p actuals has_args cont =
       | Call false true (SOME c) = Const (@{const_syntax fcall}, dummyT)
       | Call _ _ _ = raise TERM ("gen_call_tr: no proper procedure call", []);
 
-    val (pn, pt) = dest_procname ctxt prfx dyn p;
+    val (pn, pt) = dest_procname ctxt prfx dyn (Term_Position.strip_positions p);
   in
     (case Hoare.get_params pn ctxt of
       SOME formals =>
@@ -1363,7 +1362,7 @@ fun gen_fcall_tr' ctxt init p return result c =
 
     val (v, c') =
       (case c of
-        Abs abs => Syntax.atomic_abs_tr' abs
+        Abs abs => Syntax_Trans.atomic_abs_tr' abs
       | _ => raise Match);
   in
     if Config.get ctxt use_call_tr' then
@@ -1567,7 +1566,7 @@ fun switch_tr' [v, vs] =
 
 fun bind_tr' [e, Abs abs] =
       let
-        val (v, c) = Syntax.atomic_abs_tr' abs;
+        val (v, c) = Syntax_Trans.atomic_abs_tr' abs;
         val e' =
           case e of
             Abs a => e
@@ -1628,9 +1627,9 @@ in
         [] => raise Match
       | ((x, T) :: xs) =>
           let
-            val (x', I') = atomic_abs_tr' (x, T, strip_abs_body I);
-            val (_ , V') = atomic_abs_tr' (x, T, strip_abs_body V);
-            val (_ , c') = atomic_abs_tr' (x, T, strip_abs_body c);
+            val (x', I') = Syntax_Trans.atomic_abs_tr' (x, T, strip_abs_body I);
+            val (_ , V') = Syntax_Trans.atomic_abs_tr' (x, T, strip_abs_body V);
+            val (_ , c') = Syntax_Trans.atomic_abs_tr' (x, T, strip_abs_body c);
           in
             Syntax.const @{syntax_const "_WhileFix_guard_inv_var"} $
               cond_guards_lst_tr' ctxt (dest_list gs) $ b' $ x' $ I' $ V' $

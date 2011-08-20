@@ -29,11 +29,15 @@ theory Abstract_Rewriting
 imports Main Util
 begin
 
+lemma trancl_mono_set: "r \<subseteq> s \<Longrightarrow> r^+ \<subseteq> s^+"
+  using trancl_mono by auto
+
 text {*
 An abstract rewrite system (ARS) is a binary endorelation, i.e.,
 a binary relation where domain and codomain coincide.
 *}
-type_synonym 'a ars = "('a \<times> 'a) set"
+type_synonym
+  'a ars = "('a \<times> 'a) set"
 
 subsection {* Definitions *}
 
@@ -522,6 +526,13 @@ declare SN_E[elim]
 declare SN_E'[elim]
 declare not_SN_E[Pure.elim, elim]
 
+lemma SN_imp_irreflexive: assumes "SN r" shows "(l,l) \<notin> r"
+proof
+  assume in_gr: "(l,l) \<in> r"
+  with `SN r` show False unfolding SN_defs by auto
+qed
+
+
 lemma WCR_elt_I: "(\<And>b c. (a, b) \<in> A \<Longrightarrow> (a,c) \<in> A \<Longrightarrow> (b, c) \<in> A\<^sup>\<down>) \<Longrightarrow> WCR_elt A a"
 by (simp add: WCR_defs)
 
@@ -650,7 +661,8 @@ text {*
 Infinite sequences over elements of type @{typ "'a"} are represented by functions
 of type @{typ "nat \<Rightarrow> 'a"}.
 *}
-type_synonym 'a iseq = "nat \<Rightarrow> 'a"
+type_synonym
+  'a iseq = "nat \<Rightarrow> 'a"
 
 lemma SN_imp_WN: assumes "SN A" shows "WN A"
 proof -
@@ -1087,19 +1099,16 @@ qed
 lemma SN_elt_conv_accp: "SN_elt {(y,z). g z y} = accp g"
   by (intro ext iffI, rule SN_elt_imp_accp, simp, rule accp_imp_SN_elt, simp)
 
-lemma SN_elt_conv_acc: "SN_elt {(y,z). (z,y) \<in> r} = acc r"
-  unfolding SN_elt_conv_accp using accp_acc_eq 
-  by (intro set_eqI, force simp: mem_def)
+lemma SN_elt_conv_acc: "SN_elt {(y,z). (z,y) \<in> r} = (\<lambda>x. x \<in> acc r)"
+  unfolding SN_elt_conv_accp using accp_acc_eq .
 
 lemma acc_imp_SN_elt: assumes "x \<in> acc r" shows "SN_elt {(y,z). (z,y) \<in> r} x"
   using assms
-  unfolding SN_elt_conv_acc
-  by (simp add: mem_def)
+  unfolding SN_elt_conv_acc .
 
 lemma SN_elt_imp_acc: assumes "SN_elt {(y,z). (z,y) \<in> r} x" shows "x \<in> acc r"
   using assms
-  unfolding SN_elt_conv_acc
-  by (simp add: mem_def)
+  unfolding SN_elt_conv_acc .
 
 
 subsection {* Newman's Lemma *}
@@ -1752,6 +1761,8 @@ proof-
     with noS show False ..
   qed
 qed
+
+lemmas SN_elt_mono = SN_elt_subset
 
 lemma rtrancl_imp_rel_pow': "(x,y) \<in> R^* \<Longrightarrow> \<exists>n. (x,y) \<in> ((R::'a ars) ^^ n)"
 proof (induct rule: rtrancl_induct)
