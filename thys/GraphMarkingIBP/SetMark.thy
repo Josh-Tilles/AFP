@@ -84,7 +84,7 @@ lemma (in graph) trascl_less: "x \<noteq> y \<Longrightarrow> (a, x) \<in> R\<^s
     b = x and a = a and r = R and 
     P = "\<lambda> x. (x \<noteq> y \<longrightarrow>((a,x) \<in> (R \<inter> (-{y})\<times>(-{y}))\<^sup>* \<or> (y,x) \<in> R O (R \<inter> (-{y})\<times>(-{y}))\<^sup>* ))"
     in rtrancl_induct)
-  apply auto
+  apply (auto simp: Compl_insert)
   apply (case_tac "ya = y")
   apply auto
   apply (rule_tac a = a and b = ya and c = z and r = "R \<inter> ((UNIV - {y}) \<times> (UNIV - {y}))" in rtrancl_trans)
@@ -138,7 +138,7 @@ lemma (in graph) init_set [simp]: "x \<in> reach root \<Longrightarrow> x \<note
   apply (simp add: reach_def path_def)
   apply (case_tac "root \<noteq> x")
   apply (drule_tac a = root and x = x and y = root and R = "next" in trascl_less)
-  apply simp_all
+  apply (simp_all add: Compl_insert)
   apply safe
   apply (drule_tac a = root and b = x and R = "(next \<inter> (UNIV - {root}) \<times> (UNIV - {root}))" in rtranclD)
   apply safe
@@ -262,7 +262,7 @@ lemma  (in graph) init_loop_2[simp]: "\<Turnstile> Init {| demonic Q2 |} Loop"
   apply (simp_all)
   apply (simp_all add: reach_def subset_eq)
   apply safe
-  apply simp_all
+  apply (simp_all add: Compl_insert)
   apply (rule rtrancl_into_rtrancl)
   apply (simp_all add: Int_def)
   apply (rule add_set2)
@@ -325,7 +325,7 @@ proof (rule_tac X = "SetMarkInvTerm" in hoare_diagram3)
     apply (simp_all add: SetMarkInv_def)
     done
   show "SUP SetMarkInvTerm \<sqinter> - grd (step SetMark) \<le> SetMarkInvFinal"
-    apply (auto simp add: SetMark_def SetMarkInvFinal_def neg_fun_pred simp del: bool_Compl_def)
+    apply (auto simp add: SetMark_def SetMarkInvFinal_def uminus_apply simp del: bool_Compl_def)
     apply (drule_tac x="I.loop" in spec)
     apply (simp add: Q1_def Q2_def)
     apply auto
@@ -343,7 +343,7 @@ theorem (in graph) SetMark_correct1 [simp]:
   apply simp
   apply safe
   apply (simp_all add: SetMark_def SUP_L_P_def
-       less_pair_def less_I_def not_grd_dgr hoare_choice SetMarkInv_def SetMarkInvFinal_def neg_fun_pred SetMark_def)
+       less_pair_def less_I_def not_grd_dgr hoare_choice SetMarkInv_def SetMarkInvFinal_def uminus_apply SetMark_def)
 
   apply (simp_all add: fun_eq_iff)
   apply safe

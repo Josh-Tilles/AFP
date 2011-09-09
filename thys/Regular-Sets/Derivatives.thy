@@ -1,8 +1,10 @@
+header "Derivatives of regular expressions"
+
+(* Author: Christian Urban *)
+
 theory Derivatives
 imports Regular_Exp
 begin
-
-section {* Leftquotients, Derivatives and Partial Derivatives *}
 
 text{* This theory is based on work by Brozowski \cite{Brzozowski64} and Antimirov \cite{Antimirov95}. *}
 
@@ -69,15 +71,8 @@ lemma Derivs_simps [simp]:
   and   "Derivs (s1 @ s2) A = Derivs s2 (Derivs s1 A)"
 unfolding Derivs_def Deriv_def by auto
 
-(*
-lemma Deriv_insert_eps[simp]: 
-"Deriv a (insert [] A) = Deriv a A"
-by (auto simp: Deriv_def)
-*)
 
-
-
-subsection {* Brozowsky's derivatives of regular expressions *}
+subsection {* Brozowski's derivatives of regular expressions *}
 
 fun
   nullable :: "'a rexp \<Rightarrow> bool"
@@ -120,7 +115,7 @@ lemma Derivs_derivs:
 by (induct s arbitrary: r) (simp_all add: Deriv_deriv)
 
 
-subsection {* Antimirov's partial derivivatives *}
+subsection {* Antimirov's partial derivatives *}
 
 abbreviation
   "Timess rs r \<equiv> {Times r' r | r'. r' \<in> rs}"
@@ -170,7 +165,7 @@ lemma pderivs_Atom:
   shows "pderivs s (Atom c) \<subseteq> {Atom c, One}"
 by (induct s) (simp_all)
 
-subsection {* Relating left-quotients and partial derivivatives *}
+subsection {* Relating left-quotients and partial derivatives *}
 
 lemma Deriv_pderiv:
   shows "Deriv c (lang r) = \<Union> lang ` (pderiv c r)"
@@ -191,7 +186,7 @@ proof (induct s arbitrary: r)
   finally show "Derivs (c # s) (lang r) = \<Union> lang ` pderivs (c # s) r" .
 qed (simp add: Derivs_def)
 
-subsection {* Relating derivivatives and partial derivivatives *}
+subsection {* Relating derivatives and partial derivatives *}
 
 lemma deriv_pderiv:
   shows "(\<Union> lang ` (pderiv c r)) = lang (deriv c r)"
@@ -202,7 +197,7 @@ lemma derivs_pderivs:
 unfolding Derivs_derivs[symmetric] Derivs_pderivs by simp
 
 
-subsection {* Finiteness property of partial derivivatives *}
+subsection {* Finiteness property of partial derivatives *}
 
 definition
   pderivs_lang :: "'a lang \<Rightarrow> 'a rexp \<Rightarrow> 'a rexp set"
@@ -249,7 +244,7 @@ lemma pderivs_lang_Plus [simp]:
 unfolding UNIV1_def pderivs_lang_def by auto
 
 
-text {* Non-empty suffixes of a string (needed for teh cases of @{const Times} and @{const Star} *}
+text {* Non-empty suffixes of a string (needed for the cases of @{const Times} and @{const Star} below) *}
 
 definition
   "PSuf s \<equiv> {v. v \<noteq> [] \<and> (\<exists>u. u @ v = s)}"
@@ -382,48 +377,18 @@ lemma finite_pderivs_lang:
   shows "finite (pderivs_lang A r)"
 by (metis finite_pderivs_lang_UNIV pderivs_lang_subset rev_finite_subset subset_UNIV)
 
-(*
-text {* Relating the Myhill-Nerode relation with left-quotients. *}
 
-lemma MN_Rel_Derivs:
-  shows "x \<approx>A y \<longleftrightarrow> Derivs x A = Derivs y A"
-unfolding Derivs_def str_eq_def
-by auto
+subsection {* A regular expression matcher based on Brozowski's derivatives *}
 
-subsection {*
-  The second direction of the Myhill-Nerode theorem using
-  partial derivivatives.
-*}
+fun
+  matcher :: "'a rexp \<Rightarrow> 'a list \<Rightarrow> bool"
+where
+  "matcher r s = nullable (derivs s r)"
 
-lemma Myhill_Nerode3:
-  fixes r::"'a rexp"
-  shows "finite (UNIV // \<approx>(lang r))"
-proof -
-  have "finite (UNIV // =(\<lambda>x. pderivs x r)=)"
-  proof - 
-    have "range (\<lambda>x. pderivs x r) \<subseteq> Pow (pderivs_lang UNIV r)"
-      unfolding pderivs_lang_def by auto
-    moreover 
-    have "finite (Pow (pderivs_lang UNIV r))" by (simp add: finite_pderivs_lang)
-    ultimately
-    have "finite (range (\<lambda>x. pderivs x r))"
-      by (simp add: finite_subset)
-    then show "finite (UNIV // =(\<lambda>x. pderivs x r)=)" 
-      by (rule finite_eq_tag_rel)
-  qed
-  moreover 
-  have "=(\<lambda>x. pderivs x r)= \<subseteq> \<approx>(lang r)"
-    unfolding tag_eq_def
-    by (auto simp add: MN_Rel_Derivs Derivs_pderivs)
-  moreover 
-  have "equiv UNIV =(\<lambda>x. pderivs x r)="
-  and  "equiv UNIV (\<approx>(lang r))"
-    unfolding equiv_def refl_on_def sym_def trans_def
-    unfolding tag_eq_def str_eq_def
-    by auto
-  ultimately show "finite (UNIV // \<approx>(lang r))" 
-    by (rule refined_partition_finite)
-qed
-*)
+lemma matcher_correctness:
+  shows "matcher r s \<longleftrightarrow> s \<in> lang r"
+by (induct s arbitrary: r)
+   (simp_all add: nullable_iff Deriv_deriv[symmetric] Deriv_def)
+
 
 end
