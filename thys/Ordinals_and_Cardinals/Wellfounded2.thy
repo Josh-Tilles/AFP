@@ -2,7 +2,8 @@ header {* More on well-founded relations *}
 
 (* author: Andrei Popescu *)
 
-theory Wellfounded2 imports Wellfounded Order_Relation2
+theory Wellfounded2
+imports Wellfounded Order_Relation2 "~~/src/HOL/Library/Wfrec"
 begin
 
 
@@ -165,7 +166,7 @@ proof-
         have "\<forall>a' \<in> A. (a',a) \<notin> r"
         proof(clarify)
           fix a' assume "a' \<in> A" and **: "(a',a) \<in> r"
-          hence "a' \<in> B" using B_def Field_def by fastsimp 
+          hence "a' \<in> B" using B_def Field_def by fastforce 
           thus False using 2 ** by auto
         qed
         thus ?thesis using 2 B_def by auto

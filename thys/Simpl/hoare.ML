@@ -130,17 +130,17 @@ fun dest_Un (Const (@{const_name Lattices.sup}, _) $ t1 $ t2) = dest_Un t1 @ des
   | dest_Un t = [t]
 
 fun UN_const (dT as (Type ("fun", [dT', @{typ bool}]))) rT =
-      Const (@{const_name Complete_Lattice.SUPR}, dT --> (dT' --> rT) --> rT) $ Const (@{const_name Orderings.top}, dT)
+      Const (@{const_name Complete_Lattices.SUPR}, dT --> (dT' --> rT) --> rT) $ Const (@{const_name Orderings.top}, dT)
   | UN_const _ _ = raise Match;
 
-fun mk_UN (x, T, P) = UN_const (HOLogic.mk_setT T) (fastype_of P) $ absfree (x, T, P);
+fun mk_UN (x, T, P) = UN_const (HOLogic.mk_setT T) (fastype_of P) $ absfree (x, T) P;
 
-fun dest_UN (Const (@{const_name Complete_Lattice.SUPR}, _) $ Const (@{const_name Orderings.top}, _) $ Abs (x, T, t)) =
+fun dest_UN (Const (@{const_name Complete_Lattices.SUPR}, _) $ Const (@{const_name Orderings.top}, _) $ Abs (x, T, t)) =
       let val (vars, body) = dest_UN t
       in ((x, T) :: vars, body) end
   | dest_UN t = ([], t);
 
-fun tap_UN (Const (@{const_name Complete_Lattice.SUPR}, _) $ Const (@{const_name Orderings.top}, _) $ t) = SOME t
+fun tap_UN (Const (@{const_name Complete_Lattices.SUPR}, _) $ Const (@{const_name Orderings.top}, _) $ t) = SOME t
   | tap_UN _ = NONE;
 
 
@@ -441,7 +441,7 @@ val triv_Ex_eq = @{thm Hoare.triv_Ex_eq};
 val mex_def = @{thm Hoare.mex_def};
 val meq_def = @{thm Hoare.meq_def};
 val wf_measure = @{thm Wellfounded.wf_measure};
-val wf_same_fst = @{thm Recdef.wf_same_fst};
+val wf_same_fst = @{thm Wfrec.wf_same_fst};
 val wf_inv_image = @{thm Wellfounded.wf_inv_image};
 val wf_lex_prod = @{thm Wellfounded.wf_lex_prod};
 val wf_measure_lex_prod = @{thm Hoare.wf_measure_lex_prod};
@@ -1723,7 +1723,7 @@ fun split_pair_apps thm =
 
                 val args' = maps split (frees ~~ args);
                 val argTs' = maps splitT argTs;
-                val inst = list_abs_free (frees, list_comb (Var (v,argTs' ---> bdyT),args'))
+                val inst = fold_rev absfree frees (list_comb (Var (v,argTs' ---> bdyT), args'))
               in subst@[(var,inst)]
               end
              else subst)
@@ -1748,7 +1748,7 @@ fun mk_split_thms ctxt (vars as _::_)  =
     val pT = foldr1 HOLogic.mk_prodT types;
     val x = (singleton (Name.variant_list names) "x", pT);
     val xp = foldr1 HOLogic.mk_prod free_vars;
-    val tfree_names = Library.foldr OldTerm.add_term_tfree_names (free_vars,[]);
+    val tfree_names = fold Term.add_tfree_names free_vars [];
     val zeta = TFree (singleton (Name.variant_list tfree_names) "z", Sign.defaultS thy);
 
     val split_meta_prop =
@@ -1830,7 +1830,7 @@ fun gen_call_rec_rule specs_name n rule =
   let
     val thy = theory_of_thm rule;
     val maxidx = #maxidx (rep_cterm (cprop_of rule));
-    val vars = map (dest_Var) (OldTerm.term_vars (prop_of rule));
+    val vars = Term.add_vars (prop_of rule) [];
     fun get_type n = the (AList.lookup (op =) vars (n, 0));
     val specsT as (Type ("fun", [Type (_,[assT,Type (_,[pT,_])]), Type (@{type_name bool}, [])])) =
       get_type specs_name;

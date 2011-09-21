@@ -87,11 +87,11 @@ theorem demonic_bottom:
 
 theorem demonic_bottom_top [simp]:
   "demonic \<bottom>  = \<top>"
-  by (simp add: fun_eq_iff inf_fun_def sup_fun_def demonic_def simp_set_function inf_bool_def top_fun_def bot_fun_def)
+  by (simp add: fun_eq_iff inf_fun_def sup_fun_def demonic_def top_fun_def bot_fun_def)
 
 theorem demonic_sup_inf:
   "demonic (Q \<squnion> Q') = demonic Q \<sqinter> demonic Q'"
-  by (simp add: fun_eq_iff inf_fun_def sup_fun_def demonic_def simp_set_function inf_bool_def)
+  by (simp add: fun_eq_iff sup_fun_def inf_fun_def demonic_def Collect_def)
 
 
 
@@ -104,8 +104,10 @@ is correct. If there is no state $s'$
 such that $Q\ s \ s'$, then the angelic update of $Q$ fails in $s$.
 *}
 
-definition
+definition angelic :: "('a \<Rightarrow> 'b :: {semilattice_inf,bot}) \<Rightarrow> 'b \<Rightarrow> 'a set"
+where
   "angelic Q p = {s . (Q s) \<sqinter> p \<noteq> \<bottom>}"
+
 
 lemma mono_angelic[simp]:
   "mono (angelic R)" 
@@ -125,31 +127,30 @@ lemma mono_angelic[simp]:
 
 theorem angelic_bottom [simp]:
   "angelic R \<bottom>  = {}"
-  by (simp add: angelic_def)
+  by (simp add: angelic_def inf_bot_bot)
+
 
 theorem angelic_disjunctive:
   "angelic R ((p::'a::boolean_algebra) \<squnion> q) = angelic R p \<squnion> angelic R q"
-by (simp add: fun_eq_iff inf_fun_def sup_fun_def angelic_def simp_set_function inf_bool_def sup_bool_def inf_sup_distrib1)
+by (simp add: fun_eq_iff inf_fun_def sup_fun_def angelic_def inf_sup_distrib1 Collect_def)
 
 theorem angelic_udisjunctive1:
-  "angelic R ((Sup P)::'a::distributive_complete_lattice) = (SUP p:P . (angelic R p))"
+  "angelic R ((Sup P)::'a::complete_distrib_lattice) = (SUP p:P . (angelic R p))"
   apply (simp add: angelic_def)
-  apply (unfold SUPR_def)
-  apply (simp add: inf_sup_distributivity)
-  apply (unfold SUPR_def)
+  apply (unfold SUP_def)
+  apply (simp add: inf_Sup)
+  apply (unfold SUP_def)
   apply auto
-  apply (unfold Sup_bottom)
-  by auto
+  done
 
 theorem angelic_udisjunctive:
-  "angelic R ((SUP P)::'a::distributive_complete_lattice) = SUP (\<lambda> w . angelic R (P w))"
+  "angelic R ((SUP P)::'a::complete_distrib_lattice) = SUP (\<lambda> w . angelic R (P w))"
   apply (simp add: angelic_def)
-  apply (unfold SUPR_def)
-  apply (simp add: inf_sup_distributivity)
-  apply (unfold SUPR_def)
+  apply (unfold SUP_def)
+  apply (simp add: inf_Sup)
+  apply (unfold SUP_def)
   apply auto
-  apply (unfold Sup_bottom)
-  by auto
+  done
 
 
 subsection "The guard of a statement"

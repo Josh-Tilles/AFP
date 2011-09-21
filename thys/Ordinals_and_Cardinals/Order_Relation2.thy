@@ -2,7 +2,7 @@ header {* Basics on order-like relations *}
 
 (* author: Andrei Popescu *)
 
-theory Order_Relation2 imports Order_Relation
+theory Order_Relation2 imports "~~/src/HOL/Library/Order_Relation"
 begin
 
 
@@ -93,7 +93,7 @@ assumes LI: "Linear_order r" and
         IN1: "a \<in> Field r" and IN2: "b \<in> Field r"
 shows "((a,b) \<in> r) = ((b,a) \<notin> r - Id)"
 using assms unfolding order_on_defs total_on_def antisym_def Id_def refl_on_def by force
- (* Here "fastsimp" works too, but is slower than "force". *)
+ (* Here "fastforce" works too, but is slower than "force". *)
 
 
 subsection {* The upper and lower bounds operators  *} 

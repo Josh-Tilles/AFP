@@ -5,20 +5,20 @@
 header {* \isaheader{The Typing Framework for the JVM}\label{sec:JVM} *}
 
 theory TF_JVM imports
-  "../../Jinja/DFA/Typing_Framework_err" 
+  "../DFA/Typing_Framework_err" 
   EffectMono 
   BVSpec
   "../Common/ExternalCallWF"
 begin
 
-definition exec :: "jvm_prog \<Rightarrow> nat \<Rightarrow> ty \<Rightarrow> ex_table \<Rightarrow> instr list \<Rightarrow> ty\<^isub>i' err step_type"
+definition exec :: "'addr jvm_prog \<Rightarrow> nat \<Rightarrow> ty \<Rightarrow> ex_table \<Rightarrow> 'addr instr list \<Rightarrow> ty\<^isub>i' err step_type"
 where
   "exec G maxs rT et bs \<equiv>
    err_step (size bs) (\<lambda>pc. app (bs!pc) G maxs rT pc (size bs) et) (\<lambda>pc. eff (bs!pc) G pc et)"
 
 locale JVM_sl =
-  fixes P :: jvm_prog and mxs and mxl\<^isub>0
-  fixes Ts :: "ty list" and "is" and xt and T\<^isub>r
+  fixes P :: "'addr jvm_prog" and mxs and mxl\<^isub>0
+  fixes Ts :: "ty list" and "is" :: "'addr instr list" and xt and T\<^isub>r
 
   fixes mxl and A and r and f and app and eff and step
   defines [simp]: "mxl \<equiv> 1+size Ts+mxl\<^isub>0"
@@ -44,9 +44,7 @@ locale start_context = JVM_sl +
   "start \<equiv> OK first # replicate (size is - 1) (OK None)"
 
 
-
 section {* Connecting JVM and Framework *}
-
 
 lemma (in JVM_sl) step_def_exec: "step \<equiv> exec P mxs T\<^isub>r xt is" 
   by (simp add: exec_def)  
@@ -78,21 +76,17 @@ lemma in_listE:
 declare is_relevant_entry_def [simp]
 declare set_drop_subset [simp]
 
-(*
-lemma [simp]: "x \<in> is_type P \<longleftrightarrow> is_type P x"
-by(simp add: mem_def)
-*)
-
 lemma (in start_context) [simp, intro!]: "is_class P Throwable"
 apply(rule converse_subcls_is_class[OF wf])
  apply(rule xcpt_subcls_Throwable[OF _ wf])
  prefer 2
  apply(rule is_class_xcpt[OF _ wf])
-apply(fastsimp simp add: sys_xcpts_def sys_xcpts_list_def)+
+apply(fastforce simp add: sys_xcpts_def sys_xcpts_list_def)+
 done
 
 declare option.splits[split del]
 declare option.case_cong[cong]
+declare is_type_array [simp del]
 
 theorem (in start_context) exec_pres_type:
   "pres_type step (size is) A"
@@ -114,16 +108,16 @@ theorem (in start_context) exec_pres_type:
   -- Load
   apply(clarsimp split: option.splits)
   apply (frule listE_nth_in, assumption)
-  apply(fastsimp split: option.splits)
+  apply(fastforce split: option.splits)
 
   -- Store
   apply clarsimp
   apply(erule disjE)
    apply clarsimp
-  apply(fastsimp split: option.splits)
+  apply(fastforce split: option.splits)
 
   -- Push
-  apply(fastsimp simp add: typeof_lit_is_type split: option.splits)
+  apply(fastforce simp add: typeof_lit_is_type split: option.splits)
 
   -- New
   apply (clarsimp)
@@ -132,7 +126,7 @@ theorem (in start_context) exec_pres_type:
   apply (clarsimp)
   apply(rule conjI)
    apply(force split: option.splits)
-  apply fastsimp
+  apply fastforce
 
   -- NewArray
   apply clarsimp
@@ -146,15 +140,15 @@ theorem (in start_context) exec_pres_type:
   -- ALoad
   apply(clarsimp split: split_if_asm)
    apply(rule conjI)
-    apply(fastsimp split: option.splits)
+    apply(fastforce split: option.splits)
    apply(erule allE)+
    apply(erule impE, blast)
    apply arith
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce dest: is_type_ArrayD)
   apply(clarsimp)
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
+   apply(fastforce split: option.splits)
   apply(erule allE)+
   apply(erule impE, blast)
   apply arith
@@ -162,15 +156,15 @@ theorem (in start_context) exec_pres_type:
   -- AStore
   apply(clarsimp split: split_if_asm)
    apply(rule conjI)
-    apply(fastsimp split: option.splits)
+    apply(fastforce split: option.splits)
    apply(erule allE)+
    apply(erule impE, blast)
    apply arith
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
+   apply(fastforce split: option.splits)
   apply(erule allE)+
   apply(erule impE, blast)
   apply arith
@@ -178,15 +172,15 @@ theorem (in start_context) exec_pres_type:
   -- ALength
   apply(clarsimp split: split_if_asm)
    apply(rule conjI)
-    apply(fastsimp split: option.splits)
+    apply(fastforce split: option.splits)
    apply(erule allE)+
    apply(erule impE, blast)
    apply arith
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
+   apply(fastforce split: option.splits)
   apply(erule allE)+
   apply(erule impE, blast)
   apply arith
@@ -195,93 +189,93 @@ theorem (in start_context) exec_pres_type:
   -- Getfield
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp dest: sees_field_is_type)
+   apply(fastforce dest: sees_field_is_type)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Putfield
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Checkcast
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Instanceof
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   defer 
   
   -- Return
-  apply(fastsimp split: option.splits)
+  apply(fastforce split: option.splits)
 
   -- Pop
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Dup
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Swap
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- BinOpInstr
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp intro: WTrt_binop_is_type)
+   apply(fastforce intro: WTrt_binop_is_type)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
   
   -- Goto
-  apply(fastsimp split: option.splits)
+  apply(fastforce split: option.splits)
 
   -- IfFalse
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply(erule disjE)
-   apply fastsimp
+   apply fastforce
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- ThrowExc
   apply(clarsimp)
@@ -289,45 +283,46 @@ theorem (in start_context) exec_pres_type:
    apply(erule allE)+
    apply(erule impE, blast)
    apply(clarsimp split: option.splits)
-  apply fastsimp
+  apply fastforce
 
   -- MEnter
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- MExit
   apply(clarsimp)
   apply(erule disjE)
-   apply(fastsimp)
+   apply(fastforce)
   apply clarsimp
   apply(rule conjI)
-   apply(fastsimp split: option.splits)
-  apply fastsimp
+   apply(fastforce split: option.splits)
+  apply fastforce
 
   -- Invoke
   apply(rename_tac the_s M n)
   apply (clarsimp split: split_if_asm)
     apply(rule conjI)
-     apply(fastsimp split: option.splits)
-    apply fastsimp
+     apply(fastforce split: option.splits)
+    apply fastforce
    apply (erule disjE)
-    apply(clarsimp simp add: external_WT_The_Ex_conv2)
+    apply(clarsimp)
     apply(rule conjI)
      apply(erule in_listE)+
-     apply(erule WT_external_is_type[OF wf])
-     apply simp
+     apply(clarsimp simp add: external_WT.simps)
+     apply(rule external_WT_is_type[OF wf])
+     apply(erule external_WT.intros)
      apply(drule_tac c="a!n" in subsetD, simp)
      apply simp
     apply simp
    apply clarsimp
    apply(rule conjI)
-    apply(fastsimp split: option.splits)
-   apply fastsimp
+    apply(fastforce split: option.splits)
+   apply fastforce
   apply clarsimp
   apply(erule disjE)
    apply clarsimp
@@ -345,6 +340,7 @@ theorem (in start_context) exec_pres_type:
 
 declare option.weak_case_cong[cong]
 declare option.splits[split]
+declare is_type_array[simp]
 
 declare is_relevant_entry_def [simp del]
 declare set_drop_subset [simp del]

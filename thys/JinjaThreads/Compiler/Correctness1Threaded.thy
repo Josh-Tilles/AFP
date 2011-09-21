@@ -8,12 +8,15 @@ theory Correctness1Threaded imports
   J0J1Bisim
 begin
 
-definition lock_oks1 :: "(addr,thread_id) locks \<Rightarrow> (addr,thread_id,(('a,'b) exp \<times> 'c) \<times> (('a,'b) exp \<times> 'c) list) thread_info \<Rightarrow> bool" where
+definition lock_oks1 :: 
+  "('addr,'thread_id) locks 
+  \<Rightarrow> ('addr,'thread_id,(('a,'b,'addr) exp \<times> 'c) \<times> (('a,'b,'addr) exp \<times> 'c) list) thread_info \<Rightarrow> bool" 
+where
   "lock_oks1 ls ts \<equiv> \<forall>t. (case (ts t) of None    \<Rightarrow> (\<forall>l. has_locks (ls\<^sub>f l) t = 0)
                             | \<lfloor>((ex, exs), ln)\<rfloor> \<Rightarrow> (\<forall>l. has_locks (ls\<^sub>f l) t + ln\<^sub>f l = expr_lockss (map fst (ex # exs)) l))"
 
-primrec el_loc_ok :: "expr1 \<Rightarrow> locals1 \<Rightarrow> bool"
-  and els_loc_ok :: "expr1 list \<Rightarrow> locals1 \<Rightarrow> bool"
+primrec el_loc_ok :: "'addr expr1 \<Rightarrow> 'addr locals1 \<Rightarrow> bool"
+  and els_loc_ok :: "'addr expr1 list \<Rightarrow> 'addr locals1 \<Rightarrow> bool"
 where
   "el_loc_ok (new C) xs \<longleftrightarrow> True"
 | "el_loc_ok (newA T\<lfloor>e\<rceil>) xs \<longleftrightarrow> el_loc_ok e xs"
@@ -53,7 +56,7 @@ lemma shows el_loc_ok_not_contains_insync_local_change:
   "\<lbrakk> \<not> contains_insync e; el_loc_ok e xs \<rbrakk> \<Longrightarrow> el_loc_ok e xs'"
   and els_loc_ok_not_contains_insyncs_local_change:
   "\<lbrakk> \<not> contains_insyncs es; els_loc_ok es xs \<rbrakk> \<Longrightarrow> els_loc_ok es xs'"
-by(induct e and es arbitrary: xs xs' and xs xs')(fastsimp)+
+by(induct e and es arbitrary: xs xs' and xs xs')(fastforce)+
 
 lemma el_loc_ok_update: "\<lbrakk> \<B> e n; V < n \<rbrakk> \<Longrightarrow> el_loc_ok e (xs[V := v]) = el_loc_ok e xs"
   and els_loc_ok_update: "\<lbrakk> \<B>s es n; V < n \<rbrakk> \<Longrightarrow> els_loc_ok es (xs[V := v]) = els_loc_ok es xs"
@@ -73,7 +76,7 @@ lemma el_loc_ok_extRet2J [simp]:
   "el_loc_ok e xs \<Longrightarrow> el_loc_ok (extRet2J e va) xs"
 by(cases va) auto
 
-definition el_loc_ok1 :: "((nat, nat) exp \<times> val list) \<times> ((nat, nat) exp \<times> val list) list \<Rightarrow> bool"
+definition el_loc_ok1 :: "((nat, nat, 'addr) exp \<times> 'addr locals1) \<times> ((nat, nat, 'addr) exp \<times> 'addr locals1) list \<Rightarrow> bool"
   where "el_loc_ok1 = (\<lambda>((e, xs), exs). el_loc_ok e xs \<and> sync_ok e \<and> (\<forall>(e,xs)\<in>set exs. el_loc_ok e xs \<and> sync_ok e))"
 
 lemma el_loc_ok1_simps:
@@ -128,7 +131,7 @@ lemma lock_oks1I:
   "\<lbrakk> \<And>t l. ts t = None \<Longrightarrow> has_locks (ls\<^sub>f l) t = 0;
      \<And>t e x exs ln l. ts t = \<lfloor>(((e, x), exs), ln)\<rfloor> \<Longrightarrow> has_locks (ls\<^sub>f l) t + ln\<^sub>f l= expr_locks e l + expr_lockss (map fst exs) l \<rbrakk>
   \<Longrightarrow> lock_oks1 ls ts"
-apply(fastsimp simp add: lock_oks1_def)
+apply(fastforce simp add: lock_oks1_def)
 done
 
 lemma lock_oks1E:
@@ -136,7 +139,7 @@ lemma lock_oks1E:
      \<forall>t. ts t = None \<longrightarrow> (\<forall>l. has_locks (ls\<^sub>f l) t = 0) \<Longrightarrow> Q;
      \<forall>t e x exs ln. ts t = \<lfloor>(((e, x), exs), ln)\<rfloor> \<longrightarrow> (\<forall>l. has_locks (ls\<^sub>f l) t + ln\<^sub>f l = expr_locks e l + expr_lockss (map fst exs) l) \<Longrightarrow> Q \<rbrakk>
   \<Longrightarrow> Q"
-by(fastsimp simp add: lock_oks1_def)
+by(fastforce simp add: lock_oks1_def)
 
 lemma lock_oks1D1:
   "\<lbrakk> lock_oks1 ls ts; ts t = None \<rbrakk> \<Longrightarrow> \<forall>l. has_locks (ls\<^sub>f l) t = 0"
@@ -148,7 +151,7 @@ done
 lemma lock_oks1D2:
   "\<lbrakk> lock_oks1 ls ts; ts t = \<lfloor>(((e, x), exs), ln)\<rfloor> \<rbrakk> 
   \<Longrightarrow> \<forall>l. has_locks (ls\<^sub>f l) t + ln\<^sub>f l = expr_locks e l + expr_lockss (map fst exs) l"
-apply(fastsimp simp add: lock_oks1_def)
+apply(fastforce simp add: lock_oks1_def)
 done
 
 lemma lock_oks1_thr_updI:
@@ -158,9 +161,12 @@ lemma lock_oks1_thr_updI:
 by(rule lock_oks1I)(auto split: split_if_asm dest: lock_oks1D2 lock_oks1D1)
 
 
-definition mbisim_Red1'_Red1 :: "((addr,addr,(expr1 \<times> locals1) \<times> (expr1 \<times> locals1) list,'heap,addr) state, 
-                               (addr,addr,(expr1 \<times> locals1) \<times> (expr1 \<times> locals1) list,'heap,addr) state) bisim"
-where "mbisim_Red1'_Red1 s1 s2 = (s1 = s2 \<and> lock_oks1 (locks s1) (thr s1) \<and> ts_ok (\<lambda>t exexs h. el_loc_ok1 exexs) (thr s1) (shr s1))"
+definition mbisim_Red1'_Red1 ::
+  "(('addr,'thread_id,('addr expr1 \<times> 'addr locals1) \<times> ('addr expr1 \<times> 'addr locals1) list,'heap,'addr) state, 
+    ('addr,'thread_id,('addr expr1 \<times> 'addr locals1) \<times> ('addr expr1 \<times> 'addr locals1) list,'heap,'addr) state) bisim"
+where
+  "mbisim_Red1'_Red1 s1 s2 = 
+  (s1 = s2 \<and> lock_oks1 (locks s1) (thr s1) \<and> ts_ok (\<lambda>t exexs h. el_loc_ok1 exexs) (thr s1) (shr s1))"
 
 lemma sync_ok_blocks:
   "\<lbrakk> length vs = length pns; length Ts = length pns\<rbrakk>
@@ -174,7 +180,7 @@ lemma red_IUF_expr_locks:
   and reds_IUFs_expr_lockss:
   "\<lbrakk> P,t \<turnstile>1 \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; els_loc_ok es (lcl s); IUFs es ta es'; \<lbrace>ta\<rbrace>\<^bsub>l\<^esub>\<^sub>f l = [UnlockFail] \<rbrakk> \<Longrightarrow> expr_lockss es l > 0"
 apply(induct arbitrary: n and n rule: red1_reds1.inducts)
-apply(fastsimp simp add: finfun_upd_apply split: split_if_asm)+
+apply(fastforce simp add: finfun_upd_apply split: split_if_asm)+
 done
 
 lemma shows red1_preserves_el_loc_ok:
@@ -206,7 +212,7 @@ lemma Red1_preserves_el_loc_ok1:
   shows "\<lbrakk> P,t \<turnstile>1 \<langle>ex/exs,m\<rangle> -ta\<rightarrow> \<langle>ex'/exs',m'\<rangle>; el_loc_ok1 (ex, exs) \<rbrakk>  \<Longrightarrow> el_loc_ok1 (ex', exs')"
 apply(erule Red1.cases)
   apply(auto simp add: el_loc_ok1_def dest: red1_preserves_el_loc_ok red1_preserves_sync_ok intro: el_loc_ok_inline_call sync_ok_inline_call)
- apply(fastsimp dest!: sees_wf_mdecl[OF wf] simp add: wf_mdecl_def intro!: el_loc_okI dest: WT1_not_contains_insync intro: not_contains_insync_sync_ok)+
+ apply(fastforce dest!: sees_wf_mdecl[OF wf] simp add: wf_mdecl_def intro!: el_loc_okI dest: WT1_not_contains_insync intro: not_contains_insync_sync_ok)+
 done 
 
 lemma assumes wf: "wf_J1_prog P"
@@ -228,16 +234,16 @@ lemma Red1_el_loc_ok1_new_thread:
   assumes wf: "wf_J1_prog P"
   shows "\<lbrakk> P,t \<turnstile>1 \<langle>ex/exs,m\<rangle> -ta\<rightarrow> \<langle>ex'/exs',m'\<rangle>; NewThread t' exexs m' \<in> set \<lbrace>ta\<rbrace>\<^bsub>t\<^esub> \<rbrakk>
          \<Longrightarrow> el_loc_ok1 exexs"
-by(erule Red1.cases)(fastsimp elim: red1_el_loc_ok1_new_thread[OF wf] simp add: ta_upd_simps)+
+by(erule Red1.cases)(fastforce elim: red1_el_loc_ok1_new_thread[OF wf] simp add: ta_upd_simps)+
 
 lemma Red1'_el_loc_ok: 
   assumes wf: "wf_J1_prog P"
-  shows "lifting_wf (mred1' P) (\<lambda>t exexs h. el_loc_ok1 exexs)"
+  shows "lifting_wf final_expr1 (mred1' P) (\<lambda>t exexs h. el_loc_ok1 exexs)"
 by(unfold_locales)(auto elim: Red1_preserves_el_loc_ok1[OF wf] Red1_el_loc_ok1_new_thread[OF wf])
 
 lemma Red1_el_loc_ok: 
   assumes wf: "wf_J1_prog P"
-  shows "lifting_wf (mred1 P) (\<lambda>t exexs h. el_loc_ok1 exexs)"
+  shows "lifting_wf final_expr1 (mred1 P) (\<lambda>t exexs h. el_loc_ok1 exexs)"
 by(unfold_locales)(auto elim: Red1_preserves_el_loc_ok1[OF wf] Red1_el_loc_ok1_new_thread[OF wf])
 
 lemma Red1_mthr_eq_Red1_mthr':
@@ -264,13 +270,13 @@ proof(intro ext)
 	hence "exs = exs'" and IUF: "IUF (fst ex) ta (fst ex')" by(auto simp add: IUFL_def)
 	with red obtain ta'
 	  where "P,t \<turnstile>1 \<langle>fst ex, (shr s, snd ex)\<rangle> -ta'\<rightarrow> \<langle>fst ex', (m', snd ex')\<rangle>" 
-	  and ta': "ta = extTA2J1 P ta'" by(fastsimp elim!: Red1.cases)
+	  and ta': "ta = extTA2J1 P ta'" by(fastforce elim!: Red1.cases)
 	moreover from elo thrS have "el_loc_ok1 (ex, exs)" by(auto dest: ts_okD)
 	hence "el_loc_ok (fst ex) (snd ex)" by(simp add: el_loc_ok1_def split_beta)
 	moreover from IUF have "IUF (fst ex) ta' (fst ex')" using ta'
 	  by(cases ex)(cases ex', clarsimp)
-	moreover from IUF obtain l where ta: "ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub>UnlockFail\<rightarrow>l\<rbrace>" by(auto dest: IUF_taD)
-	with ta' have "ta' = \<epsilon>\<lbrace>\<^bsub>l\<^esub>UnlockFail\<rightarrow>l\<rbrace>" by(cases ta')(auto simp add: ta_upd_simps)
+	moreover from IUF obtain l where ta: "ta = \<lbrace>UnlockFail\<rightarrow>l\<rbrace>" by(auto dest: IUF_taD)
+	with ta' have "ta' = \<lbrace>UnlockFail\<rightarrow>l\<rbrace>" by(cases ta')(auto simp add: ta_upd_simps)
 	ultimately have "expr_locks (fst ex) l > 0"
 	  by(cases ex, cases ex')(erule red_IUF_expr_locks, auto)
 	moreover from aoe have "lock_actions_ok ((locks s)\<^sub>f l) t (\<lbrace>ta\<rbrace>\<^bsub>l\<^esub>\<^sub>f l)"
@@ -279,7 +285,7 @@ proof(intro ext)
 	with lok thrS have "expr_lockss (map fst (ex # exs)) l = 0"
 	  apply(cases ex)
 	  apply(auto simp add: lock_oks1_def)
-	  apply fastsimp+
+	  apply fastforce+
 	  done
 	hence "expr_locks (fst ex) l = 0" by simp
 	ultimately show False by simp
@@ -292,8 +298,8 @@ proof(intro ext)
     next
       case (redT_acquire t x ln n)
       from `thr s t = \<lfloor>(x, ln)\<rfloor>` `\<not> waiting (wset s t)` `may_acquire_all (locks s) t ln`
-	`0 < ln\<^sub>f n` `s' = (acquire_all (locks s) t ln, (thr s(t \<mapsto> (x, no_wait_locks)), shr s), wset s)`
-      show ?thesis unfolding `tta = (t, \<lambda>\<^isup>f [], [], [], [], convert_RA ln)`
+	`0 < ln\<^sub>f n` `s' = (acquire_all (locks s) t ln, (thr s(t \<mapsto> (x, no_wait_locks)), shr s), wset s, interrupts s)`
+      show ?thesis unfolding `tta = (t, \<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)`
 	by(rule Red1'_mthr.redT_acquire)
     qed
   next
@@ -308,8 +314,8 @@ proof(intro ext)
     next
       case (redT_acquire t x ln n)
       from `thr s t = \<lfloor>(x, ln)\<rfloor>` `\<not> waiting (wset s t)` `may_acquire_all (locks s) t ln`
-	`0 < ln\<^sub>f n` `s' = (acquire_all (locks s) t ln, (thr s(t \<mapsto> (x, no_wait_locks)), shr s), wset s)`
-      show ?thesis unfolding `tta = (t, \<lambda>\<^isup>f [], [], [], [], convert_RA ln)`
+	`0 < ln\<^sub>f n` `s' = (acquire_all (locks s) t ln, (thr s(t \<mapsto> (x, no_wait_locks)), shr s), wset s, interrupts s)`
+      show ?thesis unfolding `tta = (t, \<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)`
 	by(rule Red1_mthr.redT_acquire)
     qed
   qed
@@ -325,7 +331,7 @@ lemma assumes wf: "wf_J1_prog P"
 proof(induct rule: red1_reds1.inducts)
   case (Red1CallExternal s a T M vs ta va h' e' s')
   then obtain C fs ad where subThread: "P \<turnstile> C \<preceq>\<^sup>* Thread" and ext: "extNTA2J1 P (C, run, ad) = (ex, exs)"
-    by(fastsimp dest: red_external_new_thread_sub_thread)
+    by(fastforce dest: red_external_new_thread_sub_thread)
   from sub_Thread_sees_run[OF wf subThread] obtain D body
     where sees: "P \<turnstile> C sees run: []\<rightarrow>Void = body in D" by auto
   from sees_wf_mdecl[OF wf this] obtain T where "P,[Class D] \<turnstile>1 body :: T"
@@ -351,12 +357,12 @@ proof -
   proof(induct rule: red1_reds1.inducts)
     case Red1CallExternal thus ?case
       by(auto simp add: fun_eq_iff contains_insync_conv contains_insyncs_conv finfun_upd_apply elim!: red_external.cases)
-  qed(fastsimp simp add: fun_eq_iff contains_insync_conv contains_insyncs_conv finfun_upd_apply intro: ext)+
+  qed(fastforce simp add: fun_eq_iff contains_insync_conv contains_insyncs_conv finfun_upd_apply)+
   hence "\<lbrakk> P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; sync_ok e; el_loc_ok e (lcl s); \<not> IUF e ta e' \<rbrakk>
         \<Longrightarrow> upd_expr_locks (\<lambda>ad. 0 + (int \<circ> expr_locks e) ad) \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = int \<circ> expr_locks e'"
     and "\<lbrakk> P,t \<turnstile>1 \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; sync_oks es; els_loc_ok es (lcl s); \<not> IUFs es ta es' \<rbrakk>
         \<Longrightarrow> upd_expr_locks (\<lambda>ad. 0 + (int \<circ> expr_lockss es) ad) \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = int \<circ> expr_lockss es'"
-    by(fastsimp intro: ext simp only: upd_expr_locks_add)+
+    by(fastforce simp only: upd_expr_locks_add)+
   thus "\<lbrakk> P,t \<turnstile>1 \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; sync_ok e; el_loc_ok e (lcl s); \<not> IUF e ta e'  \<rbrakk>
         \<Longrightarrow> upd_expr_locks (int o expr_locks e) \<lbrace>ta\<rbrace>\<^bsub>l\<^esub> = int o expr_locks e'"
     and "\<lbrakk> P,t \<turnstile>1 \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; sync_oks es; els_loc_ok es (lcl s); \<not> IUFs es ta es' \<rbrakk>
@@ -438,14 +444,14 @@ proof(cases rule: Red1'_mthr.redT.cases)
 	  next
 	    case False
 	    with Some `t \<noteq> t'` tok 
-	    have "thr s1 t' = \<lfloor>((eX, eXS), LN)\<rfloor>" by(fastsimp dest: redT_updTs_Some[OF _ tok])
+	    have "thr s1 t' = \<lfloor>((eX, eXS), LN)\<rfloor>" by(fastforce dest: redT_updTs_Some[OF _ tok])
 	    with loks tok lao `t \<noteq> t'` show ?thesis by(cases eX)(auto simp add: lock_oks1_def)
 	  qed
 	qed }
       hence "\<forall>l. has_locks ((redT_updLs (locks s1) t \<lbrace>ta\<rbrace>\<^bsub>l\<^esub>)\<^sub>f l) t' + LN\<^sub>f l = expr_lockss (map fst (eX # eXS)) l" .. }
     ultimately show ?thesis using s1' unfolding lock_oks1_def x' by(clarsimp simp del: fun_upd_apply)
   next
-    case (red1Call e a M vs C Ts T body D x)
+    case (red1Call e a M vs U C Ts T body D x)
     from wf `P \<turnstile> C sees M: Ts\<rightarrow>T = body in D`
     obtain T' where "P,Class D # Ts \<turnstile>1 body :: T'"
       by(auto simp add: wf_mdecl_def dest!: sees_wf_mdecl)
@@ -463,9 +469,9 @@ proof(cases rule: Red1'_mthr.redT.cases)
        apply(erule conjE)
        apply(erule disjE)
         apply(force simp add: expr_locks_inline_call_final add_ac)
-       apply(fastsimp simp add: expr_locks_inline_call_final)
+       apply(fastforce simp add: expr_locks_inline_call_final)
       apply(erule_tac x=ta in allE)
-      apply fastsimp
+      apply fastforce
       done
   qed
   moreover from sync `mred1' P t (x, shr s1) ta (x', m')` thrst aoe s1'
@@ -484,7 +490,7 @@ next
      apply(erule allE)+
      apply(erule (1) impE)
      apply(erule_tac x=l in allE)
-     apply fastsimp
+     apply fastforce
     apply(erule may_acquire_allE)
     apply(erule allE)
     apply(erule_tac x=l in allE)
@@ -521,7 +527,7 @@ lemma bisim_J1_J1_start:
   shows "mbisim_Red1'_Red1 (J1_start_state P C M vs) (J1_start_state P C M vs)"
 proof -
   let ?e = "blocks1 0 (Class C#Ts) body"
-  let ?xs = "Null # vs @ replicate (max_vars body) undefined"
+  let ?xs = "Null # vs @ replicate (max_vars body) undefined_value"
 
   from sees_wf_mdecl[OF wf sees] obtain T'
     where B: "\<B> body (Suc (length Ts))"
@@ -533,7 +539,7 @@ proof -
   from wt have "expr_locks ?e = (\<lambda>_. 0)" by(auto intro: WT1_expr_locks)
   thus ?thesis using da sees sv B
     unfolding start_state_def
-    by(fastsimp simp add: mbisim_Red1'_Red1_def lock_oks1_def el_loc_ok1_def contains_insync_conv intro!: ts_okI expr_locks_sync_ok split: split_if_asm intro: el_loc_okI)
+    by(fastforce simp add: mbisim_Red1'_Red1_def lock_oks1_def el_loc_ok1_def contains_insync_conv intro!: ts_okI expr_locks_sync_ok split: split_if_asm intro: el_loc_okI)
 qed
 
 lemma Red1'_Red1_bisim_into_weak:

@@ -72,7 +72,7 @@ proof(rule ccontr)
 
   from \<E>_sequential_completion[OF E wf this, of r'] r'
   obtain E' ws' where "E' \<in> \<E>" "P \<turnstile> (E', ws') \<surd>"
-    and eq: "ltake (Fin r') E = ltake (Fin r') E'"
+    and eq: "ltake (enat r') E = ltake (enat r') E'"
     and sc': "sequentially_consistent P (E', ws')" 
     and r'': "action_tid E r' = action_tid E' r'" "action_obs E r' \<approx> action_obs E' r'"
     and "r' \<in> actions E'"
@@ -81,9 +81,9 @@ proof(rule ccontr)
   from `P \<turnstile> (E', ws') \<surd>` have tsa_ok': "thread_start_actions_ok E'"
     by(rule wf_exec_thread_start_actions_okD)
 
-  from `r' \<in> read_actions E` have "Fin r' < llength E" by(auto elim: read_actions.cases actionsE)
-  moreover from `r' \<in> actions E'` have "Fin r' < llength E'" by(auto elim: actionsE)
-  ultimately have eq': "ltake (Fin (Suc r')) E [\<approx>] ltake (Fin (Suc r')) E'"
+  from `r' \<in> read_actions E` have "enat r' < llength E" by(auto elim: read_actions.cases actionsE)
+  moreover from `r' \<in> actions E'` have "enat r' < llength E'" by(auto elim: actionsE)
+  ultimately have eq': "ltake (enat (Suc r')) E [\<approx>] ltake (enat (Suc r')) E'"
     using eq[THEN eq_into_sim_actions] r''
     by(auto simp add: ltake_Suc_conv_snoc_lnth sim_actions_def split_beta action_tid_def action_obs_def intro!: llist_all2_lappendI)
   from r' have r'': "r' \<in> read_actions E'"
@@ -301,7 +301,7 @@ proof(rule drf_lemma)
     from wfaSn `r \<in> ?C (Suc n)`
     have obs_sim: "action_obs (?E (Suc n)) r \<approx> action_obs E (?\<phi> (Suc n) r)" "?\<phi> (Suc n) r \<in> actions E"
       by(blast dest: wf_action_translation_on_actionD)+
-    with obsr have rE: "?\<phi> (Suc n) r \<in> read_actions E" by(fastsimp intro: read_actions.intros)
+    with obsr have rE: "?\<phi> (Suc n) r \<in> read_actions E" by(fastforce intro: read_actions.intros)
     from obs_sim obsr obtain v' 
       where obsrE: "action_obs E (?\<phi> (Suc n) r) = NormalAction (ReadMem ad al v')" by auto
     from wf_exec have "is_write_seen P E ws" by(rule wf_exec_is_write_seenD)
@@ -315,7 +315,7 @@ proof(rule drf_lemma)
     with w_eq have obs_sim_w: "action_obs (?E (Suc n)) ?w \<approx> action_obs E (ws (?\<phi> (Suc n) r))" by simp
     with `ws (?\<phi> (Suc n) r) \<in> write_actions E` `?w \<in> actions (?E (Suc n))`
     have "?w \<in> write_actions (?E (Suc n))"
-      by cases(fastsimp intro: write_actions.intros is_write_action.intros elim!: is_write_action.cases)
+      by cases(fastforce intro: write_actions.intros is_write_action.intros elim!: is_write_action.cases)
     from `(ad, al) \<in> action_loc P E (ws (?\<phi> (Suc n) r))` obs_sim_w 
     have "(ad, al) \<in> action_loc P (?E (Suc n)) ?w" by cases(auto intro: action_loc_aux_intros)
     with r adal_r `?w \<in> write_actions (?E (Suc n))`

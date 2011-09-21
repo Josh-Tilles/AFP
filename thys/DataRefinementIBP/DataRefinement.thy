@@ -20,7 +20,7 @@ theorem datarefinement1:
   "mono S \<Longrightarrow> ((angelic R) o (assert p) o (demonic Q) \<le> S) = (\<forall> s . \<Turnstile> {s' . R s' s \<and> p s} {| S |} (Q s))"
   apply (simp add: le_fun_def assert_def angelic_def demonic_def Hoare_def le_bool_def)
   apply safe
-  apply (simp_all add: simp_set_function)
+  apply (simp_all add: Collect_def)
   apply auto
   apply (drule_tac x = "Q s" in spec)
   apply (drule_tac x = "x" in spec)
@@ -34,7 +34,7 @@ theorem datarefinement1:
 
 theorem datarefinement2:
   "mono S \<Longrightarrow> ((angelic R) o (assert p) o (demonic Q) \<le> (S o (angelic R'))) = DataRefinement p Q R R' S"
-  apply (simp_all add: datarefinement1)
+  apply (simp_all add: datarefinement1 mono_comp)
   by (simp_all add: DataRefinement_def Hoare_def subset_eq mem_def)
 
 text{*
@@ -122,7 +122,7 @@ theorem (in DiagramTermination) dgr_data_refinement1:
   apply safe
   apply (rule_tac P = "{s' . s \<in> R i s' \<and> s \<in> SUP P i}" in hoare_pre)
   apply auto
-  apply (simp add: SUPR_def Sup_fun_def Sup_bool_def mem_def)
+  apply (simp add: SUP_def Sup_fun_def Sup_bool_def mem_def)
   by auto
 
 definition
@@ -165,7 +165,7 @@ theorem (in DiagramTermination) Diagram_DataRefinement:
   apply (rule_tac Q="T(i,j)" in data_refinement)
   apply auto
   apply (rule_tac p = "(SUP X i)" in DataRefinement_mono)
-  apply (simp add: SUPR_def Sup_fun_def mem_def)
+  apply (simp add: SUP_def Sup_fun_def mem_def)
   apply auto
   apply (simp add: Sup_bool_def mem_def)
   apply auto

@@ -54,7 +54,7 @@ lemma Prop4B : "ARSsecure A R S c \<Longrightarrow>
 apply (simp add: VDM_valid_def Sec_def) 
 apply clarsimp
 apply (unfold ARSsecure_def RSsecure_def VDM_valid_def)
-apply rule apply fastsimp
+apply rule apply fastforce
 apply rule
 apply (rule, rule) apply (rule_tac x=s in exI, rule, assumption+) 
 apply (rule, rule, erule exE, erule conjE) apply fast
@@ -235,9 +235,9 @@ lemma IF_alg_derivable_from_If:
   "\<lbrakk>(G,b,p):HS_B; (p,G,c1,H):HS; (p,G,c2,H):HS\<rbrakk> 
   \<Longrightarrow> (p,G,Iff b c1 c2,H):HS"
 apply (erule HS_If) apply (subgoal_tac "LUB p p = p", clarsimp) 
-  apply (subgoal_tac "p = LUB p p", fastsimp) apply (rule LAT7)
+  apply (subgoal_tac "p = LUB p p", fastforce) apply (rule LAT7)
 apply (subgoal_tac "LUB p p = p", clarsimp) 
-  apply (subgoal_tac "p = LUB p p", fastsimp) apply (rule LAT7)
+  apply (subgoal_tac "p = LUB p p", fastforce) apply (rule LAT7)
 done
 
 text{*An easy induction on typing derivations shows the following property.*}
@@ -525,9 +525,9 @@ done
 (*>*)
 lemma Fix_lemma:"Monotone \<phi> \<Longrightarrow> \<phi> (FIX \<phi>) = FIX \<phi>"
 (*<*)
-apply rule
-apply clarsimp  apply (simp add: mem_def) apply (erule Fix2) apply assumption 
-apply clarsimp  apply (simp add: mem_def) apply (erule Fix1) apply assumption 
+apply (rule ext, rule iffI)
+apply clarsimp apply (erule Fix2) apply assumption
+apply clarsimp apply (erule Fix1) apply assumption
 done
 (*>*)
 
@@ -696,11 +696,9 @@ done
 (*>*)
 (*<*)
 lemma FIXvarFIX_: "(PhiWhileP A b \<Phi>) = (\<lambda> (s,t) . (b,A,\<Phi>,s,t):var)"
-apply rule
-apply rule
-apply (case_tac x, clarsimp) apply (simp add: mem_def) apply (drule FIXvar) apply (simp add: mem_def) 
-apply rule
-apply (case_tac x, clarsimp) apply (simp add: mem_def) apply (simp add: varFIXvar) apply (simp add: mem_def) 
+apply (rule ext, rule iffI)
+apply (case_tac x, clarsimp) apply (erule FIXvar)
+apply (case_tac x, clarsimp) apply (simp add: varFIXvar)
 done
 (*>*)
 lemma FIXvarFIX: 
@@ -1224,5 +1222,3 @@ done
 (*>*)
 text{*End of theory HuntSands*}
 end
-
-

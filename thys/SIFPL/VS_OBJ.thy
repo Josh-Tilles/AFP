@@ -360,7 +360,7 @@ apply (erule Sem_eval_cases)
 apply (rule_tac x=\<beta> in exI)
 apply simp
 apply rule
-apply (rule AssignAux) apply fastsimp apply assumption
+apply (rule AssignAux) apply fastforce apply assumption
 apply (rule Pbij_extends_reflexive)
 done
 
@@ -992,9 +992,9 @@ yields a fixed point.*}
 
 lemma Fix_lemma:"Monotone \<phi> \<Longrightarrow> \<phi> (FIX \<phi>) = FIX \<phi>"
 (*<*)
-apply rule
-apply clarsimp  apply (simp add: mem_def) apply (erule Fix2) apply assumption 
-apply clarsimp  apply (simp add: mem_def) apply (erule Fix1) apply assumption 
+apply (rule ext, rule iffI)
+apply clarsimp apply (erule Fix2) apply assumption
+apply clarsimp apply (erule Fix1) apply assumption
 done
 (*>*)
 
@@ -1179,11 +1179,9 @@ done
 (*<*)
 lemma FIXvarFIX_:
   "(PhiWhile b \<Phi>) = (\<lambda> (s,t,\<beta>) . (b,\<Phi>,\<beta>,s,t):var)"
-apply rule
-apply rule
-apply (case_tac x, clarsimp) apply (simp add: mem_def) apply (drule FIXvar) apply (simp add: mem_def) 
-apply rule
-apply (case_tac x, clarsimp) apply (simp add: mem_def) apply (simp add: varFIXvar) apply (simp add: mem_def) 
+apply (rule ext, rule iffI)
+apply (case_tac x, clarsimp) apply (erule FIXvar)
+apply (case_tac x, clarsimp) apply (simp add: varFIXvar) 
 done
 
 lemma FIXvarFIX: "(PhiWhile b) = (\<lambda> \<Phi> . (\<lambda> (s,t,\<beta>) . (b,\<Phi>,\<beta>,s,t):var))"
@@ -1282,7 +1280,7 @@ apply (erule VDMConseq)  apply (simp add:Sec_def) apply clarsimp
          apply (simp add: twiddleObj_def, clarsimp)
          apply (subgoal_tac "\<exists> u . lookup y f = Some u", clarsimp)
          prefer 2 apply (rotate_tac -6, erule thin_rl, erule thin_rl, erule thin_rl)
-                  apply (simp add: LowDom_def) apply fastsimp
+                  apply (simp add: LowDom_def) apply fastforce
          apply (erule_tac x=f in allE, erule_tac x=f in allE, clarsimp)
        apply (erule twiddleVal.cases)
          apply clarsimp apply (erule twiddleVal.cases)
@@ -1330,7 +1328,7 @@ apply (erule VDMConseq)  apply (simp add:Sec_def) apply clarsimp
          apply (simp add: twiddleObj_def, clarsimp)
          apply (subgoal_tac "\<exists> u . lookup y f = Some u", clarsimp)
          prefer 2 apply (rotate_tac -8, erule thin_rl, erule thin_rl, erule thin_rl)
-                  apply (simp add: LowDom_def) apply fastsimp
+                  apply (simp add: LowDom_def) apply fastforce
          apply (erule_tac x=f in allE, erule_tac x=f in allE, clarsimp)
        apply (erule twiddleVal.cases)
          apply clarsimp apply (erule twiddleVal.cases)
@@ -1437,7 +1435,7 @@ apply rule
   apply (rename_tac s h l)
   apply (rule, rule mkId1)
   apply (rule, simp add: mkId2) 
-  apply (rule, simp add: mkId2b Dom_def) apply fastsimp
+  apply (rule, simp add: mkId2b Dom_def) apply fastforce
   apply clarsimp 
   apply rule
     apply clarsimp apply (drule mkId4b) apply clarsimp
@@ -1540,7 +1538,7 @@ apply rule
   (*l=ll*)
     apply clarsimp apply (drule mkId4b) apply clarsimp 
       apply (simp add: twiddleObj_def) 
-        apply (rule, simp add: LowDom_def) apply (rotate_tac -1, erule thin_rl) apply fastsimp
+        apply (rule, simp add: LowDom_def) apply (rotate_tac -1, erule thin_rl) apply fastforce
         apply clarsimp apply rule
         (*f=fa*)
         apply clarsimp

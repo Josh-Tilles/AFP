@@ -4,7 +4,7 @@
 
 header {* \isaheader{Wellformedness conditions for the multithreaded state } *}
 
-theory FWWellform imports FWLocking FWThread FWWait begin
+theory FWWellform imports FWLocking FWThread FWWait FWCondAction begin
 
 text{* Well-formedness property: Locks are held by real threads *}
 
@@ -23,7 +23,7 @@ by(auto simp add: lock_thread_ok_def)
 
 lemma lock_thread_okD:
   "\<lbrakk> lock_thread_ok ls ts; has_lock (ls\<^sub>f l) t \<rbrakk> \<Longrightarrow> \<exists>xw. ts t = \<lfloor>xw\<rfloor>"
-by(fastsimp simp add: lock_thread_ok_def)
+by(fastforce simp add: lock_thread_ok_def)
 
 lemma lock_thread_okD':
   "\<lbrakk> lock_thread_ok ls ts; has_locks (ls\<^sub>f l) t = Suc n \<rbrakk> \<Longrightarrow> \<exists>xw. ts t = \<lfloor>xw\<rfloor>"
@@ -151,11 +151,40 @@ qed
 
 lemma redT_updW_preserve_wset_thread_ok: 
   "\<lbrakk> wset_thread_ok ws ts; redT_updW t ws wa ws'; ts t = \<lfloor>xln\<rfloor> \<rbrakk> \<Longrightarrow> wset_thread_ok ws' ts"
-by(fastsimp simp add: redT_updW.simps intro: wset_thread_okI wset_thread_ok_NotifyAllI wset_thread_ok_upd_ws dest: wset_thread_okD)
+by(fastforce simp add: redT_updW.simps intro: wset_thread_okI wset_thread_ok_NotifyAllI wset_thread_ok_upd_ws dest: wset_thread_okD)
 
 lemma redT_updWs_preserve_wset_thread_ok:
   "\<lbrakk> wset_thread_ok ws ts; redT_updWs t ws was ws'; ts t = \<lfloor>xln\<rfloor> \<rbrakk> \<Longrightarrow> wset_thread_ok ws' ts"
 unfolding redT_updWs_def apply(rotate_tac 1)
 by(induct rule: rtrancl3p_converse_induct)(auto intro: redT_updW_preserve_wset_thread_ok)
+
+text {* Well-formedness condition: Wait sets contain only non-final threads *}
+
+context final_thread begin
+
+definition wset_final_ok :: "('w, 't) wait_sets \<Rightarrow> ('l, 't, 'x) thread_info \<Rightarrow> bool"
+where "wset_final_ok ws ts \<longleftrightarrow> (\<forall>t \<in> dom ws. \<exists>x ln. ts t = \<lfloor>(x, ln)\<rfloor> \<and> \<not> final x)"
+
+lemma wset_final_okI:
+  "(\<And>t w. ws t = \<lfloor>w\<rfloor> \<Longrightarrow> \<exists>x ln. ts t = \<lfloor>(x, ln)\<rfloor> \<and> \<not> final x) \<Longrightarrow> wset_final_ok ws ts"
+unfolding wset_final_ok_def by(blast)
+
+lemma wset_final_okD:
+  "\<lbrakk> wset_final_ok ws ts; ws t = \<lfloor>w\<rfloor> \<rbrakk> \<Longrightarrow> \<exists>x ln. ts t = \<lfloor>(x, ln)\<rfloor> \<and> \<not> final x"
+unfolding wset_final_ok_def by(blast)
+
+lemma wset_final_okE:
+  assumes "wset_final_ok ws ts" "ws t = \<lfloor>w\<rfloor>"
+  obtains x ln where "ts t = \<lfloor>(x, ln)\<rfloor>" "\<not> final x"
+using assms by(blast dest: wset_final_okD)
+
+lemma wset_final_ok_imp_wset_thread_ok:
+  "wset_final_ok ws ts \<Longrightarrow> wset_thread_ok ws ts"
+apply(rule wset_thread_okI)
+apply(rule ccontr)
+apply(auto elim: wset_final_okE)
+done
+
+end
 
 end

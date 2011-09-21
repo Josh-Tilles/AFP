@@ -49,7 +49,7 @@ definition minus :: "'a \<Rightarrow> 'a \<Rightarrow> 'a"  (infixl "-" 65) wher
 
 (* We shall need some object in order to define falsum and verum *)
 definition secret_object1 :: "'a" ("\<iota>") where
-  "\<iota> == SOME x. True"
+  "\<iota> = (SOME x. True)"
 
 end
 
@@ -101,7 +101,7 @@ text {* The following provides the canonical definitions for order and
 context boolean_algebra_II begin
 
 lemma boolean_II_is_boolean:
-   "class.boolean_algebra minus uminus (op \<sqsubseteq>) (op \<sqsubset>) (op \<sqinter>) (op \<squnion>) \<bottom> \<top>"
+   "class.boolean_algebra minus uminus (op \<sqinter>) (op \<sqsubseteq>) (op \<sqsubset>) (op \<squnion>) \<bottom> \<top>"
 apply unfold_locales
 apply (metis inf_absorb inf_assoc inf_comm inf_compl
              less_def less_eq_def minus_def 
@@ -152,7 +152,7 @@ lemma boolean_II_is_huntington:
   "class.huntington_algebra uminus (op \<sqinter>) (op \<squnion>) \<bottom> \<top>"
 proof -
   interpret boolean: 
-    boolean_algebra minus uminus "op \<sqsubseteq>" "op \<sqsubset>" "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
+    boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact boolean_II_is_boolean)
    thus ?thesis by (simp add: boolean.boolean_is_huntington)
 qed
@@ -364,7 +364,7 @@ apply (metis inf_comm inf_assoc sup_absorb
 done
 
 lemma huntington_is_boolean:
-   "class.boolean_algebra minus uminus (op \<sqsubseteq>) (op \<sqsubset>) (op \<sqinter>) (op \<squnion>) \<bottom> \<top>"
+   "class.boolean_algebra minus uminus (op \<sqinter>) (op \<sqsubseteq>) (op \<sqsubset>) (op \<squnion>) \<bottom> \<top>"
 proof -
   interpret boolean_II: 
     boolean_algebra_II uminus "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
@@ -389,7 +389,7 @@ lemma boolean_II_is_robbins:
   "class.robbins_algebra uminus inf sup bot top"
 proof -
   interpret boolean: 
-    boolean_algebra minus uminus "op \<sqsubseteq>" "op \<sqsubset>" "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
+    boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact boolean_II_is_boolean)
    thus ?thesis by (simp add: boolean.boolean_is_robbins)
 qed
@@ -400,7 +400,7 @@ lemma huntington_is_robbins:
   "class.robbins_algebra uminus inf sup bot top"
 proof -
   interpret boolean: 
-    boolean_algebra minus uminus "op \<sqsubseteq>" "op \<sqsubset>" "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
+    boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact huntington_is_boolean)
    thus ?thesis by (simp add: boolean.boolean_is_robbins)
 qed
@@ -510,13 +510,13 @@ proof -
   from this obtain k' l' where A: "Suc(k') = k"
                            and B: "Suc(l') = l" by fast+
   from this have A1: "k \<times> x = k' \<otimes> x"
-             and B1: "l \<times> x = l' \<otimes> x" by fastsimp+
+             and B1: "l \<times> x = l' \<otimes> x" by fastforce+
   from A B have "k + l = Suc(k' + l' + 1)" by arith
   hence "(k + l) \<times> x = (k' + l' + 1) \<otimes> x" by simp
   also from copyp_arith have  
         "\<dots> = k' \<otimes> x \<squnion> l' \<otimes> x" by fast
   also from A1 B1 have
-        "\<dots> = k \<times> x \<squnion> l \<times> x" by fastsimp
+        "\<dots> = k \<times> x \<squnion> l \<times> x" by fastforce
   finally show ?thesis by simp
 qed
 
@@ -541,17 +541,17 @@ text {* The theorem asserting all Robbins algebras are Boolean
 context robbins_algebra begin
 
 definition secret_object2 :: "'a" ("\<alpha>") where
-  "\<alpha> == -(-(\<iota> \<squnion> \<iota> \<squnion> \<iota>) \<squnion> \<iota>)"
+  "\<alpha> = -(-(\<iota> \<squnion> \<iota> \<squnion> \<iota>) \<squnion> \<iota>)"
 definition secret_object3 :: "'a" ("\<beta>") where
-  "\<beta> == \<iota> \<squnion> \<iota>"
+  "\<beta> = \<iota> \<squnion> \<iota>"
 definition secret_object4 :: "'a" ("\<delta>") where
-  "\<delta> == \<beta> \<squnion> (-(\<alpha> \<squnion> -\<beta>) \<squnion> -(\<alpha> \<squnion> -\<beta>))"
+  "\<delta> = \<beta> \<squnion> (-(\<alpha> \<squnion> -\<beta>) \<squnion> -(\<alpha> \<squnion> -\<beta>))"
 definition secret_object5 :: "'a" ("\<gamma>") where
-  "\<gamma> == \<delta> \<squnion> -(\<delta> \<squnion> -\<delta>)"
+  "\<gamma> = \<delta> \<squnion> -(\<delta> \<squnion> -\<delta>)"
 definition winker_object :: "'a" ("\<rho>") where
-  "\<rho> == \<gamma> \<squnion> \<gamma> \<squnion> \<gamma>"
+  "\<rho> = \<gamma> \<squnion> \<gamma> \<squnion> \<gamma>"
 definition fake_bot :: "'a" ("\<bottom>\<bottom>") where
-  "\<bottom>\<bottom> == -(\<rho> \<squnion> -\<rho>)"
+  "\<bottom>\<bottom> = -(\<rho> \<squnion> -\<rho>)"
 
 (* Towards Winker's Identity *)
 
@@ -804,7 +804,7 @@ proof -
   moreover 
   from sup_comm sup_assoc A B
        copyp2[where x="x \<squnion> x" and y="y" and k="0"] 
-  have "-(y \<squnion> x \<squnion> x \<squnion> -(x \<squnion> x \<squnion> -y)) = -y" by fastsimp
+  have "-(y \<squnion> x \<squnion> x \<squnion> -(x \<squnion> x \<squnion> -y)) = -y" by fastforce
   with sup_comm sup_assoc 
   have "-(x \<squnion> x \<squnion> y \<squnion> -(x \<squnion> (x \<squnion> -y))) = -y" by metis
   ultimately have 
@@ -852,7 +852,7 @@ proof -
               sup_assoc have 
     "\<dots> = \<beta> \<squnion> 3 \<times> (\<alpha> \<squnion> -(\<alpha> \<squnion> -\<beta>))" by metis
     also from winker sup_comm two_three[where x="\<alpha>" and y="\<beta>"] have 
-    "\<dots> = \<beta> \<squnion> 2 \<times> (\<alpha> \<squnion> -(\<alpha> \<squnion> -\<beta>))" by fastsimp
+    "\<dots> = \<beta> \<squnion> 2 \<times> (\<alpha> \<squnion> -(\<alpha> \<squnion> -\<beta>))" by fastforce
     also from copy_distrib[where k="2"] 
               multi_winker[where k="2"] 
               sup_assoc two secret_object4_def have 
@@ -869,9 +869,9 @@ proof -
     finally have "-(-(\<delta> \<squnion> -\<delta>) \<squnion> -\<delta>) = \<delta>" by simp
     with two_three[where x="\<delta>" and y="\<delta>"] 
          secret_object5_def sup_comm
-    have "3 \<times> \<gamma> \<squnion> \<delta> = 2 \<times> \<gamma> \<squnion> \<delta>" by fastsimp
+    have "3 \<times> \<gamma> \<squnion> \<delta> = 2 \<times> \<gamma> \<squnion> \<delta>" by fastforce
     with secret_object5_def sup_assoc sup_comm have  
-         "3 \<times> \<gamma> \<squnion> \<gamma> = 2 \<times> \<gamma> \<squnion> \<gamma>" by fastsimp
+         "3 \<times> \<gamma> \<squnion> \<gamma> = 2 \<times> \<gamma> \<squnion> \<gamma>" by fastforce
     with two three four five six have
          "6 \<times> \<gamma> = 3 \<times> \<gamma>" by simp
     moreover have "3 + 3 = (6::nat)" and "3 \<noteq> (0::nat)" by arith+
@@ -887,7 +887,7 @@ proof -
   have I: "\<rho> = -(-\<rho> \<squnion> \<bottom>\<bottom>)"
     by (metis fake_bot_def inf_eq robbins sup_comm sup_idem)
 
-  { fix x; have "x = -(-(x \<squnion> -\<rho> \<squnion> \<bottom>\<bottom>) \<squnion> -(x \<squnion> \<rho>))"
+  { fix x have "x = -(-(x \<squnion> -\<rho> \<squnion> \<bottom>\<bottom>) \<squnion> -(x \<squnion> \<rho>))"
     by (metis I robbins sup_assoc) }
   note II = this
 
@@ -921,15 +921,15 @@ qed
 
 lemma dbl_neg: "- (-x) = x"
 proof -
-  { fix x ; have "\<bottom>\<bottom> = -(-x \<squnion> -(-x))"
+  { fix x have "\<bottom>\<bottom> = -(-x \<squnion> -(-x))"
       by (metis robbins sup_comm sup_ident) 
   } note I = this
 
-  { fix x ; have "-x = -(-(-x \<squnion> -(-(-x))))"
+  { fix x have "-x = -(-(-x \<squnion> -(-(-x))))"
     by (metis I robbins sup_comm sup_ident)
   } note II = this
 
-  { fix x ; have "-(-(-x)) = -(-(-x \<squnion> -(-(-x))))"
+  { fix x have "-(-(-x)) = -(-(-x \<squnion> -(-(-x))))"
     by (metis I II robbins sup_assoc sup_comm sup_ident) 
   } note III = this
 
@@ -954,7 +954,7 @@ proof -
 qed
 
 theorem robbins_is_boolean:
-  "class.boolean_algebra minus uminus (op \<sqsubseteq>) (op \<sqsubset>) (op \<sqinter>) (op \<squnion>) \<bottom> \<top>"
+  "class.boolean_algebra minus uminus (op \<sqinter>) (op \<sqsubseteq>) (op \<sqsubset>) (op \<squnion>) \<bottom> \<top>"
 proof -
   interpret huntington: 
     huntington_algebra uminus "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
@@ -964,8 +964,7 @@ qed
 
 end
 
-no_notation
-       secret_object1 ("\<iota>")
+no_notation secret_object1 ("\<iota>")
    and secret_object2 ("\<alpha>") 
    and secret_object3 ("\<beta>")
    and secret_object4 ("\<delta>")

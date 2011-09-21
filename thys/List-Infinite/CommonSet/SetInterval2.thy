@@ -48,7 +48,7 @@ unfolding strict_mono_on_def strict_mono_def by blast
 
 lemma strict_mono_on_imp_mono_on: "strict_mono_on f A \<Longrightarrow> mono_on f A"
 apply (unfold strict_mono_on_def mono_on_def)
-apply (fastsimp simp: order_le_less)
+apply (fastforce simp: order_le_less)
 done
 
 
@@ -61,7 +61,7 @@ lemma strict_mono_on_imp_inj_on: "
   strict_mono_on f (A::'a::linorder set) \<Longrightarrow> inj_on f A"
 apply (unfold strict_mono_on_def inj_on_def, clarify)
 apply (rule ccontr)
-apply (fastsimp simp add: linorder_neq_iff)
+apply (fastforce simp add: linorder_neq_iff)
 done
 
 
@@ -77,7 +77,7 @@ apply (rule iffI)
  apply blast
 apply (erule conjE)
 apply (unfold inj_on_def mono_on_def strict_mono_on_def, clarify)
-apply fastsimp
+apply fastforce
 done
 
 corollary strict_mono_mono_conv: "
@@ -178,7 +178,7 @@ unfolding surj_on_conv by blast
 lemma surj_on_empty_left: "surj_on f {} B = (B = {})"
 unfolding surj_on_conv by blast
 lemma surj_on_imageI: "surj_on (g \<circ> f) A B \<Longrightarrow> surj_on g (f ` A) B"
-unfolding surj_on_conv by fastsimp
+unfolding surj_on_conv by fastforce
 lemma surj_on_insert_right: "surj_on f A (insert b B) = (surj_on f A B \<and> surj_on f A {b})"
 unfolding surj_on_conv by blast
 lemma surj_on_insert_left: "surj_on f (insert a A) B = (surj_on f A (B - {f a}))"
@@ -236,63 +236,63 @@ thm
   nat_induct'[where ?n0.0=0, simplified]
   nat_induct
 
-lemma inat_induct: "
-  \<lbrakk> P 0; P \<infinity>; \<And>n. P n \<Longrightarrow> P (iSuc n)\<rbrakk> \<Longrightarrow> P n"
+lemma enat_induct: "
+  \<lbrakk> P 0; P \<infinity>; \<And>n. P n \<Longrightarrow> P (eSuc n)\<rbrakk> \<Longrightarrow> P n"
 apply (case_tac n)
  prefer 2 
  apply simp
-apply (simp only: inat_defs)
+apply (simp only: enat_defs)
 apply (rename_tac n1)
 apply (induct_tac n1)
-apply (simp add: inat.splits)+
+apply (simp add: enat.splits)+
 done
 
 
 
-lemma iSuc_imp_Suc_aux_0:
-  "\<lbrakk> \<And>n. P n \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
-by (simp only: inat_defs inat.splits)
-lemma iSuc_imp_Suc_aux_n0:
-  "\<lbrakk> \<And>n. \<lbrakk>Fin n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (iSuc n); n0' \<le> n'; P (Fin n')\<rbrakk> \<Longrightarrow> P (Fin (Suc n'))"
-thm inat_defs
+lemma eSuc_imp_Suc_aux_0:
+  "\<lbrakk> \<And>n. P n \<Longrightarrow> P (eSuc n); n0' \<le> n'; P (enat n')\<rbrakk> \<Longrightarrow> P (enat (Suc n'))"
+by (simp only: enat_defs enat.splits)
+lemma eSuc_imp_Suc_aux_n0:
+  "\<lbrakk> \<And>n. \<lbrakk>enat n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (eSuc n); n0' \<le> n'; P (enat n')\<rbrakk> \<Longrightarrow> P (enat (Suc n'))"
+thm enat_defs
 proof -
-  assume IA: "\<And>n. \<lbrakk>Fin n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (iSuc n)"
+  assume IA: "\<And>n. \<lbrakk>enat n0' \<le> n; P n\<rbrakk> \<Longrightarrow> P (eSuc n)"
     and n0_n: "n0' \<le> n'"
-    and Pn: "P (Fin n')"
+    and Pn: "P (enat n')"
   from n0_n
-  have "(Fin n0' \<le> Fin n')" by simp
+  have "(enat n0' \<le> enat n')" by simp
   with Pn IA
-  have "P (iSuc (Fin n'))" by blast
-  thus "P (Fin (Suc n'))" by (simp only: iSuc_Fin)
+  have "P (eSuc (enat n'))" by blast
+  thus "P (enat (Suc n'))" by (simp only: eSuc_enat)
 qed
 
-lemma inat_induct': "
-  \<lbrakk> P (n0::inat); P \<infinity>; \<And>n. \<lbrakk> n0 \<le> n;  P n \<rbrakk> \<Longrightarrow> P (iSuc n); n0 \<le> n \<rbrakk> \<Longrightarrow> P n"
+lemma enat_induct': "
+  \<lbrakk> P (n0::enat); P \<infinity>; \<And>n. \<lbrakk> n0 \<le> n;  P n \<rbrakk> \<Longrightarrow> P (eSuc n); n0 \<le> n \<rbrakk> \<Longrightarrow> P n"
 apply (case_tac n)
  prefer 2 apply simp
 apply (case_tac n0)
- prefer 2 apply (simp add: inat_defs)
+ prefer 2 apply simp
 apply (rename_tac n' n0', simp)
 
-thm nat_induct'[where ?n0.0="n0'" and n=n' and P="\<lambda>n. P (Fin n)"]
-apply (rule_tac ?n0.0="n0'" and n=n' and P="\<lambda>n. P (Fin n)" in nat_induct')
+thm nat_induct'[where ?n0.0="n0'" and n=n' and P="\<lambda>n. P (enat n)"]
+apply (rule_tac ?n0.0="n0'" and n=n' and P="\<lambda>n. P (enat n)" in nat_induct')
   apply simp
- apply (simp add: iSuc_Fin[symmetric])
+ apply (simp add: eSuc_enat[symmetric])
 apply simp
 done
 
 thm 
-  inat_induct'
-  inat_induct'[where ?n0.0=0, simplified]
-  inat_induct
-thm inat_induct'
+  enat_induct'
+  enat_induct'[where ?n0.0=0, simplified]
+  enat_induct
+thm enat_induct'
 
 thm 
   nat_induct
   nat_induct'
 thm
-  inat_induct
-  inat_induct'
+  enat_induct
+  enat_induct'
 
 
 thm wellorder_class.intro
@@ -387,7 +387,7 @@ lemma div_right_strict_mono_on: "
   \<lbrakk> 0 < (k::nat); \<forall>x\<in>I. \<forall>y\<in>I. x < y \<longrightarrow> x + k \<le> y \<rbrakk> \<Longrightarrow> 
   strict_mono_on (\<lambda>x. x div k) I"
 apply (unfold strict_mono_on_def, clarify)
-apply (fastsimp dest: div_le_mono[of _ _ k])
+apply (fastforce dest: div_le_mono[of _ _ k])
 done
 
 lemma mod_eq_div_right_strict_mono_on: "
@@ -673,7 +673,7 @@ apply (subgoal_tac "\<And>x1 x2 P Q. \<lbrakk>P x1; Q x2; Least P \<le> Least Q\
 apply (unfold min_def, split split_if, safe)
  apply blast
 apply (subst disj_commute)
-apply (fastsimp simp: linorder_not_le)
+apply (fastforce simp: linorder_not_le)
 done
 
 lemma Least_imp_le: "
@@ -874,12 +874,12 @@ by (rule ssubst[OF iMin_Min_conv], assumption+, rule Min_le_Max)
 
 
 
-subsubsection {* @{text Max} for sets over @{text inat} *}
+subsubsection {* @{text Max} for sets over @{text enat} *}
 
 definition
-  iMax :: "nat set \<Rightarrow> inat"
+  iMax :: "nat set \<Rightarrow> enat"
 where
-  "iMax i \<equiv> if (finite i) then (Fin (Max i)) else \<infinity>"
+  "iMax i \<equiv> if (finite i) then (enat (Max i)) else \<infinity>"
 
 lemma iMax_finite_conv: "finite I = (iMax I \<noteq> \<infinity>)"
 by (simp add: iMax_def)
@@ -908,11 +908,11 @@ print_locale! distrib_lattice
 (*print_interps distrib_lattice*)
 thm distrib_lattice_class.axioms
 interpretation min_max2:
-  distrib_lattice "op \<le> :: 'a::linorder \<Rightarrow> 'a \<Rightarrow> bool" "op <" min max
+  distrib_lattice min "op \<le> :: 'a::linorder \<Rightarrow> 'a \<Rightarrow> bool" "op <" max
 ..
 print_theorems
 term distrib_lattice_class
-lemma "class.distrib_lattice (op \<le> ) (op <) (min::('a::linorder \<Rightarrow> 'a \<Rightarrow> 'a)) max"
+lemma "class.distrib_lattice (min::('a::linorder \<Rightarrow> 'a \<Rightarrow> 'a)) (op \<le>) (op <) max"
 print_locale distrib_lattice
 thm distrib_lattice_class.intro
 apply (subgoal_tac "class.order (op \<le>) (op <)")
@@ -945,10 +945,6 @@ apply (rule class.distrib_lattice.intro)
 apply (rule class.distrib_lattice_axioms.intro)
 apply (rule min_max.sup_inf_distrib1)
 done
-
-lemma "class.distrib_lattice (op \<ge>) (op >) (max::('a::linorder \<Rightarrow> 'a \<Rightarrow> 'a)) min"
-thm linorder_class.min_max.dual_distrib_lattice
-by (rule linorder_class.min_max.dual_distrib_lattice)
 
 print_locale Lattices.distrib_lattice
 
@@ -1058,7 +1054,7 @@ thm linorder_class.Min_singleton linorder_class.Max_singleton
 thm singletonI[THEN iMinI, THEN singletonD]
 lemma iMin_singleton[simp]: "iMin {a} = a"
 by (rule singletonI[THEN iMinI, THEN singletonD])
-lemma iMax_singleton[simp]: "iMax {a} = Fin a"
+lemma iMax_singleton[simp]: "iMax {a} = enat a"
 by (simp add: iMax_def)
 
 lemma Max_le_Min_imp_singleton: "
@@ -1077,7 +1073,7 @@ lemma Max_le_Min_conv_singleton: "
 apply (rule iffI)
  apply (rule_tac x="Min A" in exI)
  apply (rule Max_le_Min_imp_singleton, assumption+)
-apply fastsimp
+apply fastforce
 done
 
 
@@ -1324,11 +1320,11 @@ by (rule infinite_nat_iff_asc_chain[THEN iffD1, OF infinite_imp_nonempty])
 
 
 lemma infinite_image_imp_infinite: "infinite (f ` A) \<Longrightarrow> infinite A"
-by fastsimp
+by fastforce
 
 lemma inj_on_imp_infinite_image: "\<lbrakk> infinite A; inj_on f A \<rbrakk> \<Longrightarrow> infinite (f ` A)"
 apply (frule card_image)
-apply (fastsimp simp: card_eq_0_iff)
+apply (fastforce simp: card_eq_0_iff)
 done
 
 lemma inj_on_infinite_image_iff: "inj_on f A \<Longrightarrow> infinite (f ` A) = infinite A"
@@ -1384,7 +1380,7 @@ thm
   image_def
   image_Collect
 lemma "{f x |x. x \<in> A} = (\<Union>x\<in>A. {f x})"
-by fastsimp
+by fastforce
 
 thm Finite_Set.card_partition
 text {* This lemma version drops the superfluous precondition @{term "finite (\<Union>C)"}
@@ -1444,13 +1440,13 @@ thm image_add_atLeastAtMost
 lemma image_add_atLeast:
   "(\<lambda>n::nat. n+k) ` {i..} = {i+k..}" (is "?A = ?B")
 proof 
-  show "?A \<subseteq> ?B" by fastsimp
+  show "?A \<subseteq> ?B" by fastforce
 next
   show "?B \<subseteq> ?A"
   proof
     fix n assume a: "n : ?B"
     hence "n - k \<in> {i..}" by simp
-    moreover have "n = (n - k) + k" using a by fastsimp
+    moreover have "n = (n - k) + k" using a by fastforce
     ultimately show "n \<in> ?A" by blast
   qed
 qed
@@ -1589,13 +1585,13 @@ lemma Max_atLeastAtMost: "m \<le> n \<Longrightarrow> Max {m..(n::nat)} = n"
 by (rule Max_equality[OF _ finite_atLeastAtMost], simp_all)
 
 lemma infinite_atLeast: "infinite {(n::nat)..}"
-by (rule unbounded_k_infinite[of n], fastsimp)
+by (rule unbounded_k_infinite[of n], fastforce)
 lemma infinite_greaterThan: "infinite {(n::nat)<..}"
 by (simp add: atLeast_Suc_greaterThan[symmetric] infinite_atLeast)
 
 lemma infinite_atLeast_int: "infinite {(n::int)..}"
 apply (rule_tac f="\<lambda>x. nat (x - n)" in inj_on_infinite_image_iff[THEN iffD1, rule_format])
- apply (fastsimp simp: inj_on_def)
+ apply (fastforce simp: inj_on_def)
 apply (rule_tac t="((\<lambda>x. nat (x - n)) ` {n..})" and s="{0..}" in subst)
  apply (simp add: set_eq_iff image_iff Bex_def)
  apply (clarify, rename_tac n1)
@@ -1618,7 +1614,7 @@ apply (rule_tac t="(op - n ` {..n})" and s="{0..}" in subst)
  apply (rule allI, rename_tac n1)
  apply (rule iffI)
   apply (rule_tac x="n - n1" in exI, simp)
-  apply fastsimp
+  apply fastforce
 apply (rule infinite_atLeast_int)
 done
 
@@ -1653,7 +1649,7 @@ by (metis card_eq_SucD)
 lemma card_1_singleton_conv: "(card A = Suc 0) = (\<exists>a. A = {a})"
 apply (rule iffI)
 apply (simp add: card_1_imp_singleton)
-apply fastsimp
+apply fastforce
 done
 
 lemma card_gr0_imp_finite: "0 < card A \<Longrightarrow> finite A"
@@ -1661,7 +1657,7 @@ by (rule ccontr, simp)
 lemma card_gr0_imp_not_empty: "(0 < card A) \<Longrightarrow> A \<noteq> {}"
 by (rule ccontr, simp)
 lemma not_empty_card_gr0_conv: "finite A \<Longrightarrow> (A \<noteq> {}) = (0 < card A)"
-by fastsimp
+by fastforce
 
 lemma nat_card_le_Max: "card (A::nat set) \<le> Suc (Max A)"
 apply (case_tac "finite A")
@@ -1670,7 +1666,7 @@ apply (case_tac "finite A")
 thm card_mono[OF finite_atMost, of A "Max A"]
 apply (cut_tac card_mono[OF finite_atMost, of A "Max A"])
  apply simp
-apply fastsimp
+apply fastforce
 done
 
 lemma Int_card1: "finite A \<Longrightarrow> card (A \<inter> B) \<le> card A"
@@ -1706,7 +1702,7 @@ apply simp_all
 
 apply (clarsimp, rename_tac A1 a)
 apply (case_tac "a \<in> A1", force simp: insert_absorb)
-apply (case_tac "f a \<in> f ` A1", fastsimp+)
+apply (case_tac "f a \<in> f ` A1", fastforce+)
 done
 
 thm pigeonhole_principle
@@ -1714,7 +1710,7 @@ corollary pigeonhole_principle_linorder[rule_format]: "
   card (f ` A) < card (A::'a::linorder set) \<Longrightarrow> (\<exists>x\<in>A. \<exists>y\<in>A. x < y \<and> f x = f y)"
 apply (drule pigeonhole_principle, clarify)
 apply (drule neq_iff[THEN iffD1])
-apply fastsimp
+apply fastforce
 done
 
 corollary pigeonhole_mod: "
@@ -1722,7 +1718,7 @@ corollary pigeonhole_mod: "
 apply (rule pigeonhole_principle_linorder)
 apply (rule le_less_trans[of _ "card {..<m}"])
 apply (rule card_mono)
-apply fastsimp+
+apply fastforce+
 done
 corollary pigeonhole_mod2: "
   \<lbrakk> (0::nat) < m; m \<le> c; inj_on f {..c} \<rbrakk> \<Longrightarrow> \<exists>x\<le>c. \<exists>y\<le>c. x < y \<and> f x mod m = f y mod m"

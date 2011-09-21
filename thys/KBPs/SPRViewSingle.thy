@@ -7,7 +7,7 @@
 
 theory SPRViewSingle
 imports KBPsAlg List_local ODList
-  "~~/src/HOL/Library/Mapping" "~~/src/HOL/Library/AssocList" Trie
+  "~~/src/HOL/Library/Mapping" "~~/src/HOL/Library/AList" Trie
 begin
 
 
@@ -336,7 +336,7 @@ lemma spr_sim_singleObs:
   using spr_sim_singleObs' by blast
 
 definition
-  spr_rep_rels :: "'a \<Rightarrow> 's \<times> 's \<Rightarrow> bool"
+  spr_rep_rels :: "'a \<Rightarrow> ('s \<times> 's) set"
 where
   "spr_rep_rels \<equiv> \<lambda>a. { (s, s'). envObs a s' = envObs a s }"
 
@@ -521,7 +521,7 @@ next
     where st': "s = spr_sim_single t'"
       and t'C: "t' \<in> jkbpC"
       and t'O: "spr_jview agent t = spr_jview agent t'"
-    by fastsimp
+    by fastforce
   { fix t''
     assume tt': "(t', t'') \<in> (\<Union>a. relations mkMC a)\<^sup>*"
     from t'C tt' have t''C: "t'' \<in> jkbpC"

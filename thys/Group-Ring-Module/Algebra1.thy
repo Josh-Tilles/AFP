@@ -4114,7 +4114,7 @@ done
 
 lemma Nset2finite_inj:"\<lbrakk>finite A; card A = Suc n; surj_to f {i. i \<le> n} A \<rbrakk> \<Longrightarrow> 
         inj_on f {i. i \<le> n}"
-by (metis Collect_def card_Collect_le_nat eq_card_imp_inj_on finite_Collect_le_nat surj_to_def)
+by (metis card_Collect_le_nat eq_card_imp_inj_on finite_Collect_le_nat surj_to_def)
 
 definition
   zmax :: "[int, int] \<Rightarrow> int" where
@@ -4406,7 +4406,7 @@ apply (simp add:image_def)
  apply blast
  apply (rule subsetI, simp, erule exE, erule conjE)
  apply (case_tac "xa = Suc n", simp)
- apply (metis le_SucE linorder_antisym_conv2 linorder_neq_iff)
+ apply (metis le_SucE)
 done
 
 lemma Nset_injTr0:"\<lbrakk>f \<in> {i. i \<le> (Suc n)} \<rightarrow> {i. i \<le> (Suc n)}; 

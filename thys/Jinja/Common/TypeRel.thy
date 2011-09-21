@@ -5,7 +5,10 @@
 
 header {* \isaheader{Relations between Jinja Types} *}
 
-theory TypeRel imports Decl begin
+theory TypeRel imports 
+  "~~/src/HOL/Library/Transitive_Closure_Table"
+  Decl 
+begin
 
 subsection{* The subclass relations *}
 
@@ -22,10 +25,10 @@ abbreviation
   where "P \<turnstile> C  \<preceq>\<^sup>*  D \<equiv> (C,D) \<in> (subcls1 P)\<^sup>*"
 
 lemma subcls1D: "P \<turnstile> C \<prec>\<^sup>1 D \<Longrightarrow> C \<noteq> Object \<and> (\<exists>fs ms. class P C = Some (D,fs,ms))"
-(*<*)by(erule subcls1.induct)(fastsimp simp add:is_class_def)(*>*)
+(*<*)by(erule subcls1.induct)(fastforce simp add:is_class_def)(*>*)
 
 lemma [iff]: "\<not> P \<turnstile> Object \<prec>\<^sup>1 C"
-(*<*)by(fastsimp dest:subcls1D)(*>*)
+(*<*)by(fastforce dest:subcls1D)(*>*)
 
 lemma [iff]: "(P \<turnstile> Object \<preceq>\<^sup>* C) = (C = Object)"
 (*<*)
@@ -39,7 +42,7 @@ lemma subcls1_def2:
   "subcls1 P =
      (SIGMA C:{C. is_class P C}. {D. C\<noteq>Object \<and> fst (the (class P C))=D})"
 (*<*)
-  by (fastsimp simp:is_class_def dest: subcls1D elim: subcls1I)
+  by (fastforce simp:is_class_def dest: subcls1D elim: subcls1I)
 (*>*)
 
 lemma finite_subcls1: "finite (subcls1 P)"
@@ -205,7 +208,7 @@ proof induct
   case sees_methods_Object thus ?case by auto
 next
   case sees_methods_rec thus ?case
-    by(fastsimp simp:Option.map_def split:option.splits
+    by(fastforce simp:Option.map_def split:option.splits
                 elim:converse_rtrancl_into_rtrancl[OF subcls1I])
 qed
 (*>*)
@@ -218,10 +221,10 @@ shows "\<And>m D. Mm M = Some(m,D) \<Longrightarrow>
 using Cmethods
 proof induct
   case sees_methods_Object thus ?case
-    by(fastsimp dest: Methods.sees_methods_Object)
+    by(fastforce dest: Methods.sees_methods_Object)
 next
   case sees_methods_rec thus ?case
-    by(fastsimp split:option.splits dest: Methods.sees_methods_rec)
+    by(fastforce split:option.splits dest: Methods.sees_methods_rec)
 qed
 (*>*)
 
@@ -276,7 +279,7 @@ where
 lemma sees_method_fun:
   "\<lbrakk>P \<turnstile> C sees M:TS\<rightarrow>T = m in D; P \<turnstile> C sees M:TS'\<rightarrow>T' = m' in D' \<rbrakk>
    \<Longrightarrow> TS' = TS \<and> T' = T \<and> m' = m \<and> D' = D"
- (*<*)by(fastsimp dest: sees_methods_fun simp:Method_def)(*>*)
+ (*<*)by(fastforce dest: sees_methods_fun simp:Method_def)(*>*)
 
 lemma sees_method_decl_above:
   "P \<turnstile> C sees M:Ts\<rightarrow>T = m in D \<Longrightarrow> P \<turnstile> C \<preceq>\<^sup>* D"
@@ -285,12 +288,12 @@ lemma sees_method_decl_above:
 lemma visible_method_exists:
   "P \<turnstile> C sees M:Ts\<rightarrow>T = m in D \<Longrightarrow>
   \<exists>D' fs ms. class P D = Some(D',fs,ms) \<and> map_of ms M = Some(Ts,T,m)"
-(*<*)by(fastsimp simp:Method_def dest!: visible_methods_exist)(*>*)
+(*<*)by(fastforce simp:Method_def dest!: visible_methods_exist)(*>*)
 
 
 lemma sees_method_idemp:
   "P \<turnstile> C sees M:Ts\<rightarrow>T=m in D \<Longrightarrow> P \<turnstile> D sees M:Ts\<rightarrow>T=m in D"
- (*<*)by(fastsimp simp: Method_def intro:sees_methods_idemp)(*>*)
+ (*<*)by(fastforce simp: Method_def intro:sees_methods_idemp)(*>*)
 
 lemma sees_method_decl_mono:
   "\<lbrakk> P \<turnstile> C' \<preceq>\<^sup>* C; P \<turnstile> C sees M:Ts\<rightarrow>T = m in D;
@@ -359,7 +362,7 @@ using sub apply(induct)
  apply(erule converse_rtranclE)
   apply(force)
  apply(drule subcls1D)
- apply fastsimp
+ apply fastforce
 apply(force simp:image_def)
 done
 (*>*)
@@ -370,7 +373,7 @@ assumes fields: "P \<turnstile> C has_fields FDTs"
 shows "((F,D),T) \<in> set FDTs \<Longrightarrow> P \<turnstile> C \<preceq>\<^sup>* D"
 (*<*)
 using fields apply(induct)
- prefer 2 apply fastsimp
+ prefer 2 apply fastforce
 apply clarsimp
 apply(erule disjE)
  apply(clarsimp simp add:image_def)
@@ -385,14 +388,14 @@ assumes fields: "P \<turnstile> C has_fields FDTs"
 shows "((F,D),T) \<in> set FDTs \<Longrightarrow> (D,C) \<notin> (subcls1 P)\<^sup>+"
 (*<*)
 using fields apply(induct)
- prefer 2 apply(fastsimp dest: tranclD)
+ prefer 2 apply(fastforce dest: tranclD)
 apply clarsimp
 apply(erule disjE)
  apply(clarsimp simp add:image_def)
  apply(drule tranclD)
  apply clarify
  apply(frule subcls1D)
- apply(fastsimp dest:all_fields_in_has_fields)
+ apply(fastforce dest:all_fields_in_has_fields)
 apply simp
 apply(blast dest:subcls1I trancl_into_trancl)
 done
@@ -436,7 +439,7 @@ lemma has_field_mono:
 (*<*)
 apply(clarsimp simp:has_field_def)
 apply(drule (1) has_fields_mono_lem)
-apply(fastsimp simp: map_add_def split:option.splits)
+apply(fastforce simp: map_add_def split:option.splits)
 done
 (*>*)
 
@@ -460,7 +463,7 @@ lemma has_visible_field:
 
 lemma sees_field_fun:
   "\<lbrakk>P \<turnstile> C sees F:T in D; P \<turnstile> C sees F:T' in D'\<rbrakk> \<Longrightarrow> T' = T \<and> D' = D"
-(*<*)by(fastsimp simp:sees_field_def dest:has_fields_fun)(*>*)
+(*<*)by(fastforce simp:sees_field_def dest:has_fields_fun)(*>*)
 
 
 lemma sees_field_decl_above:
@@ -485,11 +488,11 @@ lemma sees_field_idemp:
    apply clarsimp
    apply (frule map_of_SomeD)
    apply clarsimp
-   apply (fastsimp intro: has_fields_rec)
+   apply (fastforce intro: has_fields_rec)
   apply clarsimp
   apply (frule map_of_SomeD)
   apply clarsimp
-  apply (fastsimp intro: has_fields_Object)
+  apply (fastforce intro: has_fields_Object)
   done
 (*>*)
 
@@ -515,6 +518,113 @@ lemma field_def2 [simp]: "P \<turnstile> C sees F:T in D \<Longrightarrow> field
 
 lemma method_def2 [simp]: "P \<turnstile> C sees M: Ts\<rightarrow>T = m in D \<Longrightarrow> method P C M = (D,Ts,T,m)"
 (*<*)by (unfold method_def) (auto dest: sees_method_fun)(*>*)
+
+subsection "Code generator setup"
+
+code_pred 
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool)
+  subcls1p 
+.
+declare subcls1_def[unfolded Collect_def, code_pred_def]
+code_pred 
+  (modes: i \<Rightarrow> i \<times> o \<Rightarrow> bool, i \<Rightarrow> i \<times> i \<Rightarrow> bool)
+  [inductify]
+  subcls1 
+.
+definition subcls' where "subcls' G = (subcls1p G)^**"
+code_pred
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool)
+  [inductify]
+  subcls'
+.
+lemma subcls_conv_subcls' [code_inline]:
+  "(subcls1 G)^* = (\<lambda>(C, D). subcls' G C D)"
+by(simp add: subcls'_def subcls1_def rtrancl_def)(simp add: Collect_def)
+
+code_pred 
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool)
+  widen 
+.
+
+code_pred 
+  (modes: i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool)
+  Fields
+.
+
+lemma has_field_code [code_pred_intro]:
+  "\<lbrakk> P \<turnstile> C has_fields FDTs; map_of FDTs (F, D) = \<lfloor>T\<rfloor> \<rbrakk>
+  \<Longrightarrow> P \<turnstile> C has F:T in D"
+by(auto simp add: has_field_def)
+
+code_pred 
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> i \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool)
+  has_field
+by(auto simp add: has_field_def)
+
+lemma sees_field_code [code_pred_intro]:
+  "\<lbrakk> P \<turnstile> C has_fields FDTs; map_of (map (\<lambda>((F, D), T). (F, D, T)) FDTs) F = \<lfloor>(D, T)\<rfloor> \<rbrakk>
+  \<Longrightarrow> P \<turnstile> C sees F:T in D"
+by(auto simp add: sees_field_def)
+
+code_pred 
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> o \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> i \<Rightarrow> bool, 
+          i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool)
+  sees_field
+by(auto simp add: sees_field_def)
+
+code_pred
+  (modes: i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool)
+  Methods 
+.
+
+lemma Method_code [code_pred_intro]:
+  "\<lbrakk> P \<turnstile> C sees_methods Mm; Mm M = \<lfloor>((Ts, T, m), D)\<rfloor> \<rbrakk>
+  \<Longrightarrow> P \<turnstile> C sees M: Ts\<rightarrow>T = m in D"
+by(auto simp add: Method_def)
+
+code_pred
+  (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> o \<Rightarrow> o \<Rightarrow> o \<Rightarrow> bool,
+          i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool)
+  Method
+by(auto simp add: Method_def)
+
+lemma eval_Method_i_i_i_o_o_o_o_conv:
+  "Predicate.eval (Method_i_i_i_o_o_o_o P C M) = (\<lambda>(Ts, T, m, D). P \<turnstile> C sees M:Ts\<rightarrow>T=m in D)"
+by(auto intro: Method_i_i_i_o_o_o_oI elim: Method_i_i_i_o_o_o_oE intro!: ext)
+
+lemma method_code [code]:
+  "method P C M = 
+  Predicate.the (Predicate.bind (Method_i_i_i_o_o_o_o P C M) (\<lambda>(Ts, T, m, D). Predicate.single (D, Ts, T, m)))"
+apply (rule sym, rule the_eqI)
+apply (simp add: method_def eval_Method_i_i_i_o_o_o_o_conv)
+apply (rule arg_cong [where f=The])
+apply (auto simp add: SUP_def Sup_fun_def Sup_bool_def fun_eq_iff)
+done
+
+lemma eval_Fields_conv:
+  "Predicate.eval (Fields_i_i_o P C) = (\<lambda>FDTs. P \<turnstile> C has_fields FDTs)"
+by(auto intro: Fields_i_i_oI elim: Fields_i_i_oE intro!: ext)
+
+lemma fields_code [code]:
+  "fields P C = Predicate.the (Fields_i_i_o P C)"
+by(simp add: fields_def Predicate.the_def eval_Fields_conv)
+
+lemma eval_sees_field_i_i_i_o_o_conv:
+  "Predicate.eval (sees_field_i_i_i_o_o P C F) = (\<lambda>(T, D). P \<turnstile> C sees F:T in D)"
+by(auto intro!: ext intro: sees_field_i_i_i_o_oI elim: sees_field_i_i_i_o_oE)
+
+lemma eval_sees_field_i_i_i_o_i_conv:
+  "Predicate.eval (sees_field_i_i_i_o_i P C F D) = (\<lambda>T. P \<turnstile> C sees F:T in D)"
+by(auto intro!: ext intro: sees_field_i_i_i_o_iI elim: sees_field_i_i_i_o_iE)
+
+lemma field_code [code]:
+  "field P C F = Predicate.the (Predicate.bind (sees_field_i_i_i_o_o P C F) (\<lambda>(T, D). Predicate.single (D, T)))"
+apply (rule sym, rule the_eqI)
+apply (simp add: field_def eval_sees_field_i_i_i_o_o_conv)
+apply (rule arg_cong [where f=The])
+apply (auto simp add: SUP_def Sup_fun_def Sup_bool_def fun_eq_iff)
+done
+
 (*<*)
 end
 (*>*)

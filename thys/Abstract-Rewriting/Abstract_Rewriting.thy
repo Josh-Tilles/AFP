@@ -1050,13 +1050,10 @@ lemma SN_on_conv_acc: "SN_on {(y,z). (z,y) \<in> r} {x} = acc r x"
 
 lemma acc_imp_SN_on:
   assumes "x \<in> acc r" shows "SN_on {(y,z). (z,y) \<in> r} {x}"
-  using assms
-  unfolding SN_on_conv_acc
-  by (simp add: mem_def)
+  using assms unfolding SN_on_conv_acc by (simp add: mem_def)
 
 lemma SN_on_imp_acc: assumes "SN_on {(y,z). (z,y) \<in> r} {x}" shows "x \<in> acc r"
-  using assms
-  unfolding SN_on_conv_acc
+  using assms unfolding SN_on_conv_acc
   by (simp add: mem_def)
 
 

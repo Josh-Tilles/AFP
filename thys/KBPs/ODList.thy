@@ -303,6 +303,7 @@ proof
     apply (simp only: sorted_list_of_set_sort_remdups)
     apply (case_tac x)
     apply (simp add: odlist_Abs_inverse odlist_Abs_inject)
+    apply (simp add: distinct_remdups_id sorted_sort_id)
     done
   ultimately show "finite ?ol" by (blast intro: finite_surj)
 qed
@@ -632,7 +633,7 @@ text{*
 
 A few operations on finite maps.
 
-Unlike the AssocList theory, ODLists give us canonical
+Unlike the AList theory, ODLists give us canonical
 representations, so we can order them. Our tabulate has the wrong type
 (we want to take an odlist, not a list) so we can't use that
 part of the framework.

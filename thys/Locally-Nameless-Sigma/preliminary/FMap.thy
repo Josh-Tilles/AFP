@@ -202,7 +202,7 @@ next
       next
         case False thus ?thesis using z by auto
       qed
-      thus "z \<in> insert x {(x, y). x \<in> dom F \<and> F x = Some y}" by fastsimp
+      thus "z \<in> insert x {(x, y). x \<in> dom F \<and> F x = Some y}" by fastforce
     qed
   thus 
     "{(xa, y). xa \<in> dom (F(fst x \<mapsto> snd x)) \<and> (F(fst x \<mapsto> snd x)) xa = Some y} \<subseteq> 
@@ -287,7 +287,7 @@ proof -
   have "finite (dom F \<times> ran F)" .
   moreover
   have "set_fmap F \<subseteq> dom F \<times> ran F"
-    unfolding set_fmap_def dom_def ran_def by fastsimp
+    unfolding set_fmap_def dom_def ran_def by fastforce
   ultimately
   show ?thesis using finite_subset by auto
 qed
@@ -334,7 +334,7 @@ theorem fmap_induct[rule_format, case_names empty insert]:
   shows "P F'"
 proof -
   {
-    fix F :: "'a \<times> 'b \<Rightarrow> bool" assume "finite F"
+    fix F :: "('a \<times> 'b) set" assume "finite F"
     hence "\<forall>F'. F = set_fmap F' \<longrightarrow> pred_set_fmap P (set_fmap F')"
     proof (induct F)
       case empty thus ?case

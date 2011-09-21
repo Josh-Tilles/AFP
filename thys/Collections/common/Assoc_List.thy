@@ -1,5 +1,5 @@
 header {* \isaheader{The type of associative lists} *}
-theory Assoc_List imports "~~/src/HOL/Library/AssocList" begin
+theory Assoc_List imports "~~/src/HOL/Library/AList" begin
 
 subsection {* Additional operations for associative lists *}
 
@@ -15,7 +15,7 @@ where
 | "update_with_aux v k f (p # ps) = (if (fst p = k) then (k, f (snd p)) # ps else p # update_with_aux v k f ps)"
 
 text {*
-  Do not use @{term "AssocList.delete"} because this traverses all the list even if it has found the key.
+  Do not use @{term "AList.delete"} because this traverses all the list even if it has found the key.
   We do not have to keep going because we use the invariant that keys are distinct.
 *}
 fun delete_aux :: "'key \<Rightarrow> ('key \<times> 'val) list \<Rightarrow> ('key \<times> 'val) list"
@@ -112,7 +112,7 @@ lemma set_delete_aux: "distinct (map fst xs) \<Longrightarrow> set (delete_aux k
 apply(induct xs)
 apply simp_all
 apply clarsimp
-apply(fastsimp intro: rev_image_eqI)
+apply(fastforce intro: rev_image_eqI)
 done
 
 lemma dom_delete_aux: "distinct (map fst ps) \<Longrightarrow> fst ` set (delete_aux k ps) = fst ` set ps - {k}"
@@ -140,7 +140,7 @@ qed
 
 lemma map_of_delete_aux':
   "distinct (map fst xs) \<Longrightarrow> map_of (delete_aux k xs) = (map_of xs)(k := None)"
-by(induct xs)(fastsimp intro: ext simp add: map_of_eq_None_iff fun_upd_twist)+
+by(induct xs)(fastforce intro: ext simp add: map_of_eq_None_iff fun_upd_twist)+
 
 lemma map_of_delete_aux:
   "distinct (map fst xs) \<Longrightarrow> map_of (delete_aux k xs) k' = ((map_of xs)(k := None)) k'"

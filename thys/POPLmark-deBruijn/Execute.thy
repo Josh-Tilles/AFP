@@ -64,15 +64,6 @@ definition
 
 value "normal_forms fact2"
 
-code_module EvalF
-  contains normal_forms Set
-
-code_module Test
-  imports EvalF
-  contains "fact2"
-
-ML "EvalF.normal_forms Test.fact2"
-
 text {*
 Unfortunately, the definition based
 on evaluation contexts from \secref{sec:evaluation-ctxt} is not directly executable.
@@ -103,10 +94,10 @@ proof -
       by (cases fs) (auto intro: valuep.intros)
   next
     case Abs
-    from this Abs' show thesis by auto
+    with Abs' show thesis .
   next
     case TAbs
-    from this TAbs' show thesis by auto
+    with TAbs' show thesis .
   qed
 qed
 

@@ -46,7 +46,7 @@ lemma (in trace_top) suff_open [intro!]:
   by auto
 
 lemma (in trace_top) ttop_carrier: "A\<^sup>\<infinity> = carrier"
-  by (auto simp: carrier_topo B_def suff_def)
+  by (auto simp: carrier_topo suff_def)
 
 lemma (in trace_top) suff_nhd_base:
   assumes unhd: "u \<in> nhds t"
@@ -231,12 +231,12 @@ lemma (in itrace_top) infsuff_open [intro!]:
   by auto
 
 lemma (in itrace_top) itop_carrier: "carrier = A\<^sup>\<omega>"
-  by (auto simp: carrier_topo B_def infsuff_def)
+  by (auto simp: carrier_topo infsuff_def)
 
 lemma itop_sub_ttop_base:
-  fixes A :: "'a \<Rightarrow> bool" 
-    and B :: "('a llist \<Rightarrow> bool) \<Rightarrow> bool" 
-    and C :: "('a llist \<Rightarrow> bool) \<Rightarrow> bool"
+  fixes A :: "'a set" 
+    and B :: "'a llist set set" 
+    and C :: "'a llist set set"
   defines [simp]: "B \<equiv> \<Union>s\<in>A\<^sup>\<star>. {suff A s}" and [simp]: "C \<equiv> \<Union>s\<in>A\<^sup>\<star>. {infsuff A s}"
   shows "C = (\<Union> t\<in>B. {t \<inter> \<Union>C})"
   by (auto simp: infsuff_def suff_def)

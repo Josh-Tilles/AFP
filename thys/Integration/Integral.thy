@@ -1028,14 +1028,14 @@ proof cases
         by (rule measure_mon_conv)
       
       hence "(\<lambda>n. a j * measure M (A j \<inter> B n)) ----> a j * measure M (A j)" 
-        by (simp add: LIMSEQ_const LIMSEQ_mult)
+        by (simp add: tendsto_const tendsto_mult)
     }
     hence "(\<lambda>n. \<Sum>j\<in>S. a j * measure M (A j \<inter> B n)) 
       ----> (\<Sum>j\<in>S. a j * measure M (A j))" 
-      by (rule LIMSEQ_setsum)
+      by (rule tendsto_setsum)
     hence "(\<lambda>n. z* (\<Sum>j\<in>S. a j * measure M (A j \<inter> B n)))
       ----> z*(\<Sum>j\<in>S. a j * measure M (A j))" 
-      by (simp add: LIMSEQ_const LIMSEQ_mult)
+      by (simp add: tendsto_const tendsto_mult)
     
     with 1 xy base have "z*r \<le> y" 
       by (auto simp add: LIMSEQ_le real_mon_conv) 
@@ -1063,11 +1063,11 @@ lemma sfis_nnfis:
   shows "a \<in> nnfis f M"
 (*<*)proof -
   { fix t
-    have "(\<lambda>n. f t)\<up>f t" by (simp add: real_mon_conv LIMSEQ_const)
+    have "(\<lambda>n. f t)\<up>f t" by (simp add: real_mon_conv tendsto_const)
   } hence "(\<lambda>n. f)\<up>f" by (simp add: realfun_mon_conv_iff)
   also 
   from s have "\<And>n. a \<in> sfis f M" .
-  moreover have "(\<lambda>n. a)\<up>a" by (simp add: real_mon_conv LIMSEQ_const)
+  moreover have "(\<lambda>n. a)\<up>a" by (simp add: real_mon_conv tendsto_const)
   
   ultimately show ?thesis by (rule nnfis.base)
 qed(*>*)
@@ -1539,7 +1539,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
       also have "0 \<le> (2::real)^n" 
         by simp
       ultimately have "0 \<le> real i/(2::real)^n" 
-        by (simp add: real_0_le_divide_iff)
+        by (simp add: zero_le_divide_iff)
     } hence "nonnegative (\<lambda>i::nat. real i/(2::real)^n)" 
       by (simp add: nonnegative_def)
    (*   This is a little stronger than it has to be, btw.. x i must only be nn for i in S *)
@@ -1729,7 +1729,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
             also have "\<dots> = real i / (2::real)^n + real (1::nat) / (2 * (2::real)^n)"
               by (simp add: add_divide_distrib)
             finally show ?thesis using un
-              by (simp add: real_0_le_divide_iff)
+              by (simp add: zero_le_divide_iff)
           qed
           note this lef fless
         }
@@ -1766,7 +1766,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
           { fix m
             { fix i assume "i \<in> {..<(m*2^m)}-{0}"
               hence  "0 \<le> real i / (2::real)^m * \<chi> (A m i) t"
-                by (simp add: characteristic_function_def real_0_le_divide_iff)
+                by (simp add: characteristic_function_def zero_le_divide_iff)
             } hence "\<forall>i\<in>{..<(m*2^m)}-{0}. 0 \<le> real i / (2::real)^m * \<chi> (A m i) t"
               by fast
             hence "0 \<le> u m t"  by (simp add: u_def setsum_nonneg)
@@ -1825,7 +1825,7 @@ lemma assumes (*<*)ms:(*>*) "measure_space M" and (*<*)f(*>*): "f \<in> rv M" an
       hence "(\<lambda>n. inverse ((2::real)^n)) ----> 0"
         by (rule LIMSEQ_inverse_zero)
       with lim have "(\<lambda>n. u n t + inverse ((2::real)^n)) ----> c+0"
-        by (rule LIMSEQ_add)
+        by (rule tendsto_add)
       hence "(\<lambda>n. u n t + 1/(2::real)^n) ----> c"
         by (simp add: real_divide_def)
       hence "(\<lambda>n. u (n+n0) t + 1/(2::real)^(n+n0)) ----> c"

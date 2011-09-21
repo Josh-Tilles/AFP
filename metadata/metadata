@@ -45,6 +45,13 @@ topic = Computer Science/Automata and Formal Languages
 date = 2010-05-12
 abstract = This is a library of constructions on regular expressions and languages. It provides the operations of concatenation, Kleene star and derivative on languages. Regular expressions and their meaning are defined. An executable equivalence checker for regular expressions is verified; it does not need automata but works directly on regular expressions. <i>By mapping regular expressions to binary relations, an automatic and complete proof method for (in)equalities of binary relations over union, concatenation and (reflexive) transitive closure is obtained.</i>
 
+[Myhill-Nerode]
+title = The Myhill-Nerode Theorem Based on Regular Expressions
+author = Chunhan Wu, Xingyuan Zhang, Christian Urban <http://www.in.tum.de/~urbanc>
+topic = Computer Science/Automata and Formal Languages
+date = 2011-08-26
+abstract = There are many proofs of the Myhill-Nerode theorem using automata. In this library we give a proof entirely based on regular expressions, since regularity of languages can be conveniently defined using regular expressions (it is more painful in HOL to define regularity in terms of automata).  We prove the first direction of the Myhill-Nerode theorem by solving equational systems that involve regular expressions.  For the second direction we give two proofs: one using tagging-functions and another using partial derivatives. We also establish various closure properties of regular languages. Most details of the theories are described in our ITP 2011 paper.
+
 [Presburger-Automata]
 title = Formalizing the Logic-Automaton Connection
 author = Stefan Berghofer <http://www.in.tum.de/~berghofe>, Markus Reiter
@@ -106,6 +113,13 @@ author = Clemens Ballarin <http://www4.in.tum.de/~ballarin/>
 date = 2005-10-12
 topic = Computer Science/Algorithms
 abstract = We formalise a functional implementation of the FFT algorithm over the complex numbers, and its inverse. Both are shown equivalent to the usual definitions of these operations through Vandermonde matrices. They are also shown to be inverse to each other, more precisely, that composition of the inverse and the transformation yield the identity up to a scalar.
+
+[Gauss-Jordan-Elim-Fun]
+title = Gauss-Jordan Elimination for Matrices Represented as Functions
+author = Tobias Nipkow <http://www.in.tum.de/~nipkow/>
+date = 2011-08-19
+topic = Computer Science/Algorithms, Mathematics/Algebra
+abstract = This theory provides a compact formulation of Gauss-Jordan elimination for matrices represented as functions. Its distinctive feature is succinctness. It is not meant for large computations.
 
 [GraphMarkingIBP]
 title = Verification of the Deutsch-Schorr-Waite Graph Marking Algorithm using Data Refinement
@@ -312,7 +326,7 @@ title = Coinductive
 topic = Computer Science/Functional Programming
 author = Andreas Lochbihler <http://pp.info.uni-karlsruhe.de/personhp/andreas_lochbihler.php>
 date = 2010-02-12
-abstract = This article collects formalisations of general-purpose coinductive data types and sets. Currently, it contains coinductive natural numbers, coinductive lists, i.e. lazy lists or streams, and a library of operations on coinductive lists.<br>The initial theory was contributed by Paulson and Wenzel. Extensions and other coinductive formalisations of general interest are welcome. 
+abstract = This article collects formalisations of general-purpose coinductive data types and sets. Currently, it contains coinductive natural numbers, coinductive lists, i.e. lazy lists or streams, coinductive terminated lists, coinductive resumptions, a library of operations on coinductive lists, and a version of K&ouml;nig's lemma as an application for coinductive lists.<br>The initial theory was contributed by Paulson and Wenzel. Extensions and other coinductive formalisations of general interest are welcome. 
 extra-history =
   Change history:
   [2010-06-10]:
@@ -330,7 +344,10 @@ extra-history =
         (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/f81ce373fa96">f81ce373fa96</a>)<br>
   [2011-02-01]:
         lazy implementation of coinductive (terminated) lists for the code generator
-        (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/6034973dce83">6034973dce83</a>)
+        (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/6034973dce83">6034973dce83</a>)<br>
+  [2011-07-20]:
+        new codatatype resumption
+        (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/811364c776c7">811364c776c7</a>)<br>
 
 [Stream-Fusion]
 title = Stream Fusion
@@ -368,7 +385,7 @@ date = 2007-12-03
 base = HOL/HOL-Word
 topic = Computer Science/Programming Languages/Language Definitions
 abstract = We extend the Jinja source code semantics by Klein and Nipkow with Java-style arrays and threads. Concurrency is captured in a generic framework semantics for adding concurrency through interleaving to a sequential semantics, which features dynamic thread creation, inter-thread communication via shared memory, lock synchronisation and joins. Also, threads can suspend themselves and be notified by others. We instantiate the framework with the adapted versions of both Jinja source and byte code and show type safety for the multithreaded case. Equally, the compiler from source to byte code is extended, for which we prove weak bisimilarity between the source code small step semantics and the defensive Jinja virtual machine. For explanations on the framework semantics and the source code instantiation, see the FOOL 2008 paper by A. Lochbihler.
-depends-on = Jinja, Collections, Coinductive, FinFun
+depends-on = Collections, Coinductive, FinFun
 extra-history = 
   Change history:
   [2008-04-23]:
@@ -399,6 +416,13 @@ extra-history =
         simplified code generator setup
         new random scheduler
         (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/3059dafd013f">3059dafd013f</a>)
+  [2011-07-21]:
+        new interruption model,
+        generalized JMM proof of DRF guarantee,
+        allow class Object to declare methods and fields,
+        simplified subtyping relation, 
+        corrected division and modulo implementation
+        (revision <a href="http://afp.hg.sourceforge.net/hgweb/afp/afp/rev/46e4181ed142">46e4181ed142</a>)
 
 [Locally-Nameless-Sigma]
 title = Locally Nameless Sigma Calculus
@@ -795,6 +819,27 @@ topic = Mathematics/Topology
 abstract = This entry contains two theories. The first, <tt>Topology</tt>, develops the basic notions of general topology. The second, which can be viewed as a demonstration of the first, is called <tt>LList_Topology</tt>. It develops the topology of lazy lists.
 depends-on = Lazy-Lists-II
 
+[Max-Card-Matching]
+title = Maximum Cardinality Matching
+author = Christine Rizkallah <http://www.mpi-inf.mpg.de/homepage/crizkall/>
+date = 2011-07-21
+topic = Mathematics/Graph Theory
+abstract = A <em>matching</em> in a graph <i>G</i> is a subset <i>M</i> of the
+ edges of <i>G</i> such that no two share an endpoint. A matching has maximum
+ cardinality if its cardinality is at least as large as that of any other
+ matching. An <em>odd-set cover</em> <i>OSC</i> of a graph <i>G</i> is a
+ labeling of the nodes of <i>G</i> with integers such that every edge of
+ <i>G</i> is either incident to a node labeled 1 or connects two nodes
+ labeled with the same number <i>i &ge; 2</i>.
+ This article proves Edmonds theorem:
+ 
+ Let <i>M</i> be a matching in a graph <i>G</i> and let <i>OSC</i> be an
+ odd-set cover of <i>G</i>.
+ For any <i>i &ge; 0</i>, let <var>n(i)</var> be the number of nodes
+ labeled <i>i</i>. If <i>|M| = n(1) +
+ &sum;<sub>i &ge; 2</sub>(n(i) div 2)</i>,
+ then <i>M</i> is a maximum cardinality matching.
+
 [Flyspeck-Tame]
 title = Flyspeck I: Tame Graphs 
 author = Gertrud Bauer, Tobias Nipkow <http://www4.in.tum.de/~nipkow>
@@ -811,7 +856,10 @@ title = Hall's Marriage Theorem
 author = Dongchen Jiang <mailto:dongchenjiang@googlemail.com>, Tobias Nipkow <http://www.in.tum.de/~nipkow/>
 date = 2010-12-17
 topic = Mathematics/Combinatorics
-abstract = A proof of Hall's Marriage Theorem due to Halmos and Vaughan.
+abstract = Two proofs of Hall's Marriage Theorem: one due to Halmos and Vaughan, one due to Rado.
+extra-history =
+  Change history:
+  [2011-09-09]: Added Rado's proof
 
 [Ramsey-Infinite]
 title = Ramsey's theorem, infinitary version

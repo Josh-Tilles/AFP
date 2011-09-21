@@ -64,15 +64,16 @@ subsection {* Correctness proof *}
 
 locale J0_J1_heap_base =
   J_heap_base +
-  J1_heap_base +
-  constrains  empty_heap :: "'heap"
-  and new_obj :: "'heap \<Rightarrow> cname \<Rightarrow> ('heap \<times> addr option)"
-  and new_arr :: "'heap \<Rightarrow> ty \<Rightarrow> nat \<Rightarrow> ('heap \<times> addr option)"
-  and typeof_addr :: "'heap \<Rightarrow> addr \<rightharpoonup> ty"
-  and array_length :: "'heap \<Rightarrow> addr \<Rightarrow> nat"
-  and is_volatile :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> bool"
-  and heap_read :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> val \<Rightarrow> bool"
-  and heap_write :: "'heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> val \<Rightarrow> 'heap \<Rightarrow> bool"
+  J1_heap_base + 
+  constrains addr2thread_id :: "('addr :: addr) \<Rightarrow> 'thread_id"
+  and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
+  and empty_heap :: "'heap"
+  and new_obj :: "'heap \<Rightarrow> cname \<Rightarrow> ('heap \<times> 'addr option)"
+  and new_arr :: "'heap \<Rightarrow> ty \<Rightarrow> nat \<Rightarrow> ('heap \<times> 'addr option)"
+  and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> ty"
+  and array_length :: "'heap \<Rightarrow> 'addr \<Rightarrow> nat"
+  and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
+  and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
 begin
 
 lemma ta_bisim01_extTA2J0_extTA2J1:
@@ -111,7 +112,8 @@ lemmas \<tau>red1'r_expr =
   Seq_\<tau>red1'r_xt Cond_\<tau>red1'r_xt Throw_\<tau>red1'r_xt Try_\<tau>red1'r_xt
 
 definition sim_move01 :: 
-  "J1_prog \<Rightarrow> thread_id \<Rightarrow> 'heap J0_thread_action \<Rightarrow> expr \<Rightarrow> expr1 \<Rightarrow> 'heap \<Rightarrow> locals1 \<Rightarrow> 'heap external_thread_action \<Rightarrow> expr1 \<Rightarrow> 'heap \<Rightarrow> locals1 \<Rightarrow> bool"
+  "'addr J1_prog \<Rightarrow> 'thread_id \<Rightarrow> ('addr, 'thread_id, 'heap) J0_thread_action \<Rightarrow> 'addr expr \<Rightarrow> 'addr expr1 \<Rightarrow> 'heap
+  \<Rightarrow> 'addr locals1 \<Rightarrow> ('addr, 'thread_id, 'heap) external_thread_action \<Rightarrow> 'addr expr1 \<Rightarrow> 'heap \<Rightarrow> 'addr locals1 \<Rightarrow> bool"
 where
   "sim_move01 P t ta0 e0 e h xs ta e' h' xs' \<longleftrightarrow> \<not> final e0 \<and>
   (if \<tau>move0 P h e0 then h' = h \<and> ta0 = \<epsilon> \<and> ta = \<epsilon> \<and> \<tau>red1't P t h (e, xs) (e', xs')
@@ -122,7 +124,8 @@ where
       else P,t \<turnstile>1 \<langle>e, (h, xs)\<rangle> -ta\<rightarrow> \<langle>e', (h', xs')\<rangle> \<and> \<not> \<tau>move1 P h e \<and> \<not> IUF e ta e'))"
 
 definition sim_moves01 :: 
-  "J1_prog \<Rightarrow> thread_id \<Rightarrow> 'heap J0_thread_action \<Rightarrow> expr list \<Rightarrow> expr1 list \<Rightarrow> 'heap \<Rightarrow> locals1 \<Rightarrow> 'heap external_thread_action \<Rightarrow> expr1 list \<Rightarrow> 'heap \<Rightarrow> locals1 \<Rightarrow> bool"
+  "'addr J1_prog \<Rightarrow> 'thread_id \<Rightarrow> ('addr, 'thread_id, 'heap) J0_thread_action \<Rightarrow> 'addr expr list \<Rightarrow> 'addr expr1 list \<Rightarrow> 'heap
+  \<Rightarrow> 'addr locals1 \<Rightarrow> ('addr, 'thread_id, 'heap) external_thread_action \<Rightarrow> 'addr expr1 list \<Rightarrow> 'heap \<Rightarrow> 'addr locals1 \<Rightarrow> bool"
 where
   "sim_moves01 P t ta0 es0 es h xs ta es' h' xs' \<longleftrightarrow> \<not> finals es0 \<and>
   (if \<tau>moves0 P h es0 then h' = h \<and> ta0 = \<epsilon> \<and> ta = \<epsilon> \<and> \<tau>reds1't P t h (es, xs) (es', xs')
@@ -162,7 +165,7 @@ lemma sim_move01_expr:
   "sim_move01 P t ta0 (try e0 catch(C V) e2) (try e catch(C' V') e2') h xs ta (try e' catch(C' V') e2') h' xs'"
 using assms
 apply(simp_all add: sim_move01_def final_iff \<tau>red1'r_Val \<tau>red1't_Val split: split_if_asm split del: split_if)
-apply(fastsimp simp add: final_iff \<tau>red1'r_Val \<tau>red1't_Val intro: red1_reds1.intros)+
+apply(fastforce simp add: final_iff \<tau>red1'r_Val \<tau>red1't_Val intro: red1_reds1.intros)+
 done
 
 lemma sim_moves01_expr:
@@ -182,8 +185,8 @@ lemma sim_move01_CallParams:
   "sim_moves01 P t ta0 es0 es h xs ta es' h' xs'
   \<Longrightarrow> sim_move01 P t ta0 (Val v\<bullet>M(es0)) (Val v\<bullet>M(es)) h xs ta (Val v\<bullet>M(es')) h' xs'"
 apply(clarsimp simp add: sim_move01_def sim_moves01_def \<tau>reds1'r_map_Val \<tau>reds1't_map_Val is_vals_conv split: split_if_asm split del: split_if)
-  apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>reds1'r_map_Val \<tau>reds1't_map_Val intro: Call_\<tau>red1'r_param Call1Params)
- apply(rule conjI, fastsimp)
+  apply(fastforce simp add: sim_move01_def sim_moves01_def \<tau>reds1'r_map_Val \<tau>reds1't_map_Val intro: Call_\<tau>red1'r_param Call1Params)
+ apply(rule conjI, fastforce)
  apply(split split_if)
  apply(rule conjI)
   apply(clarsimp simp add: finals_def)
@@ -194,19 +197,19 @@ apply(clarsimp simp add: sim_move01_def sim_moves01_def \<tau>reds1'r_map_Val \<
   apply(rule conjI)
    apply clarify
    apply(simp split: split_if_asm)
-   apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
-  apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
- apply(fastsimp split: split_if_asm simp add: is_vals_conv \<tau>reds1'r_map_Val)
-apply(rule conjI, fastsimp)
-apply(fastsimp simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val \<tau>reds1't_map_Val \<tau>reds1'r_map_Val is_vals_conv intro: Call_\<tau>red1'r_param Call1Params split: split_if_asm)
+   apply(fastforce simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
+  apply(fastforce simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val intro: Call_\<tau>red1'r_param Call1Params)
+ apply(fastforce split: split_if_asm simp add: is_vals_conv \<tau>reds1'r_map_Val)
+apply(rule conjI, fastforce)
+apply(fastforce simp add: sim_move01_def sim_moves01_def \<tau>red1'r_Val \<tau>red1't_Val \<tau>reds1't_map_Val \<tau>reds1'r_map_Val is_vals_conv intro: Call_\<tau>red1'r_param Call1Params split: split_if_asm)
 done
 
 lemma sim_move01_reds:
-  "\<lbrakk> new_obj h C = (h', \<lfloor>a\<rfloor>); ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewObj a C \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewObj a C \<rbrace> \<rbrakk>
+  "\<lbrakk> new_obj h C = (h', \<lfloor>a\<rfloor>); ta0 = \<lbrace>NewObj a C\<rbrace>; ta = \<lbrace>NewObj a C\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (new C) (new C) h xs ta (addr a) h' xs"
   "new_obj h C = (h', None) \<Longrightarrow> sim_move01 P t \<epsilon> (new C) (new C) h xs \<epsilon> (THROW OutOfMemory) h' xs"
   "\<lbrakk> new_arr h T (nat (sint i)) = (h', \<lfloor>a\<rfloor>); 0 <=s i;
-     ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewArr a T (nat (sint i))\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewArr a T (nat (sint i))\<rbrace> \<rbrakk>
+     ta0 = \<lbrace>NewArr a T (nat (sint i))\<rbrace>; ta = \<lbrace>NewArr a T (nat (sint i))\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs ta (addr a) h' xs"
   "i <s 0 \<Longrightarrow> sim_move01 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW NegativeArraySize) h xs"
   "\<lbrakk> new_arr h T (nat (sint i)) = (h', None); 0 <=s i \<rbrakk>
@@ -217,7 +220,8 @@ lemma sim_move01_reds:
   \<Longrightarrow> sim_move01 P t \<epsilon> (Cast T (Val v)) (Cast T (Val v)) h xs \<epsilon> (THROW ClassCast) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; b \<longleftrightarrow> v \<noteq> Null \<and> P \<turnstile> U \<le> T \<rbrakk>
   \<Longrightarrow> sim_move01 P t \<epsilon> ((Val v) instanceof T) ((Val v) instanceof T) h xs \<epsilon> (Val (Bool b)) h xs"
-  "binop bop v1 v2 = Some v \<Longrightarrow> sim_move01 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Val v) h xs"
+  "binop bop v1 v2 = Some (Inl v) \<Longrightarrow> sim_move01 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Val v) h xs"
+  "binop bop v1 v2 = Some (Inr a) \<Longrightarrow> sim_move01 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Throw a) h xs"
   "\<lbrakk> xs!V = v; V < size xs \<rbrakk> \<Longrightarrow> sim_move01 P t \<epsilon> (Var V') (Var V) h xs \<epsilon> (Val v) h xs"
   "V < length xs \<Longrightarrow> sim_move01 P t \<epsilon> (V' := Val v) (V := Val v) h xs \<epsilon> unit h (xs[V := v])"
   "sim_move01 P t \<epsilon> (null\<lfloor>Val v\<rceil>) (null\<lfloor>Val v\<rceil>) h xs \<epsilon> (THROW NullPointer) h xs"
@@ -225,8 +229,8 @@ lemma sim_move01_reds:
   \<Longrightarrow> sim_move01 P t \<epsilon> (addr a\<lfloor>Val (Intg i)\<rceil>) ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW ArrayIndexOutOfBounds) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a);
      heap_read h a (ACell (nat (sint i))) v;
-     ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>; 
-     ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
+     ta0 = \<lbrace>ReadMem a (ACell (nat (sint i))) v\<rbrace>; 
+     ta = \<lbrace>ReadMem a (ACell (nat (sint i))) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (addr a\<lfloor>Val (Intg i)\<rceil>) ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs ta (Val v) h xs"
   "sim_move01 P t \<epsilon> (null\<lfloor>Val v\<rceil> := Val v') (null\<lfloor>Val v\<rceil> := Val v') h xs \<epsilon> (THROW NullPointer) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; i <s 0 \<or> sint i \<ge> int (array_length h a) \<rbrakk>
@@ -235,15 +239,15 @@ lemma sim_move01_reds:
   \<Longrightarrow> sim_move01 P t \<epsilon> (AAss (addr a) (Val (Intg i)) (Val v)) (AAss (addr a) (Val (Intg i)) (Val v)) h xs \<epsilon> (THROW ArrayStore) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a); typeof\<^bsub>h\<^esub> v = Some U; P \<turnstile> U \<le> T;
      heap_write h a (ACell (nat (sint i))) v h'; 
-     ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (ACell (nat (sint i))) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
+     ta0 = \<lbrace>WriteMem a (ACell (nat (sint i))) v\<rbrace>; ta = \<lbrace>WriteMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (AAss (addr a) (Val (Intg i)) (Val v)) (AAss (addr a) (Val (Intg i)) (Val v)) h xs ta unit h' xs"
   "typeof_addr h a = \<lfloor>Array T\<rfloor> \<Longrightarrow> sim_move01 P t \<epsilon> (addr a\<bullet>length) (addr a\<bullet>length) h xs \<epsilon> (Val (Intg (word_of_int (int (array_length h a))))) h xs"
   "sim_move01 P t \<epsilon> (null\<bullet>length) (null\<bullet>length) h xs \<epsilon> (THROW NullPointer) h xs"
 
-  "\<lbrakk> heap_read h a (CField D F) v; ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace> \<rbrakk>
+  "\<lbrakk> heap_read h a (CField D F) v; ta0 = \<lbrace>ReadMem a (CField D F) v\<rbrace>; ta = \<lbrace>ReadMem a (CField D F) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (addr a\<bullet>F{D}) (addr a\<bullet>F{D}) h xs ta (Val v) h xs"
   "sim_move01 P t \<epsilon> (null\<bullet>F{D}) (null\<bullet>F{D}) h xs \<epsilon> (THROW NullPointer) h xs"
-  "\<lbrakk> heap_write h a (CField D F) v h'; ta0 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace> \<rbrakk>
+  "\<lbrakk> heap_write h a (CField D F) v h'; ta0 = \<lbrace>WriteMem a (CField D F) v\<rbrace>; ta = \<lbrace>WriteMem a (CField D F) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (addr a\<bullet>F{D} := Val v) (addr a\<bullet>F{D} := Val v) h xs ta unit h' xs"
   "sim_move01 P t \<epsilon> (null\<bullet>F{D} := Val v) (null\<bullet>F{D} := Val v) h xs \<epsilon> (THROW NullPointer) h xs"
   "sim_move01 P t \<epsilon> ({V':T=vo; Val u}) ({V:T=None; Val u}) h xs \<epsilon> (Val u) h xs"
@@ -277,31 +281,31 @@ lemma sim_move01_reds:
   "sim_move01 P t \<epsilon> (if (Throw a) e0 else e0') (if (Throw a) e1 else e1') h xs \<epsilon> (Throw a) h xs"
   "sim_move01 P t \<epsilon> (throw (Throw a)) (throw (Throw a)) h xs \<epsilon> (Throw a) h xs"
 apply(simp_all add: sim_move01_def ta_bisim_def split: split_if_asm split del: split_if)
-apply(fastsimp intro: red1_reds1.intros)+
+apply(fastforce intro: red1_reds1.intros)+
 done
 
 lemma sim_move01_ThrowParams:
   "sim_move01 P t \<epsilon> (Val v\<bullet>M(map Val vs @ Throw a # es0)) (Val v\<bullet>M(map Val vs @ Throw a # es1)) h xs \<epsilon> (Throw a) h xs"
 apply(simp add: sim_move01_def split del: split_if)
-apply(rule conjI, fastsimp)
+apply(rule conjI, fastforce)
 apply(split split_if)
 apply(rule conjI)
- apply(fastsimp intro: red1_reds1.intros)
-apply(fastsimp simp add: sim_move01_def intro: red1_reds1.intros)
+ apply(fastforce intro: red1_reds1.intros)
+apply(fastforce simp add: sim_move01_def intro: red1_reds1.intros)
 done
 
 lemma sim_move01_CallNull:
   "sim_move01 P t \<epsilon> (null\<bullet>M(map Val vs)) (null\<bullet>M(map Val vs)) h xs \<epsilon> (THROW NullPointer) h xs"
-by(fastsimp simp add: sim_move01_def map_eq_append_conv intro: red1_reds1.intros)
+by(fastforce simp add: sim_move01_def map_eq_append_conv intro: red1_reds1.intros)
 
 lemma sim_move01_SyncLocks:
-  "\<lbrakk> V < length xs; ta0 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> \<rbrakk>
+  "\<lbrakk> V < length xs; ta0 = \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace>; ta = \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace> \<rbrakk>
    \<Longrightarrow> sim_move01 P t ta0 (sync(addr a) e0) (sync\<^bsub>V\<^esub> (addr a) e1) h xs ta (insync\<^bsub>V\<^esub> (a) e1) h (xs[V := Addr a])"
-  "\<lbrakk> xs ! V = Addr a'; V < length xs; ta0 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a' \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a'\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace> \<rbrakk>
+  "\<lbrakk> xs ! V = Addr a'; V < length xs; ta0 = \<lbrace>Unlock\<rightarrow>a', SyncUnlock a'\<rbrace>; ta = \<lbrace>Unlock\<rightarrow>a', SyncUnlock a'\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (insync(a') (Val v)) (insync\<^bsub>V\<^esub> (a) (Val v)) h xs ta (Val v) h xs"
-  "\<lbrakk> xs ! V = Addr a'; V < length xs; ta0 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a' \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a' \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a'\<rbrace> \<rbrakk>
+  "\<lbrakk> xs ! V = Addr a'; V < length xs; ta0 = \<lbrace>Unlock\<rightarrow>a', SyncUnlock a'\<rbrace>; ta = \<lbrace>Unlock\<rightarrow>a', SyncUnlock a'\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (insync(a') (Throw a'')) (insync\<^bsub>V\<^esub> (a) (Throw a'')) h xs ta (Throw a'') h xs"
-by(fastsimp simp add: sim_move01_def ta_bisim_def expand_finfun_eq fun_eq_iff finfun_upd_apply ta_upd_simps  intro: red1_reds1.intros[simplified] split: split_if_asm)+
+by(fastforce simp add: sim_move01_def ta_bisim_def expand_finfun_eq fun_eq_iff finfun_upd_apply ta_upd_simps  intro: red1_reds1.intros[simplified] split: split_if_asm)+
 
 lemma sim_move01_TryFail:
   "\<lbrakk> typeof_addr h a = \<lfloor>Class D\<rfloor>; \<not> P \<turnstile> D \<preceq>\<^sup>* C \<rbrakk>
@@ -315,9 +319,9 @@ lemma sim_move01_BlockSome:
   "V < length xs \<Longrightarrow> sim_move01 P t \<epsilon> ({V':T=\<lfloor>v\<rfloor>; Throw a}) ({V:T=\<lfloor>v\<rfloor>; Throw a}) h xs \<epsilon> (Throw a) h (xs[V := v])"
 apply(auto simp add: sim_move01_def)
 apply(split split_if_asm)
- apply(fastsimp intro: intro: converse_rtranclp_into_rtranclp Block1Some Block1Red Block_\<tau>red1'r_Some)
-apply(fastsimp intro: intro: converse_rtranclp_into_rtranclp Block1Some Block1Red Block_\<tau>red1'r_Some)
-apply(fastsimp simp add: sim_move01_def intro!: \<tau>red1't_2step[OF Block1Some] \<tau>red1'r_1step[OF Block1Some] Red1Block Block1Throw)+
+ apply(fastforce intro: intro: converse_rtranclp_into_rtranclp Block1Some Block1Red Block_\<tau>red1'r_Some)
+apply(fastforce intro: intro: converse_rtranclp_into_rtranclp Block1Some Block1Red Block_\<tau>red1'r_Some)
+apply(fastforce simp add: sim_move01_def intro!: \<tau>red1't_2step[OF Block1Some] \<tau>red1'r_1step[OF Block1Some] Red1Block Block1Throw)+
 done
 
 lemmas sim_move01_intros =
@@ -327,7 +331,7 @@ lemmas sim_move01_intros =
 declare sim_move01_intros[intro]
 
 lemma sim_move01_preserves_len: "sim_move01 P t ta0 e0 e h xs ta e' h' xs' \<Longrightarrow> length xs' = length xs"
-by(fastsimp simp add: sim_move01_def split: split_if_asm dest: \<tau>red1'r_preserves_len \<tau>red1't_preserves_len red1_preserves_len)
+by(fastforce simp add: sim_move01_def split: split_if_asm dest: \<tau>red1'r_preserves_len \<tau>red1't_preserves_len red1_preserves_len)
 
 lemma sim_move01_preserves_unmod:
   "\<lbrakk> sim_move01 P t ta0 e0 e h xs ta e' h' xs'; unmod e i; i < length xs \<rbrakk> \<Longrightarrow> xs' ! i = xs ! i"
@@ -365,7 +369,7 @@ proof(induct arbitrary: vs e2 XS and vs es2 XS rule: red_reds.inducts)
     where "E2 = E \<guillemotleft>bop\<guillemotright> compE1 Vs e2" and "bisim Vs e E xs" and "\<not> contains_insync e2" by auto
   with IH[of Vs E xs] `fv (e \<guillemotleft>bop\<guillemotright> e2) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `\<not> is_val e`
     `length Vs + max_vars (e \<guillemotleft>bop\<guillemotright> e2) \<le> length xs` `?synth (e \<guillemotleft>bop\<guillemotright> e2) s` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
-  show ?case by(cases "is_val e'")(fastsimp elim!: sim_move01_expr)+
+  show ?case by(cases "is_val e'")(fastforce elim!: sim_move01_expr)+
 next
   case (BinOpRed2 e s ta e' s' v bop Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars e \<le> length XS;
@@ -374,13 +378,13 @@ next
     where "E2 = Val v \<guillemotleft>bop\<guillemotright> E" and "bisim Vs e E xs" by auto
   with IH[of Vs E xs] `fv (Val v \<guillemotleft>bop\<guillemotright> e) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]`
     `length Vs + max_vars (Val v \<guillemotleft>bop\<guillemotright> e) \<le> length xs` `?synth (Val v \<guillemotleft>bop\<guillemotright> e) s` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
-  show ?case by(fastsimp elim!: sim_move01_expr)
+  show ?case by(fastforce elim!: sim_move01_expr)
 next
   case RedVar thus ?case
-    by(fastsimp simp add: index_less_aux map_le_def fun_upds_apply intro!: exI dest: bspec)
+    by(fastforce simp add: index_less_aux map_le_def fun_upds_apply intro!: exI dest: bspec)
 next
   case RedLAss thus ?case
-    by(fastsimp intro: index_less_aux LAss_lem intro!: exI simp del: fun_upd_apply)
+    by(fastforce intro: index_less_aux LAss_lem intro!: exI simp del: fun_upd_apply)
 next
   case (AAccRed1 a s ta a' s' i Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs a e2 XS; fv a \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars a \<le> length XS;
@@ -390,7 +394,7 @@ next
     where "E2 = E\<lfloor>compE1 Vs i\<rceil>" and "bisim Vs a E xs" and "\<not> contains_insync i" by auto
   with IH[of Vs E xs] `fv (a\<lfloor>i\<rceil>) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `\<not> is_val a`
     `length Vs + max_vars (a\<lfloor>i\<rceil>) \<le> length xs` `?synth (a\<lfloor>i\<rceil>) s` `extTA2J0 P,P,t \<turnstile> \<langle>a,s\<rangle> -ta\<rightarrow> \<langle>a',s'\<rangle>`
-  show ?case by(cases "is_val a'")(fastsimp elim!: sim_move01_expr)+
+  show ?case by(cases "is_val a'")(fastforce elim!: sim_move01_expr)+
 next
   case (AAccRed2 i s ta i' s' a Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs i e2 XS; fv i \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars i \<le> length XS;
@@ -399,7 +403,7 @@ next
     where "E2 = Val a\<lfloor>E\<rceil>" and "bisim Vs i E xs" by auto
   with IH[of Vs E xs] `fv (Val a\<lfloor>i\<rceil>) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]`
     `length Vs + max_vars (Val a\<lfloor>i\<rceil>) \<le> length xs` `?synth (Val a\<lfloor>i\<rceil>) s` `extTA2J0 P,P,t \<turnstile> \<langle>i,s\<rangle> -ta\<rightarrow> \<langle>i',s'\<rangle>`
-  show ?case by(fastsimp elim!: sim_move01_expr)
+  show ?case by(fastforce elim!: sim_move01_expr)
 next
   case RedAAcc thus ?case by(auto simp del: split_paired_Ex)
 next
@@ -422,10 +426,10 @@ next
     from `fv (a\<lfloor>i\<rceil>:=e) \<subseteq> set Vs` sync
     have "bisim Vs i (compE1 Vs i) xs'" "bisim Vs e (compE1 Vs e) xs'" by auto
     with IH' E2 True sync  `\<not> is_val a` `extTA2J0 P,P,t \<turnstile> \<langle>a,s\<rangle> -ta\<rightarrow> \<langle>a',s'\<rangle>` show ?thesis
-      by(cases "is_val i")(fastsimp elim!: sim_move01_expr)+
+      by(cases "is_val i")(fastforce elim!: sim_move01_expr)+
   next
     case False with IH' E2 sync `\<not> is_val a` `extTA2J0 P,P,t \<turnstile> \<langle>a,s\<rangle> -ta\<rightarrow> \<langle>a',s'\<rangle>`
-    show ?thesis by(fastsimp elim!: sim_move01_expr)
+    show ?thesis by(fastforce elim!: sim_move01_expr)
   qed
 next
   case (AAssRed2 i s ta i' s' a e Vs E2 xs)
@@ -436,7 +440,7 @@ next
     where "E2 = Val a\<lfloor>E\<rceil>:=compE1 Vs e" and "bisim Vs i E xs" and "\<not> contains_insync e" by auto
   with IH[of Vs E xs] `fv (Val a\<lfloor>i\<rceil>:=e) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `\<not> is_val i` `extTA2J0 P,P,t \<turnstile> \<langle>i,s\<rangle> -ta\<rightarrow> \<langle>i',s'\<rangle>`
     `length Vs + max_vars (Val a\<lfloor>i\<rceil>:=e) \<le> length xs` `?synth (Val a\<lfloor>i\<rceil>:=e) s`
-  show ?case by(cases "is_val i'")(fastsimp elim!: sim_move01_expr)+
+  show ?case by(cases "is_val i'")(fastforce elim!: sim_move01_expr)+
 next
   case (AAssRed3 e s ta e' s' a i Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars e \<le> length XS;
@@ -445,7 +449,7 @@ next
     where "E2 = Val a\<lfloor>Val i\<rceil>:=E" and "bisim Vs e E xs" by auto
   with IH[of Vs E xs] `fv (Val a\<lfloor>Val i\<rceil>:=e) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
     `length Vs + max_vars (Val a\<lfloor>Val i\<rceil>:=e) \<le> length xs` `?synth (Val a\<lfloor>Val i\<rceil>:=e) s`
-  show ?case by(fastsimp elim!: sim_move01_expr)
+  show ?case by(fastforce elim!: sim_move01_expr)
 next
   case RedAAssStore thus ?case by(auto intro!: exI)
 next
@@ -457,7 +461,7 @@ next
     where "E2 = E\<bullet>F{D} := compE1 Vs e2" and "bisim Vs e E xs" and "\<not> contains_insync e2" by auto
   with IH[of Vs E xs] `fv (e\<bullet>F{D} := e2) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `\<not> is_val e` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
     `length Vs + max_vars (e\<bullet>F{D} := e2) \<le> length xs` `?synth (e\<bullet>F{D} := e2) s`
-  show ?case by(cases "is_val e'")(fastsimp elim!: sim_move01_expr)+
+  show ?case by(cases "is_val e'")(fastforce elim!: sim_move01_expr)+
 next
   case (FAssRed2 e s ta e' s' v F D Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars e \<le> length XS;
@@ -466,7 +470,7 @@ next
     where "E2 = Val v\<bullet>F{D} := E" and "bisim Vs e E xs" by auto
   with IH[of Vs E xs] `fv (Val v\<bullet>F{D} := e) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
     `length Vs + max_vars (Val v\<bullet>F{D} := e) \<le> length xs` `?synth (Val v\<bullet>F{D} := e) s`
-  show ?case by(fastsimp elim!: sim_move01_expr)
+  show ?case by(fastforce elim!: sim_move01_expr)
 next
   case (CallObj e s ta e' s' M es Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars e \<le> length XS;
@@ -477,7 +481,7 @@ next
     by(auto simp add: compEs1_conv_map)
   with IH[of Vs E xs] `fv (e\<bullet>M(es)) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]`
     `length Vs + max_vars (e\<bullet>M(es)) \<le> length xs` `?synth (e\<bullet>M(es)) s`
-  show ?case by(cases "is_val e'")(fastsimp elim!: sim_move01_expr split: split_if_asm)+
+  show ?case by(cases "is_val e'")(fastforce elim!: sim_move01_expr split: split_if_asm)+
 next
   case (CallParams es s ta es' s' v M Vs E2 xs)
   note IH = `\<And>vs es2 XS. \<lbrakk>bisims vs es es2 XS; fvs es \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_varss es \<le> length XS;
@@ -488,18 +492,19 @@ next
   with `?synth (Val v\<bullet>M(es)) s` have "?synths es s" by(auto)
   moreover note IH[of Vs Es xs] `fv (Val v\<bullet>M(es)) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` 
     `length Vs + max_vars (Val v\<bullet>M(es)) \<le> length xs`
-  ultimately show ?case by(fastsimp elim!: sim_move01_CallParams)
+  ultimately show ?case by(fastforce elim!: sim_move01_CallParams)
 next
-  case (RedCall s a C M Ts T pns body D vs Vs E2 xs)
-  from `typeof_addr (hp s) a = \<lfloor>Class C\<rfloor>` have "call (addr a\<bullet>M(map Val vs)) = \<lfloor>(a, M, vs)\<rfloor>" by auto
+  case (RedCall s a U C M Ts T pns body D vs Vs E2 xs)
+  from `typeof_addr (hp s) a = \<lfloor>U\<rfloor>` `is_class_type_of U C`
+  have "call (addr a\<bullet>M(map Val vs)) = \<lfloor>(a, M, vs)\<rfloor>" by auto
   with `?synth (addr a\<bullet>M(map Val vs)) s` have "synthesized_call P (hp s) (a, M, vs)" by auto
-  with `\<not> is_external_call P (Class C) M` `typeof_addr (hp s) a = \<lfloor>Class C\<rfloor>` have False
+  with `\<not> is_native P U M` `typeof_addr (hp s) a = \<lfloor>U\<rfloor>` have False
     by(simp add: synthesized_call_conv)
   thus ?case ..
 next
   case (RedCallExternal s a T M vs ta va h' ta' e' s' Vs E2 xs)
   from `bisim Vs (addr a\<bullet>M(map Val vs)) E2 xs` have "E2 = addr a\<bullet>M(map Val vs)" by auto
-  moreover note `is_external_call P T M` `typeof_addr (hp s) a = \<lfloor>T\<rfloor>` `ta' = extTA2J0 P ta`
+  moreover note `is_native P T M` `typeof_addr (hp s) a = \<lfloor>T\<rfloor>` `ta' = extTA2J0 P ta`
     `e' = extRet2J (addr a\<bullet>M(map Val vs)) va` `s' = (h', lcl s)` `P,t \<turnstile> \<langle>a\<bullet>M(vs),hp s\<rangle> -ta\<rightarrow>ext \<langle>va,h'\<rangle>`
     `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]`
   moreover from wf `P,t \<turnstile> \<langle>a\<bullet>M(vs),hp s\<rangle> -ta\<rightarrow>ext \<langle>va,h'\<rangle>`
@@ -508,7 +513,7 @@ next
   have "\<tau>external P T M \<Longrightarrow> h' = hp s \<and> ta = \<epsilon>"
     by(auto dest: \<tau>external'_red_external_heap_unchanged \<tau>external'_red_external_TA_empty simp add: \<tau>external'_def)
   ultimately show ?case 
-    by(cases va)(fastsimp intro: Red1CallExternal simp add: map_eq_append_conv sim_move01_def simp del: split_paired_Ex)+
+    by(cases va)(fastforce intro: Red1CallExternal simp add: map_eq_append_conv sim_move01_def simp del: split_paired_Ex)+
 next
   case (BlockRed e h x V vo ta e' h' x' T Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl (h, x(V := vo)) \<subseteq>\<^sub>m [vs [\<mapsto>] XS];
@@ -526,7 +531,7 @@ next
       and bisim': "bisim (Vs @ [V]) e' e2' xs'" "x' \<subseteq>\<^sub>m [Vs @ [V] [\<mapsto>] xs']" by auto 
     from red' `length Vs + max_vars {V:T=vo; e} \<le> length xs`
     have "length (Vs@[V]) + max_vars e \<le> length xs'"
-      by(fastsimp simp add: sim_move01_def dest: red1_preserves_len \<tau>red1't_preserves_len \<tau>red1'r_preserves_len split: split_if_asm)
+      by(fastforce simp add: sim_move01_def dest: red1_preserves_len \<tau>red1't_preserves_len \<tau>red1'r_preserves_len split: split_if_asm)
     with `x' \<subseteq>\<^sub>m [Vs @ [V] [\<mapsto>] xs']` have "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] xs', V \<mapsto> xs' ! length Vs]" by(simp)
     moreover 
     { assume "V \<in> set Vs"
@@ -545,7 +550,7 @@ next
     proof(cases "x' V")
       case None
       with red' bisim' BlockNone len
-      show ?thesis by(fastsimp simp del: split_paired_Ex fun_upd_apply intro: rel)
+      show ?thesis by(fastforce simp del: split_paired_Ex fun_upd_apply intro: rel)
     next
       case (Some v)
       moreover
@@ -555,7 +560,7 @@ next
       from `length Vs + max_vars {V:T=vo; e} \<le> length xs` have "length Vs < length xs" by auto
       ultimately have "xs' ! length Vs = v" using `length xs = length xs'` by(simp)
       with red' bisim' BlockNone Some len
-      show ?thesis by(fastsimp simp del: fun_upd_apply intro: rel)
+      show ?thesis by(fastforce simp del: fun_upd_apply intro: rel)
     qed
   next
     case (BlockSome E' v)
@@ -588,7 +593,7 @@ next
     from `length Vs + max_vars {V:T=vo; e} \<le> length xs` have "length Vs < length xs" by auto
     ultimately have "xs' ! length Vs = v'" using `length xs = length xs'` by(simp)
     with red' bisim' BlockSome Some `length Vs < length xs`
-    show ?thesis by(fastsimp simp del: fun_upd_apply intro: rel)
+    show ?thesis by(fastforce simp del: fun_upd_apply intro: rel)
   next 
     case (BlockSomeNone E')
     with red IH[of "Vs@[V]" E' xs] fv `lcl (h, x) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]`
@@ -620,7 +625,7 @@ next
     from `length Vs + max_vars {V:T=vo; e} \<le> length xs` have "length Vs < length xs" by auto
     ultimately have "xs' ! length Vs = v'" using `length xs = length xs'` by(simp)
     with red' IH' BlockSomeNone Some `length Vs < length xs`
-    show ?thesis by(fastsimp simp del: fun_upd_apply intro: rel)
+    show ?thesis by(fastforce simp del: fun_upd_apply intro: rel)
   qed
 next
   case (RedBlock V T vo u s Vs E2 xs)
@@ -641,10 +646,10 @@ next
       from `length Vs + max_vars {V:T=vo; Val u} \<le> length xs` have "length Vs < length xs" by simp
       with vo' Some show ?thesis using `vo = Some v` by auto
     qed
-    thus ?thesis using RedBlock by fastsimp
-  qed fastsimp
+    thus ?thesis using RedBlock by fastforce
+  qed fastforce
 next
-  case SynchronizedNull thus ?case by fastsimp
+  case SynchronizedNull thus ?case by fastforce
 next
   case (LockSynchronized a e s Vs E2 xs)
   from `bisim Vs (sync(addr a) e) E2 xs`
@@ -659,17 +664,17 @@ next
     using `fresh_var Vs \<notin> fv e` `length Vs + max_vars (sync(addr a) e) \<le> length xs` by auto
   moreover from `length Vs + max_vars (sync(addr a) e) \<le> length xs`
   have "compP1 P,t \<turnstile>1 \<langle>sync\<^bsub>length Vs\<^esub> (addr a) (compE1 (Vs@[fresh_var Vs]) e), (hp s, xs)\<rangle>
-        -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace>\<rightarrow>
+        -\<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace>\<rightarrow>
         \<langle>insync\<^bsub>length Vs\<^esub> (a) (compE1 (Vs@[fresh_var Vs]) e), (hp s, xs[length Vs := Addr a])\<rangle>"
     by -(rule Lock1Synchronized, auto)
-  hence "sim_move01 (compP1 P) t \<epsilon>\<lbrace>\<^bsub>l\<^esub>Lock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> (sync(addr a) e) E2 (hp s) xs \<epsilon>\<lbrace>\<^bsub>l\<^esub>Lock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> (insync\<^bsub>length Vs\<^esub> (a) (compE1 (Vs@[fresh_var Vs]) e)) (hp s) (xs[length Vs := Addr a])"
-    using E2 by(fastsimp simp add: sim_move01_def ta_bisim_def)
+  hence "sim_move01 (compP1 P) t \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace> (sync(addr a) e) E2 (hp s) xs \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace> (insync\<^bsub>length Vs\<^esub> (a) (compE1 (Vs@[fresh_var Vs]) e)) (hp s) (xs[length Vs := Addr a])"
+    using E2 by(fastforce simp add: sim_move01_def ta_bisim_def)
   moreover have "zip Vs (xs[length Vs := Addr a]) = (zip Vs xs)[length Vs := (arbitrary, Addr a)]"
     by(rule sym)(simp add: update_zip)
   hence "zip Vs (xs[length Vs := Addr a]) = zip Vs xs" by simp
   with `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` have "lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs[length Vs := Addr a]]"
     by(auto simp add: map_le_def map_upds_def)
-  ultimately show ?case using `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` by fastsimp
+  ultimately show ?case using `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` by fastforce
 next
   case (SynchronizedRed2 e s ta e' s' a Vs E2 xs)
   note IH = `\<And>vs e2 XS. \<lbrakk>bisim vs e e2 XS; fv e \<subseteq> set vs; lcl s \<subseteq>\<^sub>m [vs [\<mapsto>] XS]; length vs + max_vars e \<le> length XS;
@@ -707,17 +712,17 @@ next
   with IH' `length Vs < length xs` have "xs ! length Vs = xs' ! length Vs"
     by(auto dest!: sim_move01_preserves_unmod)
   with xsa have "xs' ! length Vs = Addr a" by simp
-  ultimately show ?case using IH' E2 by(fastsimp)
+  ultimately show ?case using IH' E2 by(fastforce)
 next
   case (UnlockSynchronized a v s Vs E2 xs)
   from `bisim Vs (insync(a) Val v) E2 xs` have E2: "E2 = insync\<^bsub>length Vs\<^esub> (a) Val v" 
     and xsa: "xs ! length Vs = Addr a" by auto
   moreover from `length Vs + max_vars (insync(a) Val v) \<le> length xs` xsa
-  have "compP1 P,t \<turnstile>1 \<langle>insync\<^bsub>length Vs\<^esub> (a) (Val v), (hp s, xs)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>\<rightarrow> \<langle>Val v, (hp s, xs)\<rangle>"
+  have "compP1 P,t \<turnstile>1 \<langle>insync\<^bsub>length Vs\<^esub> (a) (Val v), (hp s, xs)\<rangle> -\<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>\<rightarrow> \<langle>Val v, (hp s, xs)\<rangle>"
     by-(rule Unlock1Synchronized, auto)
-  hence "sim_move01 (compP1 P) t \<epsilon>\<lbrace>\<^bsub>l\<^esub>Unlock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (insync(a) Val v) (insync\<^bsub>length Vs\<^esub> (a) Val v) (hp s) xs \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (Val v) (hp s) xs"
-    by(fastsimp simp add: sim_move01_def ta_bisim_def)
-  ultimately show ?case using `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` by fastsimp
+  hence "sim_move01 (compP1 P) t \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> (insync(a) Val v) (insync\<^bsub>length Vs\<^esub> (a) Val v) (hp s) xs \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> (Val v) (hp s) xs"
+    by(fastforce simp add: sim_move01_def ta_bisim_def)
+  ultimately show ?case using `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` by fastforce
 next
   case (RedWhile b c s Vs E2 xs)
   from `bisim Vs (while (b) c) E2 xs` have "E2 = while (compE1 Vs b) (compE1 Vs c)"
@@ -748,33 +753,33 @@ next
     and sync: "\<not> contains_insyncs es" by(auto simp add: compEs1_conv_map)
   with IH[of Vs E' xs] `fvs (e # es) \<subseteq> set Vs` `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `extTA2J0 P,P,t \<turnstile> \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
     `length Vs + max_varss (e # es) \<le> length xs` `?synths (e # es) s` `\<not> is_val e`
-  show ?case by(cases "is_val e'")(fastsimp elim!: sim_moves01_expr split: split_if_asm)+
+  show ?case by(cases "is_val e'")(fastforce elim!: sim_moves01_expr split: split_if_asm)+
 next
   case (ListRed2 es s ta es' s' v Vs ES2 xs)
-  thus ?case by(fastsimp elim!: bisims_cases elim!: sim_moves01_expr)
+  thus ?case by(fastforce elim!: bisims_cases elim!: sim_moves01_expr)
 next
   case CallThrowParams thus ?case
-    by(fastsimp elim!:bisim_cases simp add: bisims_map_Val_Throw)
+    by(fastforce elim!:bisim_cases simp add: bisims_map_Val_Throw)
 next
   case (BlockThrow V T vo a s Vs e2 xs) thus ?case
-    by(cases vo)(fastsimp elim!: bisim_cases)+
+    by(cases vo)(fastforce elim!: bisim_cases)+
 next    
   case (SynchronizedThrow2 a ad s Vs E2 xs)
   from `bisim Vs (insync(a) Throw ad) E2 xs` have "xs ! length Vs = Addr a" by auto
   with `length Vs + max_vars (insync(a) Throw ad) \<le> length xs`
-  have "compP1 P,t \<turnstile>1 \<langle>insync\<^bsub>length Vs\<^esub> (a) Throw ad, (hp s, xs)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, (hp s, xs)\<rangle>"
+  have "compP1 P,t \<turnstile>1 \<langle>insync\<^bsub>length Vs\<^esub> (a) Throw ad, (hp s, xs)\<rangle> -\<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, (hp s, xs)\<rangle>"
     by-(rule Synchronized1Throw2, auto)
-  hence "sim_move01 (compP1 P) t \<epsilon>\<lbrace>\<^bsub>l\<^esub>Unlock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (insync(a) Throw ad) (insync\<^bsub>length Vs\<^esub> (a) Throw ad) (hp s) xs \<epsilon>\<lbrace>\<^bsub>l\<^esub>Unlock\<rightarrow>a\<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> (Throw ad) (hp s) xs"
-    by(fastsimp simp add: sim_move01_def ta_bisim_def fun_eq_iff expand_finfun_eq finfun_upd_apply ta_upd_simps split: split_if_asm)
+  hence "sim_move01 (compP1 P) t \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> (insync(a) Throw ad) (insync\<^bsub>length Vs\<^esub> (a) Throw ad) (hp s) xs \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> (Throw ad) (hp s) xs"
+    by(fastforce simp add: sim_move01_def ta_bisim_def fun_eq_iff expand_finfun_eq finfun_upd_apply ta_upd_simps split: split_if_asm)
   moreover note `lcl s \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `bisim Vs (insync(a) Throw ad) E2 xs`
-  ultimately show ?case by(fastsimp)
+  ultimately show ?case by(fastforce)
 next
-  case InstanceOfRed thus ?case by(fastsimp)
+  case InstanceOfRed thus ?case by(fastforce)
 next
   case RedInstanceOf thus ?case by(auto intro!: exI)
 next
-  case InstanceOfThrow thus ?case by fastsimp
-qed(fastsimp simp del: fun_upd_apply split: split_if_asm)+
+  case InstanceOfThrow thus ?case by fastforce
+qed(fastforce simp del: fun_upd_apply split: split_if_asm)+
 
 end
 
@@ -782,8 +787,8 @@ declare max_dest [iff del]
 
 declare split_paired_Ex [simp del]
 
-primrec countInitBlock :: "('a, 'b) exp \<Rightarrow> nat"
-  and countInitBlocks :: "('a, 'b) exp list \<Rightarrow> nat"
+primrec countInitBlock :: "('a, 'b, 'addr) exp \<Rightarrow> nat"
+  and countInitBlocks :: "('a, 'b, 'addr) exp list \<Rightarrow> nat"
 where 
   "countInitBlock (new C) = 0"
 | "countInitBlock (newA T\<lfloor>e\<rceil>) = countInitBlock e"
@@ -831,7 +836,8 @@ declare \<tau>red0r_expr [elim!]
 declare \<tau>red0t_expr [elim!]
 
 definition sim_move10 :: 
-  "J_prog \<Rightarrow> thread_id \<Rightarrow> 'heap external_thread_action \<Rightarrow> expr1 \<Rightarrow> expr1 \<Rightarrow> expr \<Rightarrow> 'heap \<Rightarrow> locals \<Rightarrow> 'heap J0_thread_action \<Rightarrow> expr \<Rightarrow> 'heap \<Rightarrow> locals \<Rightarrow> bool"
+  "'addr J_prog \<Rightarrow> 'thread_id \<Rightarrow> ('addr, 'thread_id, 'heap) external_thread_action \<Rightarrow> 'addr expr1 \<Rightarrow> 'addr expr1 \<Rightarrow> 'addr expr
+  \<Rightarrow> 'heap \<Rightarrow> 'addr locals \<Rightarrow> ('addr, 'thread_id, 'heap) J0_thread_action \<Rightarrow> 'addr expr \<Rightarrow> 'heap \<Rightarrow> 'addr locals \<Rightarrow> bool"
 where
   "sim_move10 P t ta1 e1 e1' e h xs ta e' h' xs' \<longleftrightarrow> \<not> final e1 \<and>
   (if \<tau>move1 P h e1 then (\<tau>red0t (extTA2J0 P) P t h (e, xs) (e', xs') \<or> countInitBlock e1' < countInitBlock e1 \<and> e' = e \<and> xs' = xs) \<and> h' = h \<and> ta1 = \<epsilon> \<and> ta = \<epsilon>
@@ -841,7 +847,9 @@ where
       else extTA2J0 P,P,t \<turnstile> \<langle>e, (h, xs)\<rangle> -ta\<rightarrow> \<langle>e', (h', xs')\<rangle> \<and> no_call P h e \<and> \<not> \<tau>move0 P h e))"
 
 definition sim_moves10 :: 
-  "J_prog \<Rightarrow> thread_id \<Rightarrow> 'heap external_thread_action \<Rightarrow> expr1 list \<Rightarrow> expr1 list \<Rightarrow> expr list \<Rightarrow> 'heap \<Rightarrow> locals \<Rightarrow> 'heap J0_thread_action \<Rightarrow> expr list \<Rightarrow> 'heap \<Rightarrow> locals \<Rightarrow> bool"
+  "'addr J_prog \<Rightarrow> 'thread_id \<Rightarrow> ('addr, 'thread_id, 'heap) external_thread_action \<Rightarrow> 'addr expr1 list \<Rightarrow> 'addr expr1 list
+  \<Rightarrow> 'addr expr list \<Rightarrow> 'heap \<Rightarrow> 'addr locals \<Rightarrow> ('addr, 'thread_id, 'heap) J0_thread_action \<Rightarrow> 'addr expr list \<Rightarrow> 'heap 
+  \<Rightarrow> 'addr locals \<Rightarrow> bool"
 where
   "sim_moves10 P t ta1 es1 es1' es h xs ta es' h' xs' \<longleftrightarrow> \<not> finals es1 \<and>
   (if \<tau>moves1 P h es1 then (\<tau>reds0t (extTA2J0 P) P t h (es, xs) (es', xs') \<or> countInitBlocks es1' < countInitBlocks es1 \<and> es' = es \<and> xs' = xs) \<and> h' = h \<and> ta1 = \<epsilon> \<and> ta = \<epsilon>
@@ -877,7 +885,7 @@ lemma sim_move10_expr:
   "sim_move10 P t ta1 (try e1 catch(C V) e2) (try e1' catch(C V) e2) (try e catch(C' V') e2') h xs ta (try e' catch(C' V') e2') h' xs'"
 using assms
 apply(simp_all add: sim_move10_def final_iff split del: split_if split add: split_if_asm)
-apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val intro: red_reds.intros)+
+apply(fastforce simp add: \<tau>red0t_Val \<tau>red0r_Val intro: red_reds.intros)+
 done
 
 lemma sim_moves10_expr:
@@ -886,7 +894,7 @@ lemma sim_moves10_expr:
 unfolding sim_moves10_def sim_move10_def final_iff finals_def
 apply(simp_all add: Cons_eq_append_conv split del: split_if split: split_if_asm)
 apply(safe intro!: if_split)
-apply(fastsimp simp add: is_vals_conv \<tau>reds0t_map_Val \<tau>reds0r_map_Val \<tau>red0t_Val \<tau>red0r_Val intro!: \<tau>red0r_inj_\<tau>reds0r \<tau>reds0r_cons_\<tau>reds0r \<tau>red0t_inj_\<tau>reds0t \<tau>reds0t_cons_\<tau>reds0t ListRed1 ListRed2 split: split_if_asm)+
+apply(fastforce simp add: is_vals_conv \<tau>reds0t_map_Val \<tau>reds0r_map_Val \<tau>red0t_Val \<tau>red0r_Val intro!: \<tau>red0r_inj_\<tau>reds0r \<tau>reds0r_cons_\<tau>reds0r \<tau>red0t_inj_\<tau>reds0t \<tau>reds0t_cons_\<tau>reds0t ListRed1 ListRed2 split: split_if_asm)+
 done
 
 lemma sim_move10_CallParams:
@@ -894,11 +902,11 @@ lemma sim_move10_CallParams:
   \<Longrightarrow> sim_move10 P t ta1 (Val v\<bullet>M(es1)) (Val v\<bullet>M(es1')) (Val v\<bullet>M(es)) h xs ta (Val v\<bullet>M(es')) h' xs'"
 unfolding sim_move10_def sim_moves10_def
 apply(simp split: split_if_asm split del: split_if add: is_vals_conv)
-  apply(fastsimp simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
+  apply(fastforce simp add: \<tau>red0t_Val \<tau>red0r_Val \<tau>reds0t_map_Val \<tau>reds0r_map_Val intro: Call_\<tau>red0r_param Call_\<tau>red0t_param CallParams split: split_if_asm split del: split_if intro!: if_split)
  apply(rule conjI)
-  apply fastsimp
+  apply fastforce
  apply(rule if_split)
-  apply fastsimp
+  apply fastforce
  apply(clarsimp split del: split_if)
  apply(rule if_split)
   apply(clarsimp split: split_if_asm simp add: is_vals_conv)
@@ -906,23 +914,23 @@ apply(simp split: split_if_asm split del: split_if add: is_vals_conv)
     apply clarsimp
     apply(rule exI conjI)+
      apply(erule Call_\<tau>red0r_param)
-    apply(fastsimp intro: CallParams)
-   apply(fastsimp simp add: \<tau>reds0r_map_Val)
+    apply(fastforce intro: CallParams)
+   apply(fastforce simp add: \<tau>reds0r_map_Val)
   apply(rule exI conjI)+
    apply(erule Call_\<tau>red0r_param)
-  apply(fastsimp intro!: CallParams)
+  apply(fastforce intro!: CallParams)
  apply(clarsimp split del: split_if split: split_if_asm simp add: is_vals_conv \<tau>reds0r_map_Val)
- apply fastsimp
+ apply fastforce
 apply(rule conjI)
- apply fastsimp
+ apply fastforce
 apply(rule if_split)
- apply fastsimp
+ apply fastforce
 apply(rule conjI)
- apply fastsimp
+ apply fastforce
 apply(rule if_split)
  apply(clarsimp split: split_if_asm)
 apply(clarsimp split: split_if_asm split del: split_if simp add: is_vals_conv)
-apply(fastsimp intro: CallParams)
+apply(fastforce intro: CallParams)
 done
 
 lemma sim_move10_Block:
@@ -938,15 +946,15 @@ proof -
     have "extTA2J0 P,P,t \<turnstile> \<langle>{V':T=xs'' V'; e''},(h, xs''(V' := xs V'))\<rangle> -ta\<rightarrow> \<langle>{V':T=xs' V'; e'},(h', xs'(V' := xs V'))\<rangle>"
       by simp }
   ultimately show ?thesis
-    by(fastsimp simp add: sim_move10_def final_iff split: split_if_asm)
+    by(fastforce simp add: sim_move10_def final_iff split: split_if_asm)
 qed
 
 lemma sim_move10_reds:
-  "\<lbrakk> new_obj h C = (h', \<lfloor>a\<rfloor>); ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewObj a C \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewObj a C \<rbrace> \<rbrakk>
+  "\<lbrakk> new_obj h C = (h', \<lfloor>a\<rfloor>); ta1 = \<lbrace>NewObj a C\<rbrace>; ta = \<lbrace>NewObj a C\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (new C) e1' (new C) h xs ta (addr a) h' xs"
   "new_obj h C = (h', None) \<Longrightarrow> sim_move10 P t \<epsilon> (new C) e1' (new C) h xs \<epsilon> (THROW OutOfMemory) h' xs"
   "\<lbrakk> new_arr h T (nat (sint i)) = (h', \<lfloor>a\<rfloor>); 0 <=s i;
-     ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewArr a T (nat (sint i))\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> NewArr a T (nat (sint i))\<rbrace> \<rbrakk>
+     ta1 = \<lbrace>NewArr a T (nat (sint i))\<rbrace>; ta = \<lbrace>NewArr a T (nat (sint i))\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs ta (addr a) h' xs"
   "i <s 0 \<Longrightarrow> sim_move10 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW NegativeArraySize) h xs"
   "\<lbrakk> new_arr h T (nat (sint i)) = (h', None); 0 <=s i \<rbrakk>
@@ -957,7 +965,8 @@ lemma sim_move10_reds:
   \<Longrightarrow> sim_move10 P t \<epsilon> (Cast T (Val v)) e1' (Cast T (Val v)) h xs \<epsilon> (THROW ClassCast) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; b \<longleftrightarrow> v \<noteq> Null \<and> P \<turnstile> U \<le> T \<rbrakk>
   \<Longrightarrow> sim_move10 P t \<epsilon> ((Val v) instanceof T) e1' ((Val v) instanceof T) h xs \<epsilon> (Val (Bool b)) h xs"
-  "binop bop v1 v2 = Some v \<Longrightarrow> sim_move10 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) e1' (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Val v) h xs"
+  "binop bop v1 v2 = Some (Inl v) \<Longrightarrow> sim_move10 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) e1' (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Val v) h xs"
+  "binop bop v1 v2 = Some (Inr a) \<Longrightarrow> sim_move10 P t \<epsilon> ((Val v1) \<guillemotleft>bop\<guillemotright> (Val v2)) e1' (Val v1 \<guillemotleft>bop\<guillemotright> Val v2) h xs \<epsilon> (Throw a) h xs"
   "xs V = \<lfloor>v\<rfloor> \<Longrightarrow> sim_move10 P t \<epsilon> (Var V') e1' (Var V) h xs \<epsilon> (Val v) h xs"
   "sim_move10 P t \<epsilon> (V' := Val v) e1' (V := Val v) h xs \<epsilon> unit h (xs(V \<mapsto> v))"
   "sim_move10 P t \<epsilon> (null\<lfloor>Val v\<rceil>) e1' (null\<lfloor>Val v\<rceil>) h xs \<epsilon> (THROW NullPointer) h xs"
@@ -965,7 +974,7 @@ lemma sim_move10_reds:
   \<Longrightarrow> sim_move10 P t \<epsilon> (addr a\<lfloor>Val (Intg i)\<rceil>) e1' ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW ArrayIndexOutOfBounds) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a);
      heap_read h a (ACell (nat (sint i))) v;
-     ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
+     ta1 = \<lbrace>ReadMem a (ACell (nat (sint i))) v\<rbrace>; ta = \<lbrace>ReadMem a (ACell (nat (sint i))) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (addr a\<lfloor>Val (Intg i)\<rceil>) e1' ((addr a)\<lfloor>Val (Intg i)\<rceil>) h xs ta (Val v) h xs"
   "sim_move10 P t \<epsilon> (null\<lfloor>Val v\<rceil> := Val v') e1' (null\<lfloor>Val v\<rceil> := Val v') h xs \<epsilon> (THROW NullPointer) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; i <s 0 \<or> sint i \<ge> int (array_length h a) \<rbrakk>
@@ -974,15 +983,14 @@ lemma sim_move10_reds:
   \<Longrightarrow> sim_move10 P t \<epsilon> (AAss (addr a) (Val (Intg i)) (Val v)) e1' (AAss (addr a) (Val (Intg i)) (Val v)) h xs \<epsilon> (THROW ArrayStore) h xs"
   "\<lbrakk> typeof_addr h a = \<lfloor>Array T\<rfloor>; 0 <=s i; sint i < int (array_length h a); typeof\<^bsub>h\<^esub> v = Some U; P \<turnstile> U \<le> T;
      heap_write h a (ACell (nat (sint i))) v h';
-     ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (ACell (nat (sint i))) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (ACell (nat (sint i))) v \<rbrace> \<rbrakk>
+     ta1 = \<lbrace>WriteMem a (ACell (nat (sint i))) v\<rbrace>; ta = \<lbrace>WriteMem a (ACell (nat (sint i))) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (AAss (addr a) (Val (Intg i)) (Val v)) e1' (AAss (addr a) (Val (Intg i)) (Val v)) h xs ta unit h' xs"
   "typeof_addr h a = \<lfloor>Array T\<rfloor> \<Longrightarrow> sim_move10 P t \<epsilon> (addr a\<bullet>length) e1' (addr a\<bullet>length) h xs \<epsilon> (Val (Intg (word_of_int (int (array_length h a))))) h xs"
   "sim_move10 P t \<epsilon> (null\<bullet>length) e1' (null\<bullet>length) h xs \<epsilon> (THROW NullPointer) h xs"
-  "\<lbrakk> heap_read h a (CField D F) v; ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace>;
-     ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> ReadMem a (CField D F) v\<rbrace> \<rbrakk>
+  "\<lbrakk> heap_read h a (CField D F) v; ta1 = \<lbrace>ReadMem a (CField D F) v\<rbrace>; ta = \<lbrace>ReadMem a (CField D F) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (addr a\<bullet>F{D}) e1' (addr a\<bullet>F{D}) h xs ta (Val v) h xs"
   "sim_move10 P t \<epsilon> (null\<bullet>F{D}) e1' (null\<bullet>F{D}) h xs \<epsilon> (THROW NullPointer) h xs"
-  "\<lbrakk> heap_write h a (CField D F) v h'; ta1 = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>o\<^esub> WriteMem a (CField D F) v \<rbrace> \<rbrakk>
+  "\<lbrakk> heap_write h a (CField D F) v h'; ta1 = \<lbrace>WriteMem a (CField D F) v\<rbrace>; ta = \<lbrace>WriteMem a (CField D F) v\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (addr a\<bullet>F{D} := Val v) e1' (addr a\<bullet>F{D} := Val v) h xs ta unit h' xs"
 
   "sim_move10 P t \<epsilon> (null\<bullet>F{D} := Val v) e1' (null\<bullet>F{D} := Val v) h xs \<epsilon> (THROW NullPointer) h xs"
@@ -1018,21 +1026,21 @@ lemma sim_move10_reds:
   "sim_move10 P t \<epsilon> (Throw a;;e0) e1' (Throw a;;e1) h xs \<epsilon> (Throw a) h xs"
   "sim_move10 P t \<epsilon> (if (Throw a) e0 else e0') e1' (if (Throw a) e1 else e2) h xs \<epsilon> (Throw a) h xs"
   "sim_move10 P t \<epsilon> (throw (Throw a)) e1' (throw (Throw a)) h xs \<epsilon> (Throw a) h xs"
-apply(fastsimp simp add: sim_move10_def no_calls_def no_call_def ta_bisim_def intro: red_reds.intros)+
+apply(fastforce simp add: sim_move10_def no_calls_def no_call_def ta_bisim_def intro: red_reds.intros)+
 done
 
 lemma sim_move10_CallNull:
   "sim_move10 P t \<epsilon> (null\<bullet>M(map Val vs)) e1' (null\<bullet>M(map Val vs)) h xs \<epsilon> (THROW NullPointer) h xs"
-by(fastsimp simp add: sim_move10_def map_eq_append_conv intro: RedCallNull)
+by(fastforce simp add: sim_move10_def map_eq_append_conv intro: RedCallNull)
 
 lemma sim_move10_SyncLocks:
-  "\<lbrakk> ta1 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace> \<rbrakk>
+  "\<lbrakk> ta1 = \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace>; ta = \<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace> \<rbrakk>
    \<Longrightarrow> sim_move10 P t ta1 (sync\<^bsub>V\<^esub>(addr a) e0) e1' (sync(addr a) e1) h xs ta (insync(a) e1) h xs"
-  "\<lbrakk> ta1 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> \<rbrakk>
+  "\<lbrakk> ta1 = \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>; ta = \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (insync\<^bsub>V\<^esub>(a') (Val v)) e1' (insync(a) (Val v)) h xs ta (Val v) h xs"
-  "\<lbrakk> ta1 = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>; ta = \<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace> \<rbrakk>
+  "\<lbrakk> ta1 = \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>; ta = \<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (insync\<^bsub>V\<^esub>(a') (Throw a'')) e1' (insync(a) (Throw a'')) h xs ta (Throw a'') h xs"
-by(fastsimp simp add: sim_move10_def ta_bisim_def ta_upd_simps intro: red_reds.intros[simplified])+
+by(fastforce simp add: sim_move10_def ta_bisim_def ta_upd_simps intro: red_reds.intros[simplified])+
 
 lemma sim_move10_TryFail:
   "\<lbrakk> typeof_addr h a = \<lfloor>Class D\<rfloor>; \<not> P \<turnstile> D \<preceq>\<^sup>* C \<rbrakk>
@@ -1101,7 +1109,7 @@ next
   have "lcl s ! (index Vs V') = v'" by(auto intro: map_upds_Some_eq_nth_index)
   with `V = index Vs V'` `lcl s ! V = v` have "v = v'" by simp
   with `X V' = \<lfloor>v'\<rfloor>` `E2 = Var V'` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]`
-  show ?case by(fastsimp intro: RedVar)
+  show ?case by(fastforce intro: RedVar)
 next
   case (LAss1Red e s ta e' s' V Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 e (lcl s); fv e2 \<subseteq> set vs;
@@ -1126,7 +1134,7 @@ next
   from `compP1 P,t \<turnstile>1 \<langle>a,s\<rangle> -ta\<rightarrow> \<langle>a',s'\<rangle>` have "\<not> is_val a" by auto
   with `bisim Vs E2 (a\<lfloor>i\<rceil>) (lcl s)` obtain E E2'
     where E2: "E2 = E\<lfloor>E2'\<rceil>" "i = compE1 Vs E2'" and "bisim Vs E a (lcl s)"
-    and sync: "\<not> contains_insync E2'" by(fastsimp)
+    and sync: "\<not> contains_insync E2'" by(fastforce)
   moreover from `\<not> IUF (a\<lfloor>i\<rceil>) ta (a'\<lfloor>i\<rceil>)` have "\<not> IUF a ta a'" by auto
   moreover note IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]`
     `length Vs + max_vars (a\<lfloor>i\<rceil>) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
@@ -1146,7 +1154,7 @@ next
     `length Vs + max_vars (Val a\<lfloor>i\<rceil>) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
   ultimately show ?case by(auto intro: AAccRed2)
 next
-  case Red1AAcc thus ?case by(fastsimp intro: RedAAcc simp del: fun_upd_apply)
+  case Red1AAcc thus ?case by(fastforce intro: RedAAcc simp del: fun_upd_apply)
 next
   case (AAss1Red1 a s ta a' s' i e Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 a (lcl s); fv e2 \<subseteq> set vs;
@@ -1155,7 +1163,7 @@ next
   from `compP1 P,t \<turnstile>1 \<langle>a,s\<rangle> -ta\<rightarrow> \<langle>a',s'\<rangle>` have "\<not> is_val a" by auto
   with `bisim Vs E2 (a\<lfloor>i\<rceil>:=e) (lcl s)` obtain E E2' E2''
     where E2: "E2 = E\<lfloor>E2'\<rceil>:=E2''" "i = compE1 Vs E2'" "e = compE1 Vs E2''" and "bisim Vs E a (lcl s)"
-    and sync: "\<not> contains_insync E2'" "\<not> contains_insync E2''" by(fastsimp)
+    and sync: "\<not> contains_insync E2'" "\<not> contains_insync E2''" by(fastforce)
   moreover from `\<not> IUF (a\<lfloor>i\<rceil> := e) ta (a'\<lfloor>i\<rceil> := e)` have "\<not> IUF a ta a'" by auto
   moreover note IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]`
     `length Vs + max_vars (a\<lfloor>i\<rceil>:=e) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
@@ -1166,9 +1174,9 @@ next
     case True
     from E2 `fv E2 \<subseteq> set Vs` sync have "bisim Vs E2' i (lcl s')" "bisim Vs E2'' e (lcl s')" by auto
     with IH' E2 True sync show ?thesis
-      by(cases "is_val E2'")(fastsimp intro: AAssRed1)+
+      by(cases "is_val E2'")(fastforce intro: AAssRed1)+
   next
-    case False with IH' E2 sync show ?thesis by(fastsimp intro: AAssRed1)
+    case False with IH' E2 sync show ?thesis by(fastforce intro: AAssRed1)
   qed
 next
   case (AAss1Red2 i s ta i' s' a e Vs E2 X)
@@ -1178,30 +1186,30 @@ next
   from `compP1 P,t \<turnstile>1 \<langle>i,s\<rangle> -ta\<rightarrow> \<langle>i',s'\<rangle>` have "\<not> is_val i" by auto
   with `bisim Vs E2 (Val a\<lfloor>i\<rceil>:=e) (lcl s)` obtain E E2'
     where E2: "E2 = Val a\<lfloor>E\<rceil>:=E2'" "e = compE1 Vs E2'" and "bisim Vs E i (lcl s)"
-    and sync: "\<not> contains_insync E2'" by(fastsimp)
+    and sync: "\<not> contains_insync E2'" by(fastforce)
   moreover from `\<not> IUF (Val a\<lfloor>i\<rceil> := e) ta (Val a\<lfloor>i'\<rceil> := e)` have "\<not> IUF i ta i'" by auto
   moreover note IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]`
     `length Vs + max_vars (Val a\<lfloor>i\<rceil>:=e) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
   ultimately obtain TA' e2' x' where "sim_move10 P t ta i i' E (hp s) X TA' e2' (hp s') x'"
     "bisim Vs e2' i' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by(auto)
   with E2 `fv E2 \<subseteq> set Vs` sync show ?case
-    by(cases "is_val e2'")(fastsimp intro: AAssRed2)+
+    by(cases "is_val e2'")(fastforce intro: AAssRed2)+
 next
   case (AAss1Red3 e s ta e' s' a i Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 e (lcl s); fv e2 \<subseteq> set vs;
              x \<subseteq>\<^sub>m [vs [\<mapsto>] lcl s]; length vs + max_vars e \<le> length (lcl s); \<D> e2 \<lfloor>dom x\<rfloor>; \<not> IUF e ta e'\<rbrakk>
             \<Longrightarrow> ?concl e e' e2 s x ta s' e' vs`
   from `bisim Vs E2 (Val a\<lfloor>Val i\<rceil>:=e) (lcl s)` obtain E
-    where E2: "E2 = Val a\<lfloor>Val i\<rceil>:=E" and "bisim Vs E e (lcl s)" by(fastsimp)
+    where E2: "E2 = Val a\<lfloor>Val i\<rceil>:=E" and "bisim Vs E e (lcl s)" by(fastforce)
   moreover from `\<not> IUF (Val a\<lfloor>Val i\<rceil> := e) ta (Val a\<lfloor>Val i\<rceil> := e')` have "\<not> IUF e ta e'" by auto
   moreover note IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` E2
     `length Vs + max_vars (Val a\<lfloor>Val i\<rceil>:=e) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
-  ultimately show ?case by(fastsimp intro: AAssRed3)
+  ultimately show ?case by(fastforce intro: AAssRed3)
 next
   case Red1AAssStore thus ?case by(auto)((rule exI conjI)+, auto)
 next
   case Red1AAss thus ?case 
-    by(fastsimp simp del: fun_upd_apply)
+    by(fastforce simp del: fun_upd_apply)
 next 
   case (FAss1Red1 e s ta e' s' F D e2 Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 e (lcl s); fv e2 \<subseteq> set vs;
@@ -1210,11 +1218,11 @@ next
   from `compP1 P,t \<turnstile>1 \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>` have "\<not> is_val e" by auto
   with `bisim Vs E2 (e\<bullet>F{D}:=e2) (lcl s)` obtain E E2'
     where E2: "E2 = E\<bullet>F{D}:=E2'" "e2 = compE1 Vs E2'" and "bisim Vs E e (lcl s)" 
-    and sync: "\<not> contains_insync E2'" by(fastsimp)
+    and sync: "\<not> contains_insync E2'" by(fastforce)
   with IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUF (e\<bullet>F{D} := e2) ta (e'\<bullet>F{D} := e2)`
     `length Vs + max_vars (e\<bullet>F{D}:=e2) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
   obtain TA' e2' x' where "sim_move10 P t ta e e' E (hp s) X TA' e2' (hp s') x'"
-    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by(fastsimp)
+    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by(fastforce)
   with E2 `fv E2 \<subseteq> set Vs` sync show ?case by(cases "is_val e2'")(auto intro: FAssRed1)
 next 
   case (FAss1Red2 e s ta e' s' v F D Vs E2 X)
@@ -1222,10 +1230,10 @@ next
              x \<subseteq>\<^sub>m [vs [\<mapsto>] lcl s]; length vs + max_vars e \<le> length (lcl s); \<D> e2 \<lfloor>dom x\<rfloor>; \<not> IUF e ta e' \<rbrakk>
             \<Longrightarrow> ?concl e e' e2 s x ta s' e' vs`
   from `bisim Vs E2 (Val v\<bullet>F{D}:=e) (lcl s)` obtain E
-    where E2: "E2 = (Val v\<bullet>F{D}:=E)" and "bisim Vs E e (lcl s)" by(fastsimp)
+    where E2: "E2 = (Val v\<bullet>F{D}:=E)" and "bisim Vs E e (lcl s)" by(fastforce)
   with IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUF (Val v\<bullet>F{D} := e) ta (Val v\<bullet>F{D} := e')`
     `length Vs + max_vars (Val v\<bullet>F{D}:=e) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
-    E2 show ?case by(fastsimp intro: FAssRed2)
+    E2 show ?case by(fastforce intro: FAssRed2)
 next
   case (Call1Obj e s ta e' s' M es Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 e (lcl s); fv e2 \<subseteq> set vs;
@@ -1237,7 +1245,7 @@ next
   with IH[of Vs E X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUF (e\<bullet>M(es)) ta (e'\<bullet>M(es))`
     `length Vs + max_vars (e\<bullet>M(es)) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
   obtain TA' e2' x' where IH': "sim_move10 P t ta e e' E (hp s) X TA' e2' (hp s') x'"
-    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by(fastsimp)
+    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by(fastforce)
   with E2 `fv E2 \<subseteq> set Vs` `E2 = E\<bullet>M(es')` sync show ?case
     by(cases "is_val e2'")(auto intro: CallObj)
 next
@@ -1249,12 +1257,12 @@ next
     where "E2 = Val v \<bullet>M(Es)" "bisims Vs Es es (lcl s)" by(auto)
   with IH[of Vs Es X] `fv E2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUF (Val v\<bullet>M(es)) ta (Val v\<bullet>M(es'))`
     `length Vs + max_vars (Val v\<bullet>M(es)) \<le> length (lcl s)` `\<D> E2 \<lfloor>dom X\<rfloor>`
-    `E2 = Val v \<bullet>M(Es)` show ?case by(fastsimp intro: CallParams)
+    `E2 = Val v \<bullet>M(Es)` show ?case by(fastforce intro: CallParams)
 next
   case (Red1CallExternal s a T M vs ta va h' e' s' Vs E2 X)
   from `bisim Vs E2 (addr a\<bullet>M(map Val vs)) (lcl s)` have E2: "E2 = addr a\<bullet>M(map Val vs)" by auto
-  moreover from `is_external_call (compP1 P) T M`
-  have "is_external_call P T M" by simp
+  moreover from `is_native (compP1 P) T M`
+  have "is_native P T M" by simp
   moreover from `compP1 P,t \<turnstile> \<langle>a\<bullet>M(vs),hp s\<rangle> -ta\<rightarrow>ext \<langle>va,h'\<rangle>`
   have "P,t \<turnstile> \<langle>a\<bullet>M(vs),hp s\<rangle> -ta\<rightarrow>ext \<langle>va,h'\<rangle>" by simp
   moreover from wf `P,t \<turnstile> \<langle>a\<bullet>M(vs),hp s\<rangle> -ta\<rightarrow>ext \<langle>va,h'\<rangle>`
@@ -1265,7 +1273,7 @@ next
   have "\<tau>external P T M \<Longrightarrow> ta = \<epsilon> \<and> h' = hp s"
     by(auto dest: \<tau>external'_red_external_TA_empty \<tau>external'_red_external_heap_unchanged simp add: \<tau>external'_def)
   ultimately show ?case using `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` 
-    by(fastsimp intro: RedCallExternal simp add: map_eq_append_conv synthesized_call_def sim_move10_def)
+    by(fastforce intro: RedCallExternal simp add: map_eq_append_conv synthesized_call_def sim_move10_def)
 next
   case (Block1Red e h x ta e' h' x' V T Vs E2 X)
   note IH = `\<And>vs e2 xa. \<lbrakk> bisim vs e2 e (lcl (h, x)); fv e2 \<subseteq> set vs; xa \<subseteq>\<^sub>m [vs [\<mapsto>] lcl (h, x)];
@@ -1284,7 +1292,7 @@ next
       `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` `\<D> E2 \<lfloor>dom X\<rfloor>` `\<not> IUF {V:T=None; e} ta {V:T=None; e'}`
     obtain TA' e2' X' where IH': "sim_move10 P t ta e e' E h (X(V' := None)) TA' e2' h' X'"
       "bisim (Vs @ [V']) e2' e' x'" "X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']"
-      by(fastsimp simp del: fun_upd_apply)
+      by(fastforce simp del: fun_upd_apply)
     { assume "V' \<in> set Vs"
       hence "hidden (Vs @ [V']) (index Vs V')" by(rule hidden_index)
       with `bisim (Vs @ [V']) E e (lcl (h, x))` have "unmod e (index Vs V')"
@@ -1301,12 +1309,12 @@ next
     show ?thesis
     proof(cases "X' V'")
       case None
-      with BlockNone IH' rel show ?thesis by(fastsimp intro: BlockRed)
+      with BlockNone IH' rel show ?thesis by(fastforce intro: BlockRed)
     next
       case (Some v)
       with `X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']` `length Vs < length x'`
       have "x' ! length Vs = v" by(auto dest: map_le_SomeD)
-      with BlockNone IH' rel Some show ?thesis by(fastsimp intro: BlockRed)
+      with BlockNone IH' rel Some show ?thesis by(fastforce intro: BlockRed)
     qed
   next
     case BlockSome thus ?thesis by simp
@@ -1317,7 +1325,7 @@ next
       `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` `\<D> E2 \<lfloor>dom X\<rfloor>` `\<not> IUF {V:T=None; e} ta {V:T=None; e'}`
     obtain TA' e2' X' where IH': "sim_move10 P t ta e e' E h (X(V' \<mapsto> x ! length Vs)) TA' e2' h' X'"
       "bisim (Vs @ [V']) e2' e' x'" "X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']"
-      by(fastsimp simp del: fun_upd_apply)
+      by(fastforce simp del: fun_upd_apply)
     { assume "V' \<in> set Vs"
       hence "hidden (Vs @ [V']) (index Vs V')" by(rule hidden_index)
       with `bisim (Vs @ [V']) E e (lcl (h, x))` have "unmod e (index Vs V')"
@@ -1336,12 +1344,12 @@ next
     with `X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']` `length Vs < length x'`
     have "x' ! length Vs = v'" by(auto dest: map_le_SomeD)
     with BlockSomeNone IH' rel `X' V' = \<lfloor>v'\<rfloor>`
-    show ?thesis by(fastsimp intro: BlockRed)
+    show ?thesis by(fastforce intro: BlockRed)
   qed
 next
   case(Block1Some V xs T v e h)
   from `bisim vs e2 {V:T=\<lfloor>v\<rfloor>; e} (lcl (h, xs))` obtain e' V' where "e2 = {V':T=\<lfloor>v\<rfloor>; e'}"
-    and "V = length vs" "bisim (vs @ [V']) e' e (xs[length vs := v])" by(fastsimp)
+    and "V = length vs" "bisim (vs @ [V']) e' e (xs[length vs := v])" by(fastforce)
   moreover have "sim_move10 P t \<epsilon> {length vs:T=\<lfloor>v\<rfloor>; e} {length vs:T=None; e} {V':T=\<lfloor>v\<rfloor>; e'} h x \<epsilon> {V':T=\<lfloor>v\<rfloor>; e'} h x"
     by(auto)
   moreover from `bisim (vs @ [V']) e' e (xs[length vs := v])`
@@ -1357,7 +1365,7 @@ next
     where E2: "E2 = sync(addr a) E" "e = compE1 (Vs@[fresh_var Vs]) E" 
     and sync: "\<not> contains_insync E" and [simp]: "V = length Vs" by auto
   moreover
-  have "extTA2J0 P,P,t \<turnstile> \<langle>sync(addr a) E, (h, X)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Lock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncLock a\<rbrace>\<rightarrow> \<langle>insync(a) E, (h, X)\<rangle>"
+  have "extTA2J0 P,P,t \<turnstile> \<langle>sync(addr a) E, (h, X)\<rangle> -\<lbrace>Lock\<rightarrow>a, SyncLock a\<rbrace>\<rightarrow> \<langle>insync(a) E, (h, X)\<rangle>"
     by(rule LockSynchronized)
   moreover from `fv E2 \<subseteq> set Vs` fresh_var_fresh[of Vs] sync len
   have "bisim Vs (insync(a) E) (insync\<^bsub>length Vs\<^esub> (a) e) (xs[length Vs := Addr a])"
@@ -1368,7 +1376,7 @@ next
   hence "zip Vs (xs[length Vs := Addr a]) = zip Vs xs" by simp
   with `X \<subseteq>\<^sub>m [Vs [\<mapsto>] (lcl (h, xs))]` have "X \<subseteq>\<^sub>m [Vs [\<mapsto>] xs[length Vs := Addr a]]"
     by(auto simp add: map_le_def map_upds_def)
-  ultimately show ?case by(fastsimp intro: sim_move10_SyncLocks)
+  ultimately show ?case by(fastforce intro: sim_move10_SyncLocks)
 next
   case (Synchronized1Red2 e s ta e' s' V a Vs E2 X)
   note IH = `\<And>vs e2 x. \<lbrakk> bisim vs e2 e (lcl s); fv e2 \<subseteq> set vs;
@@ -1399,7 +1407,7 @@ next
   ultimately obtain TA' e2' x' where IH': "sim_move10 P t ta e e' E (hp s) X TA' e2' (hp s') x'"
     "bisim (Vs @ [fresh_var Vs]) e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs @ [fresh_var Vs] [\<mapsto>] lcl s']" by auto
   hence "dom x' \<subseteq> dom X \<union> fv E"
-    by(fastsimp iff del: domIff simp add: sim_move10_def dest: red_dom_lcl \<tau>red0r_dom_lcl[OF wf_prog_wwf_prog[OF wf]] \<tau>red0t_dom_lcl[OF wf_prog_wwf_prog[OF wf]] \<tau>red0r_fv_subset[OF wf_prog_wwf_prog[OF wf]] split: split_if_asm)
+    by(fastforce iff del: domIff simp add: sim_move10_def dest: red_dom_lcl \<tau>red0r_dom_lcl[OF wf_prog_wwf_prog[OF wf]] \<tau>red0t_dom_lcl[OF wf_prog_wwf_prog[OF wf]] \<tau>red0r_fv_subset[OF wf_prog_wwf_prog[OF wf]] split: split_if_asm)
   with fv `X (fresh_var Vs) = None` have "(fresh_var Vs) \<notin> dom x'" by auto
   hence "x' (fresh_var Vs) = None" by auto
   moreover from `compP1 P,t \<turnstile>1 \<langle>e,s\<rangle> -ta\<rightarrow> \<langle>e',s'\<rangle>`
@@ -1417,9 +1425,9 @@ next
   from `bisim Vs E2 (insync\<^bsub>V\<^esub> (a) Val v) (lcl (h, xs))`
   have E2: "E2 = insync(a) Val v" "V = length Vs" "xs ! length Vs = Addr a" by auto
   moreover with `xs ! V = Addr a'` have [simp]: "a' = a" by simp
-  have "extTA2J0 P,P,t \<turnstile> \<langle>insync(a) (Val v), (h, X)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>\<rightarrow> \<langle>Val v, (h, X)\<rangle>"
+  have "extTA2J0 P,P,t \<turnstile> \<langle>insync(a) (Val v), (h, X)\<rangle> -\<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>\<rightarrow> \<langle>Val v, (h, X)\<rangle>"
     by(rule UnlockSynchronized)
-  ultimately show ?case using `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl (h, xs)]` by(fastsimp intro: sim_move10_SyncLocks)
+  ultimately show ?case using `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl (h, xs)]` by(fastforce intro: sim_move10_SyncLocks)
 next
   case (Unlock1SynchronizedNull xs V a v h Vs E2 X)
   from `bisim Vs E2 (insync\<^bsub>V\<^esub> (a) Val v) (lcl (h, xs))`
@@ -1429,7 +1437,7 @@ next
 next
   case (Unlock1SynchronizedFail xs V A' a' v h Vs E2 X)
   from `bisim Vs E2 (insync\<^bsub>V\<^esub> (a') Val v) (lcl (h, xs))` `xs ! V = Addr A'` have "A' = a'" by auto
-  with `\<not> IUF (insync\<^bsub>V\<^esub> (a') Val v) \<epsilon>\<lbrace>\<^bsub>l\<^esub>UnlockFail\<rightarrow>A'\<rbrace> (THROW IllegalMonitorState)`
+  with `\<not> IUF (insync\<^bsub>V\<^esub> (a') Val v) \<lbrace>UnlockFail\<rightarrow>A'\<rbrace> (THROW IllegalMonitorState)`
   have False by(auto simp del: ta_update_locks.simps)
   thus ?case ..
 next
@@ -1478,7 +1486,7 @@ next
   with IH[of Vs E X] `fvs ES2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUFs (e # es) ta (e' # es)`
     `length Vs + max_varss (e # es) \<le> length (lcl s)` `\<D>s ES2 \<lfloor>dom X\<rfloor>`
   obtain TA' e2' x' where IH': "sim_move10 P t ta e e' E (hp s) X TA' e2' (hp s') x'"
-    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by fastsimp
+    "bisim Vs e2' e' (lcl s')" "x' \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s']" by fastforce
   show ?case
   proof(cases "is_val e2'")
     case False
@@ -1498,16 +1506,16 @@ next
     by(auto elim!: bisims_cases)
   with IH[of Vs ES X] `fvs ES2 \<subseteq> set Vs` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl s]` `\<not> IUFs (Val v # es) ta (Val v # es')`
     `length Vs + max_varss (Val v # es) \<le> length (lcl s)` `\<D>s ES2 \<lfloor>dom X\<rfloor>`
-    `ES2 = Val v # ES` show ?case by(fastsimp intro: sim_moves10_expr)
+    `ES2 = Val v # ES` show ?case by(fastforce intro: sim_moves10_expr)
 next
   case Call1ThrowParams
-  thus ?case by(fastsimp intro: CallThrowParams elim!: bisim_cases simp add: bisims_map_Val_Throw2)
+  thus ?case by(fastforce intro: CallThrowParams elim!: bisim_cases simp add: bisims_map_Val_Throw2)
 next
   case (Synchronized1Throw2 xs V a' a ad h Vs E2 X)
   from `bisim Vs E2 (insync\<^bsub>V\<^esub> (a) Throw ad) (lcl (h, xs))`
   have "xs ! length Vs = Addr a" and "V = length Vs" by auto
   with `xs ! V = Addr a'` have [simp]: "a' = a" by simp
-  have "extTA2J0 P,P,t \<turnstile> \<langle>insync(a) Throw ad, (h, X)\<rangle> -\<epsilon>\<lbrace>\<^bsub>l\<^esub> Unlock\<rightarrow>a \<rbrace>\<lbrace>\<^bsub>o\<^esub> SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, (h, X)\<rangle>"
+  have "extTA2J0 P,P,t \<turnstile> \<langle>insync(a) Throw ad, (h, X)\<rangle> -\<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, (h, X)\<rangle>"
     by(rule SynchronizedThrow2)
   with `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl (h, xs)]` `bisim Vs E2 (insync\<^bsub>V\<^esub> (a) Throw ad) (lcl (h, xs))`
   show ?case by(auto intro: sim_move10_SyncLocks intro!: exI)
@@ -1520,7 +1528,7 @@ next
 next
   case (Synchronized1Throw2Fail xs V A' a' a h Vs E2 X)
   from `bisim Vs E2 (insync\<^bsub>V\<^esub> (a') Throw a) (lcl (h, xs))` `xs ! V = Addr A'` have "A' = a'" by auto
-  with `\<not> IUF (insync\<^bsub>V\<^esub> (a') Throw a) \<epsilon>\<lbrace>\<^bsub>l\<^esub>UnlockFail\<rightarrow>A'\<rbrace> (THROW IllegalMonitorState)`
+  with `\<not> IUF (insync\<^bsub>V\<^esub> (a') Throw a) \<lbrace>UnlockFail\<rightarrow>A'\<rbrace> (THROW IllegalMonitorState)`
   have False by(auto simp del: ta_update_locks.simps)
   thus ?case ..
 next
@@ -1529,7 +1537,7 @@ next
   case Red1InstanceOf thus ?case by auto
 next
   case InstanceOf1Throw thus ?case by auto
-qed(simp_all del: fun_upd_apply, (fastsimp intro: red_reds.intros simp del: fun_upd_apply simp add: finfun_upd_apply)+)
+qed(simp_all del: fun_upd_apply, (fastforce intro: red_reds.intros simp del: fun_upd_apply simp add: finfun_upd_apply)+)
 
 lemma bisim_call_Some_call1:
   "\<lbrakk> bisim Vs e e' xs; call e = \<lfloor>aMvs\<rfloor>; length Vs + max_vars e' \<le> length xs \<rbrakk>
@@ -1542,9 +1550,9 @@ lemma bisim_call_Some_call1:
                 bisims Vs es es'' xs' \<and> take (length Vs) xs = take (length Vs) xs'"
 proof(induct rule: bisim_bisims.inducts)
   case bisimCallParams thus ?case
-    by(fastsimp simp add: is_vals_conv split: split_if_asm)
+    by(fastforce simp add: is_vals_conv split: split_if_asm)
 next
-  case bisimBlockNone thus ?case by(fastsimp intro: take_eq_take_le_eq)
+  case bisimBlockNone thus ?case by(fastforce intro: take_eq_take_le_eq)
 next
   case (bisimBlockSome Vs V e e' xs v T)
   from `length Vs + max_vars {length Vs:T=\<lfloor>v\<rfloor>; e'} \<le> length xs`
@@ -1599,10 +1607,10 @@ next
       using `bisim (Vs @ [fresh_var Vs]) e e'' xs'` by auto }
   ultimately show ?case by blast
 next
-  case bisimsCons1 thus ?case by(fastsimp intro!: \<tau>red1'r_inj_\<tau>reds1'r)
+  case bisimsCons1 thus ?case by(fastforce intro!: \<tau>red1'r_inj_\<tau>reds1'r)
 next
-  case bisimsCons2 thus ?case by(fastsimp intro!: \<tau>reds1'r_cons_\<tau>reds1'r)
-qed fastsimp+
+  case bisimsCons2 thus ?case by(fastforce intro!: \<tau>reds1'r_cons_\<tau>reds1'r)
+qed fastforce+
 
 lemma sim_move01_into_Red1:
   "sim_move01 P t ta e E' h xs ta' e2' h' xs'
@@ -1614,12 +1622,12 @@ lemma sim_move01_into_Red1:
                            \<not> \<tau>Move1 P h (ex2', exs2') \<and> \<not> IUFL ex2' exs2' ta' (e2', xs') exs2 \<and>
                            ta_bisim01 ta ta'"
 apply(auto simp add: sim_move01_def IUFL_def intro: \<tau>red1't_into_\<tau>Red1't \<tau>red1'r_into_\<tau>Red1'r red1Red split: split_if_asm)
-apply(fastsimp simp add: IUFL_def intro: red1Red intro!: \<tau>red1'r_into_\<tau>Red1'r)+
+apply(fastforce simp add: IUFL_def intro: red1Red intro!: \<tau>red1'r_into_\<tau>Red1'r)+
 done
 
 lemma sim_move01_max_vars_decr:
   "sim_move01 P t ta e0 e h xs ta' e' h' xs' \<Longrightarrow> max_vars e' \<le> max_vars e"
-by(fastsimp simp add: sim_move01_def split: split_if_asm dest: \<tau>red1't_max_vars red1_max_vars_decr \<tau>red1'r_max_vars)
+by(fastforce simp add: sim_move01_def split: split_if_asm dest: \<tau>red1't_max_vars red1_max_vars_decr \<tau>red1'r_max_vars)
 
 lemma Red1_simulates_red0:
   assumes wf: "wf_J_prog P"
@@ -1662,13 +1670,13 @@ proof(cases)
     ultimately have "bisim_list1 (e1', es1) ((e2', xs'), exs2)" by(rule bisim_list1I) }
   ultimately show ?thesis using ex2 by(simp split del: split_if)(rule exI conjI|assumption)+
 next
-  case (red0Call a M vs C Ts T pns body D)
+  case (red0Call a M vs U C Ts T pns body D)
   note [simp] = `ta = \<epsilon>` `h' = h`
     and es1' = `es1' = e1 # es1`
     and e1' = `e1' = blocks (this # pns) (Class D # Ts) (Addr a # vs) body`
     and call = `call e1 = \<lfloor>(a, M, vs)\<rfloor>`
-    and ha = `typeof_addr h a = \<lfloor>Class C\<rfloor>`
-    and nec = `\<not> is_external_call P (Class C) M`
+    and ha = `typeof_addr h a = \<lfloor>U\<rfloor>` `is_class_type_of U C`
+    and nec = `\<not> is_native P U M`
     and sees = `P \<turnstile> C sees M: Ts\<rightarrow>T = (pns, body) in D`
     and len = `length vs = length pns` `length Ts = length pns`
   from bisiml obtain E xs where ex2: "ex2 = (E, xs)"
@@ -1683,7 +1691,7 @@ next
     
   let ?e1' = "blocks (this # pns) (Class D # Ts) (Addr a # vs) body"
   let ?e2' = "blocks1 0 (Class D#Ts) (compE1 (this # pns) body)"
-  let ?xs2' = "Addr a # vs @ replicate (max_vars (compE1 (this # pns) body))  undefined"
+  let ?xs2' = "Addr a # vs @ replicate (max_vars (compE1 (this # pns) body)) undefined_value"
   let ?exs2' = "(e', xs') # exs2"
 
   have "\<tau>Red1'r (compP1 P) t h ((E, xs), exs2) ((e', xs'), exs2)"
@@ -1691,7 +1699,7 @@ next
   moreover {
     note `call1 e' = \<lfloor>(a, M, vs)\<rfloor>` 
     moreover note ha
-    moreover from nec have "\<not> is_external_call (compP1 P) (Class C) M" by simp
+    moreover from nec have "\<not> is_native (compP1 P) U M" by simp
     moreover have "compP1 P \<turnstile> C sees M:Ts \<rightarrow> T = (\<lambda>(pns, body). compE1 (this # pns) body) (pns, body) in D"
       using sees unfolding compP1_def by(rule sees_method_compP)
     hence sees': "compP1 P \<turnstile> C sees M:Ts \<rightarrow> T = compE1 (this # pns) body in D" by simp
@@ -1752,7 +1760,7 @@ next
     and D: "\<D> e \<lfloor>{}\<rfloor>"
     and call: "call e = \<lfloor>aMvs\<rfloor>"
     and call1: "call1 E = \<lfloor>aMvs\<rfloor>"
-    by(fastsimp elim: bisim_list1_elim)
+    by(fastforce elim: bisim_list1_elim)
   let ?e2' = "inline_call E' E"
 
   from `final e1` bisim' have "final E'" by(auto)
@@ -1866,11 +1874,11 @@ proof(cases)
     and bisim'': "bisim [] e2' E' xs'" and lcl': "x' \<subseteq>\<^sub>m empty" by auto
   from red have "\<not> final E" by auto
   with sim_move10_into_red0[OF wf_prog_wwf_prog[OF wf] red', of es] fv ex2 ex2'
-  have red'': "?red e2' es" by fastsimp
+  have red'': "?red e2' es" by fastforce
   moreover {
     note bsl bisim''
     moreover from red' fv have "fv e2' = {}"
-      by(fastsimp simp add: sim_move10_def split: split_if_asm dest: \<tau>red0r_fv_subset[OF wf_prog_wwf_prog[OF wf]] \<tau>red0t_fv_subset[OF wf_prog_wwf_prog[OF wf]] red_fv_subset[OF wf_prog_wwf_prog[OF wf]])
+      by(fastforce simp add: sim_move10_def split: split_if_asm dest: \<tau>red0r_fv_subset[OF wf_prog_wwf_prog[OF wf]] \<tau>red0t_fv_subset[OF wf_prog_wwf_prog[OF wf]] red_fv_subset[OF wf_prog_wwf_prog[OF wf]])
     moreover from red' have "dom x' \<subseteq> dom (empty) \<union> fv e"
       unfolding sim_move10_def
       apply(auto split: split_if_asm del: subsetI dest: \<tau>red0r_dom_lcl[OF wf_prog_wwf_prog[OF wf]] \<tau>red0t_dom_lcl[OF wf_prog_wwf_prog[OF wf]])
@@ -1889,16 +1897,16 @@ proof(cases)
   ultimately show ?thesis using ex2'
     by(clarsimp split: split_if_asm)(rule exI conjI|assumption|simp)+
 next
-  case (red1Call E a M vs C Ts T body D xs)
+  case (red1Call E a M vs U C Ts T body D xs)
   note [simp] = `ex2 = (E, xs)` `h' = h` `ta = \<epsilon>`
-    and ex2' = `ex2' = (blocks1 0 (Class D#Ts) body, Addr a # vs @ replicate (max_vars body) undefined)`
+    and ex2' = `ex2' = (blocks1 0 (Class D#Ts) body, Addr a # vs @ replicate (max_vars body) undefined_value)`
     and exs' = `exs2' = (E, xs) # exs2`
-    and call = `call1 E = \<lfloor>(a, M, vs)\<rfloor>` and ha = `typeof_addr h a = \<lfloor>Class C\<rfloor>`
-    and nec = `\<not> is_external_call (compP1 P) (Class C) M`
+    and call = `call1 E = \<lfloor>(a, M, vs)\<rfloor>` and ha = `typeof_addr h a = \<lfloor>U\<rfloor>` `is_class_type_of U C`
+    and nec = `\<not> is_native (compP1 P) U M`
     and sees = `compP1 P \<turnstile> C sees M: Ts\<rightarrow>T = body in D`
     and len = `length vs = length Ts`
   let ?e2' = "blocks1 0 (Class D#Ts) body"
-  let ?xs2' = "Addr a # vs @ replicate (max_vars body) undefined"
+  let ?xs2' = "Addr a # vs @ replicate (max_vars body) undefined_value"
   from bisiml have bisim: "bisim [] e E xs" and fv: "fv e = {}"
     and length: "max_vars E \<le> length xs" and bsl: "bisim_list es exs2"
     and D: "\<D> e \<lfloor>{}\<rfloor>" by(auto elim: bisim_list1_elim)
@@ -1906,8 +1914,8 @@ next
   from bisim `call1 E = \<lfloor>(a, M, vs)\<rfloor>`
   have "call e = \<lfloor>(a, M, vs)\<rfloor>" by(rule bisim_call1_Some_call)
   moreover note ha
-  moreover from `\<not> is_external_call (compP1 P) (Class C) M`
-  have "\<not> is_external_call P (Class C) M" by simp
+  moreover from `\<not> is_native (compP1 P) U M`
+  have "\<not> is_native P U M" by simp
   moreover from `compP1 P \<turnstile> C sees M: Ts\<rightarrow>T = body in D`
   obtain pns Jbody where sees': "P \<turnstile> C sees M: Ts\<rightarrow>T = (pns, Jbody) in D"
     and body: "body = compE1 (this # pns) Jbody"
@@ -1917,7 +1925,7 @@ next
     by(auto dest!: sees_wf_mdecl simp add: wf_mdecl_def)
   with len have "length vs = length pns" "length Ts = length pns" by simp_all
   ultimately have red': "P,t \<turnstile>0 \<langle>e/es, h\<rangle> -\<epsilon>\<rightarrow> \<langle>?e'/e#es, h\<rangle>" by(rule red0Call)
-  moreover from `call e = \<lfloor>(a, M, vs)\<rfloor>` ha `\<not> is_external_call P (Class C) M`
+  moreover from `call e = \<lfloor>(a, M, vs)\<rfloor>` ha `\<not> is_native P U M`
   have "\<tau>Move0 P h (e, es)" by(auto simp add: synthesized_call_def dest: \<tau>move0_callD[where P=P and h=h])
   ultimately have "\<tau>Red0t P t h (e, es) (?e', e#es)" by auto
   moreover
@@ -1946,7 +1954,7 @@ next
     thus "\<D> ?e' \<lfloor>{}\<rfloor>" by simp
     from len show "max_vars ?e2' \<le> length ?xs2'" by(simp add: blocks1_max_vars)
   qed
-  moreover have "\<tau>Move1 P h (ex2, exs2)" using ha `call1 E = \<lfloor>(a, M, vs)\<rfloor>` `\<not> is_external_call (compP1 P) (Class C) M`
+  moreover have "\<tau>Move1 P h (ex2, exs2)" using ha `call1 E = \<lfloor>(a, M, vs)\<rfloor>` `\<not> is_native (compP1 P) U M`
     by(auto simp add: synthesized_call_def dest: \<tau>move1_not_call1[where P=P and h=h])
   ultimately show ?thesis using exs'
     by(simp del: \<tau>Move1.simps \<tau>Move0.simps)(rule exI conjI rtranclp.rtrancl_refl|assumption)+
@@ -1965,7 +1973,7 @@ next
     and D: "\<D> e' \<lfloor>{}\<rfloor>"
     and call: "call e' = \<lfloor>aMvs\<rfloor>"
     and call1: "call1 E = \<lfloor>aMvs\<rfloor>"
-    by(fastsimp elim!: bisim_list1_elim)
+    by(fastforce elim!: bisim_list1_elim)
   
   from `final E'` bisim have fin': "final e" by(auto)
   hence "P,t \<turnstile>0 \<langle>e/e' # es',h\<rangle> -\<epsilon>\<rightarrow> \<langle>inline_call e e'/es',h\<rangle>" by(rule red0Return)
@@ -2037,8 +2045,8 @@ next
     and heap: "h1 = h2"
     and red: "compP1 P,t \<turnstile>1 \<langle>ex2/exs2,h2\<rangle> -\<epsilon>\<rightarrow> \<langle>ex2'/exs2',h2'\<rangle>"
     and \<tau>: "\<tau>Move1 P h2 (ex2, exs2)"
-    and IUF: "\<not> IUFL ex2 exs2 (\<epsilon>:: 'heap J1_thread_action) ex2' exs2'"
-    by(fastsimp simp add: bisim_red0_Red1_def Red1'_mthr.silent_move_iff)+
+    and IUF: "\<not> IUFL ex2 exs2 (\<epsilon>:: ('addr, 'thread_id, 'heap) J1_thread_action) ex2' exs2'"
+    by(fastforce simp add: bisim_red0_Red1_def Red1'_mthr.silent_move_iff)+
   from red0_simulates_Red1[OF wf red bisim IUF] \<tau>
   obtain e' es' where bisim': "bisim_list1 (e', es') (ex2', exs2')"
     and red': "\<tau>Red0t P t h2 (ex1, exs1) (e', es') \<or> 
@@ -2077,7 +2085,7 @@ next
     and red'': "compP1 P,t \<turnstile>1 \<langle>ex2'/exs2',h1\<rangle> -ta'\<rightarrow> \<langle>ex2''/exs2'',h1'\<rangle>"
     and \<tau>': "\<not> \<tau>Move1 P h1 (ex2', exs2')"
     and IUF: "\<not> IUFL ex2' exs2' ta' ex2'' exs2''"
-    and ta: "ta_bisim01 ta1 ta'" by fastsimp
+    and ta: "ta_bisim01 ta1 ta'" by fastforce
   from red'' IUF have "mred1' (compP1 P) t ((ex2', exs2'), h1) ta' ((ex2'', exs2''), h1')" by auto
   moreover from \<tau>' have "\<not> \<tau>MOVE1 (compP1 P) ((ex2', exs2'), h1) ta' ((ex2'', exs2''), h1')" by simp
   moreover from red' have "Red1'_mthr.silent_moves (compP1 P) t s2 ((ex2', exs2'), h1)"
@@ -2100,14 +2108,14 @@ next
     and IUF: "\<not> IUFL ex2 exs2 ta2 ex2' exs2'"
     by(auto simp add: bisim_red0_Red1_def)
   from \<tau> heap have "\<not> \<tau>Move1 P h2 (ex2, exs2)" unfolding s2
-    using red by(fastsimp elim!: Red1.cases dest: red1_\<tau>_taD)
+    using red by(fastforce elim!: Red1.cases dest: red1_\<tau>_taD)
   with red0_simulates_Red1[OF wf red bisim IUF]
   obtain e' es' e'' es'' ta'
     where bisim': "bisim_list1 (e', es') (ex2', exs2')"
     and red': "\<tau>Red0r P t h1 (ex1, exs1) (e'', es'')"
     and red'': "P,t \<turnstile>0 \<langle>e''/es'',h1\<rangle> -ta'\<rightarrow> \<langle>e'/es',h2'\<rangle>"
     and \<tau>': "\<not> \<tau>Move0 P h1 (e'', es'')"
-    and ta: "ta_bisim01 ta' ta2" using heap by fastsimp
+    and ta: "ta_bisim01 ta' ta2" using heap by fastforce
   from red'' have "mred0 P t ((e'', es''), h1) ta' ((e', es'), h2')" by auto
   moreover from red' have "red0_mthr.silent_moves P t ((ex1, exs1), h1) ((e'', es''), h1)"
     by(rule \<tau>Red0r_into_red0_\<tau>mthr_silent_moves)
@@ -2147,14 +2155,14 @@ proof -
     using wf by(rule delay_bisimulation_red0_Red1)
   show ?thesis
   proof
-    fix t and s1 and s2 :: "((expr1 \<times> val list) \<times> (expr1 \<times> val list) list) \<times> 'heap"
+    fix t and s1 and s2 :: "(('addr expr1 \<times> 'addr locals1) \<times> ('addr expr1 \<times> 'addr locals1) list) \<times> 'heap"
     assume "bisim_red0_Red1 s1 s2" "(\<lambda>(x1, m). final_expr0 x1) s1"
     moreover hence "(\<lambda>(x2, m). final_expr1 x2) s2"
       by(cases s1)(cases s2,auto simp add: bisim_red0_Red1_def final_iff elim!: bisim_list1_elim elim: bisim_list.cases)
     ultimately show "\<exists>s2'. Red1'_mthr.silent_moves (compP1 P) t s2 s2' \<and> bisim_red0_Red1 s1 s2' \<and> (\<lambda>(x2, m). final_expr1 x2) s2'"
       by blast
   next
-    fix t s1 and s2 :: "((expr1 \<times> val list) \<times> (expr1 \<times> val list) list) \<times> 'heap"
+    fix t s1 and s2 :: "(('addr expr1 \<times> 'addr locals1) \<times> ('addr expr1 \<times> 'addr locals1) list) \<times> 'heap"
     assume "bisim_red0_Red1 s1 s2" "(\<lambda>(x2, m). final_expr1 x2) s2"
     moreover hence "(\<lambda>(x1, m). final_expr0 x1) s1"
       by(cases s1)(cases s2,auto simp add: bisim_red0_Red1_def final_iff elim!: bisim_list1_elim elim: bisim_list.cases)
@@ -2194,7 +2202,7 @@ proof -
     assume "bisim_red0_Red1 (x1, m1) (x2, m2)"
       and "bisim_wait01 x1 x2"
       and "mred0 P t (x1, m1) ta1 (x1', m1')"
-      and wakeup: "Notified \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub>"
+      and wakeup: "Notified \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub> \<or> WokenUp \<in> set \<lbrace>ta1\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
     moreover obtain e0' es0' where [simp]: "x1' = (e0', es0')" by(cases x1')
     moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
@@ -2213,7 +2221,7 @@ proof -
     assume "bisim_red0_Red1 (x1, m1) (x2, m2)"
       and "bisim_wait01 x1 x2" 
       and "mred1' (compP1 P) t (x2, m2) ta2 (x2', m2')"
-      and wakeup: "Notified \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub> \<or> Interrupted \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub>"
+      and wakeup: "Notified \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub> \<or> WokenUp \<in> set \<lbrace>ta2\<rbrace>\<^bsub>w\<^esub>"
     moreover obtain e0 es0 where [simp]: "x1 = (e0, es0)" by(cases x1)
     moreover obtain e1 xs1 exs1 where [simp]: "x2 = ((e1, xs1), exs1)" by(cases x2) auto
     moreover obtain e1' xs1' exs1' where [simp]: "x2' = ((e1', xs1'), exs1')" by(cases x2') auto
@@ -2228,6 +2236,9 @@ proof -
     with red0_simulates_Red1[OF wf red bisim IUF] m1 call
     show "\<exists>ta1 x1' m1'. mred0 P t (x1, m1) ta1 (x1', m1') \<and> bisim_red0_Red1 (x1', m1') (x2', m2') \<and> ta_bisim01 ta1 ta2"
       by(auto simp add: bisim_red0_Red1_def)
+  next
+    show "(\<exists>x. final_expr0 x) \<longleftrightarrow> (\<exists>x. final_expr1 x)"
+      by(auto simp add: split_paired_Ex final_iff)
   qed
 qed
 
@@ -2251,10 +2262,10 @@ proof -
     by(auto dest: sees_method_compP[where f="(\<lambda>C M Ts T (pns, body). compE1 (this # pns) body)"])
 
   let ?e = "blocks1 0 (Class C#Ts) (compE1 (this # pns) body)"
-  let ?xs = "Null # vs @ replicate (max_vars body) undefined"
+  let ?xs = "Null # vs @ replicate (max_vars body) undefined_value"
   from fvbody cisbody len vs
   have "bisim [] (blocks (this # pns) (Class C # Ts) (Null # vs) body) (blocks1 (length ([] :: vname list)) (Class C # Ts) (compE1 (this # pns) body)) ?xs"
-    by-(rule blocks_bisim,(fastsimp simp add: nth_Cons' nth_append)+)
+    by-(rule blocks_bisim,(fastforce simp add: nth_Cons' nth_append)+)
   with fv dabody len vs elbody sees sees1
   show ?thesis unfolding start_state_def
     by(auto intro!: red0_Red1'.mbisimI split: split_if_asm)(auto simp add: bisim_red0_Red1_def blocks1_max_vars intro!: bisim_list.intros bisim_list1I wset_thread_okI)
