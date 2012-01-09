@@ -4,7 +4,8 @@
 
 header {* \isaheader{The multithreaded semantics} *}
 
-theory FWSemantics imports
+theory FWSemantics
+imports
   FWWellform
   FWLockingThread
   FWCondAction
@@ -333,7 +334,7 @@ lemma redT_ex_new_thread':
 using assms
 by(cases)(fastforce split: split_if_asm dest!: redT_updTs_new_thread)+
 
-definition deterministic :: "(('l,'t,'x,'m,'w) state \<Rightarrow> bool) \<Rightarrow> bool"
+definition deterministic :: "('l,'t,'x,'m,'w) state set \<Rightarrow> bool"
 where
   "deterministic I \<longleftrightarrow> 
   (\<forall>s t x ta' x' m' ta'' x'' m''. 

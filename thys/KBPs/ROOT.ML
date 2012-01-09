@@ -5,24 +5,10 @@ no_document use_thys
  [
    "~~/src/HOL/Library/LaTeXsugar",
    "~~/src/HOL/Library/OptionalSugar",
-  "~~/src/HOL/Library/AList",
+  "~~/src/HOL/Library/AList_Impl",
   "Extra",
   "List_local",
   "~~/src/HOL/Library/Mapping"
 ];
 
-use_thys
- [
-  "DFS",
-  "Kripke",
-  "MapOps",
-  "Traces",
-  "Trie",
-  "KBPs",
-  "KBPsAuto",
-  "KBPsAlg",
-  "SPRViewSingle",
-  "Robot",
-  "SPRViewDet",
-  "MuddyChildren"
- ];
+use_thy "KBPs_Main";

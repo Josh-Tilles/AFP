@@ -78,7 +78,7 @@ apply(drule (1) WT_code_into_WT)
 apply(auto simp add: ran_def map_upds_def dest!: map_of_SomeD set_zip_rightD)
 done
 
-lemma wf_J_prog_eq_wf_J_prog' [code_inline]:
+lemma wf_J_prog_eq_wf_J_prog' [code_unfold]:
   "wf_J_prog = wf_J_prog'"
 by(blast intro: ext wf_J_prog'_wf_J_prog wf_J_prog_wf_J_prog' del: equalityI)
 
@@ -87,9 +87,6 @@ code_pred
   [inductify]
   typeable_with 
 .
-
-declare set.equation(3) [code del]
-declare set.simps[code]
 
 text {* Formal code generation test *}
 ML {* @{code wf_J_prog'}  *}

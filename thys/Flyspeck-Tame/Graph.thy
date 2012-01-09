@@ -8,10 +8,10 @@ imports Rotation
 begin
 
 syntax (xsymbols)
-  "_UNION1"     :: "pttrns => 'b set => 'b set"           ("(3\<Union>(00\<^bsub>_\<^esub>)/ _)" 10)
-  "_INTER1"     :: "pttrns => 'b set => 'b set"           ("(3\<Inter>(00\<^bsub>_\<^esub>)/ _)" 10)
-  "_UNION"      :: "pttrn => 'a set => 'b set => 'b set"  ("(3\<Union>(00\<^bsub>_\<in>_\<^esub>)/ _)" 10)
-  "_INTER"      :: "pttrn => 'a set => 'b set => 'b set"  ("(3\<Inter>(00\<^bsub>_\<in>_\<^esub>)/ _)" 10)
+  "_UNION1"     :: "pttrns => 'b set => 'b set"           ("(3\<Union>(00\<^bsub>_\<^esub>)/ _)" [0, 10] 10)
+  "_INTER1"     :: "pttrns => 'b set => 'b set"           ("(3\<Inter>(00\<^bsub>_\<^esub>)/ _)" [0, 10] 10)
+  "_UNION"      :: "pttrn => 'a set => 'b set => 'b set"  ("(3\<Union>(00\<^bsub>_\<in>_\<^esub>)/ _)" [0, 0, 10] 10)
+  "_INTER"      :: "pttrn => 'a set => 'b set => 'b set"  ("(3\<Inter>(00\<^bsub>_\<in>_\<^esub>)/ _)" [0, 0, 10] 10)
 
 subsection{* Notation *}
 
@@ -56,7 +56,7 @@ primrec vertices_face where
 end
 
 defs (overloaded) cong_face_def:
- "f\<^isub>1 \<cong> (f\<^isub>2::face) \<equiv> vertices f\<^isub>1 \<cong> vertices f\<^isub>2" 
+ "f\<^isub>1 \<cong> (f\<^isub>2::face) \<equiv> vertices f\<^isub>1 \<cong> vertices f\<^isub>2"
 
 text {* The following operation makes a face final. *}
 
@@ -72,14 +72,14 @@ primrec nextElem :: "'a list \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> 'a"
 |"nextElem (a#as) b x =
     (if x=a then (case as of [] \<Rightarrow> b | (a'#as') \<Rightarrow> a') else nextElem as b x)"
 
-definition nextVertex :: "face \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_ \<bullet>") (*>*)where (* *)
+definition nextVertex :: "face \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_ \<bullet>" [999]) (*>*)where (* *)
  "f \<bullet> \<equiv> let vs = vertices f in nextElem vs (hd vs)"
 
 
 text {* @{text nextVertices} is $n$-fold application of
 @{text nextvertex}. *}
 
-definition nextVertices :: "face \<Rightarrow> nat \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_\<^bsup>_\<^esup> \<bullet> _") (*>*)where (* *)
+definition nextVertices :: "face \<Rightarrow> nat \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_\<^bsup>_\<^esup> \<bullet> _" [100, 0, 100]) (*>*)where (* *)
   "f\<^bsup>n\<^esup> \<bullet> v \<equiv> (f \<bullet> ^^ n) v"
 
 lemma nextV2: "f\<^bsup>2\<^esup>\<bullet>v = f\<bullet> (f\<bullet> v)"
@@ -94,7 +94,7 @@ defs (*<*) op_vertices_def:(*>*) "(vs::vertex list)\<^bsup>op\<^esup> \<equiv> r
 overloading
   op_graph \<equiv> "Graph.op :: face \<Rightarrow> face"
 begin
- 
+
 primrec op_graph where "(Face vs f)\<^bsup>op\<^esup> = Face (rev vs) f"  (*<*)
 
 end
@@ -102,13 +102,9 @@ end
 lemma [simp]: "vertices ((f::face)\<^bsup>op\<^esup>) = (vertices f)\<^bsup>op\<^esup>"
   by (induct f) (simp add: op_vertices_def)
 lemma [simp]: "xs \<noteq> [] \<Longrightarrow> hd (rev xs)= last xs"
-  by(induct xs) simp_all
-lemma [code_unfold, code_inline del]: "f\<^bsup>op\<^esup>\<bullet>v = (if
-      vertices f = [] then hd (vertices f)
-      else (let vs = vertices f in nextElem (rev vs) (last vs) v))"
- by (simp add: nextVertex_def op_vertices_def) (*>*) (* *)
+  by(induct xs) simp_all (*>*) (* *)
 
-definition prevVertex :: "face \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_\<^bsup>-1\<^esup> \<bullet>") (*>*)where (* *)
+definition prevVertex :: "face \<Rightarrow> vertex \<Rightarrow> vertex" (*<*)("_\<^bsup>-1\<^esup> \<bullet>" [100]) (*>*)where (* *)
   "f\<^bsup>-1\<^esup> \<bullet> v \<equiv> (let vs = vertices f in nextElem (rev vs) (last vs) v)"
 
 abbreviation
@@ -141,11 +137,11 @@ end
 lemma vertices_graph: "vertices g = [0 ..< countVertices g]"
 by (induct g) simp
 
-lemma in_vertices_graph [code_unfold, code_inline del]:
+lemma in_vertices_graph:
   "v \<in> set (vertices g) = (v < countVertices g)"
 by (simp add:vertices_graph)
 
-lemma len_vertices_graph [code_unfold, code_inline del]:
+lemma len_vertices_graph:
   "|vertices g| = countVertices g"
 by (simp add:vertices_graph)
 

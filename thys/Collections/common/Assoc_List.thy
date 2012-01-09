@@ -1,9 +1,9 @@
 header {* \isaheader{The type of associative lists} *}
-theory Assoc_List imports "~~/src/HOL/Library/AList" begin
+theory Assoc_List imports "~~/src/HOL/Library/AList_Impl" begin
 
 subsection {* Additional operations for associative lists *}
 
-fun iteratei_aux :: "'s set \<Rightarrow> ('k \<Rightarrow> 'v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> ('k \<times> 'v) list \<Rightarrow> 's \<Rightarrow> 's"
+fun iteratei_aux :: "('s \<Rightarrow> bool) \<Rightarrow> ('k \<Rightarrow> 'v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> ('k \<times> 'v) list \<Rightarrow> 's \<Rightarrow> 's"
 where
   "iteratei_aux c f [] \<sigma> = \<sigma>"
 | "iteratei_aux c f ((k, v) # l) \<sigma> = 
@@ -15,7 +15,7 @@ where
 | "update_with_aux v k f (p # ps) = (if (fst p = k) then (k, f (snd p)) # ps else p # update_with_aux v k f ps)"
 
 text {*
-  Do not use @{term "AList.delete"} because this traverses all the list even if it has found the key.
+  Do not use @{term "AList_Impl.delete"} because this traverses all the list even if it has found the key.
   We do not have to keep going because we use the invariant that keys are distinct.
 *}
 fun delete_aux :: "'key \<Rightarrow> ('key \<times> 'val) list \<Rightarrow> ('key \<times> 'val) list"
@@ -181,7 +181,7 @@ where [code del]: "update_with v k f al = Assoc_List (update_with_aux v k f (imp
 definition delete :: "'k \<Rightarrow> ('k, 'v) assoc_list \<Rightarrow> ('k, 'v) assoc_list"
 where [code del]: "delete k al = Assoc_List (delete_aux k (impl_of al))"
 
-definition iteratei :: "'s set \<Rightarrow> ('k \<Rightarrow> 'v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> ('k, 'v) assoc_list \<Rightarrow> 's \<Rightarrow> 's" 
+definition iteratei :: "('s \<Rightarrow> bool) \<Rightarrow> ('k \<Rightarrow> 'v \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> ('k, 'v) assoc_list \<Rightarrow> 's \<Rightarrow> 's" 
 where [code]: "iteratei c f al = iteratei_aux c f (impl_of al)"
 
 lemma impl_of_empty [code abstract]: "impl_of empty = []"

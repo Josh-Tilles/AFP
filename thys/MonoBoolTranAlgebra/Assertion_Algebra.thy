@@ -162,7 +162,7 @@ next
     apply (subst compl_le_compl_iff [THEN sym], simp)
     apply (rule Sup2)
     apply safe
-    by (simp add: compl_le_compl_iff)
+    by simp
 next
   fix x :: "'a Assertion" fix A assume A: "x \<in> A" from A show "x \<le> Sup A"
     by (rule Sup1)

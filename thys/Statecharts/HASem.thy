@@ -1,5 +1,5 @@
 (*  Title:      statecharts/HA/HASem.thy
-    ID:         $Id: HASem.thy,v 1.1 2010/07/23 16:56:55 helke Exp $
+
     Author:     Steffen Helke and Florian Kammüller, Software Engineering Group
     Copyright   2010 Technische Universitaet Berlin
 *)
@@ -81,13 +81,20 @@ apply (rule HierAuto_EmptySet)
 apply simp
 done
 
-typedef ('s,'e,'d) status
-    = "{(HA,C,E,D) |
+definition
+  "status =
+    {(HA,C,E,D) |
         (HA::('s,'e,'d)hierauto)
         (C::('s set))
         (E::('e set))
-        (D::'d data). Status HA C E D}"  
-by (rule exI, rule Status_EmptySet)
+        (D::'d data). Status HA C E D}"
+
+typedef (open) ('s,'e,'d) status =
+    "status :: (('s,'e,'d)hierauto * 's set * 'e set * 'd data) set"
+  unfolding status_def
+  apply (rule exI)
+  apply (rule Status_EmptySet)
+  done
 
 
 definition
