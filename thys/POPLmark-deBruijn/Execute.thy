@@ -2,7 +2,7 @@
 *)
 
 theory Execute
-imports POPLmarkRecord "~~/src/HOL/Library/Executable_Set" "~~/src/HOL/Library/Efficient_Nat"
+imports POPLmarkRecord "~~/src/HOL/Library/Efficient_Nat"
 begin
 
 section {* Executing the specification *}
@@ -30,16 +30,44 @@ where
 definition normal_forms where
   "normal_forms t \<equiv> {u. t \<Down> u}"
 
-lemma [code_ind_set]: "Rcd [] \<in> value"
-  by (rule value.Rcd) simp
+lemma [code_pred_intro Rcd_Nil]: "valuep (Rcd [])"
+by (auto intro: valuep.intros)
 
-lemma [code_ind_set]: "t \<in> value \<Longrightarrow> Rcd fs \<in> value \<Longrightarrow> Rcd ((l, t) # fs) \<in> value"
-  apply (rule value.Rcd)
-  apply (ind_cases "Rcd fs \<in> value")
-  apply simp
-  done
+lemma [code_pred_intro Rcd_Cons]: "valuep t \<Longrightarrow> valuep (Rcd fs) \<Longrightarrow> valuep (Rcd ((l, t) # fs))" 
+by (auto intro!: valuep.intros elim!: valuep.cases)
 
-lemmas [code_ind_set] = value.Abs value.TAbs
+lemmas valuep.intros(1)[code_pred_intro Abs'] valuep.intros(2)[code_pred_intro TAbs']
+
+code_pred (modes: i => bool) valuep
+proof -
+  case valuep
+  from valuep.prems show thesis
+  proof (cases rule: valuep.cases)
+    case (Rcd fs)
+    from this Rcd_Nil Rcd_Cons show thesis
+      by (cases fs) (auto intro: valuep.intros)
+  next
+    case Abs
+    with Abs' show thesis .
+  next
+    case TAbs
+    with TAbs' show thesis .
+  qed
+qed
+
+thm valuep.equation
+
+code_pred (modes: i => i => bool, i => o => bool as normalize) norm .
+
+thm norm.equation
+
+lemma [code]:
+  "normal_forms = set_of_pred o normalize"
+unfolding set_of_pred_def o_def normal_forms_def_raw
+by (auto intro: set_eqI normalizeI elim: normalizeE)
+
+lemma [code_unfold]: "x \<in> value \<longleftrightarrow> valuep x"
+  by (simp add: value_def)
 
 definition
   natT :: type where
@@ -73,42 +101,6 @@ cannot immediately read off an algorithm that, given a term @{text t}, computes 
 would have to extract the algorithm contained in the proof of the {\it decomposition lemma}
 from \secref{sec:evaluation-ctxt}.
 *}
-
-text {* The same game with the predicate compiler and the generic code generator *}
-
-lemma [code_pred_intro Rcd_Nil]: "valuep (Rcd [])"
-by (auto intro: valuep.intros)
-
-lemma [code_pred_intro Rcd_Cons]: "valuep t \<Longrightarrow> valuep (Rcd fs) \<Longrightarrow> valuep (Rcd ((l, t) # fs))" 
-by (auto intro!: valuep.intros elim!: valuep.cases)
-
-lemmas valuep.intros(1)[code_pred_intro Abs'] valuep.intros(2)[code_pred_intro TAbs']
-
-code_pred valuep
-proof -
-  case valuep
-  from valuep.prems show thesis
-  proof (cases rule: valuep.cases)
-    case (Rcd fs)
-    from this Rcd_Nil Rcd_Cons show thesis
-      by (cases fs) (auto intro: valuep.intros)
-  next
-    case Abs
-    with Abs' show thesis .
-  next
-    case TAbs
-    with TAbs' show thesis .
-  qed
-qed
-
-thm valuep.equation
-
-code_pred (modes: i => i => bool,  i => o => bool as normalize) norm .
-
-thm norm.equation
-lemma [code]: "value = valuep"
-unfolding value_def Collect_def ..
-declare mem_def[code_inline]
 
 values "{u. norm fact2 u}"
 

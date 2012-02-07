@@ -6,7 +6,10 @@
 
 header {* \isaheader{Class Declarations and Programs} *}
 
-theory Decl imports Type begin
+theory Decl
+imports
+  Type
+begin
 
 type_synonym volatile = bool
 
@@ -73,6 +76,9 @@ by(induct T)(auto, metis is_type_ArrayD is_type_array)
 
 abbreviation "types" :: "'m prog \<Rightarrow> ty set"
 where "types P \<equiv> {T. is_type P T}"
+
+abbreviation is_htype :: "'m prog \<Rightarrow> htype \<Rightarrow> bool"
+where "is_htype P hT \<equiv> is_type P (ty_of_htype hT)"
 
 subsection {* Code generation *}
 

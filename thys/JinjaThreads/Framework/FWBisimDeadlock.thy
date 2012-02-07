@@ -4,7 +4,11 @@
 
 header {* \isaheader{Preservation of deadlock across bisimulations} *}
 
-theory FWBisimDeadlock imports FWBisimulation FWDeadlock begin
+theory FWBisimDeadlock
+imports
+  FWBisimulation
+  FWDeadlock
+begin
 
 context FWdelay_bisimulation_obs begin
 
@@ -61,7 +65,7 @@ proof -
   proof(induct A\<equiv>"{t. no_\<tau>moves1 s1 t}" arbitrary: s1 ts2 rule: finite_induct)
     case empty
     from `{} = {t. no_\<tau>moves1 s1 t}`[symmetric] have "no_\<tau>moves1 s1 = (\<lambda>t. False)"
-      by(auto intro: ext simp add: mem_def)
+      by(auto intro: ext)
     thus ?case using `s1 \<approx>m (ls2, (ts2, m2), ws2, is2)` by auto
   next
     case (insert t A)

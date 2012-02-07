@@ -152,8 +152,8 @@ lemma widens_trans [trans]: "\<lbrakk>P \<turnstile> Ss [\<le>] Ts; P \<turnstil
 
 
 (*<*)
-lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl, standard]
-lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P", standard]
+lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl] for P
+lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P"] for P
 (*>*)
 
 
@@ -525,7 +525,8 @@ code_pred
   (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool, i \<Rightarrow> i \<Rightarrow> o \<Rightarrow> bool)
   subcls1p 
 .
-declare subcls1_def[unfolded Collect_def, code_pred_def]
+declare subcls1_def [code_pred_def]
+
 code_pred 
   (modes: i \<Rightarrow> i \<times> o \<Rightarrow> bool, i \<Rightarrow> i \<times> i \<Rightarrow> bool)
   [inductify]
@@ -537,9 +538,10 @@ code_pred
   [inductify]
   subcls'
 .
-lemma subcls_conv_subcls' [code_inline]:
-  "(subcls1 G)^* = (\<lambda>(C, D). subcls' G C D)"
-by(simp add: subcls'_def subcls1_def rtrancl_def)(simp add: Collect_def)
+
+lemma subcls_conv_subcls' [code_unfold]:
+  "(subcls1 G)^* = {(C, D). subcls' G C D}"
+  by (simp add: subcls'_def subcls1_def rtrancl_def)
 
 code_pred 
   (modes: i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> bool)

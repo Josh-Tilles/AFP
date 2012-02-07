@@ -4,11 +4,14 @@
 
 header {* \isaheader{Deadlock formalisation} *}
 
-theory FWDeadlock imports FWProgressAux begin
+theory FWDeadlock
+imports
+  FWProgressAux
+begin
 
 context final_thread begin
 
-definition all_final_except :: "('l,'t,'x,'m,'w) state \<Rightarrow> ('t \<Rightarrow> bool) \<Rightarrow> bool" where
+definition all_final_except :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't set \<Rightarrow> bool" where
   "all_final_except s Ts \<equiv> \<forall>t. not_final_thread s t \<longrightarrow> t \<in> Ts"
 
 lemma all_final_except_mono [mono]:
@@ -208,7 +211,7 @@ by blast
 
 context multithreaded_base begin
 
-coinductive_set deadlocked :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't \<Rightarrow> bool"
+coinductive_set deadlocked :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't set"
   for s :: "('l,'t,'x,'m,'w) state" where
   deadlockedLock:
     "\<lbrakk> thr s t = \<lfloor>(x, no_wait_locks)\<rfloor>; t \<turnstile> \<langle>x, shr s\<rangle> \<wrong>; wset s t = None;
@@ -265,8 +268,8 @@ lemma deadlocked_coinduct
 using major
 proof(coinduct)
   case (deadlocked t)
-  have "X \<union> deadlocked s \<union> final_threads s = (\<lambda>x. {x. x \<in> X \<or> x \<in> deadlocked s} x \<or> final_threads s x)"
-    by(auto simp add: mem_def Collect_def)
+  have "X \<union> deadlocked s \<union> final_threads s = {x. x \<in> X \<or> x \<in> deadlocked s \<or> x \<in> final_threads s}"
+    by auto
   moreover have "X \<union> deadlocked s = {x. x \<in> X \<or> x \<in> deadlocked s}" by blast
   ultimately show ?case using step[OF deadlocked] by(elim disjE) simp_all
 qed
@@ -377,7 +380,7 @@ apply(erule deadlocked'D2)
 by(rule red_not_final_thread)
 
 lemma not_final_thread_deadlocked_final_thread [iff]: 
-  "thr s t = \<lfloor>xln\<rfloor> \<Longrightarrow> not_final_thread s t \<or> deadlocked s t \<or> final_thread s t"
+  "thr s t = \<lfloor>xln\<rfloor> \<Longrightarrow> not_final_thread s t \<or> t \<in> deadlocked s \<or> final_thread s t"
 by(auto simp add: not_final_thread_final_thread_conv[symmetric])
 
 lemma all_waiting_deadlocked:
@@ -769,7 +772,7 @@ proof
     have "wset s' t' = None" by cases(auto simp: redT_updWs_None_implies_None)
     ultimately have "final_thread s' t'" using tst' `final x'`
       by(auto simp add: final_thread_def) }
-  hence subset: "deadlocked s \<union> {t. final_thread s t} \<subseteq> deadlocked s \<union> deadlocked s' \<union> final_threads s'" by(auto)
+  hence subset: "deadlocked s \<union> final_threads s \<subseteq> deadlocked s \<union> deadlocked s' \<union> final_threads s'" by(auto)
 
   from Red show "t' \<in> deadlocked s'"
   proof(cases)

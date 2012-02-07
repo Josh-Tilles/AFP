@@ -1,5 +1,5 @@
 (*  Title:       CoreC++
-    ID:          $Id: TypeRel.thy,v 1.10 2007-07-11 10:07:49 stefanberghofer Exp $
+
     Author:      Tobias Nipkow, Daniel Wasserrab 
     Maintainer:  Daniel Wasserrab <wasserra at fmi.uni-passau.de>
 
@@ -52,7 +52,7 @@ apply auto
 done
 
 
-lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl, standard]
-lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P", standard]
+lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl] for P
+lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P"] for P
 
 end
