@@ -1,5 +1,5 @@
 (*  Title:      statecharts/DataSpace/DataSpace.thy
-    ID:         $Id: DataSpace.thy,v 1.2 2010/07/23 15:36:41 helke Exp $
+
     Author:     Steffen Helke, Software Engineering Group
     Copyright   2010 Technische Universitaet Berlin
 *)
@@ -23,11 +23,13 @@ lemma DataSpace_EmptySet:
  "[UNIV] \<in> { L | L. DataSpace L }"
 by (unfold DataSpace_def, auto)
 
-typedef ('d)dataspace
-        = "{ L |
-             (L::('d set) list).
-              DataSpace L}" 
-by (rule exI, rule DataSpace_EmptySet)
+definition "dataspace = { L | (L::('d set) list). DataSpace L}"
+
+typedef (open) 'd dataspace = "dataspace :: 'd set list set"
+  unfolding dataspace_def
+  apply (rule exI)
+  apply (rule DataSpace_EmptySet)
+  done
 
 definition
  PartNum :: "('d)dataspace => nat" where

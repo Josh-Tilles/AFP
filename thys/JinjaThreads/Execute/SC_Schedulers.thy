@@ -1,6 +1,7 @@
-theory SC_Schedulers imports
-  "Random_Scheduler"
-  "Round_Robin"
+theory SC_Schedulers
+imports
+  Random_Scheduler
+  Round_Robin
   "../MM/SC_Collections"
   "../../Collections/RBTMapImpl"
   "../../Collections/RBTSetImpl"
@@ -15,7 +16,7 @@ abbreviation sc_start_state_refine ::
 where
   "\<And>is_empty.
    sc_start_state_refine thr_empty thr_update ws_empty is_empty f P \<equiv>
-   heap_base.start_state_refine addr2thread_id sc_empty (sc_new_obj P) thr_empty thr_update ws_empty is_empty f P"
+   heap_base.start_state_refine addr2thread_id sc_empty (sc_allocate P) thr_empty thr_update ws_empty is_empty f P"
 
 abbreviation sc_state_\<alpha> ::
   "('l, 't :: linorder, 'm, ('t, 'x \<times> 'l \<Rightarrow>\<^isub>f nat) rm, ('t, 'w wait_set_status) rm, 't rs) state_refine
@@ -41,7 +42,7 @@ locale sc_scheduler =
   and "output" :: "'s \<Rightarrow> 't \<Rightarrow> ('l,'t,'x,'m,'w,'o) thread_action \<Rightarrow> 'q option"
   and pick_wakeup :: "'s \<Rightarrow> 't \<Rightarrow> 'w \<Rightarrow> ('t, 'w wait_set_status) RBT.rbt \<Rightarrow> 't option"
   and \<sigma>_invar :: "'s \<Rightarrow> 't set \<Rightarrow> bool"
-  and invariant :: "('l,'t,'x,'m,'w) state \<Rightarrow> bool"
+  and invariant :: "('l,'t,'x,'m,'w) state set"
 
 locale sc_round_robin_base =
   round_robin_base

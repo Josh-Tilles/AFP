@@ -1,5 +1,5 @@
 (*  Title:      HOL/MicroJava/BV/BVSpecTypeSafe.thy
-    ID:         $Id: BVSpecTypeSafe.thy,v 1.7 2008-10-07 12:15:15 fhaftmann Exp $
+
     Author:     Cornelia Pusch, Gerwin Klein
     Copyright   1999 Technische Universitaet Muenchen
 *)
@@ -646,7 +646,7 @@ lemma Checkcast_correct:
 
 declare split_paired_All [simp del]
 
-lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P", standard]
+lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P"] for P
 
 lemma Getfield_correct:
   fixes \<sigma>' :: jvm_state

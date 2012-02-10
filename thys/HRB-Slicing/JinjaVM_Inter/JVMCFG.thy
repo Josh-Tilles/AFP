@@ -12,10 +12,12 @@ subsection {* Type definitions *}
 
 subsubsection {* Wellformed Programs *}
 
-typedef wf_jvmprog = "{(P, Phi). wf_jvm_prog\<^bsub>Phi\<^esub> P}"
+definition "wf_jvmprog = {(P, Phi). wf_jvm_prog\<^bsub>Phi\<^esub> P}"
+
+typedef (open) wf_jvmprog = "wf_jvmprog"
 proof
-  show "(E, Phi) \<in> {(P, Phi). wf_jvm_prog\<^bsub>Phi\<^esub> P}"
-    by (auto intro: wf_prog)
+  show "(E, Phi) \<in> wf_jvmprog"
+    unfolding wf_jvmprog_def by (auto intro: wf_prog)
 qed
 
 hide_const Phi E
@@ -95,7 +97,7 @@ definition locLength :: "jvm_method \<Rightarrow> pc \<Rightarrow> nat"
 
 lemma ex_new_class_name: "\<exists>C. \<not> is_class P C"
 proof -
-  have "\<not> finite (UNIV::cname \<Rightarrow> bool)"
+  have "\<not> finite (UNIV :: cname set)"
     by (rule infinite_UNIV_listI)
   hence "\<exists>C. C \<notin> set (map fst P)"
     by -(rule ex_new_if_finite, auto)
@@ -145,7 +147,7 @@ proof -
     by (fastforce intro: rev_image_eqI map_of_SomeI simp: class_def)
   ultimately have "finite {ms. \<exists>C D fs. class (PROG P) C = \<lfloor>(D, fs, ms)\<rfloor>}"
     by auto
-  moreover have "\<not> finite (UNIV::mname \<Rightarrow> bool)"
+  moreover have "\<not> finite (UNIV :: mname set)"
     by (rule infinite_UNIV_listI)
   ultimately
   have "\<exists>Name. Name \<notin> fst ` (\<Union>ms \<in> {ms. \<exists>C D fs. class (PROG P) C = \<lfloor>(D, fs, ms)\<rfloor>}. set ms)"

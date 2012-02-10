@@ -1,5 +1,5 @@
 (*  Title:      HOL/MicroJava/BV/Correct.thy
-    ID:         $Id: BVConform.thy,v 1.3 2006-11-17 01:28:44 makarius Exp $
+
     Author:     Cornelia Pusch, Gerwin Klein
     Copyright   1999 Technische Universitaet Muenchen
 
@@ -97,7 +97,7 @@ lemma confT_widen [intro?, trans]:
 
 section {* Stack and Registers *}
 
-lemmas confTs_Cons1 [iff] = list_all2_Cons1 [of "confT P h", standard]
+lemmas confTs_Cons1 [iff] = list_all2_Cons1 [of "confT P h"] for P h
 
 lemma confTs_confT_sup:
   "\<lbrakk> P,h \<turnstile> loc [:\<le>\<^sub>\<top>] LT; n < size LT; LT!n = OK T; P \<turnstile> T \<le> T' \<rbrakk> 

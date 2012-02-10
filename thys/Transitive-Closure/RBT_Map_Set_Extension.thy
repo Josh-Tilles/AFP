@@ -122,7 +122,7 @@ lemma rs_subset_list[simp]: "(rs_subset_list as bs = None) = (rs_\<alpha> as \<s
   by (simp add: rs_correct)
 
 definition rs_Union :: "('q :: linorder)rs list \<Rightarrow> 'q rs"
-where [code_inline]: "rs_Union \<equiv> foldl rs_union rs_empty"
+where [code_unfold]: "rs_Union \<equiv> foldl rs_union rs_empty"
 
 lemma rs_Union[simp]: "rs_\<alpha> (rs_Union qs) = (\<Union> rs_\<alpha> ` set qs)"
 proof -
@@ -164,7 +164,7 @@ lemma rm_to_list_empty[simp]:
   unfolding rito_map_to_sorted_list_def rm_reverse_iterateo_def
   unfolding MapGA.itoi_reverse_iterateo_def
   unfolding rm_reverse_iterateoi_def
-  unfolding impl_of_empty
+  unfolding RBT.impl_of_empty
   by simp
 
 
@@ -226,7 +226,7 @@ proof
       qed
     qed
   qed
-qed (force simp: rm_set_lookup_def finite_set)
+qed (force simp: rm_set_lookup_def)
 end
 
 
