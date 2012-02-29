@@ -1,5 +1,5 @@
 (*  Title:      generalise_state.ML
-    ID:         $Id: generalise_state.ML,v 1.2 2008-03-06 15:22:27 lsf37 Exp $
+
     Author:     Norbert Schirmer, TU Muenchen
 
 Copyright (C) 2005-2007 Norbert Schirmer 
@@ -129,7 +129,7 @@ fun split_thm qnt ctxt s T t =
     val vs = map (SplitState.abs_var ctxt) vars;
 
     val prop = (case qnt of
-                  Meta_all => Term.list_all (vs,t')
+                  Meta_all => Logic.list_all (vs,t')
                 | Hol_all  => HOLogic.mk_Trueprop (HOLogic.list_all (vs, t'))
                 | Hol_ex   => Logic.mk_implies 
                                 (HOLogic.mk_Trueprop (list_exists (vs, t')),
@@ -157,7 +157,7 @@ fun eta_expand ct =
     val thy = theory_of_cterm ct;
     val T = domain_type (typ_of (ctyp_of_term ct)); 
     val x = cterm_of thy (Var (("s",mi+1),T));
-  in (Thm.cabs x (Thm.capply ct x)) end;
+  in Thm.lambda x (Thm.apply ct x) end;
 
 fun split_abs ct =
   (case term_of ct of

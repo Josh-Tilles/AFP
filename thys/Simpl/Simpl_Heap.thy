@@ -31,13 +31,12 @@ begin
 
 subsection "References"
 
-typedef ref = "UNIV::nat set" by simp
+definition "ref = (UNIV::nat set)"
 
-types_code
-  ref ("int") 
-attach (term_of) {*
- val term_of_ref = HOLogic.mk_int o IntInf.fromInt;
-*}
+typedef (open) ref = ref by (simp add: ref_def)
+
+code_type ref
+  (SML "int")
 
 lemma finite_nat_ex_max: 
   assumes fin: "finite (N::nat set)"

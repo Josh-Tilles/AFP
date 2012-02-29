@@ -4,7 +4,10 @@
 
 header {* \isaheader{Semantics of the thread actions for interruption} *}
 
-theory FWInterrupt imports FWState begin
+theory FWInterrupt
+imports
+  FWState
+begin
 
 primrec redT_updI :: "'t interrupts \<Rightarrow> 't interrupt_action \<Rightarrow> 't interrupts"
 where
@@ -12,7 +15,7 @@ where
 | "redT_updI is (ClearInterrupt t) = is - {t}"
 | "redT_updI is (IsInterrupted t b) = is"
 
-primrec redT_updIs :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> 't interrupts"
+fun redT_updIs :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> 't interrupts"
 where
   "redT_updIs is [] = is"
 | "redT_updIs is (ia # ias) = redT_updIs (redT_updI is ia) ias"
@@ -23,7 +26,7 @@ where
 | "interrupt_action_ok is (ClearInterrupt t) = True"
 | "interrupt_action_ok is (IsInterrupted t b) = (b = (t \<in> is))"
 
-primrec interrupt_actions_ok :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> bool"
+fun interrupt_actions_ok :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> bool"
 where
   "interrupt_actions_ok is [] = True"
 | "interrupt_actions_ok is (ia # ias) \<longleftrightarrow> interrupt_action_ok is ia \<and> interrupt_actions_ok (redT_updI is ia) ias"
@@ -34,7 +37,7 @@ where
 | "interrupt_action_ok' is (ClearInterrupt t) = True"
 | "interrupt_action_ok' is (IsInterrupted t b) = (b \<or> t \<notin> is)"
 
-primrec interrupt_actions_ok' :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> bool"
+fun interrupt_actions_ok' :: "'t interrupts \<Rightarrow> 't interrupt_action list \<Rightarrow> bool"
 where
   "interrupt_actions_ok' is [] = True"
 | "interrupt_actions_ok' is (ia # ias) \<longleftrightarrow> interrupt_action_ok' is ia \<and> interrupt_actions_ok' (redT_updI is ia) ias"

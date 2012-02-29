@@ -1,4 +1,4 @@
-(*  Title:      JinjaThreads/Common/Aux.thy
+(*  Title:      JinjaThreads/Basic/Aux.thy
     Author:     Andreas Lochbihler, David von Oheimb, Tobias Nipkow
 
     Based on the Jinja theory Common/Aux.thy by David von Oheimb and Tobias Nipkow
@@ -15,7 +15,8 @@ imports
   "~~/src/HOL/Library/Transitive_Closure_Table"
   "~~/src/HOL/Library/Predicate_Compile_Alternative_Defs"
   "~~/src/HOL/Library/Code_Char"
-  "Cset_Monad"
+  "~~/src/HOL/Library/Quotient_Option"
+  "~~/src/HOL/Library/Monad_Syntax"
   "~~/src/HOL/Library/Wfrec"
 begin
 
@@ -27,6 +28,14 @@ lemma nat_add_max_le[simp]:
 lemma Suc_add_max_le[simp]:
   "(Suc(n + max i j) \<le> m) = (Suc(n + i) \<le> m \<and> Suc(n + j) \<le> m)"
 (*<*)by arith(*>*)
+
+lemma less_min_eq1:
+  "(a :: 'a :: order) < b \<Longrightarrow> min a b = a"
+by(auto simp add: min_def order_less_imp_le)
+
+lemma less_min_eq2:
+  "(a :: 'a :: order) > b \<Longrightarrow> min a b = b"
+by(auto simp add: min_def order_less_imp_le)
 
 notation Some ("(\<lfloor>_\<rfloor>)")
 
@@ -97,6 +106,13 @@ lemma map_of_SomeI:
   "\<lbrakk> distinct_fst kxs; (k,x) \<in> set kxs \<rbrakk> \<Longrightarrow> map_of kxs k = Some x"
 (*<*)by (induct kxs) (auto simp:fun_upd_apply)(*>*)
 
+lemma option_rel_Some1:
+  "option_rel R (Some x) y \<longleftrightarrow> (\<exists>y'. y = Some y' \<and> R x y')"
+by(cases y) simp_all
+
+lemma option_rel_Some2:
+  "option_rel R x (Some y) \<longleftrightarrow> (\<exists>x'. x = Some x' \<and> R x' y)"
+by(cases x) simp_all
 
 subsection {* Using @{term list_all2} for relations *}
 
@@ -227,7 +243,7 @@ qed
 
 lemma replicate_Suc_snoc:
   "replicate (Suc n) x = replicate n x @ [x]"
-by (metis replicate_Suc replicate_append_same rotate_simps)
+by (metis replicate_Suc replicate_append_same)
 
 lemma map_eq_append_conv:
   "map f xs = ys @ zs \<longleftrightarrow> (\<exists>ys' zs'. map f ys' = ys \<and> map f zs' = zs \<and> xs = ys' @ zs')"
@@ -320,7 +336,7 @@ lemma is_emptyD:
   assumes "Predicate.is_empty P"
   shows "Predicate.eval P x \<Longrightarrow> False"
 using assms
-by(simp add: Predicate.is_empty_def bot_pred_def Set.empty_def[unfolded Collect_def])
+by(simp add: Predicate.is_empty_def bot_pred_def bot_apply Set.empty_def)
 
 lemma eval_bind_conv:
   "Predicate.eval (P \<guillemotright>= R) y = (\<exists>x. Predicate.eval P x \<and> Predicate.eval (R x) y)"
@@ -371,10 +387,17 @@ lemma disj_split_asm:
 apply(auto simp add: disj_split[of P])
 done
 
+lemma disjCE:
+  assumes "P \<or> Q"
+  obtains P | "Q" "\<not> P"
+using assms by blast
+
 lemma option_case_conv_if:
   "(case v of None \<Rightarrow> f | Some x \<Rightarrow> g x) = (if \<exists>a. v = Some a then g (the v) else f)"
 by(simp)
 
+lemma LetI: "(\<And>x. x = t \<Longrightarrow> P x) \<Longrightarrow> let x = t in P x" -- "Move to Aux"
+by(simp)
 
 (* rearrange parameters and premises to allow application of one-point-rules *)
 (* adapted from Tools/induct.ML and Isabelle Developer Workshop 2010 *)
@@ -464,7 +487,7 @@ done
 
 lemma inj_on_image_mem_iff:
   "\<lbrakk> inj_on f A; B \<subseteq> A; a \<in> A \<rbrakk> \<Longrightarrow> f a \<in> f ` B \<longleftrightarrow> a \<in> B"
-by(metis inv_into_f_eq inv_into_image_cancel mem_def rev_image_eqI)
+by(metis inv_into_f_eq inv_into_image_cancel rev_image_eqI)
 
 lemma setsum_hom:
   assumes hom_add [simp]: "\<And>a b. f (a + b) = f a + f b"
@@ -590,8 +613,8 @@ proof -
   from `P x` have "?Q x" by blast
   from `wfP r` have "\<And>Q. x \<in> Q \<longrightarrow> (\<exists>z\<in>Q. \<forall>y. r y z \<longrightarrow> y \<notin> Q)"
     unfolding wfP_eq_minimal by blast
-  from this[rule_format, of ?Q] `?Q x`
-  obtain z where "?Q z" and min: "\<And>y. r y z \<Longrightarrow> \<not> ?Q y" by(auto simp add: mem_def)
+  from this[rule_format, of "Collect ?Q"] `?Q x`
+  obtain z where "?Q z" and min: "\<And>y. r y z \<Longrightarrow> \<not> ?Q y" by auto
   from `?Q z` have "P z" "r^** z x" by auto
   moreover
   { fix y
@@ -780,6 +803,14 @@ using assms
 apply(induct a "bs @ bs'" arbitrary: bs rule: rtrancl3p_converse_induct')
 apply(fastforce intro: rtrancl3p_step_converse simp add: Cons_eq_append_conv)+
 done
+
+lemma rtrancl3p_Cons:
+  "rtrancl3p r a (b # bs) a' \<longleftrightarrow> (\<exists>a''. r a b a'' \<and> rtrancl3p r a'' bs a')"
+by(auto intro: rtrancl3p_step_converse converse_rtrancl3p_step)
+
+lemma rtrancl3p_Nil:
+  "rtrancl3p r a [] a' \<longleftrightarrow> a = a'"
+by(auto elim: rtrancl3p_cases)
 
 definition invariant3p :: "('a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a set \<Rightarrow> bool"
 where "invariant3p r I \<longleftrightarrow> (\<forall>s tl s'. s \<in> I \<longrightarrow> r s tl s' \<longrightarrow> s' \<in> I)"

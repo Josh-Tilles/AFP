@@ -4,7 +4,8 @@
 
 header {* \isaheader{The multithreaded semantics} *}
 
-theory FWSemantics imports
+theory FWSemantics
+imports
   FWWellform
   FWLockingThread
   FWCondAction
@@ -95,8 +96,14 @@ by(auto intro: actions_subset.intros collect_locks'_subset_collect_locks del: su
 definition final_thread :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't \<Rightarrow> bool" where
   "final_thread s t \<equiv> (case thr s t of None \<Rightarrow> False | \<lfloor>(x, ln)\<rfloor> \<Rightarrow> final x \<and> ln = no_wait_locks \<and> wset s t = None)"
 
-abbreviation final_threads :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't set" 
+definition final_threads :: "('l,'t,'x,'m,'w) state \<Rightarrow> 't set" 
 where "final_threads s \<equiv> {t. final_thread s t}"
+
+lemma [iff]: "t \<in> final_threads s = final_thread s t"
+  by (simp add: final_threads_def)
+
+lemma [pred_set_conv]: "final_thread s = (\<lambda>t. t \<in> final_threads s)"
+  by simp
 
 definition mfinal :: "('l,'t,'x,'m,'w) state \<Rightarrow> bool"
 where "mfinal s \<longleftrightarrow> (\<forall>t x ln. thr s t = \<lfloor>(x, ln)\<rfloor> \<longrightarrow> final x \<and> ln = no_wait_locks \<and> wset s t = None)"
@@ -333,7 +340,7 @@ lemma redT_ex_new_thread':
 using assms
 by(cases)(fastforce split: split_if_asm dest!: redT_updTs_new_thread)+
 
-definition deterministic :: "(('l,'t,'x,'m,'w) state \<Rightarrow> bool) \<Rightarrow> bool"
+definition deterministic :: "('l,'t,'x,'m,'w) state set \<Rightarrow> bool"
 where
   "deterministic I \<longleftrightarrow> 
   (\<forall>s t x ta' x' m' ta'' x'' m''. 

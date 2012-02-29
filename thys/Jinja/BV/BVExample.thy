@@ -1,5 +1,5 @@
 (*  Title:      Jinja/BV/BVExample.thy
-    ID:         $Id: BVExample.thy,v 1.12 2009-07-14 09:00:10 fhaftmann Exp $
+
     Author:     Gerwin Klein
 *)
 
@@ -7,7 +7,6 @@ header {* \isaheader{Example Welltypings}\label{sec:BVExample} *}
 
 theory BVExample
 imports "../JVM/JVMListExample" BVSpecTypeSafe BVExec
-  "~~/src/HOL/Library/Executable_Set"
   "~~/src/HOL/Library/Efficient_Nat"
 begin
 
@@ -506,7 +505,6 @@ definition some_elem :: "'a set \<Rightarrow> 'a" where [code del]:
   "some_elem = (%S. SOME x. x : S)"
 code_const some_elem
   (SML "(case/ _ of/ Set/ xs/ =>/ hd/ xs)")
-setup {* Code.add_signature_cmd ("some_elem", "'a set \<Rightarrow> 'a") *}
 
 text {* This code setup is just a demonstration and \emph{not} sound! *}
 notepad begin
@@ -516,11 +514,11 @@ notepad begin
 end
 
 lemma [code]:
-  "iter f step ss w = while (\<lambda>(ss, w). \<not> is_empty w)
+  "iter f step ss w = while (\<lambda>(ss, w). \<not> Set.is_empty w)
     (\<lambda>(ss, w).
         let p = some_elem w in propa f (step p (ss ! p)) ss (w - {p}))
     (ss, w)"
-  unfolding iter_def More_Set.is_empty_def some_elem_def ..
+  unfolding iter_def Set.is_empty_def some_elem_def ..
 
 lemma JVM_sup_unfold [code]:
  "JVM_SemiType.sup S m n = lift2 (Opt.sup
@@ -534,14 +532,6 @@ lemma JVM_sup_unfold [code]:
 lemmas [code] = SemiType.sup_def [unfolded exec_lub_def] JVM_le_unfold
 
 lemmas [code] = lesub_def plussub_def
-
-setup {*
-  Code.add_signature_cmd ("More_Set.is_empty", "'a set \<Rightarrow> bool")
-  #> Code.add_signature_cmd ("propa", "('s \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> (nat \<times> 's) list \<Rightarrow> 's list \<Rightarrow> nat set \<Rightarrow> 's list * nat set") 
-  #> Code.add_signature_cmd 
-     ("iter", "('s \<Rightarrow> 's \<Rightarrow> 's) \<Rightarrow> (nat \<Rightarrow> 's \<Rightarrow> (nat \<times> 's) list) \<Rightarrow> 's list \<Rightarrow> nat set \<Rightarrow> 's list * nat set")
-  #> Code.add_signature_cmd ("unstables", "('s \<Rightarrow> 's \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 's \<Rightarrow> (nat \<times> 's) list) \<Rightarrow> 's list \<Rightarrow> nat set") 
-*}
 
 lemma [code]:
   "is_refT T = (case T of NT \<Rightarrow> True | Class C \<Rightarrow> True | _ \<Rightarrow> False)"
@@ -566,14 +556,10 @@ lemma [code]:
       (case ST!n of
          Class C \<Rightarrow> Predicate.holds (Predicate.bind (Method_i_i_i_o_o_o_o P C M) (\<lambda>(Ts, T, m, D). if P \<turnstile> rev (take n ST) [\<le>] Ts then Predicate.single () else bot))
        | _ \<Rightarrow> False)))"
-by(fastforce simp add: Predicate.holds_eq simp del: eval_bind split: ty.split_asm split_if_asm intro: bindI Method_i_i_i_o_o_o_oI elim!: bindE Method_i_i_i_o_o_o_oE)
+by (fastforce simp add: Predicate.holds_eq simp del: eval_bind split: ty.split_asm split_if_asm intro: bindI Method_i_i_i_o_o_o_oI elim!: bindE Method_i_i_i_o_o_o_oE)
 
-definition [code del]: "mem2 = op :"
-lemma [code]: "mem2 x A = A x"
-  by(simp add: mem2_def mem_def)
-
-lemmas [folded mem2_def, code] =
-  SemiType.sup_def[unfolded exec_lub_def]
+lemmas [code] =
+  SemiType.sup_def [unfolded exec_lub_def]
   widen.equation
   is_relevant_class.simps
 
