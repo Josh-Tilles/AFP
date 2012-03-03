@@ -1,5 +1,5 @@
 (*  Title:      HOL/MicroJava/BV/JVM.thy
-    ID:         $Id: JVM_SemiType.thy,v 1.5 2007-02-07 17:19:08 stefanberghofer Exp $
+
     Author:     Gerwin Klein
     Copyright   2000 TUM
 
@@ -189,7 +189,7 @@ lemma stk_convert:
 lemma sup_loc_refl [iff]: "P \<turnstile> LT [\<le>\<^sub>\<top>] LT"
 (*<*) by (rule list_all2_refl) simp (*>*)
 
-lemmas sup_loc_Cons1 [iff] = list_all2_Cons1 [of "sup_ty_opt P", standard]
+lemmas sup_loc_Cons1 [iff] = list_all2_Cons1 [of "sup_ty_opt P"] for P
 
 lemma sup_loc_def:
   "P \<turnstile> LT [\<le>\<^sub>\<top>] LT' \<equiv> Listn.le (sup_ty_opt P) LT LT'"

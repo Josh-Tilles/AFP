@@ -1,5 +1,5 @@
 (*  Title:      statecharts/CTL/Kripke.thy
-    ID:         $Id: Kripke.thy,v 1.2 2010/07/23 15:49:07 helke Exp $
+
     Author:     Steffen Helke, Software Engineering Group
     Copyright   2010 Technische Universitaet Berlin
 *)
@@ -26,16 +26,23 @@ definition
 lemma Kripke_EmptySet:
  "({@x. True}, {@x. True},{(@x. True, @x. True)}, empty(@x. True \<mapsto> {@x. True})) \<in> 
    {(S,S0,R,L) | S S0 R L. Kripke S S0 R L}"
-by (unfold Kripke_def Domain_def, auto)
+by (unfold Kripke_def Domain_unfold, auto)
 
-typedef ('s,'a) kripke
-    = "{(S,S0,T,L) |
+definition
+  "kripke =
+    {(S,S0,T,L) |
         (S::('s set))
         (S0::('s set))
         (T::(('s * 's) set))
         (L::('s ~=> ('a  set))).
-                      Kripke S S0 T L}" 
-by (rule exI, rule Kripke_EmptySet)
+                      Kripke S S0 T L}"
+
+typedef (open) ('s,'a) kripke =
+    "kripke :: ('s set * 's set * ('s * 's) set * ('s ~=> 'a set)) set"
+  unfolding kripke_def
+  apply (rule exI)
+  apply (rule Kripke_EmptySet)
+  done
 
 definition
   Statuses :: "('s,'a) kripke => 's set" where

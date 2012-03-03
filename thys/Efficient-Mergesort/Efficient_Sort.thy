@@ -21,7 +21,9 @@ where
 | singleton[iff]: "linked P [x]"
 | many: "P x y \<Longrightarrow> linked P (y#ys) \<Longrightarrow> linked P (x#y#ys)"
 
-lemma linked_many_eq[simp]:
+declare eqTrueI[OF Nil, code] eqTrueI[OF singleton, code]
+
+lemma linked_many_eq[simp, code]:
   "linked P (x#y#zs) \<longleftrightarrow> P x y \<and> linked P (y#zs)"
   by (blast intro: linked.many elim: linked.cases)
 
@@ -265,12 +267,6 @@ proof -
     show ?thesis by (simp add: o_def)
 qed
 
-lemma sequences_simp[simp]:
-  "sequences key (a#b#xs) = (if le key a b
-    then (a # b # take_chain b (le key) xs) # sequences key (drop_chain b (le key) xs)
-    else (rev (take_chain b (gt key) xs) @ [b, a]) # sequences key (drop_chain b (gt key) xs))"
-  by force
-
 lemma sequences_induct[case_names Nil singleton many]:
   assumes "\<And>key. P key []" and "\<And>key x. P key [x]"
     and "\<And>key a b xs.
@@ -295,11 +291,6 @@ lemma multiset_of_sequences[simp]:
 lemma filter_by_key_drop_chain_gt[simp]:
   assumes "key b \<le> key a"
   shows "[y\<leftarrow>drop_chain b (gt key) xs. key a = key y] = [y\<leftarrow>xs. key a = key y]"
-  using assms by (induct xs arbitrary: b) auto
-
-lemma filter_by_key_rev_take_chain_gt[simp]:
-  assumes "key b \<le> key a"
-  shows "[y\<leftarrow>rev (take_chain b (gt key) xs). key a = key y] = []"
   using assms by (induct xs arbitrary: b) auto
 
 lemma filter_by_key_take_chain_gt[simp]:
