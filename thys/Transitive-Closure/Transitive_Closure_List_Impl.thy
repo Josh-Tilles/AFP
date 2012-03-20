@@ -26,7 +26,7 @@ with IsaFoR/CeTA. If not, see <http://www.gnu.org/licenses/>.
 header {* Closure computation on lists *}
 
 theory Transitive_Closure_List_Impl
-imports Transitive_Closure_Impl "../Abstract-Rewriting/Util"
+imports Transitive_Closure_Impl
 begin
 
 text {*
@@ -70,6 +70,38 @@ lemma trancl_list_impl: "set (trancl_list_impl r as) = {b. \<exists> a \<in> set
 
 subsection {* Precomputing closures for single states *}
 
+
+fun lookup :: "'a \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> 'b option" where
+  "lookup x [] = None"
+| "lookup x ((y, v)#xs) = (if x = y then Some v else lookup x xs)"
+
+lemma lookup_None:
+  assumes "lookup x xs = None"
+  shows "\<not> (\<exists>v. (x, v) \<in> set xs)"
+using assms
+proof (induct xs)
+  case (Cons yv xs)
+  show ?case
+  proof (cases yv)
+    case (Pair y v)
+    with Cons show ?thesis by (cases "x = y") auto
+  qed
+qed simp
+
+lemma lookup_Some:
+  assumes "lookup x xs = Some v"
+  shows "(x, v) \<in> set xs"
+using assms
+proof (induct xs)
+  case (Cons yv xs)
+  show ?case
+  proof (cases yv)
+    case (Pair y v)
+    with Cons show ?thesis by (cases "x = y") auto
+  qed
+qed simp
+
+
 text {* Storing all relevant entries is done by mapping all left-hand sides of the relation
   to their closure. To avoid redundant entries, @{const remdups} is used.
 *}
@@ -89,7 +121,7 @@ proof -
     have one: "?l = {a}"
       unfolding memo_list_rtrancl_def Let_def None
       by auto
-    from lookup_complete[OF None]
+    from lookup_None[OF None]
     have a: "a \<notin> fst ` set r" by force
     {
       fix b
@@ -104,7 +136,7 @@ proof -
   next
     case (Some as) 
     have as: "set as = {b. (a,b) \<in> (set r)^*}"
-      using lookup_sound[OF Some]
+      using lookup_Some[OF Some]
         rtrancl_list_impl[of r "[a]"] by force
     thus ?thesis unfolding memo_list_rtrancl_def Let_def Some by simp
   qed
@@ -126,7 +158,7 @@ proof -
     have one: "?l = {}"
       unfolding memo_list_trancl_def Let_def None
       by auto
-    from lookup_complete[OF None]
+    from lookup_None[OF None]
     have a: "a \<notin> fst ` set r" by force
     {
       fix b
@@ -138,7 +170,7 @@ proof -
   next
     case (Some as) 
     have as: "set as = {b. (a,b) \<in> (set r)^+}"
-      using lookup_sound[OF Some]
+      using lookup_Some[OF Some]
         trancl_list_impl[of r "[a]"] by force
     thus ?thesis unfolding memo_list_trancl_def Let_def Some by simp
   qed
