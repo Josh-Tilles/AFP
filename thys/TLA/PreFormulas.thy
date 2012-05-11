@@ -187,8 +187,8 @@ text {* Attribute which unlifts an intensional formula or preformula *}
 ML {*
 fun unl_rewr thm = 
     let
-       val unl = (thm RS @{thm intD}) handle _ => (thm RS @{thm prefD})
-                                      handle _ => thm
+       val unl = (thm RS @{thm intD}) handle THM _ => (thm RS @{thm prefD})
+                                      handle THM _ => thm
        val rewr = rewrite_rule @{thms intensional_rews} 
      in
        unl |> rewr
@@ -209,17 +209,19 @@ text {*
 ML {*
 fun int_rewr thm = 
    (thm RS @{thm inteq_reflection})
-     handle _ => (thm RS @{thm prefeq_reflection})
-     handle _ => ((thm RS @{thm int_eq_true}) RS @{thm inteq_reflection})
-     handle _ => ((thm RS @{thm pref_eq_true}) RS @{thm prefeq_reflection});
+     handle THM _ => (thm RS @{thm prefeq_reflection})
+     handle THM _ => ((thm RS @{thm int_eq_true}) RS @{thm inteq_reflection})
+     handle THM _ => ((thm RS @{thm pref_eq_true}) RS @{thm prefeq_reflection});
 
 val att_int_rew_tac =
   Thm.rule_attribute (fn _ => int_rewr)
 
-val int_simp_fn = Thm.declaration_attribute (fn th => Simplifier.map_ss (fn ss => Simplifier.addsimps (ss, [int_rewr th])));
+val add_intensional_simp = Thm.declaration_attribute (fn th => Simplifier.map_ss (Simplifier.add_simp (int_rewr th)));
+
+fun empty_attribute _ = (NONE, NONE); 
 *}
 
-attribute_setup simp_unl = {* Attrib.add_del int_simp_fn I *} (* note only adding -- removing is ignored *)
+attribute_setup simp_unl = {* Attrib.add_del add_intensional_simp empty_attribute *} (* note only adding -- removing is ignored *)
   "adds thm unlifted from rewrites from intensional formulas or preformulas"
 
 attribute_setup int_rewrite = {* Scan.succeed att_int_rew_tac *} 

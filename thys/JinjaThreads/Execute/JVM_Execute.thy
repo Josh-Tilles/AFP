@@ -1,29 +1,32 @@
-theory JVM_Execute imports
-  "SC_Schedulers"
-  "JVMExec_Execute"
+(*  Title:      JinjaThreads/Execute/JVM_Execute.thy
+    Author:     Andreas Lochbihler
+*)
+
+theory JVM_Execute
+imports
+  SC_Schedulers
+  JVMExec_Execute
   "../BV/BVProgressThreaded"
 begin
 
-abbreviation sc_heap_read_cset :: "heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> addr val Cset.set"
-where "sc_heap_read_cset h ad al \<equiv> Cset.of_pred (sc_heap_read_i_i_i_o h ad al)"
+abbreviation sc_heap_read_cset :: "heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> addr val set"
+where "sc_heap_read_cset h ad al \<equiv> set_of_pred (sc_heap_read_i_i_i_o h ad al)"
 
-abbreviation sc_heap_write_cset :: "heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> addr val \<Rightarrow> heap Cset.set"
-where "sc_heap_write_cset h ad al v \<equiv> Cset.of_pred (sc_heap_write_i_i_i_i_o h ad al v)"
+abbreviation sc_heap_write_cset :: "heap \<Rightarrow> addr \<Rightarrow> addr_loc \<Rightarrow> addr val \<Rightarrow> heap set"
+where "sc_heap_write_cset h ad al v \<equiv> set_of_pred (sc_heap_write_i_i_i_i_o h ad al v)"
 
 interpretation sc!: 
   JVM_heap_execute
     "addr2thread_id"
     "thread_id2addr"
     "sc_empty"
-    "sc_new_obj P"
-    "sc_new_arr P" 
+    "sc_allocate P"
     "sc_typeof_addr"
-    "sc_array_length"
     "sc_heap_read_cset"
     "sc_heap_write_cset"
   for P
-  where "\<And>h ad al v. v \<in> member (sc_heap_read_cset h ad al) \<equiv> sc_heap_read h ad al v"
-  and "\<And>h ad al v h'. h' \<in> member (sc_heap_write_cset h ad al v) \<equiv> sc_heap_write h ad al v h'"
+  where "\<And>h ad al v. v \<in> sc_heap_read_cset h ad al \<equiv> sc_heap_read h ad al v"
+  and "\<And>h ad al v h'. h' \<in> sc_heap_write_cset h ad al v \<equiv> sc_heap_write h ad al v h'"
 apply(simp_all add: eval_sc_heap_read_i_i_i_o eval_sc_heap_write_i_i_i_i_o)
 done
 
@@ -32,10 +35,8 @@ interpretation sc_execute!:
     "addr2thread_id"
     "thread_id2addr"
     "sc_empty"
-    "sc_new_obj P"
-    "sc_new_arr P" 
+    "sc_allocate P"
     "sc_typeof_addr"
-    "sc_array_length"
     "sc_heap_read"
     "sc_heap_write"
     "sc_hconf P"
@@ -54,9 +55,9 @@ abbreviation sc_jvm_start_state_refine ::
   (addr, thread_id, heap, (thread_id, (addr jvm_thread_state) \<times> addr released_locks) rm, (thread_id, addr wait_set_status) rm, thread_id rs) state_refine"
 where
   "sc_jvm_start_state_refine \<equiv> 
-   sc_start_state_refine rm_empty rm_update rm_empty rs_empty (\<lambda>C M Ts T (mxs, mxl0, b) vs. (None, [([], Null # vs @ replicate mxl0 undefined_value, C, M, 0)]))"
+   sc_start_state_refine (rm_empty ()) rm_update (rm_empty ()) (rs_empty ()) (\<lambda>C M Ts T (mxs, mxl0, b) vs. (None, [([], Null # vs @ replicate mxl0 undefined_value, C, M, 0)]))"
 
-abbreviation sc_jvm_state_invar :: "addr jvm_prog \<Rightarrow> ty\<^isub>P \<Rightarrow> (addr,thread_id,addr jvm_thread_state,heap,addr) state \<Rightarrow> bool"
+abbreviation sc_jvm_state_invar :: "addr jvm_prog \<Rightarrow> ty\<^isub>P \<Rightarrow> (addr,thread_id,addr jvm_thread_state,heap,addr) state set"
 where "sc_jvm_state_invar P \<Phi> \<equiv> {s. sc_execute.correct_state_ts P \<Phi> (thr s) (shr s)}"
 
 lemma eval_sc_mexec:
@@ -66,9 +67,7 @@ by(rule ext)+(fastforce intro!: SUP1_I simp add: sc.exec_1_eq')
 
 lemma sc_jvm_start_state_invar: 
   assumes "wf_jvm_prog\<^sub>\<Phi> P"
-  and "sc_start_heap_ok P"
-  and "P \<turnstile> C sees M:Ts\<rightarrow>T = \<lfloor>m\<rfloor> in D"
-  and "P,sc_start_heap P \<turnstile>sc vs [:\<le>] Ts"
+  and "sc_wf_start_state P C M vs"
   shows "sc_state_\<alpha> (sc_jvm_start_state_refine P C M vs) \<in> sc_jvm_state_invar P \<Phi>"
 using sc_execute.correct_jvm_state_initial[OF assms]
 by(simp add: sc_execute.correct_jvm_state_def)
@@ -103,7 +102,7 @@ lemma JVM_rr:
   shows
   "sc_scheduler 
      JVM_final (sc_mexec P) convert_RA
-     (JVM_rr.round_robin P n0) (pick_wakeup_via_sel rm_sel') JVM_rr.round_robin_invar
+     (JVM_rr.round_robin P n0) (pick_wakeup_via_sel (\<lambda>s P. rm_sel' s (\<lambda>(k,v). P k v))) JVM_rr.round_robin_invar
      (sc_jvm_state_invar P \<Phi>)"
 unfolding sc_scheduler_def
 apply(rule JVM_rr.round_robin_scheduler)
@@ -140,7 +139,7 @@ lemma JVM_rnd:
   shows 
   "sc_scheduler
     JVM_final (sc_mexec P) convert_RA
-    (JVM_rnd.random_scheduler P) (pick_wakeup_via_sel rm_sel') (\<lambda>_ _. True)
+    (JVM_rnd.random_scheduler P) (pick_wakeup_via_sel (\<lambda>s P. rm_sel' s (\<lambda>(k,v). P k v))) (\<lambda>_ _. True)
     (sc_jvm_state_invar P \<Phi>)"
 unfolding sc_scheduler_def
 apply(rule JVM_rnd.random_scheduler_scheduler)

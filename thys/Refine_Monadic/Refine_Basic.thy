@@ -13,31 +13,31 @@ subsection {* Setup *}
     open Refine_Misc;
 
     structure vcg = Named_Thms
-      ( val name = "refine_vcg"
+      ( val name = @{binding refine_vcg}
         val description = "Refinement Framework: " ^ 
           "Verification condition generation rules (intro)" )
 
     structure refine0 = Named_Thms
-      ( val name = "refine0"
+      ( val name = @{binding refine0}
         val description = "Refinement Framework: " ^
           "Refinement rules applied first (intro)" )
 
     structure refine = Named_Thms
-      ( val name = "refine"
+      ( val name = @{binding refine}
         val description = "Refinement Framework: Refinement rules (intro)" )
 
     structure refine2 = Named_Thms
-      ( val name = "refine2"
+      ( val name = @{binding refine2}
         val description = "Refinement Framework: " ^
           "Refinement rules 2nd stage (intro)" )
 
     structure refine_pw_simps = Named_Thms
-      ( val name = "refine_pw_simps"
+      ( val name = @{binding refine_pw_simps}
         val description = "Refinement Framework: " ^
           "Simplifier rules for pointwise reasoning" )
 
     structure refine_post = Named_Thms
-      ( val name = "refine_post"
+      ( val name = @{binding refine_post}
         val description = "Refinement Framework: " ^
           "Postprocessing rules" )
 
@@ -51,7 +51,7 @@ subsection {* Setup *}
       let 
         val ref_thms = (refine0.get ctxt 
           @ add_thms @ refine.get ctxt @ refine2.get ctxt);
-        val prod_ss = (HOL_basic_ss addsplits @{thms prod.split});
+        val prod_ss = (Splitter.add_split @{thm prod.split} HOL_basic_ss);
         val prod_simp_tac = 
           if Config.get ctxt no_prod_split then 
             K no_tac
@@ -251,7 +251,7 @@ lemma inres_simps[simp, refine_pw_simps]:
   "inres FAIL = (\<lambda>_. True)"
   "inres (RES X) = (\<lambda>x. x\<in>X)"
   "inres SUCCEED = (\<lambda>_. False)"
-  unfolding inres_def_raw
+  unfolding inres_def [abs_def]
   by (simp_all)
 
 lemma not_nofail_iff: 
@@ -593,10 +593,10 @@ lemma conc_fun_chain: "single_valued R \<Longrightarrow> \<Down>R (\<Down>S M) =
   by (auto split: nres.split dest: single_valuedD)
 
 lemma conc_Id[simp]: "\<Down>Id = id"
-  unfolding conc_fun_def_raw by (auto split: nres.split)
+  unfolding conc_fun_def [abs_def] by (auto split: nres.split)
 
 lemma abs_Id[simp]: "\<Up>Id = id"
-  unfolding abs_fun_def_raw by (auto split: nres.split)
+  unfolding abs_fun_def [abs_def] by (auto split: nres.split)
 
 lemma conc_fun_fail_iff[simp]: 
   "\<Down>R S = FAIL \<longleftrightarrow> S=FAIL"
@@ -929,6 +929,13 @@ lemma RETURN_refine_sv[refine]:
   using assms
   by (auto dest: single_valuedD)
 
+lemma RETURN_SPEC_refine_sv:
+  assumes SV: "single_valued R"
+  assumes "\<exists>x'. (x,x')\<in>R \<and> \<Phi> x'"
+  shows "RETURN x \<le> \<Down>R (SPEC \<Phi>)"
+  using assms 
+  by (auto simp: pw_le_iff refine_pw_simps)
+
 lemma FAIL_refine[refine]: "X \<le> \<Down>R FAIL" by auto
 lemma SUCCEED_refine[refine]: "SUCCEED \<le> \<Down>R X'" by auto
 
@@ -1134,5 +1141,11 @@ lemma RETURN_ref_SPECD:
   using assms
   by (auto simp: pw_le_iff refine_pw_simps)
 
+lemma RETURN_ref_RETURND:
+  assumes "RETURN c \<le> \<Down>R (RETURN a)"
+  shows "(c,a)\<in>R"
+  using assms
+  apply (auto simp: pw_le_iff refine_pw_simps)
+  done
 
 end

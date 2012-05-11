@@ -1,4 +1,4 @@
-(*  ID:          $Id: VcgEx.thy,v 1.8 2008-12-30 15:30:13 ballarin Exp $
+(*
     Author:      Norbert Schirmer
     Maintainer:  Norbert Schirmer, norbert.schirmer at web de
     License:     LGPL
@@ -512,7 +512,7 @@ to the caller.
 
 
 text {*
-Behind the scenes the @{text procedures} command provides us convenient syntax
+Behind the scenes the @{text "procedures"} command provides us convenient syntax
 for procedure calls, defines a constant for the procedure body 
 (named @{term "Fac_body"}) and creates some locales. The purpose of locales 
 is to set up logical contexts to support modular reasoning.
@@ -1078,8 +1078,8 @@ definition "sz = (2::nat)"
 
 text {* Restrict locale @{text hoare} to the required type. *}
 
-locale hoare_ex = hoare +
-  constrains \<Gamma> :: "'c ~=> (('a globals_list_alloc_scheme, 'b) list_vars'_scheme, 'c, 'd) com"
+locale hoare_ex =
+  hoare \<Gamma> for \<Gamma> :: "'c ~=> (('a globals_list_alloc_scheme, 'b) list_vars'_scheme, 'c, 'd) com"
 
 lemma (in hoare_ex)
   "\<Gamma>\<turnstile> \<lbrace>\<acute>i = 0 \<and> \<acute>first = Null \<and> n*sz \<le> \<acute>free\<rbrace>
@@ -1177,8 +1177,8 @@ text {* If we want to ensure that we do not dereference @{term "Null"} or
 access unallocated memory, we have to add some guards.
 *}
 
-locale hoare_ex_guard = hoare +
-  constrains \<Gamma> :: "'c ~=> (('a globals_list_alloc_scheme, 'b) list_vars'_scheme, 'c, bool) com"
+locale hoare_ex_guard =
+  hoare \<Gamma> for \<Gamma> :: "'c ~=> (('a globals_list_alloc_scheme, 'b) list_vars'_scheme, 'c, bool) com"
 
 lemma 
   (in hoare_ex_guard)

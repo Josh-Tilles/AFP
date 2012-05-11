@@ -14,11 +14,11 @@ definition REC where "REC B x \<equiv> if (mono B) then (lfp B x) else top"
 definition RECT ("REC\<^isub>T") where "RECT B x \<equiv> if (mono B) then (gfp B x) else top"
 
 lemma REC_unfold: "mono B \<Longrightarrow> REC B x = B (REC B) x"
-  unfolding REC_def_raw
+  unfolding REC_def [abs_def]
   by (simp add: lfp_unfold[symmetric])
 
 lemma RECT_unfold: "mono B \<Longrightarrow> RECT B x = B (RECT B) x"
-  unfolding RECT_def_raw
+  unfolding RECT_def [abs_def]
   by (simp add: gfp_unfold[symmetric])
 
 lemma REC_mono[refine_mono]:
@@ -80,6 +80,50 @@ next
     apply (rule_tac antisym)
     using I0 MONO by auto
 qed
+
+text {*
+  The following lemma is a stronger version of @{thm [source] "RECT_eq_REC"},
+  which allows to keep track of a function specification, that can be used to
+  argue about nested recursive calls.
+*}
+lemma RECT_eq_REC':
+  assumes MONO: "mono body"
+  assumes WF: "wf R"
+  assumes I0: "I x"
+  assumes IS: "\<And>f x. \<lbrakk>I x; 
+    \<And>x'. \<lbrakk> I x'; (x',x)\<in>R \<rbrakk> \<Longrightarrow> f x' \<le> M x'
+  \<rbrakk> \<Longrightarrow> 
+    body (\<lambda>x'. if (I x' \<and> (x',x)\<in>R) then f x' else top) x \<le> body f x \<and>
+    body f x \<le> M x"
+  shows "RECT body x = REC body x \<and> RECT body x \<le> M x"
+proof -
+  (*assume MONO: "mono body"'*)
+
+  from lfp_le_gfp' MONO have "lfp body x \<le> gfp body x" .
+  moreover have "I x \<longrightarrow> gfp body x \<le> lfp body x \<and> lfp body x \<le> M x"
+    using WF
+    apply (induct rule: wf_induct[consumes 1])
+    apply (rule impI)
+    apply (rule conjI)
+    apply (subst lfp_unfold[OF MONO])
+    apply (subst gfp_unfold[OF MONO])
+    apply (rule order_trans[OF _ conjunct1[OF IS]])
+    apply (rule monoD[OF MONO,THEN le_funD])
+    apply (rule le_funI)
+    apply simp
+    apply simp
+    apply simp
+
+    apply (subst lfp_unfold[OF MONO])
+    apply (rule conjunct2[OF IS])
+    apply simp
+    apply simp
+    done
+  ultimately show ?thesis
+    unfolding REC_def RECT_def
+    using I0 MONO by auto
+qed
+
 
 lemma REC_rule:
   fixes x::"'x"

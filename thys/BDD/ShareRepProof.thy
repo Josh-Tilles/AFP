@@ -1,5 +1,5 @@
 (*  Title:       BDD
-    ID:          $Id: ShareRepProof.thy,v 1.5 2008-06-12 06:57:16 lsf37 Exp $
+
     Author:      Veronika Ortner and Norbert Schirmer, 2004
     Maintainer:  Norbert Schirmer,  norbert.schirmer at web de
     License:     LGPL
@@ -28,7 +28,7 @@ USA
 *)
 
 header {*Proof of Procedure ShareRep*}
-theory ShareRepProof imports ProcedureSpecs HeapList begin
+theory ShareRepProof imports ProcedureSpecs "../Simpl/HeapList" begin
 
 lemma (in ShareRep_impl) ShareRep_modifies:
   shows "\<forall>\<sigma>. \<Gamma>\<turnstile>{\<sigma>}  PROC ShareRep (\<acute>nodeslist, \<acute>p) 
@@ -132,7 +132,7 @@ apply     simp
 prefer 4
 apply   (elim exE conjE)
 apply   (simp (no_asm_use))
-apply   (tactic "hyp_subst_tac 1")
+apply   hypsubst
 using  [[simp_depth_limit = 100]]
 proof -
   (* IF-THEN to postcondition *)

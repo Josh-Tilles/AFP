@@ -29,29 +29,29 @@ structure Refine_Autoref = struct
   (******************************)
 
   structure prg_thms = Named_Thms
-    ( val name = "autoref_prg"
+    ( val name = @{binding autoref_prg}
       val description = "Automatic Refinement: Program translation rules." );
 
   structure exp_thms = Named_Thms
-    ( val name = "autoref_ex"
+    ( val name = @{binding autoref_ex}
       val description = "Automatic Refinement: Expression translation rules.");
 
   structure spec_thms = Named_Thms
-    ( val name = "autoref_spec"
+    ( val name = @{binding autoref_spec}
       val description = "Automatic Refinement: Specification rules"
         ^"decomposition rules." );
 
   structure other_thms = Named_Thms
-    ( val name = "autoref_other"
+    ( val name = @{binding autoref_other}
       val description = "Automatic Refinement: Rules for subgoals of "
       ^"other types" );
 
   structure elim_thms = Named_Thms
-    ( val name = "autoref_elim"
+    ( val name = @{binding autoref_elim}
       val description = "Automatic Refinement: Preprocessing elim rules" );
 
   structure simp_thms = Named_Thms
-    ( val name = "autoref_simp"
+    ( val name = @{binding autoref_simp}
       val description = "Automatic Refinement: Preprocessing simp rules" );
 
   type config = {
@@ -131,10 +131,11 @@ structure Refine_Autoref = struct
     in rtac thm i st end
   | _ => no_tac st; 
   
-  fun preprocess_tac (cfg:config) =
-    (full_simp_tac (#simp_ss cfg) THEN_ALL_NEW (TRY o REPEAT_ALL_NEW 
-        (Tactic.eresolve_tac (#elim_thms cfg)))
-      );
+  fun preprocess_tac ctxt (cfg:config) =
+    ((Method.assm_tac ctxt ORELSE' full_simp_tac (#simp_ss cfg)) 
+       THEN_ALL_NEW (TRY o REPEAT_ALL_NEW 
+         (Tactic.eresolve_tac (#elim_thms cfg)))
+       );
 
   fun trace_rg ctxt rg = let
     fun ts_term t = Pretty.string_of (Syntax.pretty_term ctxt t);
@@ -163,19 +164,19 @@ structure Refine_Autoref = struct
   in
     case rg of 
       Rg_prg_ref _ => ( 
-        preprocess_tac cfg THEN_ALL_NEW 
+        preprocess_tac ctxt cfg THEN_ALL_NEW 
           ( resolve_tac (#prg_thms cfg) 
             ORELSE' ( resolve_tac (#exp_thms cfg) THEN_ALL_NEW_FWD recurse_tac)
             ORELSE' rprems_tac ctxt (* Match with induction premises from REC *)
           )    
       ) i st
     | Rg_var_ref (c,r,a) => ( 
-      preprocess_tac cfg THEN_ALL_NEW atac)  i st
+      preprocess_tac ctxt cfg THEN_ALL_NEW atac)  i st
     | Rg_spec_ref (c,r,a) => 
-      (preprocess_tac cfg THEN_ALL_NEW
+      (preprocess_tac ctxt cfg THEN_ALL_NEW
         (resolve_tac (#spec_thms cfg) THEN_ALL_NEW_FWD recurse_tac)
       ) i st
-    | Rg_exp_ref (c,r,a) => (preprocess_tac cfg THEN_ALL_NEW
+    | Rg_exp_ref (c,r,a) => (preprocess_tac ctxt cfg THEN_ALL_NEW
       FIRST' [resolve_tac (#exp_thms cfg), idtrans_tac ctxt (c,r,a)]
         THEN_ALL_NEW_FWD recurse_tac 
       ) i st

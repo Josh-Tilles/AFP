@@ -3,8 +3,8 @@
     Copyright   1998 TUM
 *)
 
-no_document use_thys ["~~/src/HOL/Library/List_Prefix", "~~/src/HOL/Library/List_Cset", "../Regular-Sets/Regular_Exp"];
+no_document use_thys ["~~/src/HOL/Library/List_Prefix",
+  "../Regular-Sets/Regular_Exp",
+  "~~/src/HOL/Library/Quotient_Product"];
 
 use_thys ["Functional_Automata"];
-
-Unsynchronized.setmp quick_and_dirty true no_document use_thys ["Execute_Quotient"];

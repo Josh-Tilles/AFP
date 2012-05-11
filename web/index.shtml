@@ -70,6 +70,21 @@ Andrew Boyton
 </td></tr>
 
 <tr><td class="entry">
+2012-04-26:
+<a href="entries/Ordinary_Differential_Equations.shtml">Ordinary Differential Equations</a>
+<br>Author:
+<a href="http://home.in.tum.de/~immler">Fabian Immler</a> and 
+<a href="http://home.in.tum.de/~hoelzl">Johannes H&ouml;lzl</a>
+</td></tr>
+
+<tr><td class="entry">
+2012-04-13:
+<a href="entries/Well_Quasi_Orders.shtml">Well-Quasi-Orders</a>
+<br>Author:
+Christian Sternagel
+</td></tr>
+
+<tr><td class="entry">
 2012-03-1:
 <a href="entries/Abortable_Linearizable_Modules.shtml">Abortable Linearizable Modules</a>
 <br>Author:
@@ -465,7 +480,9 @@ Peter Lammich
 2009-11-25:
 <a href="entries/Collections.shtml">Collections Framework</a>
 <br>Author:
-Peter Lammich
+Peter Lammich,
+Andreas Lochbihler and 
+Thomas Tuerk
 </td></tr>
 
 <tr><td class="entry">

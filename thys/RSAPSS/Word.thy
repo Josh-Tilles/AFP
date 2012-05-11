@@ -179,7 +179,7 @@ proof -
   next
     case (Cons x xs base)
     show ?case
-      apply (simp only: foldl.simps)
+      apply (simp only: foldl_Cons)
       apply (subst Cons [of "2 * base + bitval x"])
       apply simp
       apply (subst Cons [of "bitval x"])
@@ -1538,7 +1538,7 @@ proof -
         by simp
       with bv_to_int_upper_range [of w1]
       have "bv_to_int w1 + bv_to_int w2 < (2 ^ (length w1 - 1)) + (2 ^ (length w2 - 1))"
-        by (rule zadd_zless_mono)
+        by (rule add_less_le_mono)
       also have "... \<le> 2 ^ max (length w1) (length w2)"
         apply (rule adder_helper)
         apply (rule helper)
@@ -1625,7 +1625,7 @@ next
       from bv_to_int_lower_range [of w2]
       have v2: "- bv_to_int w2 \<le> 2 ^ (length w2 - 1)" by simp
       have "bv_to_int w1 + - bv_to_int w2 < (2 ^ (length w1 - 1)) + (2 ^ (length w2 - 1))"
-        apply (rule zadd_zless_mono)
+        apply (rule add_less_le_mono)
         apply (rule bv_to_int_upper_range [of w1])
         apply (rule v2)
         done
@@ -1717,7 +1717,7 @@ proof -
           done
         also have "... \<le> 2 ^ (length w1 + length w2 - Suc 0)"
           apply simp
-          apply (subst zpower_zadd_distrib [symmetric])
+          apply (subst power_add [symmetric])
           apply simp
           done
         finally show "?Q < 2 ^ (length w1 + length w2 - Suc 0)" .
@@ -1744,7 +1744,7 @@ proof -
           by simp
         also have "... < 2 ^ (length w1 + length w2 - Suc 0)"
           apply simp
-          apply (subst zpower_zadd_distrib [symmetric])
+          apply (subst power_add [symmetric])
           apply simp
           apply (cut_tac lmw)
           apply arith
@@ -1763,7 +1763,7 @@ proof -
     proof simp
       have "(2::int) ^ (length w1 - 1) * 2 ^(length w2 - 1) \<le> 2 ^ (length w1 + length w2 - Suc 0)"
         apply simp
-        apply (subst zpower_zadd_distrib [symmetric])
+        apply (subst power_add [symmetric])
         apply simp
         done
       hence "-((2::int) ^ (length w1 + length w2 - Suc 0)) \<le> -(2^(length w1 - 1) * 2 ^ (length w2 - 1))"
@@ -1788,7 +1788,7 @@ proof -
             apply simp
             done
           hence "-?Q \<le> ((2::int)^(length w1 - 1)) * (2 ^ (length w2 - 1))"
-            by (simp add: zmult_ac)
+            by (simp add: mult_ac)
           thus "-(((2::int)^(length w1 - Suc 0)) * (2 ^ (length w2 - Suc 0))) \<le> ?Q"
             by simp
         next
@@ -1805,7 +1805,7 @@ proof -
             apply simp
             done
           hence "-?Q \<le> ((2::int)^(length w1 - 1)) * (2 ^ (length w2 - 1))"
-            by (simp add: zmult_ac)
+            by (simp add: mult_ac)
           thus "-(((2::int)^(length w1 - Suc 0)) * (2 ^ (length w2 - Suc 0))) \<le> ?Q"
             by simp
         qed
@@ -1853,7 +1853,7 @@ proof -
           done
         also have "... \<le> 2 ^ (length w1 + length w2 - Suc 0)"
           apply simp
-          apply (subst zpower_zadd_distrib [symmetric])
+          apply (subst power_add [symmetric])
           apply simp
           apply (cut_tac lmw)
           apply arith
@@ -1883,7 +1883,7 @@ proof -
     proof simp
       have "(2::int) ^ length w1 * 2 ^(length w2 - 1) \<le> 2 ^ (length w1 + length w2 - Suc 0)"
         apply simp
-        apply (subst zpower_zadd_distrib [symmetric])
+        apply (subst power_add [symmetric])
         apply simp
         apply (cut_tac lmw)
         apply arith
@@ -1913,7 +1913,7 @@ proof -
             apply simp
             done
           hence "-?Q \<le> ((2::int)^length w1) * (2 ^ (length w2 - 1))"
-            by (simp add: zmult_ac)
+            by (simp add: mult_ac)
           thus "-(((2::int)^length w1) * (2 ^ (length w2 - Suc 0))) \<le> ?Q"
             by simp
         next
@@ -1928,7 +1928,7 @@ proof -
 qed
 
 lemma bv_smult_sym: "bv_smult w1 w2 = bv_smult w2 w1"
-  by (simp add: bv_smult_def zmult_ac)
+  by (simp add: bv_smult_def mult_ac)
 
 subsection {* Structural operations *}
 
@@ -2212,33 +2212,34 @@ lemma length_int_mono_lt0: "[| x \<le> y ; y \<le> 0 |] ==> length_int y \<le> l
 
 lemmas [simp] = length_nat_non0
 
-lemma "nat_to_bv (number_of Int.Pls) = []"
-  by simp
-
-primrec fast_bv_to_nat_helper :: "[bit list, int] => int" where
+primrec fast_bv_to_nat_helper :: "[bit list, num] => num" where
     fast_bv_to_nat_Nil: "fast_bv_to_nat_helper [] k = k"
   | fast_bv_to_nat_Cons: "fast_bv_to_nat_helper (b#bs) k =
-      fast_bv_to_nat_helper bs ((bit_case Int.Bit0 Int.Bit1 b) k)"
+      fast_bv_to_nat_helper bs ((bit_case Num.Bit0 Num.Bit1 b) k)"
 
 declare fast_bv_to_nat_helper.simps [code del]
 
 lemma fast_bv_to_nat_Cons0: "fast_bv_to_nat_helper (\<zero>#bs) bin =
-    fast_bv_to_nat_helper bs (Int.Bit0 bin)"
+    fast_bv_to_nat_helper bs (Num.Bit0 bin)"
   by simp
 
 lemma fast_bv_to_nat_Cons1: "fast_bv_to_nat_helper (\<one>#bs) bin =
-    fast_bv_to_nat_helper bs (Int.Bit1 bin)"
+    fast_bv_to_nat_helper bs (Num.Bit1 bin)"
   by simp
 
+lemma mult_Bit0_left: "Num.Bit0 m * n = Num.Bit0 (m * n)"
+  by (simp add: num_eq_iff nat_of_num_mult left_distrib)
+
 lemma fast_bv_to_nat_def:
-  "bv_to_nat bs == number_of (fast_bv_to_nat_helper bs Int.Pls)"
-proof (simp add: bv_to_nat_def)
-  have "\<forall> bin. \<not> (neg (number_of bin :: int)) \<longrightarrow> (foldl (%bn b. 2 * bn + bitval b) (number_of bin) bs) = number_of (fast_bv_to_nat_helper bs bin)"
-    apply (induct bs,simp)
-    apply (case_tac a,simp_all)
+  "bv_to_nat (\<one> # bs) == numeral (fast_bv_to_nat_helper bs Num.One)"
+proof -
+  have "\<And>k. foldl (\<lambda>bn b. 2 * bn + bitval b) (numeral k) bs = numeral (fast_bv_to_nat_helper bs k)"
+    apply (induct bs, simp)
+    apply (case_tac a, simp_all add: mult_Bit0_left)
     done
-  thus "foldl (\<lambda>bn b. 2 * bn + bitval b) 0 bs \<equiv> number_of (fast_bv_to_nat_helper bs Int.Pls)"
-    by (simp del: nat_numeral_0_eq_0 add: nat_numeral_0_eq_0 [symmetric])
+  thus "PROP ?thesis"
+    by (simp add: bv_to_nat_def add: numeral_One [symmetric]
+      del: numeral_One One_nat_def)
 qed
 
 declare fast_bv_to_nat_Cons [simp del]
@@ -2246,7 +2247,6 @@ declare fast_bv_to_nat_Cons0 [simp]
 declare fast_bv_to_nat_Cons1 [simp]
 
 setup {*
-(*comments containing lcp are the removal of fast_bv_of_nat*)
 let
   fun is_const_bool (Const(@{const_name "True"},_)) = true
     | is_const_bool (Const(@{const_name "False"},_)) = true
@@ -2254,33 +2254,19 @@ let
   fun is_const_bit (Const("Word.bit.Zero",_)) = true
     | is_const_bit (Const("Word.bit.One",_)) = true
     | is_const_bit _ = false
-  fun num_is_usable (Const(@{const_name Int.Pls},_)) = true
-    | num_is_usable (Const(@{const_name Int.Min},_)) = false
-    | num_is_usable (Const(@{const_name Int.Bit0},_) $ w) =
-        num_is_usable w
-    | num_is_usable (Const(@{const_name Int.Bit1},_) $ w) =
-        num_is_usable w
-    | num_is_usable _ = false
   fun vec_is_usable (Const("List.list.Nil",_)) = true
     | vec_is_usable (Const("List.list.Cons",_) $ b $ bs) =
         vec_is_usable bs andalso is_const_bit b
     | vec_is_usable _ = false
-  (*lcp** val fast1_th = PureThy.get_thm thy "Word.fast_nat_to_bv_def"*)
   val fast2_th = @{thm "Word.fast_bv_to_nat_def"};
-  (*lcp** fun f sg thms (Const("Word.nat_to_bv",_) $ (Const(@{const_name Int.number_of},_) $ t)) =
-    if num_is_usable t
-      then SOME (Drule.cterm_instantiate [(cterm_of sg (Var (("w", 0), @{typ int})), cterm_of sg t)] fast1_th)
-      else NONE
-    | f _ _ _ = NONE *)
-  fun g sg thms (Const("Word.bv_to_nat",_) $ (t as (Const("List.list.Cons",_) $ _ $ _))) =
+  fun g sg thms (Const("Word.bv_to_nat",_) $ (Const("List.list.Cons",_) $ Const("Word.bit.One",_) $ t)) =
         if vec_is_usable t then
           SOME (Drule.cterm_instantiate [(cterm_of sg (Var(("bs",0),Type("List.list",[Type("Word.bit",[])]))),cterm_of sg t)] fast2_th)
         else NONE
     | g _ _ _ = NONE
-  (*lcp** val simproc1 = Simplifier.simproc_global thy "nat_to_bv" ["Word.nat_to_bv (number_of w)"] f *)
   val simproc2 = Simplifier.simproc_global @{theory} "bv_to_nat" ["Word.bv_to_nat (x # xs)"] g
 in
-  Simplifier.map_simpset_global (fn ss => ss addsimprocs [(*lcp*simproc1,*)simproc2])
+  Simplifier.map_simpset_global (fn ss => ss addsimprocs [simproc2])
 end*}
 
 declare bv_to_nat1 [simp del]

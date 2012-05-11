@@ -1,105 +1,52 @@
 header {* \isaheader{Additions to Distinct Lists} *}
-theory Dlist_add imports "~~/src/HOL/Library/Dlist" Misc begin
+theory Dlist_add imports "~~/src/HOL/Library/Dlist" Misc "../iterator/SetIteratorOperations" 
+begin
 
-primrec remove1' :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> 'a list"
+primrec dlist_remove1' :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list \<Rightarrow> 'a list"
 where
-  "remove1' x z [] = z"
-| "remove1' x z (y # ys) = (if x = y then z @ ys else remove1' x (y # z) ys)"
+  "dlist_remove1' x z [] = z"
+| "dlist_remove1' x z (y # ys) 
+  = (if x = y then z @ ys else dlist_remove1' x (y # z) ys)"
 
-definition remove' :: "'a \<Rightarrow> 'a dlist \<Rightarrow> 'a dlist"
-where "remove' a xs = Dlist (remove1' a [] (list_of_dlist xs))"
+definition dlist_remove' :: "'a \<Rightarrow> 'a dlist \<Rightarrow> 'a dlist"
+where "dlist_remove' a xs = Dlist (dlist_remove1' a [] (list_of_dlist xs))"
 
-lemma distinct_remove1': "distinct (xs @ ys) \<Longrightarrow> distinct (remove1' x xs ys)"
-by(induct ys arbitrary: xs) simp_all
+lemma distinct_remove1': "distinct (xs @ ys) \<Longrightarrow> 
+  distinct (dlist_remove1' x xs ys)"
+  by(induct ys arbitrary: xs) simp_all
 
-lemma set_remove1': "distinct ys \<Longrightarrow> set (remove1' x xs ys) = set xs \<union> (set ys - {x})"
-by(induct ys arbitrary: xs) auto
+lemma set_dlist_remove1': "distinct ys \<Longrightarrow> 
+  set (dlist_remove1' x xs ys) = set xs \<union> (set ys - {x})"
+  by(induct ys arbitrary: xs) auto
 
 lemma list_of_dlist_remove' [simp, code abstract]:
-  "list_of_dlist (remove' a xs) = remove1' a [] (list_of_dlist xs)"
-by(simp add: remove'_def distinct_remove1')
+  "list_of_dlist (dlist_remove' a xs) = dlist_remove1' a [] (list_of_dlist xs)"
+by(simp add: dlist_remove'_def distinct_remove1')
 
-lemma remove'_correct: "y \<in> Dlist.member (remove' x xs) = (if x = y then False else y \<in> Dlist.member xs)"
-by(simp add: remove'_def Dlist.member_def member_set set_remove1')
+lemma dlist_remove'_correct: 
+  "y \<in> set (list_of_dlist (dlist_remove' x xs)) 
+  \<longleftrightarrow> (if x = y then False else y \<in> set (list_of_dlist xs))"
+  by(simp add: dlist_remove'_def 
+    Dlist.member_def List.member_def set_dlist_remove1')
 
-primrec iteratei_aux :: "'a set \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'b list \<Rightarrow> 'a \<Rightarrow> 'a"
-where
-  "iteratei_aux c f [] \<sigma> = \<sigma>"
-| "iteratei_aux c f (x # xs) \<sigma> = (if c \<sigma> then iteratei_aux c f xs (f x \<sigma>) else \<sigma>)"
+definition dlist_iteratei :: "'a dlist \<Rightarrow> ('a, 'b) set_iterator"
+  where "dlist_iteratei xs = foldli (list_of_dlist xs)"
 
-definition iteratei :: "'a set \<Rightarrow> ('b \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'b dlist \<Rightarrow> 'a \<Rightarrow> 'a"
-where "iteratei c f xs = iteratei_aux c f (list_of_dlist xs)"
+lemma dlist_iteratei_correct:
+  "set_iterator (dlist_iteratei xs) (set (list_of_dlist xs))"
+using distinct_list_of_dlist[of xs] 
+      set_iterator_foldli_correct[of "list_of_dlist xs"]
+unfolding Dlist.member_def List.member_def dlist_iteratei_def
+by simp
 
-lemma iteratei_aux_correct:
-  assumes "distinct xs"
-  and "I (set xs) \<sigma>0"
-  and "\<And>x it \<sigma>. \<lbrakk>c \<sigma>; x \<in> it; it \<subseteq> set xs; I it \<sigma>\<rbrakk> \<Longrightarrow> I (it - {x}) (f x \<sigma>)"
-  shows "I {} (iteratei_aux c f xs \<sigma>0) \<or>
-        (\<exists>it\<subseteq>set xs. it \<noteq> {} \<and> \<not> c (iteratei_aux c f xs \<sigma>0) \<and> I it (iteratei_aux c f xs \<sigma>0))"
-proof -
-  { fix it
-    assume "it \<supseteq> set xs" and "I it \<sigma>0" 
-      and "\<And>\<sigma> x it'. \<lbrakk> c \<sigma>; x \<in> it'; it' \<subseteq> it; I it' \<sigma> \<rbrakk> \<Longrightarrow> I (it' - {x}) (f x \<sigma>)"
-    with `distinct xs`
-    have "I (it - set xs) (iteratei_aux c f xs \<sigma>0) 
-          \<or> (\<exists>it' \<subseteq> it. it' \<noteq> {} \<and> \<not> c (iteratei_aux c f xs \<sigma>0) \<and> I it' (iteratei_aux c f xs \<sigma>0))"
-    proof (induct xs arbitrary: it \<sigma>0)
-      case Nil thus ?case by simp
-    next
-      case (Cons x xs it \<sigma>)
-      show ?case
-      proof(cases "c \<sigma>")
-        case False
-        with Cons.prems show ?thesis by simp blast
-      next
-        case True [simp]
-        from Cons have "distinct xs" "x \<notin> set xs" by simp_all
-        with `set (x # xs) \<subseteq> it`
-        have "distinct xs" "set xs \<subseteq> it - {x}" by auto
-        moreover from Cons.prems have "c \<sigma>" "x \<in> it" "it \<subseteq> it" "I it \<sigma>" by simp_all
-        hence "I (it - {x}) (f x \<sigma>)" by (rule Cons)
-        ultimately have "I (it - {x} - set xs) (iteratei_aux c f xs (f x \<sigma>)) 
-                      \<or> (\<exists>it' \<subseteq> it - {x}. it' \<noteq> {} \<and> \<not> c (iteratei_aux c f xs (f x \<sigma>)) \<and>
-                               I it' (iteratei_aux c f xs (f x \<sigma>)))"
-          (is "?C1 \<or> ?C2")
-        proof (rule Cons.hyps [of "it-{x}" "f x \<sigma>"])
-          fix \<sigma> x' it'
-          assume "c \<sigma>" "x' \<in> it'" "it' \<subseteq> it - {x}" "I it' \<sigma>"
-          with Cons.prems show "I (it' - {x'}) (f x' \<sigma>)" by auto
-        qed
-        thus ?thesis
-        proof
-          assume ?C1
-          thus ?thesis by(auto simp add: True set_diff_diff_left)
-        next
-          assume ?C2 
-          then obtain it' where "it' \<subseteq> it - {x}"
-            and "it' \<noteq> {}" and "\<not> c (iteratei_aux c f xs (f x \<sigma>))" 
-            and "I it' (iteratei_aux c f xs (f x \<sigma>))" by blast
-          thus ?thesis by(auto simp add: exI[where x=it'])
-        qed
-      qed
-    qed }
-  from this[OF subset_refl] assms show ?thesis by simp
-qed
+lemma dlist_member_empty: "(set (list_of_dlist Dlist.empty)) = {}"
+  by(simp add: Dlist.empty_def)
 
-lemma iteratei_correct:
-  assumes "I (Dlist.member xs) \<sigma>0"
-  and "\<And>x it \<sigma>. \<lbrakk>c \<sigma>; x \<in> it; it \<subseteq> Dlist.member xs; I it \<sigma>\<rbrakk> \<Longrightarrow> I (it - {x}) (f x \<sigma>)"
-  shows "I {} (iteratei c f xs \<sigma>0) \<or>
-        (\<exists>it\<subseteq>Dlist.member xs. it \<noteq> {} \<and> \<not> c (iteratei c f xs \<sigma>0) \<and> I it (iteratei c f xs \<sigma>0))"
-using distinct_list_of_dlist[of xs] assms
-unfolding Dlist.member_def member_set iteratei_def
-by(rule iteratei_aux_correct)
+lemma dlist_member_insert [simp]: "set (list_of_dlist (Dlist.insert x xs)) 
+  = insert x (set (list_of_dlist xs))"
+  by(simp add: Dlist.insert_def Dlist.member_def )
 
-
-lemma member_empty: "Dlist.member Dlist.empty = {}"
-by(simp add: empty_def member_def member_set)
-
-lemma member_insert [simp]: "Dlist.member (Dlist.insert x xs) = insert x (Dlist.member xs)"
-by(simp add: Dlist.insert_def Dlist.member_def member_set)
-
-lemma finite_member [simp, intro!]: "finite (Dlist.member xs)"
-by(simp add: member_def member_set)
+lemma dlist_finite_member [simp, intro!]: "finite (set (list_of_dlist xs))"
+by(simp add: member_def )
 
 end

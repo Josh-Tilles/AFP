@@ -12,7 +12,7 @@ subsection {* Non-branching case *}
 
 text {*
 
-After the following lemma (which could go into @{theory SetInterval}), we show Shivers' Theorem 10. This says that the least fixed point of the equation
+After the following lemma (which could go into @{theory Set_Interval}), we show Shivers' Theorem 10. This says that the least fixed point of the equation
 \[
 f\ x = g\ x \cup f\ (r\ x)
 \]
@@ -137,7 +137,7 @@ qed
 text {*
 Theorem 10 as it will be used in Theorem 12.
 *}
-lemmas theorem10ps = theorem10[of "\<^ps>g" "\<^ps>r",standard]
+lemmas theorem10ps = theorem10[of "\<^ps>g" "\<^ps>r"] for g r
 
 text {*
 Now we can show Lemma 12: If $F$ is the least solution to the recursive power-set equation, then $x \mapsto F\ {x}$ is the least solution to the equation with branching $R$.

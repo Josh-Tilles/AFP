@@ -26,37 +26,37 @@ text {*
 subsection {* Auxiliary lemmas *}
 
 lemma sum_case_preserve [quot_preserve]:
-  assumes q1: "Quotient R1 Abs1 Rep1"
-  and q2: "Quotient R2 Abs2 Rep2"
-  and q3: "Quotient R3 Abs3 Rep3"
+  assumes q1: "Quotient3 R1 Abs1 Rep1"
+  and q2: "Quotient3 R2 Abs2 Rep2"
+  and q3: "Quotient3 R3 Abs3 Rep3"
   shows "((Abs1 ---> Rep2) ---> (Abs3 ---> Rep2) ---> sum_map Rep1 Rep3 ---> Abs2) sum_case = sum_case"
-using Quotient_abs_rep[OF q1] Quotient_abs_rep[OF q2] Quotient_abs_rep[OF q3]
+using Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2] Quotient3_abs_rep[OF q3]
 by(simp add: fun_eq_iff split: sum.split)
 
 lemma sum_case_preserve2 [quot_preserve]:
-  assumes q: "Quotient R Abs Rep"
+  assumes q: "Quotient3 R Abs Rep"
   shows "((id ---> Rep) ---> (id ---> Rep) ---> id ---> Abs) sum_case = sum_case"
-using Quotient_abs_rep[OF q]
+using Quotient3_abs_rep[OF q]
 by(auto intro!: ext split: sum.split)
 
 lemma prod_case_preserve [quot_preserve]:
-  assumes q1: "Quotient R1 Abs1 Rep1"
-  and q2: "Quotient R2 Abs2 Rep2"
-  and q3: "Quotient R3 Abs3 Rep3"
+  assumes q1: "Quotient3 R1 Abs1 Rep1"
+  and q2: "Quotient3 R2 Abs2 Rep2"
+  and q3: "Quotient3 R3 Abs3 Rep3"
   shows "((Abs1 ---> Abs2 ---> Rep3) ---> map_pair Rep1 Rep2 ---> Abs3) prod_case = prod_case"
-using Quotient_abs_rep[OF q1] Quotient_abs_rep[OF q2] Quotient_abs_rep[OF q3]
+using Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2] Quotient3_abs_rep[OF q3]
 by(simp add: fun_eq_iff split: prod.split)
 
 lemma prod_case_preserve2 [quot_preserve]:
-  assumes q: "Quotient R Abs Rep"
+  assumes q: "Quotient3 R Abs Rep"
   shows "((id ---> id ---> Rep) ---> id ---> Abs) prod_case = prod_case"
-using Quotient_abs_rep[OF q]
+using Quotient3_abs_rep[OF q]
 by(auto intro!: ext)
 
 lemma id_preserve [quot_preserve]:
-  assumes "Quotient R Abs Rep"
+  assumes "Quotient3 R Abs Rep"
   shows "(Rep ---> Abs) id = id"
-using Quotient_abs_rep[OF assms]
+using Quotient3_abs_rep[OF assms]
 by(auto intro: ext)
 
 lemma split_fst: "R (fst p) = (\<forall>x y. p = (x, y) \<longrightarrow> R x)"
@@ -98,18 +98,10 @@ definition TCONS :: "'a \<Rightarrow> ('a llist \<times> 'b) \<Rightarrow> ('a l
 where "TCONS = apfst \<circ> LCons"
 
 quotient_definition "TNil :: 'a \<Rightarrow> ('b, 'a) tllist"
-is "TNIL"
+is "TNIL" done
 
 quotient_definition "TCons :: 'a \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
-is "TCONS"
-
-lemma TNil_respect [quot_respect]:
-  "(op = ===> tlist_eq) TNIL TNIL"
-  by (simp add: TNIL_def fun_rel_def)
-
-lemma TCons_respect [quot_respect]:
-  "(op = ===> tlist_eq ===> tlist_eq) TCONS TCONS"
-  by (simp add: TCONS_def fun_rel_def)
+is "TCONS" by (auto simp add: TCONS_def)
 
 code_datatype TNil TCons
 
@@ -123,15 +115,12 @@ by(descending, clarsimp simp add: TNIL_def TCONS_def)+
 primrec tllist_case_aux :: "('b \<Rightarrow> 'e) \<Rightarrow> ('a \<Rightarrow> ('a llist \<times> 'b) \<Rightarrow> 'e) \<Rightarrow> ('a llist \<times> 'b) \<Rightarrow> 'e"
 where "tllist_case_aux f g (xs, b) = (case xs of LNil \<Rightarrow> f b | LCons x xs' \<Rightarrow> g x (xs', b))"
 
-lemma tllist_case_aux_respect [quot_respect]:
-  "(op = ===> (op = ===> tlist_eq ===> op =) ===> tlist_eq ===> op =) tllist_case_aux tllist_case_aux"
-  by (auto intro: ext split: llist_split simp add: fun_rel_def)
-
 quotient_definition "tllist_case :: ('a \<Rightarrow> 'b) \<Rightarrow> ('c \<Rightarrow> ('c, 'a) tllist \<Rightarrow> 'b) \<Rightarrow> ('c, 'a) tllist \<Rightarrow> 'b"
-is "tllist_case_aux"
+is "tllist_case_aux" by (fastforce split: llist_split)
 
 translations
   "case p of XCONST TNil y \<Rightarrow> a | XCONST TCons x l \<Rightarrow> b" \<rightleftharpoons> "CONST tllist_case (\<lambda>y. a) (\<lambda>x l. b) p"
+  "case p of (XCONST TNil :: 'a) y \<Rightarrow> a | (XCONST TCons :: 'b) x l \<Rightarrow> b" \<rightharpoonup> "CONST tllist_case (\<lambda>y. a) (\<lambda>x l. b) p"
 
 lemma tllist_case_simps [simp, code, nitpick_simp]:
   shows tllist_case_TNil: "tllist_case f g (TNil b) = f b"
@@ -257,11 +246,7 @@ next
 qed
 
 quotient_definition "tllist_corec :: 'a \<Rightarrow> ('a \<Rightarrow> (('b \<times> 'a) + 'c)) \<Rightarrow> ('b, 'c) tllist"
-is "tllist_corec_aux"
-
-lemma tllist_corec_aux_respect_tlist_eq [quot_respect]:
-  "(op = ===> op = ===> tlist_eq) tllist_corec_aux tllist_corec_aux"
-by(auto intro: ext equivp_reflp[OF tllist_equivp])
+is "tllist_corec_aux" done
 
 lemma tllist_corec [code, nitpick_simp]:
   "tllist_corec a f = (sum_case (prod_case (\<lambda>b a'. TCons b (tllist_corec a' f))) TNil (f a))"
@@ -278,70 +263,73 @@ definition TLLIST_OF_LLIST :: "'a \<Rightarrow> 'b llist \<Rightarrow> 'b llist 
 where "TLLIST_OF_LLIST a xs = (xs, a)"
 
 quotient_definition "tllist_of_llist :: 'a \<Rightarrow> 'b llist \<Rightarrow> ('b, 'a) tllist"
-is "TLLIST_OF_LLIST"
+is "TLLIST_OF_LLIST" done
 
 primrec TERMINAL :: "('a llist \<times> 'b) \<Rightarrow> 'b"
 where "TERMINAL (xs, c) = (if lfinite xs then c else undefined)"
 
 quotient_definition "terminal :: ('a, 'b) tllist \<Rightarrow> 'b"
-is "TERMINAL"
+is "TERMINAL" by auto
 
 primrec tMAP :: "('a \<Rightarrow> 'b) \<Rightarrow> ('c \<Rightarrow> 'd) \<Rightarrow> 'a llist \<times> 'c \<Rightarrow> 'b llist \<times> 'd"
 where "tMAP f g (xs, b) = (lmap f xs, g b)"
 
 quotient_definition "tmap :: ('a \<Rightarrow> 'b) \<Rightarrow> ('c \<Rightarrow> 'd) \<Rightarrow> ('a, 'c) tllist \<Rightarrow> ('b, 'd) tllist"
-is "tMAP"
+is "tMAP" by auto
 
 primrec tAPPEND :: "'a llist \<times> 'b \<Rightarrow> ('b \<Rightarrow> 'a llist \<times> 'c) \<Rightarrow> 'a llist \<times> 'c"
 where "tAPPEND (xs, b) f = (lappend xs (fst (f b)), snd (f b))"
 
 quotient_definition "tappend :: ('a, 'b) tllist \<Rightarrow> ('b \<Rightarrow> ('a, 'c) tllist) \<Rightarrow> ('a, 'c) tllist"
 is "tAPPEND"
+  apply (auto simp add: lappend_inf split: split_fst) 
+  apply (metis tlist_eq.simps)+
+done
 
 primrec lAPPENDt :: "'a llist \<Rightarrow> 'a llist \<times> 'b \<Rightarrow> 'a llist \<times> 'b"
 where "lAPPENDt xs (ys, b) = (lappend xs ys, b)"
 
 quotient_definition "lappendt :: 'a llist \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
-is "lAPPENDt"
+is "lAPPENDt" by auto
 
 primrec tFILTER :: "'a \<Rightarrow> ('b \<Rightarrow> bool) \<Rightarrow> ('b llist \<times> 'a) \<Rightarrow> ('b llist \<times> 'a)"
 where "tFILTER b P (xs, b') = (lfilter P xs, if lfinite xs then b' else b)"
 
 quotient_definition "tfilter :: 'a \<Rightarrow> ('b \<Rightarrow> bool) \<Rightarrow> ('b, 'a) tllist \<Rightarrow> ('b, 'a) tllist"
-is "tFILTER"
+is "tFILTER" by auto
 
 primrec tCONCAT :: "'a \<Rightarrow> ('b llist llist \<times> 'a) \<Rightarrow> ('b llist \<times> 'a)"
 where "tCONCAT b (xss, b') = (lconcat xss, if lfinite xss then b' else b)"
 
 quotient_definition "tconcat :: 'a \<Rightarrow> ('b llist, 'a) tllist \<Rightarrow> ('b, 'a) tllist"
-is "tCONCAT"
+is "tCONCAT" by auto
 
 fun TLLIST_ALL2 :: "('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('c \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a llist \<times> 'c) \<Rightarrow> ('b llist \<times> 'd) \<Rightarrow> bool"
 where "TLLIST_ALL2 P Q (xs, b) (ys, b') \<longleftrightarrow> llist_all2 P xs ys \<and> (lfinite xs \<longrightarrow> Q b b')"
 
 quotient_definition "tllist_all2 :: ('a \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('c \<Rightarrow> 'd \<Rightarrow> bool) \<Rightarrow> ('a, 'c) tllist \<Rightarrow> ('b, 'd) tllist \<Rightarrow> bool"
-is TLLIST_ALL2
+is TLLIST_ALL2 by (auto dest: llist_all2_lfiniteD)
 
 quotient_definition "llist_of_tllist :: ('a, 'b) tllist \<Rightarrow> 'a llist"
-is "fst :: ('a llist \<times> 'b) \<Rightarrow> 'a llist"
+is "fst :: ('a llist \<times> 'b) \<Rightarrow> 'a llist" by auto
 
 primrec TNTH :: "('a llist \<times> 'b) \<Rightarrow> nat \<Rightarrow> 'a"
 where "TNTH (xs, b) = lnth xs"
 
 quotient_definition "tnth :: ('a, 'b) tllist \<Rightarrow> nat \<Rightarrow> 'a"
-is "TNTH"
+is "TNTH" by auto
 
 primrec TLENGTH :: "('a llist \<times> 'b) \<Rightarrow> enat"
 where "TLENGTH (xs, b) = llength xs"
 
 quotient_definition "tlength :: ('a, 'b) tllist \<Rightarrow> enat"
-is "TLENGTH"
+is "TLENGTH" by auto
 
 primrec TDROPn :: "nat \<Rightarrow> ('a llist \<times> 'b) \<Rightarrow> ('a llist \<times> 'b)"
 where "TDROPn n (xs, b) = (ldropn n xs, b)"
 
 quotient_definition "tdropn :: nat \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
-is "TDROPn"
+is "TDROPn" by auto
 
 abbreviation tset :: "('a, 'b) tllist \<Rightarrow> 'a set" 
 where "tset xs \<equiv> lset (llist_of_tllist xs)"
@@ -349,57 +337,95 @@ where "tset xs \<equiv> lset (llist_of_tllist xs)"
 abbreviation tfinite :: "('a, 'b) tllist \<Rightarrow> bool"
 where "tfinite xs \<equiv> lfinite (llist_of_tllist xs)"
 
-subsection {* Respectfulness theorems *}
+subsection {* Code generator setup *}
 
-lemma tllist_of_llist_respect [quot_respect]:
-  "(op = ===> op = ===> tlist_eq) TLLIST_OF_LLIST TLLIST_OF_LLIST"
-by(auto intro!: fun_relI simp add: TLLIST_OF_LLIST_def)
+instantiation tllist :: (equal,equal) equal begin
 
-lemma TERMINAL_respect [quot_respect]:
-  "(tlist_eq ===> op =) TERMINAL TERMINAL"
-by(auto)
+definition equal_tllist :: "('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist \<Rightarrow> bool"
+where [code del]: "equal_tllist xs ys \<longleftrightarrow> xs = ys"
+instance proof qed(simp add: equal_tllist_def)
+end
 
-lemma tMAP_respect [quot_respect]:
-  "(op = ===> op = ===> tlist_eq ===> tlist_eq) tMAP tMAP"
-  by (auto intro: ext intro!: fun_relI)
+lemma equal_tllist_code [code]:
+  "equal_class.equal (TNil b) (TNil b') \<longleftrightarrow> b = b'"
+  "equal_class.equal (TNil b) (TCons y ys) \<longleftrightarrow> False"
+  "equal_class.equal (TCons x xs) (TNil b') \<longleftrightarrow> False"
+  "equal_class.equal (TCons x xs) (TCons y ys) \<longleftrightarrow> (if x = y then equal_class.equal xs ys else False)"
+by(simp_all add: equal_tllist_def)
 
-lemma tAPPEND_respect [quot_respect]:
-  "(tlist_eq ===> (op = ===> tlist_eq) ===> tlist_eq) tAPPEND tAPPEND"
-apply(auto intro: ext simp add: lappend_inf fun_rel_def split: split_fst)
-apply(erule_tac x=ba in allE, auto)+
-done
+text {* Setup for quickcheck *}
 
-lemma lAPPENDt_respect [quot_respect]:
-  "(op = ===> tlist_eq ===> tlist_eq) lAPPENDt lAPPENDt"
-by(auto intro!: ext fun_relI)
+notation fcomp (infixl "o>" 60)
+notation scomp (infixl "o\<rightarrow>" 60)
 
-lemma tFILTER_respect [quot_respect]: 
-  "(op = ===> op = ===> tlist_eq ===> tlist_eq) tFILTER tFILTER"
-  by (auto intro: ext intro!: fun_relI)
+definition (in term_syntax) valtermify_TNil ::
+  "'b :: typerep \<times> (unit \<Rightarrow> Code_Evaluation.term)
+   \<Rightarrow> ('a :: typerep, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)" 
+where
+  "valtermify_TNil b = Code_Evaluation.valtermify TNil {\<cdot>} b"
 
-lemma tCONCAT_respect [quot_respect]:
-  "(op = ===> tlist_eq ===> tlist_eq) tCONCAT tCONCAT"
-  by (auto intro: ext intro!: fun_relI)
+definition (in term_syntax) valtermify_TCons ::
+  "'a :: typerep \<times> (unit \<Rightarrow> Code_Evaluation.term) \<Rightarrow> ('a, 'b :: typerep) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term) \<Rightarrow> ('a, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)" where
+  "valtermify_TCons x xs = Code_Evaluation.valtermify TCons {\<cdot>} x {\<cdot>} xs"
 
-lemma tllist_all2_respect_tlist_eq [quot_respect]:
-  "(op = ===> op = ===> tlist_eq ===> tlist_eq ===> op =) TLLIST_ALL2 TLLIST_ALL2"
-by(auto dest: llist_all2_lfiniteD simp add: fun_rel_def)
+instantiation tllist :: (random, random) random begin
 
-lemma llist_of_tllist_respect [quot_respect]: 
-  "(tlist_eq ===> op =) fst fst"
-by auto
+primrec random_aux_tllist :: 
+  "code_numeral \<Rightarrow> code_numeral \<Rightarrow> Random.seed \<Rightarrow> (('a, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
+where
+  "random_aux_tllist 0 j = 
+   Quickcheck.collapse (Random.select_weight 
+     [(1, Quickcheck.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
+| "random_aux_tllist (Code_Numeral.Suc i) j =
+   Quickcheck.collapse (Random.select_weight
+     [(Code_Numeral.Suc i, Quickcheck.random j o\<rightarrow> (\<lambda>x. random_aux_tllist i j o\<rightarrow> (\<lambda>xs. Pair (valtermify_TCons x xs)))),
+      (1, Quickcheck.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
 
-lemma TNTH_respect [quot_respect]:
-  "(tlist_eq ===> op =) TNTH TNTH"
-by auto
+definition "Quickcheck.random i = random_aux_tllist i i"
 
-lemma TLENGTH_respect [quot_respect]:
-  "(tlist_eq ===> op =) TLENGTH TLENGTH"
-by auto
+instance ..
 
-lemma TDROPn_respect [quot_respect]:
-  "(op = ===> tlist_eq ===> tlist_eq) TDROPn TDROPn"
-  by (auto intro!: fun_relI)
+end
+
+lemma random_aux_tllist_code [code]:
+  "random_aux_tllist i j = Quickcheck.collapse (Random.select_weight
+     [(i, Quickcheck.random j o\<rightarrow> (\<lambda>x. random_aux_tllist (i - 1) j o\<rightarrow> (\<lambda>xs. Pair (valtermify_TCons x xs)))),
+      (1, Quickcheck.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
+  apply (cases i rule: code_numeral.exhaust)
+  apply (simp_all only: random_aux_tllist.simps code_numeral_zero_minus_one Suc_code_numeral_minus_one)
+  apply (subst select_weight_cons_zero) apply (simp only:)
+  done
+
+no_notation fcomp (infixl "o>" 60)
+no_notation scomp (infixl "o\<rightarrow>" 60)
+
+instantiation tllist :: (full_exhaustive, full_exhaustive) full_exhaustive begin
+
+fun full_exhaustive_tllist 
+  ::"(('a, 'b) tllist \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> code_numeral \<Rightarrow> (bool \<times> term list) option"
+where
+  "full_exhaustive_tllist f i =
+   (let A = Typerep.typerep TYPE('a);
+        B = Typerep.typerep TYPE('b);
+        Tllist = \<lambda>A B. Typerep.Typerep (STR ''TLList.tllist'') [A, B];
+        fun = \<lambda>A B. Typerep.Typerep (STR ''fun'') [A, B]
+    in
+      if 0 < i then 
+        case Quickcheck_Exhaustive.full_exhaustive (\<lambda>(b, bt). f (TNil b, \<lambda>_. Code_Evaluation.App 
+          (Code_Evaluation.Const (STR ''TLList.TNil'') (fun B (Tllist A B)))
+          (bt ()))) (i - 1)
+        of None \<Rightarrow> 
+            Quickcheck_Exhaustive.full_exhaustive (\<lambda>(x, xt). full_exhaustive_tllist (\<lambda>(xs, xst). 
+              f (TCons x xs, \<lambda>_. Code_Evaluation.App (Code_Evaluation.App 
+                   (Code_Evaluation.Const (STR ''TLList.TCons'') (fun A (fun (Tllist A B) (Tllist A B))))
+                   (xt ())) (xst ())))
+              (i - 1)) (i - 1)
+        | Some ts \<Rightarrow> Some ts
+      else None)"
+
+instance ..
+
+end
 
 subsection {* From a lazy list to a terminated lazy list @{term tllist_of_llist } *}
 
@@ -541,7 +567,7 @@ text {* Use a version of @{term "tfilter"} for code generation that does not eva
 definition tfilter' :: "(unit \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
 where [simp, code del]: "tfilter' b = tfilter (b ())"
 
-lemma tfilter_code [code, code_inline]:
+lemma tfilter_code [code, code_unfold]:
   "tfilter = (\<lambda>b. tfilter' (\<lambda>_. b))" 
 by simp
 
@@ -565,7 +591,7 @@ text {* Use a version of @{term "tconcat"} for code generation that does not eva
 definition tconcat' :: "(unit \<Rightarrow> 'b) \<Rightarrow> ('a llist, 'b) tllist \<Rightarrow> ('a, 'b) tllist"
 where [simp, code del]: "tconcat' b = tconcat (b ())"
 
-lemma tconcat_code [code, code_inline]: "tconcat = (\<lambda>b. tconcat' (\<lambda>_. b))"
+lemma tconcat_code [code, code_unfold]: "tconcat = (\<lambda>b. tconcat' (\<lambda>_. b))"
 by simp
 
 lemma tconcat'_code [code]:
@@ -665,6 +691,24 @@ lemma tllist_all2_mono:
   "\<lbrakk> tllist_all2 P Q xs ys; \<And>x y. P x y \<Longrightarrow> P' x y; \<And>x y. Q x y \<Longrightarrow> Q' x y \<rbrakk>
   \<Longrightarrow> tllist_all2 P' Q' xs ys"
 by descending(auto elim!: llist_all2_mono)
+
+lemma tllist_all2_tlengthD: "tllist_all2 P Q xs ys \<Longrightarrow> tlength xs = tlength ys"
+by(descending)(auto dest: llist_all2_llengthD)
+
+lemma tllist_all2_tfiniteD: "tllist_all2 P Q xs ys \<Longrightarrow> tfinite xs = tfinite ys"
+by(descending)(auto dest: llist_all2_lfiniteD)
+
+lemma tllist_all2_tfinite1_terminalD:
+  "\<lbrakk> tllist_all2 P Q xs ys; tfinite xs \<rbrakk> \<Longrightarrow> Q (terminal xs) (terminal ys)"
+by(frule tllist_all2_tfiniteD)(descending, auto)
+
+lemma tllist_all2_tfinite2_terminalD:
+  "\<lbrakk> tllist_all2 P Q xs ys; tfinite ys \<rbrakk> \<Longrightarrow> Q (terminal xs) (terminal ys)"
+by(metis tllist_all2_tfinite1_terminalD tllist_all2_tfiniteD)
+
+lemma tllist_all2D_llist_all2_llist_of_tllist:
+  "tllist_all2 P Q xs ys \<Longrightarrow> llist_all2 P (llist_of_tllist xs) (llist_of_tllist ys)"
+by(descending) auto
 
 lemma tllist_all2_code [code]:
   "tllist_all2 P Q (TNil b) (TNil b') \<longleftrightarrow> Q b b'"

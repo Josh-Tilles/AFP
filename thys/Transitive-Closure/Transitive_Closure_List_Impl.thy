@@ -26,7 +26,7 @@ with IsaFoR/CeTA. If not, see <http://www.gnu.org/licenses/>.
 header {* Closure computation on lists *}
 
 theory Transitive_Closure_List_Impl
-imports Transitive_Closure_Impl "../Abstract-Rewriting/Util"
+imports Transitive_Closure_Impl
 begin
 
 text {*
@@ -74,27 +74,32 @@ text {* Storing all relevant entries is done by mapping all left-hand sides of t
   to their closure. To avoid redundant entries, @{const remdups} is used.
 *}
 
-definition memo_list_rtrancl :: "('a \<times> 'a)list \<Rightarrow> ('a \<Rightarrow> 'a list)" 
-where "memo_list_rtrancl r \<equiv> let tr = rtrancl_list_impl r;
-                                 rm = map (\<lambda> a. (a,tr [a])) ((remdups o map fst) r)
-                             in (\<lambda> a. case lookup a rm of None \<Rightarrow> [a] | Some as \<Rightarrow> as)"
+definition memo_list_rtrancl :: "('a \<times> 'a) list \<Rightarrow> ('a \<Rightarrow> 'a list)" where
+  "memo_list_rtrancl r \<equiv>
+    let
+      tr = rtrancl_list_impl r;
+      rm = map (\<lambda>a. (a, tr [a])) ((remdups o map fst) r)
+    in
+      (\<lambda>a. case map_of rm a of
+        None \<Rightarrow> [a]
+      | Some as \<Rightarrow> as)"
 
 lemma memo_list_rtrancl:
   "set (memo_list_rtrancl r a) = {b. (a,b) \<in> (set r)^*}" (is "?l = ?r")
 proof -
   let ?rm = "map (\<lambda> a. (a, rtrancl_list_impl r [a])) ((remdups o map fst) r)"
   show ?thesis
-  proof (cases "lookup a ?rm")
+  proof (cases "map_of ?rm a")
     case None
     have one: "?l = {a}"
       unfolding memo_list_rtrancl_def Let_def None
       by auto
-    from lookup_complete[OF None]
+    from None[unfolded map_of_eq_None_iff]
     have a: "a \<notin> fst ` set r" by force
     {
       fix b
       assume "b \<in> ?r"
-      from this[unfolded rtrancl_power rel_pow_fun_conv] obtain n f where 
+      from this[unfolded rtrancl_power relpow_fun_conv] obtain n f where 
         ab: "f 0 = a \<and> f n = b" and steps: "\<And> i. i < n \<Longrightarrow> (f i, f (Suc i)) \<in> set r" by auto
       from ab steps[of 0] a have "a = b" 
         by (cases n, force+)
@@ -104,30 +109,35 @@ proof -
   next
     case (Some as) 
     have as: "set as = {b. (a,b) \<in> (set r)^*}"
-      using lookup_sound[OF Some]
+      using map_of_is_SomeD[OF Some]
         rtrancl_list_impl[of r "[a]"] by force
     thus ?thesis unfolding memo_list_rtrancl_def Let_def Some by simp
   qed
 qed
 
 
-definition memo_list_trancl :: "('a \<times> 'a)list \<Rightarrow> ('a \<Rightarrow> 'a list)" 
-where "memo_list_trancl r \<equiv> let tr = trancl_list_impl r;
-                               rm = map (\<lambda> a. (a,tr [a])) ((remdups o map fst) r)
-                             in (\<lambda> a. case lookup a rm of None \<Rightarrow> [] | Some as \<Rightarrow> as)"
+definition memo_list_trancl :: "('a \<times> 'a) list \<Rightarrow> ('a \<Rightarrow> 'a list)" where
+  "memo_list_trancl r \<equiv>
+    let
+      tr = trancl_list_impl r;
+      rm = map (\<lambda>a. (a, tr [a])) ((remdups o map fst) r)
+    in
+      (\<lambda>a. case map_of rm a of
+        None \<Rightarrow> []
+      | Some as \<Rightarrow> as)"
 
 lemma memo_list_trancl:
   "set (memo_list_trancl r a) = {b. (a,b) \<in> (set r)^+}" (is "?l = ?r")
 proof -
   let ?rm = "map (\<lambda> a. (a, trancl_list_impl r [a])) ((remdups o map fst) r)"
   show ?thesis
-  proof (cases "lookup a ?rm")
+  proof (cases "map_of ?rm a")
     case None
     have one: "?l = {}"
       unfolding memo_list_trancl_def Let_def None
       by auto
-    from lookup_complete[OF None]
-    have a: "a \<notin> fst ` set r" by force
+    from None[unfolded map_of_eq_None_iff]
+      have a: "a \<notin> fst ` set r" by force
     {
       fix b
       assume "b \<in> ?r"
@@ -138,11 +148,10 @@ proof -
   next
     case (Some as) 
     have as: "set as = {b. (a,b) \<in> (set r)^+}"
-      using lookup_sound[OF Some]
+      using map_of_is_SomeD[OF Some]
         trancl_list_impl[of r "[a]"] by force
     thus ?thesis unfolding memo_list_trancl_def Let_def Some by simp
   qed
 qed
-
 
 end

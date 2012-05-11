@@ -8,21 +8,8 @@ no_document use_thys
   "~~/src/HOL/Library/AList",
   "Extra",
   "List_local",
-  "~~/src/HOL/Library/Mapping"
+  "~~/src/HOL/Library/Mapping",
+  "~~/src/HOL/Library/Saturated"
 ];
 
-use_thys
- [
-  "DFS",
-  "Kripke",
-  "MapOps",
-  "Traces",
-  "Trie",
-  "KBPs",
-  "KBPsAuto",
-  "KBPsAlg",
-  "SPRViewSingle",
-  "Robot",
-  "SPRViewDet",
-  "MuddyChildren"
- ];
+use_thy "KBPs_Main";

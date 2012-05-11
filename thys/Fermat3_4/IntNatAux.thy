@@ -129,7 +129,7 @@ proof -
     hence bx1: "2*(x-b) < x" by auto
     from b have bx2: "b-x < 0" by auto
     obtain n where "n = m+1" by simp
-    hence "y - n*x = y - m*x - x" by (simp only: zadd_zmult_distrib zmult_1)
+    hence "y - n*x = y - m*x - x" by (simp only: left_distrib mult_1_left)
     with m have n: "y - n*x = b-x" by simp
     with bx2 have pos: "-y + n*x > 0" by simp
     moreover from n bx1 have "2*(-y + n*x) < x" by simp
@@ -586,9 +586,8 @@ done
 
 lemma zprime_zdvd_power: "\<lbrakk> zprime p; p dvd a^n \<rbrakk> \<Longrightarrow> p dvd a"
   apply (induct n, auto)
-  prefer 2
   apply (frule_tac m="a" and n="a^n" in zprime_zdvd_zmult_general)
-  apply (auto, simp add: zprime_def zdvd_not_zless)
+  apply auto
 done
 
 lemma zpower_zdvd_mono: "n \<noteq> 0 \<Longrightarrow> (a^n dvd b^n) = (a dvd (b::int))"
@@ -703,7 +702,7 @@ lemma power2_ge_self: "x^2 \<ge> (x::int)"
 proof (cases)
   assume nonpos: "x\<le>0"
   have "0 \<le> x^2" by (rule zero_le_power2)
-  with nonpos show ?thesis by (rule zle_trans)
+  with nonpos show ?thesis by (rule order_trans)
 next
   assume "\<not> x \<le> 0" hence x1: "x \<ge> 1" by simp
   thus ?thesis

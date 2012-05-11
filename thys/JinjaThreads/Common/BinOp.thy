@@ -4,7 +4,10 @@
 
 header{* \isaheader{ Binary Operators } *}
 
-theory BinOp imports WellForm begin
+theory BinOp
+imports
+  WellForm
+begin
 
 datatype bop =  -- "names of binary operations"
     Eq
@@ -120,15 +123,15 @@ declare word_sdiv_def [simp] word_smod_def [simp]
 
 lemma sdiv_smod_id: "(a sdiv b) * b + (a smod b) = a"
 proof -
-  have F5: "\<forall>u\<Colon>'a word. - (- u) = u" by (metis word_sint.Rep_inverse' zminus_zminus wi_hom_neg)
-  have F7: "\<forall>v u\<Colon>'a word. u + v = v + u" by(metis word_add_left_commute word_add_0_right)
+  have F5: "\<forall>u\<Colon>'a word. - (- u) = u" by (metis word_sint.Rep_inverse' minus_minus wi_hom_neg)
+  have F7: "\<forall>v u\<Colon>'a word. u + v = v + u" by(metis add_left_commute add_0_right)
   have F8: "\<forall>(w\<Colon>'a word) (v\<Colon>int) u\<Colon>int. word_of_int u + word_of_int v * w = word_of_int (u + v * sint w)"
-    by (metis wi_hom_syms(1) wi_hom_syms(2) word_sint.Rep_inverse')
+    by (metis word_sint.Rep_inverse wi_hom_syms(1) wi_hom_syms(3))
   have "\<exists>u. u = - sint b \<and> word_of_int (sint a mod u + - (- u * (sint a div u))) = a"
-    using F5 by (metis minus_minus word_sint.Rep_inverse' zmult_zminus zadd_commute zmod_zdiv_equality)
+    using F5 by (metis minus_minus word_sint.Rep_inverse' mult_minus_left add_commute zmod_zdiv_equality)
   hence "word_of_int (sint a mod - sint b + - (sint b * (sint a div - sint b))) = a" by (metis equation_minus_iff)
   hence "word_of_int (sint a mod - sint b) + word_of_int (- (sint a div - sint b)) * b = a"
-    using F8 by(metis zmult_commute zmult_zminus)
+    using F8 by(metis mult_commute mult_minus_left)
   hence eq: "word_of_int (- (sint a div - sint b)) * b + word_of_int (sint a mod - sint b) = a" using F7 by metis
 
   show ?thesis
@@ -138,11 +141,11 @@ proof -
     proof(cases "sint b < 0")
       case True
       with a show ?thesis
-        by simp (metis wi_hom_syms(1) wi_hom_syms(2) word_add_commute word_mult_commute word_sint.Rep_inverse zmod_zdiv_equality)
+        by simp (metis F7 F8 eq minus_equation_iff minus_mult_minus semiring_div_class.mod_div_equality')
     next
       case False
       from eq have "word_of_int (- (- sint a div sint b)) * b + word_of_int (- (- sint a mod sint b)) = a"
-        by (metis zdiv_zminus2 zmod_zminus2)
+        by (metis div_minus_right mod_minus_right)
       with a False show ?thesis by simp
     qed
   next
@@ -153,22 +156,23 @@ proof -
       with a eq show ?thesis by simp
     next
       case False with a show ?thesis
-        by simp (metis wi_hom_add wi_hom_mult word_add_commute word_mult_commute word_sint.Rep_inverse zadd_commute zmod_zdiv_equality)
+        by simp (metis wi_hom_add wi_hom_mult add_commute mult_commute word_sint.Rep_inverse add_commute zmod_zdiv_equality)
     qed
   qed
 qed
 
-lemma
-  "  5  sdiv ( 3 :: word32) =  1"
-  "  5  smod ( 3 :: word32) =  2"
-  "  5  sdiv (-3 :: word32) = -1"
-  "  5  smod (-3 :: word32) =  2"
-  "(-5) sdiv ( 3 :: word32) = -1"
-  "(-5) smod ( 3 :: word32) = -2"
-  "(-5) sdiv (-3 :: word32) =  1"
-  "(-5) smod (-3 :: word32) = -2"
-  "-2147483648 sdiv 1 = (-2147483648 :: word32)"
-by eval+
+notepad begin
+have  "  5  sdiv ( 3 :: word32) =  1"
+  and "  5  smod ( 3 :: word32) =  2"
+  and "  5  sdiv (-3 :: word32) = -1"
+  and "  5  smod (-3 :: word32) =  2"
+  and "(-5) sdiv ( 3 :: word32) = -1"
+  and "(-5) smod ( 3 :: word32) = -2"
+  and "(-5) sdiv (-3 :: word32) =  1"
+  and "(-5) smod (-3 :: word32) = -2"
+  and "-2147483648 sdiv 1 = (-2147483648 :: word32)"
+  by eval+
+end
 
 context heap_base begin
 

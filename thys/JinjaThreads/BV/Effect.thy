@@ -5,7 +5,9 @@
 header {* \isaheader{Effect of Instructions on the State Type} *}
 
 theory Effect
-imports JVM_SemiType "../JVM/JVMExceptions"
+imports
+  JVM_SemiType
+  "../JVM/JVMExceptions"
 begin
 
 locale jvm_method = prog +
@@ -108,7 +110,7 @@ where
 
 | eff\<^isub>i_Invoke:
   "eff\<^isub>i (Invoke M n, P, (ST,LT))          =
-  (let U = fst (snd (snd (method P (the (class_type_of (ST ! n))) M)))
+  (let U = fst (snd (snd (method P (the (class_type_of' (ST ! n))) M)))
    in (U # drop (n+1) ST, LT))"
 
 | eff\<^isub>i_Goto:
@@ -252,7 +254,7 @@ where
   "app\<^isub>i (Invoke M n, P, pc, mxs, T\<^isub>r, (ST,LT)) =
     (n < length ST \<and> 
     (ST!n \<noteq> NT \<longrightarrow>
-      (\<exists>C D Ts T m. class_type_of (ST ! n) = \<lfloor>C\<rfloor> \<and> P \<turnstile> C sees M:Ts \<rightarrow> T = m in D \<and> P \<turnstile> rev (take n ST) [\<le>] Ts)))"
+      (\<exists>C D Ts T m. class_type_of' (ST ! n) = \<lfloor>C\<rfloor> \<and> P \<turnstile> C sees M:Ts \<rightarrow> T = m in D \<and> P \<turnstile> rev (take n ST) [\<le>] Ts)))"
 | app\<^isub>i_MEnter:
   "app\<^isub>i (MEnter,P, pc,mxs,T\<^isub>r,(T#ST,LT)) = (is_refT T)"
 | app\<^isub>i_MExit:
@@ -545,7 +547,8 @@ lemmas eff\<^isub>i_code[code] =
 lemma app\<^isub>i_Getfield_code:
   "app\<^isub>i (Getfield F C, P, pc, mxs, T\<^isub>r, (T#ST, LT)) \<longleftrightarrow>
   Predicate.holds (Predicate.bind (sees_field_i_i_i_o_o_i P C F C) (\<lambda>T. Predicate.single ())) \<and> P \<turnstile> T \<le> Class C"
-by(clarsimp simp add: Predicate.bind_def Predicate.single_def holds_eq eval_sees_field_i_i_i_o_i_conv)
+apply(clarsimp simp add: Predicate.bind_def Predicate.single_def holds_eq eval_sees_field_i_i_i_o_i_conv)
+done
  
 lemma app\<^isub>i_Putfield_code:
   "app\<^isub>i (Putfield F C, P, pc, mxs, T\<^isub>r, (T\<^isub>1#T\<^isub>2#ST, LT)) \<longleftrightarrow>
@@ -577,7 +580,7 @@ lemma app\<^isub>i_Invoke_code:
   "app\<^isub>i (Invoke M n, P, pc, mxs, T\<^isub>r, (ST,LT)) =
   (n < length ST \<and> 
   (ST!n \<noteq> NT \<longrightarrow>
-     (case class_type_of (ST ! n) of Some C \<Rightarrow> 
+     (case class_type_of' (ST ! n) of Some C \<Rightarrow> 
          Predicate.holds (Predicate.bind (Method_i_i_i_o_o_o_o P C M) 
                                           (\<lambda>(Ts, _). if P \<turnstile> rev (take n ST) [\<le>] Ts then Predicate.single () else bot))
       | _ \<Rightarrow> False)))"

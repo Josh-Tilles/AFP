@@ -101,14 +101,14 @@ lemma False_False_in_steps_atom:
   "([False],[False]) : steps (atom a) w = (w = [])"
 apply (induct "w")
  apply (simp)
-apply (simp add: rel_comp_def)
+apply (simp add: relcomp_unfold)
 done
 
 lemma start_fin_in_steps_atom:
   "(start (atom a), [False]) : steps (atom a) w = (w = [a])"
 apply (induct "w")
  apply (simp add: start_atom rtrancl_empty)
-apply (simp add: False_False_in_steps_atom rel_comp_def start_atom)
+apply (simp add: False_False_in_steps_atom relcomp_unfold start_atom)
 done
 
 lemma accepts_atom: "accepts (atom a) w = (w = [a])"
@@ -223,7 +223,7 @@ apply (rule unfold_rtrancl2[THEN equalityE])
 apply (blast)
 done
 
-lemmas [iff] = in_unfold_rtrancl2[where ?p = "start(or L R)", standard]
+lemmas [iff] = in_unfold_rtrancl2[where ?p = "start(or L R)"] for L R
 
 lemma start_eps_or[iff]:
  "!!L R. (start(or L R),q) : eps(or L R) = 
@@ -575,7 +575,7 @@ lemma start_step_star[iff]:
 by (simp add:star_def step_def)
 
 lemmas epsclosure_start_step_star =
-  in_unfold_rtrancl2[where ?p = "start(star A)", standard]
+  in_unfold_rtrancl2[where ?p = "start (star A)"] for A
 
 lemma start_steps_star:
  "(start(star A),r) : steps (star A) w = 

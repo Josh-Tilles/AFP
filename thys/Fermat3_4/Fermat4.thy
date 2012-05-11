@@ -424,7 +424,7 @@ proof -
     proof -
       have "?g dvd \<alpha> \<and> ?g dvd \<beta>" by auto
       with albega have "?g dvd \<bar>k\<bar> \<and> ?g dvd \<bar>l\<bar>" 
-        by (simp add: power2_eq_square zmult_commute)  
+        by (simp add: power2_eq_square mult_commute)
       hence "?g dvd k \<and> ?g dvd l" by simp
       thus ?thesis by (simp add: zgcd_greatest_iff)
     qed
@@ -521,13 +521,13 @@ proof (rule ccontr)
     have zgab: "z^4 = ?g^4 * (a^4+b^4)"
     proof -
       from ab ass have "z^4 = (?g*a)^4+(?g*b)^4" by simp
-      thus ?thesis by (simp only: power_mult_distrib zadd_zmult_distrib2)
+      thus ?thesis by (simp only: power_mult_distrib right_distrib)
     qed
     have cgz: "z^2 = ?c * ?g^2" 
     proof -
       from zgab have "?g^4 dvd z^4" by simp
       hence "?g dvd z" by (simp only: zpower_zdvd_mono)
-      hence "(z div ?g)*?g = z" by (simp only: mult_ac zdvd_mult_div_cancel)
+      hence "(z div ?g)*?g = z" by (simp only: mult_ac dvd_mult_div_cancel)
       with ab show ?thesis by (auto simp only: power2_eq_square mult_ac)
     qed
     with xyz0 have c0: "?c\<noteq>0" by (auto simp add: power2_eq_square)
@@ -568,7 +568,7 @@ proof (rule ccontr)
       then obtain p q where "p = b" and "q = a" and "p \<in> zOdd" by simp    
       with ab abc have 
         "p^4 + q^4 = ?c^2 \<and> p*q*?c\<noteq>0 \<and> p \<in> zOdd \<and> zgcd p q=1" 
-        by (auto simp add: zgcd_commute zmult_commute)
+        by (auto simp add: zgcd_commute mult_commute)
       hence ?thesis by auto }
     ultimately show ?thesis by auto
   qed

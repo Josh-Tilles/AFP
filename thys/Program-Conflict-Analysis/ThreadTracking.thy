@@ -4,7 +4,7 @@
 *)
 header "Thread Tracking"
 theory ThreadTracking
-imports Main Multiset LTS Misc
+imports Main "~~/src/HOL/Library/Multiset" LTS Misc
 begin
 text_raw {*\label{thy:ThreadTracking}*}
 
@@ -89,8 +89,7 @@ text {*
   such semantics.
 *}
 locale env_no_step =
-  fixes gtrs
-  constrains gtrs :: "(('s\<times>'s multiset),'l) LTS"
+  fixes gtrs :: "(('s\<times>'s multiset),'l) LTS"
   assumes env_no_step_s[cases set, case_names csp]: 
     "\<lbrakk>((s,c),e,(s',c'))\<in>gtrs; !!csp. c'=csp+c \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
 

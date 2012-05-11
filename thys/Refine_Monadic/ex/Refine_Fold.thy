@@ -44,7 +44,7 @@ begin
     using assms
     apply (induct l arbitrary: s)
     apply simp
-    apply (simp only: foldl.simps rfoldl_simps)
+    apply (simp only: foldl_Nil foldl_append rfoldl_simps)
     apply simp
     apply (rule order_trans[rotated])
     apply (rule refine_transfer)

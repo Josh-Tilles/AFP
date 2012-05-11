@@ -1,12 +1,15 @@
+(*<*)
 (*
  * The worker/wrapper transformation, following Gill and Hutton.
- * (C)opyright 2009, Peter Gammie, peteg42 at gmail.com.
+ * (C)opyright 2009-2011, Peter Gammie, peteg42 at gmail.com.
  * License: BSD
  *)
 
-(*<*)
 theory Accumulator
-imports HOLCF LList WorkerWrapperNew
+imports
+  HOLCF
+  LList
+  WorkerWrapperNew
 begin
 (*>*)
 
@@ -281,7 +284,7 @@ proof -
   have "lrev = fix\<cdot>lrev_body" .
   also from wrapH_unwrapH_id unwrapH_strict
   have "\<dots> = wrapH\<cdot>(fix\<cdot>lrev_body3)"
-    by (rule worker_wrapper_new
+    by (rule worker_wrapper_fusion_new
        , simp add: lrev3_2_syntactic lrev_body2_lrev_body1_eq lrev_body_lrev_body1_eq)
   finally show ?thesis unfolding lrev_work3_def by simp
 qed

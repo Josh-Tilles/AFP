@@ -1,5 +1,5 @@
 (*  Title:      statecharts/HA/HA.thy
-    ID:         $Id: HA.thy,v 1.1 2010/07/23 16:27:57 helke Exp $
+
     Author:     Steffen Helke, Software Engineering Group
     Copyright   2010 Technische Universitaet Berlin
 *)
@@ -82,14 +82,21 @@ apply (unfold HierAuto_def IsCompFun_def Root_def RootEx_def MutuallyDistinct_de
 apply auto
 done
 
-typedef ('s,'e,'d) hierauto
-    = "{(D,F,E,G) |
+definition
+  "hierauto =
+    {(D,F,E,G) |
         (D::'d data)
         (F::(('s,'e,'d) seqauto) set)
         (E::('e set))
         (G::('s ~=> (('s,'e,'d) seqauto) set)).
                                 HierAuto D F E G}"
-by (rule exI, rule HierAuto_EmptySet)
+
+typedef (open) ('s,'e,'d) hierauto =
+    "hierauto :: ('d data * ('s,'e,'d) seqauto set * 'e set * ('s ~=> ('s,'e,'d) seqauto set)) set"
+  unfolding hierauto_def
+  apply (rule exI)
+  apply (rule HierAuto_EmptySet)
+  done
 
 definition
   SAs :: "(('s,'e,'d) hierauto)  => (('s,'e,'d) seqauto) set" where
@@ -975,7 +982,7 @@ apply (frule CompFun_ChiRel)
 apply fast
 apply (rule InitState_States)
 apply simp
-apply (rule_tac b="S" in trancl_trans)
+apply (rule trancl_trans [of _ S])
 apply (rule r_into_trancl')
 apply auto
 apply (rule r_into_trancl')
@@ -984,7 +991,7 @@ apply (rule CompFun_HAInitStates_HAStates)
 prefer 2
 apply fast
 apply (cut_tac A="HA ST" in HAInitStates_HAStates, fast)
-apply (rule_tac b="U" in trancl_trans)
+apply (rule_tac y = U in trancl_trans)
 apply (rule r_into_trancl')
 apply auto
 done
@@ -1195,7 +1202,7 @@ by (unfold ChiPlus_def, auto)
 
 lemma HARootStates_Range_ChiPlus2 [simp]:
   "\<lbrakk> S \<in> States (HARoot A) \<rbrakk> \<Longrightarrow> (x,S) \<notin> (ChiPlus A)" 
-by (frule HARootStates_Range_ChiPlus, unfold Range_def, fast)
+by (frule HARootStates_Range_ChiPlus, unfold Domain_converse [symmetric], fast)
 
 lemma SAStates_ChiPlus_ChiRel_NoCycle_1 [rule_format]:
  "\<lbrakk> (S,U) \<in> ChiPlus A; SA \<in> SAs A \<rbrakk> \<Longrightarrow> (U,T) \<in> (ChiRel A) \<longrightarrow> S \<in> States SA \<longrightarrow> T \<in> States SA \<longrightarrow> 

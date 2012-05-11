@@ -1,5 +1,5 @@
 (*  Title:       BDD
-    ID:          $Id: ShareReduceRepListProof.thy,v 1.5 2008-06-12 06:57:16 lsf37 Exp $
+
     Author:      Veronika Ortner and Norbert Schirmer, 2004
     Maintainer:  Norbert Schirmer,  norbert.schirmer at web de
     License:     LGPL
@@ -31,7 +31,7 @@ header {*Proof of Procedure ShareReduceRepList*}
 theory ShareReduceRepListProof imports ShareRepProof begin
 
 lemma (in ShareReduceRepList_impl) ShareReduceRepList_modifies:
-  shows "\<forall>\<sigma>. \<Gamma>\<turnstile>{\<sigma>}  PROC ShareReduceRepList (\<acute>nodeslist) 
+  shows "\<forall>\<sigma>. \<Gamma>\<turnstile>{\<sigma>}  PROC ShareReduceRepList (\<acute>nodeslist)
         {t. t may_only_modify_globals \<sigma> in [rep]}"
   apply (hoare_rule HoarePartial.ProcRec1)
   apply (vcg spec=modifies)

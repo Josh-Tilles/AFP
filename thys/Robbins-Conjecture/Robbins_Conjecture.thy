@@ -154,7 +154,7 @@ proof -
   interpret boolean: 
     boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact boolean_II_is_boolean)
-   thus ?thesis by (simp add: boolean.boolean_is_huntington)
+  show ?thesis by (simp add: boolean.boolean_is_huntington)
 qed
 
 end
@@ -369,7 +369,7 @@ proof -
   interpret boolean_II: 
     boolean_algebra_II uminus "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
       by (fact huntington_is_boolean_II)
-   thus ?thesis by (simp add: boolean_II.boolean_II_is_boolean)
+  show ?thesis by (simp add: boolean_II.boolean_II_is_boolean)
 qed
 end
 
@@ -391,7 +391,7 @@ proof -
   interpret boolean: 
     boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact boolean_II_is_boolean)
-   thus ?thesis by (simp add: boolean.boolean_is_robbins)
+  show ?thesis by (simp add: boolean.boolean_is_robbins)
 qed
 end
 
@@ -402,7 +402,7 @@ proof -
   interpret boolean: 
     boolean_algebra minus uminus "op \<sqinter>" "op \<sqsubseteq>" "op \<sqsubset>" "op \<squnion>" \<bottom> \<top>
       by (fact huntington_is_boolean)
-   thus ?thesis by (simp add: boolean.boolean_is_robbins)
+  show ?thesis by (simp add: boolean.boolean_is_robbins)
 qed
 end
 
@@ -419,7 +419,7 @@ where
 | copyp_Suc: "(Suc k) \<otimes> x = (k \<otimes> x) \<squnion> x"
 
 no_notation 
-  Times (infixr "\<times>" 80)
+  Product_Type.Times (infixr "\<times>" 80)
 
 primrec copy :: "nat \<Rightarrow> 'a \<Rightarrow> 'a" (infix "\<times>" 85)
 where
@@ -950,7 +950,7 @@ proof -
   interpret huntington: 
     huntington_algebra uminus "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
       by (fact robbins_is_huntington)
-   thus ?thesis by (simp add: huntington.huntington_is_boolean_II)
+  show ?thesis by (simp add: huntington.huntington_is_boolean_II)
 qed
 
 theorem robbins_is_boolean:
@@ -959,7 +959,7 @@ proof -
   interpret huntington: 
     huntington_algebra uminus "op \<sqinter>" "op \<squnion>" \<bottom> \<top>
       by (fact robbins_is_huntington)
-   thus ?thesis by (simp add: huntington.huntington_is_boolean)
+  show ?thesis by (simp add: huntington.huntington_is_boolean)
 qed
 
 end
@@ -980,6 +980,6 @@ no_notation secret_object1 ("\<iota>")
    and copy (infix "\<times>" 85)
 
 notation
-  Times  (infixr "\<times>" 80)
+  Product_Type.Times  (infixr "\<times>" 80)
 
 end

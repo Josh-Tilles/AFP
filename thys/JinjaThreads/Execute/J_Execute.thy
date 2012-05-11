@@ -4,7 +4,8 @@
 
 header {* \isaheader{Executable semantics for J} *}
 
-theory J_Execute imports
+theory J_Execute
+imports
   SC_Schedulers
   "../J/Threaded"
 begin
@@ -14,10 +15,8 @@ interpretation sc!:
     "addr2thread_id"
     "thread_id2addr"
     "sc_empty"
-    "sc_new_obj P"
-    "sc_new_arr P" 
+    "sc_allocate P"
     "sc_typeof_addr"
-    "sc_array_length"
     "sc_heap_read"
     "sc_heap_write"
   for P .
@@ -33,9 +32,9 @@ where
 fun sc_red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o
 where
   "sc_red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o P t ((e, xs), h) =
-  red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o 
+  red_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o 
     addr2thread_id thread_id2addr
-    sc_empty (sc_new_obj P) (sc_new_arr P) sc_typeof_addr sc_array_length sc_heap_read_i_i_i_o sc_heap_write_i_i_i_i_o
+    sc_empty (sc_allocate P) sc_typeof_addr sc_heap_read_i_i_i_o sc_heap_write_i_i_i_i_o
     (extTA2J P) P t e (h, xs)
   \<guillemotright>= (\<lambda>(ta, e, h, xs). Predicate.single (ta, (e, xs), h))"
 
@@ -45,13 +44,13 @@ abbreviation sc_J_start_state_refine ::
 where
   "sc_J_start_state_refine \<equiv> 
    sc_start_state_refine
-     rm_empty rm_update rm_empty rs_empty
+     (rm_empty ()) rm_update (rm_empty ()) (rs_empty ())
      (\<lambda>C M Ts T (pns, body) vs. (blocks (this # pns) (Class C # Ts) (Null # vs) body, empty))"
 
 lemma eval_sc_red_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o:
   "(\<lambda>t xm ta x'm'. Predicate.eval (sc_red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o P t xm) (ta, x'm')) = 
   (\<lambda>t ((e, xs), h) ta ((e', xs'), h'). extTA2J P,P,t \<turnstile>sc \<langle>e, (h, xs)\<rangle> -ta\<rightarrow> \<langle>e', (h', xs')\<rangle>)"
-by(fastforce elim!: red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_oE intro!: red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_oI ext SUP1_I simp add: eval_sc_heap_write_i_i_i_i_o eval_sc_heap_read_i_i_i_o)
+by(fastforce elim!: red_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_oE intro!: red_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_oI ext SUP1_I simp add: eval_sc_heap_write_i_i_i_i_o eval_sc_heap_read_i_i_i_o)
 
 lemma sc_J_start_state_invar: "(\<lambda>_. True) (sc_state_\<alpha> (sc_J_start_state_refine P C M vs))"
 by simp
@@ -84,7 +83,7 @@ by(unfold_locales)
 interpretation J_rr!: 
   sc_scheduler
     final_expr "sc_red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o P" convert_RA
-    "J_rr.round_robin P n0" Jinja_output "pick_wakeup_via_sel rm_sel'" J_rr.round_robin_invar
+    "J_rr.round_robin P n0" Jinja_output "pick_wakeup_via_sel (\<lambda>s P. rm_sel' s (\<lambda>(k,v). P k v))" J_rr.round_robin_invar
     UNIV
   for P n0
 unfolding sc_scheduler_def
@@ -121,7 +120,7 @@ by(unfold_locales)
 interpretation J_rnd!:
   sc_scheduler
     final_expr "sc_red_i_i_i_i_i_i_i_Fii_i_oB_Fii_i_i_oB_i_i_i_i_i_o_o_o P" convert_RA
-    "J_rnd.random_scheduler P" Jinja_output "pick_wakeup_via_sel rm_sel'" "\<lambda>_ _. True"
+    "J_rnd.random_scheduler P" Jinja_output "pick_wakeup_via_sel (\<lambda>s P. rm_sel' s (\<lambda>(k,v). P k v))" "\<lambda>_ _. True"
     UNIV
   for P
 unfolding sc_scheduler_def

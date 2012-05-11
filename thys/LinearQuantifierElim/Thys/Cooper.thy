@@ -101,7 +101,7 @@ proof(induct \<phi> rule:min_inf.induct)
               da dvd (i + j*x + \<langle>js,xs\<rangle>) - (j*k)*d"
           by(simp add: algebra_simps)
         also have "\<dots> \<longleftrightarrow> da dvd i + j*x + \<langle>js,xs\<rangle>" using `da dvd d`
-          by (metis dvd_diff zdvd_zdiffD dvd_mult zmult_commute)
+          by (metis dvd_diff zdvd_zdiffD dvd_mult mult_commute)
         also have "\<dots> \<longleftrightarrow> da dvd i + (j * x + \<langle>js,xs\<rangle>)"
           by(simp add: algebra_simps)
         finally show ?thesis .
@@ -129,7 +129,7 @@ next
               da dvd (i + j*x + \<langle>js,xs\<rangle>) - (j*k)*d"
           by(simp add: algebra_simps)
         also have "\<dots> \<longleftrightarrow> da dvd i + j*x + \<langle>js,xs\<rangle>" using `da dvd d`
-          by (metis dvd_diff zdvd_zdiffD dvd_mult zmult_commute)
+          by (metis dvd_diff zdvd_zdiffD dvd_mult mult_commute)
         also have "\<dots> \<longleftrightarrow> da dvd i + (j * x + \<langle>js,xs\<rangle>)"
           by(simp add: algebra_simps)
         finally show ?thesis .
@@ -223,8 +223,8 @@ proof
   have "x mod d = x - (x div d)*d"
     by(simp add:zmod_zdiv_equality mult_ac eq_diff_eq)
   hence Pmod: "P x = P(x mod d)" using modd by simp
-  have "P(x mod d)" using dpos P Pmod by(simp add:pos_mod_sign pos_mod_bound)
-  moreover have "x mod d : {0..d - 1}" using dpos by(auto simp:pos_mod_sign)
+  have "P(x mod d)" using dpos P Pmod by simp
+  moreover have "x mod d : {0..d - 1}" using dpos by auto
   ultimately show ?RHS ..
 qed auto
 
@@ -304,7 +304,7 @@ apply(case_tac list) apply simp
 apply(clarsimp split:split_if_asm)
 apply(subgoal_tac "a : set(map hd_coeff (Z.atoms\<^isub>0 \<phi>))")
  apply(subgoal_tac "\<forall>i\<in>set(map hd_coeff (Z.atoms\<^isub>0 \<phi>)). i \<noteq> 0")
-  apply (metis dvd_zlcms mult_eq_0_iff zdvd_mult_div_cancel zlcms0_iff)
+  apply (metis dvd_zlcms mult_eq_0_iff dvd_mult_div_cancel zlcms0_iff)
  apply (simp add:set_atoms0_iff)
 apply(fastforce simp:image_def set_atoms0_iff Bex_def)
 
@@ -313,7 +313,7 @@ apply(case_tac list) apply simp
 apply(clarsimp split:split_if_asm)
 apply(subgoal_tac "a : set(map hd_coeff (Z.atoms\<^isub>0 \<phi>))")
  apply(subgoal_tac "\<forall>i\<in>set(map hd_coeff (Z.atoms\<^isub>0 \<phi>)). i \<noteq> 0")
-  apply (metis dvd_zlcms mult_eq_0_iff zdvd_mult_div_cancel zlcms0_iff)
+  apply (metis dvd_zlcms mult_eq_0_iff dvd_mult_div_cancel zlcms0_iff)
  apply (simp add:set_atoms0_iff)
 apply(fastforce simp:image_def set_atoms0_iff Bex_def)
 done

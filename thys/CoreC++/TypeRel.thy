@@ -1,5 +1,5 @@
 (*  Title:       CoreC++
-    ID:          $Id: TypeRel.thy,v 1.10 2007-07-11 10:07:49 stefanberghofer Exp $
+
     Author:      Tobias Nipkow, Daniel Wasserrab 
     Maintainer:  Daniel Wasserrab <wasserra at fmi.uni-passau.de>
 
@@ -25,34 +25,16 @@ abbreviation (xsymbols)
     ("_ \<turnstile> _ [\<le>] _" [71,71,71] 70) where
   "widens P Ts Ts' \<equiv> list_all2 (widen P) Ts Ts'"
 
-lemma [iff]: "(P \<turnstile> T \<le> Void) = (T = Void)"
-by (auto elim: widen.cases)
+inductive_simps [iff]:
+  "P \<turnstile> T \<le> Void"
+  "P \<turnstile> T \<le> Boolean"
+  "P \<turnstile> T \<le> Integer"
+  "P \<turnstile> Void \<le> T"
+  "P \<turnstile> Boolean \<le> T"
+  "P \<turnstile> Integer \<le> T"
+  "P \<turnstile> T \<le> NT"
 
-lemma [iff]: "(P \<turnstile> T \<le> Boolean) = (T = Boolean)"
-by (auto elim: widen.cases)
-
-lemma [iff]: "(P \<turnstile> T \<le> Integer) = (T = Integer)"
-by (auto elim: widen.cases)
-
-lemma [iff]: "(P \<turnstile> Void \<le> T) = (T = Void)"
-by (auto elim: widen.cases)
-
-lemma [iff]: "(P \<turnstile> Boolean \<le> T) = (T = Boolean)"
-by (auto elim: widen.cases)
-
-lemma [iff]: "(P \<turnstile> Integer \<le> T) = (T = Integer)"
-by (auto elim: widen.cases)
-
-
-lemma [iff]: "(P \<turnstile> T \<le> NT) = (T = NT)"
-
-apply(cases T) apply auto
-apply (ind_cases "P \<turnstile> T \<le> NT" for T)
-apply auto
-done
-
-
-lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl, standard]
-lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P", standard]
+lemmas widens_refl [iff] = list_all2_refl [of "widen P", OF widen_refl] for P
+lemmas widens_Cons [iff] = list_all2_Cons1 [of "widen P"] for P
 
 end
