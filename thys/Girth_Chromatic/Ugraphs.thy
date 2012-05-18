@@ -28,7 +28,7 @@ abbreviation uverts :: "ugraph \<Rightarrow> uvert set" where
 fun mk_uedge :: "uvert \<times> uvert \<Rightarrow> uedge" where
    "mk_uedge (u,v) = {u,v}"
 
-text {* All edges over a set of vertexes @{term S} *}
+text {* All edges over a set of vertexes @{term S}: *}
 definition "all_edges S \<equiv> mk_uedge ` {uv \<in> S \<times> S. fst uv \<noteq> snd uv}"
 
 definition uwellformed :: "ugraph \<Rightarrow> bool" where
@@ -193,7 +193,7 @@ definition vertex_colorings :: "ugraph \<Rightarrow> uvert set set set" where
   "vertex_colorings G \<equiv> {C. \<Union>C = uverts G \<and> (\<forall>c1\<in>C. \<forall>c2\<in>C. c1 \<noteq> c2 \<longrightarrow> c1 \<inter> c2 = {}) \<and>
     (\<forall>c\<in>C. c \<noteq> {} \<and> (\<forall>u \<in> c. \<forall>v \<in> c. {u,v} \<notin> uedges G))}"
 
-text {* The chromatic number \<chi> *}
+text {* The chromatic number $\chi$: *}
 definition chromatic_number :: "ugraph \<Rightarrow> enat" where
   "chromatic_number G \<equiv> INF c: (vertex_colorings G). card c"
 
