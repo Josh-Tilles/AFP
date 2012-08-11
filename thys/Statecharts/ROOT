@@ -1,0 +1,6 @@
+session Statecharts (AFP) = HOL +
+  options [timeout = 600]
+  theories
+    CarAudioSystem
+  files
+    "document/root.tex"

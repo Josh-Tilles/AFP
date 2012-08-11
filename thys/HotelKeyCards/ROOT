@@ -1,0 +1,16 @@
+session HotelKeyCards (AFP) = HOL +
+  options [timeout = 600]
+  theories [show_question_marks = false]
+    Notation
+  theories [document = false, show_question_marks = false]
+    Basis
+  theories [show_question_marks = false]
+    State
+    NewCard
+    Trace
+    Equivalence
+  files
+    "document/conclu.tex"
+    "document/intro.tex"
+    "document/root.bib"
+    "document/root.tex"

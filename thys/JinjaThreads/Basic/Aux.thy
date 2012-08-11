@@ -11,13 +11,14 @@ header {*
 theory Aux 
 imports
   Main
-  "../../FinFun/FinFun"
+  "~~/src/HOL/Library/FinFun_Syntax"
   "~~/src/HOL/Library/Transitive_Closure_Table"
   "~~/src/HOL/Library/Predicate_Compile_Alternative_Defs"
   "~~/src/HOL/Library/Code_Char"
   "~~/src/HOL/Library/Quotient_Option"
   "~~/src/HOL/Library/Monad_Syntax"
   "~~/src/HOL/Library/Wfrec"
+  "~~/src/HOL/Library/Infinite_Set"
 begin
 
 (* FIXME move and possibly turn into a general simproc *)

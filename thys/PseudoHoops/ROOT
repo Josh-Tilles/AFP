@@ -1,0 +1,7 @@
+session PseudoHoops (AFP) = LatticeProperties +
+  options [timeout = 3600]
+  theories
+    Examples
+  files
+    "document/root.bib"
+    "document/root.tex"
