@@ -27,7 +27,7 @@ lemma bisimSubstOutputPres:
 
   shows "\<Psi> \<rhd> M\<langle>N\<rangle>.P \<sim>\<^sub>s M\<langle>N\<rangle>.Q"
 using assms
-by(fastsimp intro: closeSubstI closeSubstE bisimOutputPres)
+by(fastforce intro: closeSubstI closeSubstE bisimOutputPres)
 
 
 lemma seqSubstInputChain[simp]:
@@ -108,22 +108,22 @@ proof -
       fix \<phi> P
       assume "(\<phi>, P) mem (caseListSeqSubst CsP \<sigma>)"
       then obtain \<phi>' P' where "(\<phi>', P') mem CsP" and "\<phi> = substCond.seqSubst \<phi>' \<sigma>" and PeqP': "P = (P'[<\<sigma>>])"
-	by(induct CsP) force+
+        by(induct CsP) force+
       from `(\<phi>', P') mem CsP` obtain Q' where "(\<phi>', Q') mem CsQ" and "guarded Q'" and "\<Psi> \<rhd> P' \<sim>\<^sub>s Q'" by(blast dest: C1)
       from `(\<phi>', Q') mem CsQ` `\<phi> = substCond.seqSubst \<phi>' \<sigma>` obtain Q where "(\<phi>, Q) mem (caseListSeqSubst CsQ \<sigma>)" and "Q = Q'[<\<sigma>>]"
-	by(induct CsQ) auto
+        by(induct CsQ) auto
       with PeqP' `guarded Q'` `\<Psi> \<rhd> P' \<sim>\<^sub>s Q'` `wellFormedSubst \<sigma>` show "\<exists>Q. (\<phi>, Q) mem (caseListSeqSubst CsQ \<sigma>) \<and> guarded Q \<and> \<Psi> \<rhd> P \<sim> Q"
-	by(blast dest: closeSubstE guardedSeqSubst)
+        by(blast dest: closeSubstE guardedSeqSubst)
     next
       fix \<phi> Q
       assume "(\<phi>, Q) mem (caseListSeqSubst CsQ \<sigma>)"
       then obtain \<phi>' Q' where "(\<phi>', Q') mem CsQ" and "\<phi> = substCond.seqSubst \<phi>' \<sigma>" and QeqQ': "Q = Q'[<\<sigma>>]"
-	by(induct CsQ) force+
+        by(induct CsQ) force+
       from `(\<phi>', Q') mem CsQ` obtain P' where "(\<phi>', P') mem CsP" and "guarded P'" and "\<Psi> \<rhd> P' \<sim>\<^sub>s Q'" by(blast dest: C2)
       from `(\<phi>', P') mem CsP` `\<phi> = substCond.seqSubst \<phi>' \<sigma>` obtain P where "(\<phi>, P) mem (caseListSeqSubst CsP \<sigma>)" and "P = P'[<\<sigma>>]"
-	by(induct CsP) auto
+        by(induct CsP) auto
       with QeqQ' `guarded P'` `\<Psi> \<rhd> P' \<sim>\<^sub>s Q'` `wellFormedSubst \<sigma>`  show "\<exists>P. (\<phi>, P) mem (caseListSeqSubst CsP \<sigma>) \<and> guarded P \<and> \<Psi> \<rhd> P \<sim> Q"
-	by(blast dest: closeSubstE guardedSeqSubst)
+        by(blast dest: closeSubstE guardedSeqSubst)
     qed
   }
   thus ?thesis
@@ -187,7 +187,7 @@ proof -
 using `length CsP = length CsQ`
 proof(induct n=="length CsP" rule: nat.induct)
   case zero
-  thus ?case by(fastsimp intro: bisimSubstReflexive)
+  thus ?case by(fastforce intro: bisimSubstReflexive)
 next
   case(Suc n)
 next
@@ -210,7 +210,7 @@ lemma bisimSubstParPres:
 
   shows "\<Psi> \<rhd> P \<parallel> R \<sim>\<^sub>s Q \<parallel> R"
 using assms
-by(fastsimp intro: closeSubstI closeSubstE bisimParPres)
+by(fastforce intro: closeSubstI closeSubstE bisimParPres)
 
 lemma bisimSubstResPres:
   fixes \<Psi> :: 'b
@@ -253,7 +253,7 @@ lemma bisimSubstBangPres:
 
   shows "\<Psi> \<rhd> !P \<sim>\<^sub>s !Q"
 using assms
-by(fastsimp intro: closeSubstI closeSubstE bisimBangPres guardedSeqSubst)
+by(fastforce intro: closeSubstI closeSubstE bisimBangPres guardedSeqSubst)
 
 lemma substNil[simp]:
   fixes xvec :: "name list"
@@ -271,7 +271,7 @@ lemma bisimSubstParNil:
   and   P :: "('a, 'b, 'c) psi"
 
   shows "\<Psi> \<rhd> P \<parallel> \<zero> \<sim>\<^sub>s P" 
-by(fastsimp intro: closeSubstI bisimParNil)
+by(fastforce intro: closeSubstI bisimParNil)
 
 lemma bisimSubstParComm:
   fixes \<Psi> :: 'b
@@ -280,7 +280,7 @@ lemma bisimSubstParComm:
 
   shows "\<Psi> \<rhd> P \<parallel> Q \<sim>\<^sub>s Q \<parallel> P"
 apply(rule closeSubstI)
-by(fastsimp intro: closeSubstI bisimParComm)
+by(fastforce intro: closeSubstI bisimParComm)
 
 lemma bisimSubstParAssoc:
   fixes \<Psi> :: 'b
@@ -290,7 +290,7 @@ lemma bisimSubstParAssoc:
 
   shows "\<Psi> \<rhd> (P \<parallel> Q) \<parallel> R \<sim>\<^sub>s P \<parallel> (Q \<parallel> R)"
 apply(rule closeSubstI)
-by(fastsimp intro: closeSubstI bisimParAssoc)
+by(fastforce intro: closeSubstI bisimParAssoc)
 
 lemma bisimSubstResNil:
   fixes \<Psi> :: 'b
@@ -524,7 +524,7 @@ lemma bisimSubstExtBang:
 
   shows "\<Psi> \<rhd> !P \<sim>\<^sub>s P \<parallel> !P"
 using assms
-by(fastsimp intro: closeSubstI bangExt guardedSeqSubst)
+by(fastforce intro: closeSubstI bangExt guardedSeqSubst)
 
 lemma structCongBisimSubst:
   fixes P :: "('a, 'b, 'c) psi"  

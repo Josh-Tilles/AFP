@@ -1,0 +1,8 @@
+session BDD (AFP) = Simpl +
+  options [timeout = 3600, document_graph]
+  theories
+    EvalProof
+    NormalizeTotalProof
+  files
+    "document/root.bib"
+    "document/root.tex"

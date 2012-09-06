@@ -373,6 +373,18 @@ lemma lappend_llist_of_llist_of [simp]:
   "lappend (llist_of xs) (llist_of ys) = llist_of (xs @ ys)"
 by(induct xs) simp_all
 
+lemma lfinite_rev_induct [consumes 1, case_names Nil snoc]:
+  assumes fin: "lfinite xs"
+  and Nil: "P LNil"
+  and snoc: "\<And>x xs. \<lbrakk> lfinite xs; P xs \<rbrakk> \<Longrightarrow> P (lappend xs (LCons x LNil))"
+  shows "P xs"
+proof -
+  from fin obtain xs' where xs: "xs = llist_of xs'"
+    unfolding lfinite_eq_range_llist_of by blast
+  show ?thesis unfolding xs
+    by(induct xs' rule: rev_induct)(auto simp add: Nil lappend_llist_of_llist_of[symmetric] dest: snoc[rotated])
+qed
+
 lemma lappend_llist_of_LCons: 
   "lappend (llist_of xs) (LCons y ys) = lappend (llist_of (xs @ [y])) ys"
 by(induct xs) simp_all
@@ -443,7 +455,7 @@ by(simp_all add: list_of_aux_def)
 
 subsection {* The length of a lazy list: @{term "llength"} *}
 
-lemma [simp, code, nitpick_simp]:
+lemma [simp, nitpick_simp]:
   shows llength_LNil: "llength LNil = 0"
   and llength_LCons: "llength (LCons x xs) = eSuc (llength xs)"
 by(simp_all add: llength_def enat_corec)
@@ -565,6 +577,17 @@ next
     by(auto simp add: zero_enat_def[symmetric] Suc_ile_eq gr0_conv_Suc)
   with lfinite_LConsI show ?case by(auto)
 qed
+
+definition gen_llength :: "nat \<Rightarrow> 'a llist \<Rightarrow> enat"
+where "gen_llength n xs = enat n + llength xs"
+
+lemma gen_llength_code [code]:
+  "gen_llength n LNil = enat n"
+  "gen_llength n (LCons x xs) = gen_llength (n + 1) xs"
+by(simp_all add: gen_llength_def iadd_Suc eSuc_enat[symmetric] iadd_Suc_right)
+
+lemma llength_code [code]: "llength = gen_llength 0"
+by(simp add: gen_llength_def fun_eq_iff zero_enat_def)
 
 subsection {* Taking and dropping from lazy lists: @{term "ltake"} and @{term "ldrop"} *}
 
@@ -2053,11 +2076,11 @@ qed
 
 subsection {* The set of elements in a lazy list: @{term "lset"} *}
 
-lemma lset_LNil [simp, code]:
+lemma lset_LNil [simp]:
   "lset LNil = {}"
 by(simp add: lset_def)
 
-lemma lset_LCons [simp, code]:
+lemma lset_LCons [simp]:
   "lset (LCons x xs) = insert x (lset xs)"
 proof -
   have "x \<in> lnth (LCons x xs) ` {n. enat n \<le> llength xs}"
@@ -2135,6 +2158,33 @@ by(auto intro: lset_into_lsetp dest: lsetp_into_lset)
 
 hide_const (open) lsetp
 hide_fact (open) lsetp.intros lsetp_def lsetp.cases lsetp.induct lset_into_lsetp lset_eq_lsetp
+
+text {* code setup for @{term lset} *}
+
+definition gen_lset :: "'a set \<Rightarrow> 'a llist \<Rightarrow> 'a set"
+where "gen_lset A xs = A \<union> lset xs"
+
+lemma gen_lset_code [code]:
+  "gen_lset A LNil = A"
+  "gen_lset A (LCons x xs) = gen_lset (insert x A) xs"
+by(auto simp add: gen_lset_def)
+
+lemma lset_code [code]:
+  "lset = gen_lset {}"
+by(simp add: gen_lset_def fun_eq_iff)
+
+definition lmember :: "'a \<Rightarrow> 'a llist \<Rightarrow> bool"
+where "lmember x xs \<longleftrightarrow> x \<in> lset xs"
+
+lemma lmember_code [code]:
+  "lmember x LNil \<longleftrightarrow> False"
+  "lmember x (LCons y ys) \<longleftrightarrow> x = y \<or> lmember x ys"
+by(simp_all add: lmember_def)
+
+lemma lset_lmember [code_unfold]:
+  "x \<in> lset xs \<longleftrightarrow> lmember x xs"
+by(simp add: lmember_def)
+
 
 
 lemma lset_lmap [simp]: "lset (lmap f xs) = f ` lset xs"
@@ -2638,6 +2688,9 @@ by(simp_all add: ltl_def)
 lemma lhd_LCons_ltl: "xs \<noteq> LNil \<Longrightarrow> LCons (lhd xs) (ltl xs) = xs"
 by(auto simp add: neq_LNil_conv)
 
+lemma lhd_lmap: "xs \<noteq> LNil \<Longrightarrow> lhd (lmap f xs) = f (lhd xs)"
+by(cases xs) simp_all
+
 lemma lhd_iterates [simp]: "lhd (iterates f x) = x"
 by(subst iterates) simp
 
@@ -2658,13 +2711,22 @@ next
   thus ?case by simp
 qed
 
+lemma lhd_lzip: "\<lbrakk> xs \<noteq> LNil; ys \<noteq> LNil \<rbrakk> \<Longrightarrow> lhd (lzip xs ys) = (lhd xs, lhd ys)"
+by(clarsimp simp add: neq_LNil_conv)
+
 lemma ldropn_Suc: "ldropn (Suc n) xs = ldropn n (ltl xs)"
 by(simp add: ldropn.simps split: llist_split)
+
+lemma lfinite_ltl [simp]: "lfinite (ltl xs) = lfinite xs"
+by(cases xs) simp_all
 
 lemma ldrop_eSuc_ltl: "ldrop (eSuc n) xs = ldrop n (ltl xs)"
 by(simp add: eSuc_def ldropn_Suc split: enat.split)
 
 lemma llength_ltl: "llength (ltl xs) = llength xs - 1"
+by(cases xs) simp_all
+
+lemma ltl_lmap: "ltl (lmap f xs) = lmap f (ltl xs)"
 by(cases xs) simp_all
 
 lemma ltake_ltl: "ltake n (ltl xs) = ltl (ltake (eSuc n) xs)"
@@ -2698,6 +2760,9 @@ apply(cases xs, simp_all)
 apply(cases n rule: enat_coexhaust, simp_all)
 done
 
+lemma ltl_lzip [simp]: "ltl (lzip xs ys) = lzip (ltl xs) (ltl ys)"
+by(cases xs ys rule: llist_cases[case_product llist_cases]) simp_all
+
 subsection {* The last element @{term "llast"} *}
 
 lemma llast_LNil: "llast LNil = undefined"
@@ -2709,7 +2774,7 @@ by(cases "llength xs")(auto simp add: llast_def eSuc_def zero_enat_def neq_LNil_
 lemma llast_linfinite: "\<not> lfinite xs \<Longrightarrow> llast xs = undefined"
 by(simp add: llast_def lfinite_conv_llength_enat)
 
-lemma [simp]:
+lemma [simp, code]:
   shows llast_singleton: "llast (LCons x LNil) = x"
   and llast_LCons2: "llast (LCons x (LCons y xs)) = llast (LCons y xs)"
 by(simp_all add: llast_LCons)
@@ -4783,6 +4848,20 @@ proof
     from `LCons x xs = inf_llist f` inf_llist_rec[of f]
     have "xs = inf_llist (\<lambda>n. f (n + 1))" by simp
     thus ?case by(rule lfinite_LConsI)
+  qed
+qed
+
+lemma iterates_conv_inf_llist:
+  "iterates f a = inf_llist (\<lambda>n. (f ^^ n) a)" (is "?lhs a = ?rhs a")
+proof -
+  def lhs \<equiv> "?lhs a" and rhs \<equiv> "?rhs a"
+  hence "(lhs, rhs) \<in> {(?lhs a, ?rhs a)|a. True}" by auto
+  thus "lhs = rhs"
+  proof(coinduct rule: llist_equalityI)
+    case (Eqllist q)
+    hence ?EqLCons 
+      by(subst (asm) iterates)(subst (asm) inf_llist_rec, auto simp add: funpow_swap1)
+    thus ?case ..
   qed
 qed
 
