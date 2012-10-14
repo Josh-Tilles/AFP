@@ -1,0 +1,8 @@
+session "Locally-Nameless-Sigma" (AFP) = HOL +
+  options [timeout = 600]
+  theories [document = false]
+    "~~/src/HOL/Proofs/Lambda/Commutation"
+  theories
+    Locally_Nameless_Sigma
+  files
+    "document/root.tex"

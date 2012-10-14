@@ -1,0 +1,10 @@
+session Integration (AFP) = HOL +
+  options [timeout = 3600]
+  theories
+    Integral
+    Failure
+  files
+    "document/intro.tex"
+    "document/outro.tex"
+    "document/root.bib"
+    "document/root.tex"
