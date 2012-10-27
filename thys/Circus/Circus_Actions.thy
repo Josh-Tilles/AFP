@@ -21,12 +21,15 @@ subsubsection {* Definitions *}
 
 text {* The Circus actions type is defined as the set of all the CSP healthy reactive processes. *}
 
-typedef ('\<theta>::"ev_eq",'\<sigma>)  "action" = "{p::('\<theta>,'\<sigma>) relation_rp. is_CSP_process p}"
-    morphisms relation_of action_of
+definition "action = {p::('\<theta>,'\<sigma>) relation_rp. is_CSP_process p}"
+
+typedef ('\<theta>::"ev_eq",'\<sigma>) action =
+  "action :: (('\<theta>, '\<sigma>) alpha_rp_scheme \<times> ('\<theta>, '\<sigma>) alpha_rp_scheme \<Rightarrow> bool) set"
+  morphisms relation_of action_of
 proof -
    have "R (false \<turnstile> true) \<in> {p :: ('\<theta>,'\<sigma>) relation_rp. is_CSP_process p}"
         by (auto intro: rd_is_CSP)
-   thus ?thesis by auto
+   thus ?thesis unfolding action_def by auto
 qed
 
 text {* The type-definition introduces a new type by stating a set. In our case, 
@@ -291,7 +294,7 @@ proof -
     apply (erule Set.imageE, simp add: relation_of)
     apply (subst CSP_is_rd, simp add: relation_of_CSP)
     apply (subst (asm) CSP_is_rd, simp add: relation_of_CSP)
-    apply (auto simp add: csp_defs prefix_def design_defs rp_defs fun_eq_iff split: cond_splits)
+    apply (auto simp add: csp_defs prefixeq_def design_defs rp_defs fun_eq_iff split: cond_splits)
     apply (subgoal_tac "b\<lparr>tr := zs, ok := False\<rparr> = c\<lparr>tr := zs, ok := False\<rparr>", auto)
     apply (subgoal_tac "b\<lparr>tr := zs, ok := False\<rparr> = c\<lparr>tr := zs, ok := False\<rparr>", auto)
     apply (subgoal_tac "b\<lparr>tr := zs, ok := False\<rparr> = c\<lparr>tr := zs, ok := False\<rparr>", auto)

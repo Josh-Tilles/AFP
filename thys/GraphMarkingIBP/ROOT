@@ -1,0 +1,9 @@
+session GraphMarkingIBP (AFP) = HOL +
+  options [timeout = 100]
+  theories [document = false]
+    "../DataRefinementIBP/DataRefinement"
+  theories
+    DSWMark
+  files
+    "document/root.bib"
+    "document/root.tex"

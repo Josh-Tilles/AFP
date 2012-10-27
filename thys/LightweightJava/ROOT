@@ -1,0 +1,7 @@
+session LightweightJava (AFP) = HOL +
+  options [timeout = 3600]
+  theories
+    Lightweight_Java_Proof
+  files
+    "document/root.bib"
+    "document/root.tex"

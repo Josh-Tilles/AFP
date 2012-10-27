@@ -3,7 +3,7 @@
    Author/Maintainer: Jesper Bengtson (jebe.dk), 2012
 *)
 theory Strong_Late_Sim
-  imports Late_Semantics' Rel
+  imports Late_Semantics1 Rel
 begin
 
 definition derivative :: "pi \<Rightarrow> pi \<Rightarrow> subject \<Rightarrow> name \<Rightarrow> (pi \<times> pi) set \<Rightarrow> bool" where
@@ -184,7 +184,7 @@ next
     thus ?case by(rule BF)
   qed
 qed
-	
+
 lemma simE:
   fixes P   :: pi
   and   Rel :: "(pi \<times> pi) set"

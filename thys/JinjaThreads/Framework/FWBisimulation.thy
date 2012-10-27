@@ -1338,16 +1338,16 @@ proof -
     qed
   next
     case (redT_acquire x1 ln n)
-    hence [simp]: "ta1 = (\<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)"
+    hence [simp]: "ta1 = (K$ [], [], [], [], [], convert_RA ln)"
       and tst: "thr s1 t = \<lfloor>(x1, ln)\<rfloor>" and wst: "\<not> waiting (wset s1 t)"
-      and maa: "may_acquire_all (locks s1) t ln" and ln: "0 < ln\<^sub>f n"
+      and maa: "may_acquire_all (locks s1) t ln" and ln: "0 < ln $ n"
       and s1': "s1' = (acquire_all ls1 t ln, (ts1(t \<mapsto> (x1, no_wait_locks)), m1), ws1, is1)" by auto
     from tst mbisim obtain x2 where tst': "ts2 t = \<lfloor>(x2, ln)\<rfloor>" 
       and bisim: "t \<turnstile> (x1, m1) \<approx> (x2, m2)" by(auto dest: mbisim_thrD1)
     let ?s2' = "(acquire_all ls1 t ln, (ts2(t \<mapsto> (x2, no_wait_locks)), m2), ws1, is1)"
-    from tst' wst maa ln have "s2 -2-t\<triangleright>(\<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)\<rightarrow> ?s2'"
+    from tst' wst maa ln have "s2 -2-t\<triangleright>(K$ [], [], [], [], [], convert_RA ln)\<rightarrow> ?s2'"
       by-(rule r2.redT.redT_acquire, auto)
-    moreover from tst' ln have "\<not> m\<tau>move2 s2 (t, (\<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)) ?s2'"
+    moreover from tst' ln have "\<not> m\<tau>move2 s2 (t, (K$ [], [], [], [], [], convert_RA ln)) ?s2'"
       by(auto simp add: acquire_all_def fun_eq_iff elim!: r2.m\<tau>move.cases)
     moreover have "mbisim s1' ?s2'"
     proof(rule mbisimI)
@@ -1382,7 +1382,7 @@ proof -
       from mbisim_wset_thread_ok1[OF mbisim]
       show "wset_thread_ok (wset s1') (thr s1')" using s1' by(auto intro: wset_thread_ok_upd)
     qed
-    moreover have "(t, \<lambda>\<^isup>f [], [], [], [], [], convert_RA ln) \<sim>T (t, \<lambda>\<^isup>f [], [], [], [], [], convert_RA ln)"
+    moreover have "(t, K$ [], [], [], [], [], convert_RA ln) \<sim>T (t, K$ [], [], [], [], [], convert_RA ln)"
       by(simp add: ta_bisim_def)
     ultimately show ?thesis by fastforce
   qed
@@ -1565,17 +1565,17 @@ lemma mbisim_simulation_silent2:
 using FWdelay_bisimulation_diverge.mbisim_simulation_silent1[OF FWdelay_bisimulation_diverge_flip]
 unfolding flip_simps .
 
-lemma mbisim_simulation1:
+lemma mbisim_simulation1':
   assumes mbisim: "mbisim s1 s2" and "\<not> m\<tau>move1 s1 tl1 s1'" "r1.redT s1 tl1 s1'"
   shows "\<exists>s2' s2'' tl2. r2.mthr.silent_moves s2 s2' \<and> r2.redT s2' tl2 s2'' \<and>
                         \<not> m\<tau>move2 s2' tl2 s2'' \<and> mbisim s1' s2'' \<and> mta_bisim tl1 tl2"
 using mbisim_simulation1 assms .
 
-lemma mbisim_simulation2:
+lemma mbisim_simulation2':
   "\<lbrakk> mbisim s1 s2; r2.redT s2 tl2 s2'; \<not> m\<tau>move2 s2 tl2 s2' \<rbrakk>
   \<Longrightarrow> \<exists>s1' s1'' tl1. r1.mthr.silent_moves s1 s1' \<and> r1.redT s1' tl1 s1'' \<and> \<not> m\<tau>move1 s1' tl1 s1'' \<and>
                     mbisim s1'' s2' \<and> mta_bisim tl1 tl2"
-using FWdelay_bisimulation_diverge.mbisim_simulation1[OF FWdelay_bisimulation_diverge_flip]
+using FWdelay_bisimulation_diverge.mbisim_simulation1'[OF FWdelay_bisimulation_diverge_flip]
 unfolding flip_simps .
 
 lemma m\<tau>diverge_simulation1:
@@ -1654,10 +1654,10 @@ locale FWbisimulation = FWbisimulation_base _ _ _ r2 convert_RA bisim "\<lambda>
   and ex_final1_conv_ex_final2:
    "(\<exists>x1. final1 x1) \<longleftrightarrow> (\<exists>x2. final2 x2)"
 
-sublocale FWbisimulation < bisimulation "r1 t" "r2 t" "bisim t" "ta_bisim bisim" for t
+sublocale FWbisimulation < bisim: bisimulation "r1 t" "r2 t" "bisim t" "ta_bisim bisim" for t
 by(rule bisimulation_locale)
 
-sublocale FWbisimulation <
+sublocale FWbisimulation < bisim_diverge:
   FWdelay_bisimulation_diverge final1 r1 final2 r2 convert_RA bisim "\<lambda>x1 x2. True" "\<lambda>s ta s'. False" "\<lambda>s ta s'. False"
 proof -
   interpret biw: bisimulation_into_delay "r1 t" "r2 t" "bisim t" "ta_bisim bisim" "\<lambda>s ta s'. False" "\<lambda>s ta s'. False"

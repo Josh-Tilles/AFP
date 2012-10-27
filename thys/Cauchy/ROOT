@@ -1,0 +1,7 @@
+session Cauchy (AFP) = HOL +
+  options [timeout = 3600]
+  theories [show_question_marks = false]
+    CauchysMeanTheorem
+    CauchySchwarz
+  files
+    "document/root.tex"

@@ -1,0 +1,8 @@
+session BytecodeLogicJmlTypes (AFP) = HOL +
+  options [timeout = 3600]
+  theories
+    Sound
+    Cachera
+  files
+    "document/root.bib"
+    "document/root.tex"
