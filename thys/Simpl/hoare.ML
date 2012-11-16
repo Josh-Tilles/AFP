@@ -1133,7 +1133,7 @@ fun add_variable_statespaces (cname,pars as (inpars,outpars,locvars)) thy =
        thy
        |> StateSpace.define_statespace_i (SOME statetypeN) in_out_args parSP [] in_outs'
        |> StateSpace.define_statespace_i (SOME statetypeN)
-           var_args varSP [((map TFree in_out_env),parSP,[])] locs'
+           var_args varSP [((cname, false), ((map TFree in_out_env),parSP,[]))] locs'
   end;
 
 fun apply_in_context thy lexp f t =
@@ -1147,13 +1147,6 @@ fun apply_in_context thy lexp f t =
     |> add_locale_cmd (name_variant "foo") lexp []
     |> (fn ctxt => f ctxt t)
   end;
-
-fun print_term thy t =
-  let
-    val ctxt = Syntax.init_pretty_global thy
-      |> Config.put show_sorts false
-      |> Config.put show_types false;
-  in Print_Mode.setmp [] (Syntax.string_of_term ctxt) t end;
 
 fun add_abbrev loc mode name spec thy =
   thy
@@ -1368,7 +1361,8 @@ fun procedures_definition locname procs thy =
            val Free (gamma,_) = read_term programN;
            val eq = HOLogic.Trueprop$
                      HOLogic.mk_eq (Free (gamma,fastype_of nt --> fastype_of rhs)$nt,rhs)
-           val eqs = print_term thy eq;
+           val eqs =
+             YXML.string_of_body (Term_XML.Encode.term (map_types (K dummyT) eq));
            val assms = Element.Assumes [((Binding.name (suffix bodyP name'), []),[(eqs,[])])]
          in [assms]
          end
@@ -1407,8 +1401,8 @@ fun procedures_definition locname procs thy =
              |> (fn thy => Expression.sublocale I parentN
                   (mk_loc_exp [Locale.intern thy implN]) [] thy)
              |> Proof.global_terminal_proof
-                 (Method.Basic (fn ctxt => Method.SIMPLE_METHOD
-                                 (Locale.intro_locales_tac false ctxt [])),NONE)
+                 ((Method.Basic (fn ctxt => Method.SIMPLE_METHOD
+                                 (Locale.intro_locales_tac false ctxt [])), Position.no_range), NONE)
              |> Proof_Context.theory_of
           end;
 
@@ -1798,7 +1792,8 @@ fun mk_split_thms ctxt (vars as _::_)  =
 
     fun simp_all_tac ss simps = ALLGOALS (Simplifier.simp_tac (ss addsimps simps));
     fun prove_simp simps prop =
-      Goal.prove_global thy [] [] prop (K (simp_all_tac (HOL_basic_ss) simps));
+      let val ([prop'], _) = Variable.importT_terms [prop] ctxt
+      in Goal.prove_global thy [] [] prop' (K (simp_all_tac (HOL_basic_ss) simps)) end;
 
     val split_meta   = prove_simp [@{thm split_paired_all}] split_meta_prop;
     val split_object = prove_simp [@{thm split_paired_All}] split_object_prop;

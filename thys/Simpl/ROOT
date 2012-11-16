@@ -1,0 +1,8 @@
+session Simpl (AFP) = HOL +
+  options [timeout = 3600, document_graph]
+  theories
+    Simpl
+  files
+    "document/mathpartir.sty"
+    "document/root.bib"
+    "document/root.tex"

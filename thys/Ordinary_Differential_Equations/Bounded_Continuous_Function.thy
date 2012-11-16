@@ -7,10 +7,12 @@ text{*\label{sec:bcontfun}*}
 
 subsection{* Definition *}
 
+definition "bcontfun = {f :: 'a::topological_space \<Rightarrow> 'b::real_normed_vector.
+  continuous_on UNIV f \<and> (\<exists>y. \<forall>x. norm (f x) \<le> y)}"
+
 typedef ('a, 'b) bcontfun =
-  "{ f :: 'a::topological_space \<Rightarrow> 'b::real_normed_vector.
-    continuous_on UNIV f \<and> (\<exists>y. \<forall>x. norm (f x) \<le> y)}"
-  by (auto intro: continuous_on_intros)
+    "bcontfun :: ('a::topological_space \<Rightarrow> 'b::real_normed_vector) set"
+  by (auto simp: bcontfun_def intro: continuous_on_intros)
 
 lemma bcontfunE:
   assumes "f \<in> bcontfun"

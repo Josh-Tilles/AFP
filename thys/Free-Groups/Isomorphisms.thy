@@ -6,7 +6,7 @@ imports
    "~~/src/HOL/Algebra/IntRing"
    "FreeGroups"
    C2
-   "../Ordinals_and_Cardinals/Cardinal_Order_Relation"
+   "~~/src/HOL/Cardinals/Cardinal_Order_Relation"
 begin
 
 subsection {* The Free Group over the empty set *}
@@ -517,13 +517,10 @@ proof-
   moreover
   have "|carrier \<F>\<^bsub>X\<^esub>| \<le>o |lists ((UNIV::bool set)\<times>X)|"
     by (auto intro!:card_of_mono1 simp add:free_group_def)
-  moreover (* Remove this if Ordinals_and_Cardinals uses List.lists as well *)
-  have "|lists ((UNIV::bool set)\<times>X)| = |List ((UNIV::bool set)\<times>X)|"
-    by (simp add: List_def lists_eq_set)
   moreover
-  have "|List ((UNIV::bool set)\<times>X)| =o |(UNIV::bool set)\<times>X|"
+  have "|lists ((UNIV::bool set)\<times>X)| =o |(UNIV::bool set)\<times>X|"
     using `infinite X`
-    by (auto intro:card_of_List_infinite dest!:finite_cartesian_productD2)
+    by (auto intro:card_of_lists_infinite dest!:finite_cartesian_productD2)
   moreover
   have  "|(UNIV::bool set)\<times>X| =o |X|"
     using `infinite X`

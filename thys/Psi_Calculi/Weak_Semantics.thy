@@ -119,7 +119,7 @@ proof(induct \<Psi>=="\<Psi> \<otimes> \<Psi>\<^isub>Q" P P' rule: Tau_Chain.ind
   show ?case by(rule Tau_Chain.TauBase)
 next
   case(TauStep \<Psi>' P P' P'')
-  thus ?case by(fastsimp intro: Tau_Chain.TauStep Par1F dest: tauFreshChainDerivative)
+  thus ?case by(fastforce intro: Tau_Chain.TauStep Par1F dest: tauFreshChainDerivative)
 qed
 
 lemma tauChainPar2:
@@ -142,7 +142,7 @@ proof(induct \<Psi>=="\<Psi> \<otimes> \<Psi>\<^isub>P" Q Q' rule: Tau_Chain.ind
   show ?case by(rule Tau_Chain.TauBase)
 next
   case(TauStep \<Psi>' Q Q' Q'')
-  thus ?case by(fastsimp intro: Tau_Chain.TauStep Par2F dest: tauFreshChainDerivative)
+  thus ?case by(fastforce intro: Tau_Chain.TauStep Par2F dest: tauFreshChainDerivative)
 qed
 
 lemma tauChainCases:
@@ -651,7 +651,7 @@ proof -
     proof -
        from `guarded R` have "insertAssertion(extractFrame R) \<Psi> \<simeq>\<^sub>F \<langle>\<epsilon>, \<Psi> \<otimes> \<one>\<rangle>" by(rule insertGuardedAssertion)
        moreover from `guarded Q` have "\<langle>\<epsilon>, \<Psi> \<otimes> \<one>\<rangle> \<simeq>\<^sub>F insertAssertion(extractFrame Q) \<Psi>"
-	 by(metis insertGuardedAssertion FrameStatEqSym)
+         by(metis insertGuardedAssertion FrameStatEqSym)
        ultimately show ?thesis using QeqP'' by(metis FrameStatEq_def FrameStatImpTrans)
      qed
     ultimately show ?thesis using P''Trans by(rule weakOutputTransitionI)
@@ -697,7 +697,7 @@ proof -
     proof -
        from `guarded R` have "insertAssertion(extractFrame R) \<Psi> \<simeq>\<^sub>F \<langle>\<epsilon>, \<Psi> \<otimes> \<one>\<rangle>" by(rule insertGuardedAssertion)
        moreover from `guarded Q` have "\<langle>\<epsilon>, \<Psi> \<otimes> \<one>\<rangle> \<simeq>\<^sub>F insertAssertion(extractFrame Q) \<Psi>"
-	 by(metis insertGuardedAssertion FrameStatEqSym)
+         by(metis insertGuardedAssertion FrameStatEqSym)
        ultimately show ?thesis using QeqP'' by(metis FrameStatEq_def FrameStatImpTrans)
      qed
     ultimately show ?thesis using P''Trans by(rule weakInputTransitionI)
@@ -1163,7 +1163,7 @@ lemma outputWeakOutput:
 
   shows "\<Psi> : Q \<rhd> P \<Longrightarrow>M\<lparr>\<nu>*xvec\<rparr>\<langle>N\<rangle> \<prec> P'"
 using assms
-by(fastsimp intro: TauBase weakOutputTransitionI)
+by(fastforce intro: TauBase weakOutputTransitionI)
 
 lemma inputWeakInput:
   fixes \<Psi>  :: 'b
@@ -1178,7 +1178,7 @@ lemma inputWeakInput:
 
   shows "\<Psi> : Q \<rhd> P \<Longrightarrow>M\<lparr>N\<rparr> \<prec> P'"
 using assms
-by(fastsimp intro: TauBase weakInputTransitionI)
+by(fastforce intro: TauBase weakInputTransitionI)
 
 lemma weakPar1GuardedF:
   fixes \<Psi>  :: 'b
@@ -1229,9 +1229,9 @@ proof -
     have "insertAssertion(extractFrame R) \<Psi> \<hookrightarrow>\<^sub>F insertAssertion(extractFrame(!P)) \<Psi>"
     proof -
       from `\<Psi>\<^isub>P \<simeq> \<one>` have "\<langle>A\<^isub>P, \<Psi> \<otimes> \<Psi>\<^isub>P \<otimes> \<one>\<rangle> \<simeq>\<^sub>F \<langle>A\<^isub>P, \<Psi> \<otimes> \<one>\<rangle>"
-	by(metis frameIntCompositionSym frameIntAssociativity frameIntCommutativity frameIntIdentity FrameStatEqTrans FrameStatEqSym)
+        by(metis frameIntCompositionSym frameIntAssociativity frameIntCommutativity frameIntIdentity FrameStatEqTrans FrameStatEqSym)
       moreover from `A\<^isub>P \<sharp>* \<Psi>` have "\<langle>A\<^isub>P, \<Psi> \<otimes> \<one>\<rangle> \<simeq>\<^sub>F \<langle>\<epsilon>, \<Psi> \<otimes> \<one>\<rangle>"
-	by(force intro: frameResFreshChain)
+        by(force intro: frameResFreshChain)
       ultimately show ?thesis using RimpP by(auto simp add: FrameStatEq_def dest: FrameStatImpTrans)
     qed
     moreover assume "\<Psi> \<rhd> P \<parallel> !P \<longmapsto>M\<lparr>N\<rparr> \<prec> P'"

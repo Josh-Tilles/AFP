@@ -1,0 +1,9 @@
+session CofGroups (AFP) = HOL +
+  options [timeout = 3600]
+  theories [document = false]
+    "~~/src/HOL/Library/Nat_Bijection"
+  theories
+    CofGroups
+  files
+    "document/root.bib"
+    "document/root.tex"

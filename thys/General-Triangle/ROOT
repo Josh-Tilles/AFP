@@ -1,0 +1,7 @@
+session "General-Triangle" (AFP) = HOL +
+  options [timeout = 3600]
+  theories
+    GeneralTriangle
+  files
+    "document/root.bib"
+    "document/root.tex"

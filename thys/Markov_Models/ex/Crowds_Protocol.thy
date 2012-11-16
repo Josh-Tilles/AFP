@@ -316,14 +316,19 @@ proof (elim AE_mp, safe intro!: AE_I2)
     qed (insert \<omega>1, simp) }
 qed auto
 
+lemma measurable_len[measurable]:
+  shows "len \<in> measurable p_space (count_space UNIV)"
+  unfolding len_def[abs_def]
+  by simp
+
 lemma p_space_Collect_lenI[intro]:
-  "(\<And>n. {\<omega>\<in>UNIV\<rightarrow>valid_states. P \<omega> n} \<in> p_space) \<Longrightarrow> {\<omega>\<in>UNIV\<rightarrow>valid_states. P \<omega> (len \<omega>)} \<in> p_space"
-  unfolding len_def
-  using sets_Collect_Least[of p_space "\<lambda>n \<omega>. \<omega> n = End" "\<lambda>n \<omega>. P \<omega> (n - 2)"]
-  by (auto intro: p_space_Collect)
+  assumes P: "(\<And>n. {\<omega>\<in>UNIV\<rightarrow>valid_states. P \<omega> n} \<in> p_space)"
+  shows "{\<omega>\<in>UNIV\<rightarrow>valid_states. P \<omega>  (len \<omega>)} \<in> p_space"
+  using P unfolding space_p_space[symmetric]
+  by measurable
 
 lemma p_space_Collect_len[intro]: "{\<omega>\<in>UNIV \<rightarrow> valid_states. len \<omega> = n} \<in> sets p_space"
-  by (rule p_space_Collect_lenI) (auto intro: p_space_Collect)
+  unfolding space_p_space[symmetric] by measurable
 
 lemma jondo_events2:
   assumes "\<And>s. s \<in> valid_states \<Longrightarrow> {\<omega> \<in> UNIV \<rightarrow> valid_states. P \<omega> (jondo_of s)} \<in> sets p_space"
@@ -336,7 +341,7 @@ proof -
     by (intro p_space_Collect) auto
 qed
 
-lemma jondo_events[intro]:
+lemma jondo_events[intro, measurable]:
   "{\<omega> \<in> UNIV \<rightarrow> valid_states. P (jondo_of (\<omega> i))} \<in> sets p_space"
   by (rule jondo_events2) (auto intro!: p_space_Collect)
 
@@ -473,6 +478,81 @@ qed
 
 subsection {* Server gets no information *}
 
+lemma server_view1:
+  assumes j: "j : jondos"
+  shows "\<PP>(\<omega> in \<P>. last_jondo \<omega> = j) = J"
+proof -
+  let ?S = "% n i. if n = (i::nat) then {j} else jondos"
+
+  have "\<PP>(\<omega> in \<P>. last_jondo \<omega> = j) = \<PP>(\<omega> in \<P>. (\<forall>i\<le>len \<omega>. \<omega> (Suc i) \<in> Mix ` ?S (len \<omega>) i))"
+    using AE_term
+    by (intro prob_eq_AE)
+       (auto simp: last_jondo_eq_iff term_imp_len intro!: p_space_Collect)
+  moreover have "(\<lambda>n. (\<Prod>i\<le>n. card (?S n i) * J) * (p_f)^n * (1 - p_f)) sums \<dots>"
+    using j by (intro prob_sums_cyl) auto
+  moreover have "(\<lambda>n. p_f ^ n * (1 - p_f) * J) sums ((1 / (1 - p_f)) * (1 - p_f) * J)"
+    using p_f by (intro sums_mult sums_mult2 geometric_sums) auto
+  ultimately show "\<PP>(\<omega> in \<P>. last_jondo \<omega> = j) = J"
+    using jondos_non_empty p_f
+    by (simp add: lessThan_Suc_atMost[symmetric] lessThan_Suc setprod_constant sums_iff J_def)
+qed
+
+lemma server_view_indep:
+  assumes l: "l \<in> jondos" and i: "i \<in> jondos - colls"
+  shows "\<PP>(\<omega> in \<P>. last_jondo \<omega> = l \<and> first_jondo \<omega> = i) =
+    \<PP>(\<omega> in \<P>. last_jondo \<omega> = l) * \<PP>(\<omega> in \<P>. first_jondo \<omega> = i)"
+proof -
+  let ?S = "\<lambda>n i :: nat. if n = i then {l} else jondos"
+  have 1: "
+    \<PP>(\<omega> in \<P>. \<omega> 0 \<in> Init ` {i} \<and> (\<forall>i\<le>len \<omega>. \<omega> (Suc i) \<in> Mix ` ?S (len \<omega>) i)) =
+    \<PP>(\<omega> in \<P>. last_jondo \<omega> = l \<and> first_jondo \<omega> = i)"
+    using AE_term
+    apply (intro prob_eq_AE)
+    apply (elim AE_mp)
+    apply (auto simp: all_conj_distrib iff_conv_conj_imp last_jondo_eq_iff term_imp_len first_jondo_def jondo_of_def
+            dest!: term_imp_len(2)
+             intro!: p_space_Collect AE_I2)
+    done
+  have 2: "(\<lambda>n. init i * p_f ^ n * (1 - p_f) * J) sums (init i * (1 / (1 - p_f)) * (1 - p_f) * J)"
+    using p_f by (intro sums_mult sums_mult2 geometric_sums) auto
+  have "(\<lambda>n. (\<Sum>j\<in>{i}. init j) * (\<Prod>i\<le>n. card (?S n i) * J) * (p_f)^n * (1 - p_f)) sums
+    \<PP>(\<omega> in \<P>. \<omega> 0 \<in> Init ` {i} \<and> (\<forall>i\<le>len \<omega>. \<omega> (Suc i) \<in> Mix ` ?S (len \<omega>) i))"
+    using l i by (intro prob_sums_cyl_init) auto
+  also have "(\<lambda>n. (\<Sum>j\<in>{i}. init j) * (\<Prod>i\<le>n. card (?S n i) * J) * (p_f)^n * (1 - p_f)) =
+    (\<lambda>n. init i * p_f ^ n * (1 - p_f) * J)"
+    using jondos_non_empty p_f
+    by (simp add: lessThan_Suc_atMost[symmetric] lessThan_Suc setprod_constant sums_iff J_def) 
+  finally have *: "\<PP>(\<omega> in \<P>. last_jondo \<omega> = l \<and> first_jondo \<omega> = i) = init i * J"
+    unfolding 1 using jondos_non_empty p_f 2
+    by (simp add: lessThan_Suc_atMost[symmetric] lessThan_Suc setprod_constant sums_iff J_def) 
+
+  let ?S = "\<lambda>n i :: nat. if n = i then {l} else jondos"
+  have 1: "
+    \<PP>(\<omega> in \<P>. \<omega> 0 \<in> Init ` {i} \<and> (\<forall>i\<le>len \<omega>. \<omega> (Suc i) \<in> Mix ` jondos)) =
+    \<PP>(\<omega> in \<P>. first_jondo \<omega> = i)"
+    using AE_term
+    apply (intro prob_eq_AE)
+    apply (elim AE_mp)
+    apply (auto simp: all_conj_distrib iff_conv_conj_imp last_jondo_eq_iff term_imp_len first_jondo_def jondo_of_def
+            dest!: term_imp_len(2)
+             intro!: p_space_Collect AE_I2)
+    done
+  have 2: "(\<lambda>n. init i * p_f ^ n * (1 - p_f)) sums (init i * (1 / (1 - p_f)) * (1 - p_f))"
+    using p_f by (intro sums_mult sums_mult2 geometric_sums) auto
+  have "(\<lambda>n. (\<Sum>j\<in>{i}. init j) * (\<Prod>i\<le>n. card jondos * J) * (p_f)^n * (1 - p_f)) sums
+    \<PP>(\<omega> in \<P>. \<omega> 0 \<in> Init ` {i} \<and> (\<forall>i\<le>len \<omega>. \<omega> (Suc i) \<in> Mix ` jondos))"
+    using l i by (intro prob_sums_cyl_init) auto
+  also have "(\<lambda>n. (\<Sum>j\<in>{i}. init j) * (\<Prod>i\<le>n. card jondos * J) * (p_f)^n * (1 - p_f)) =
+    (\<lambda>n. init i * p_f ^ n * (1 - p_f))"
+    using jondos_non_empty p_f
+    by (simp add: lessThan_Suc_atMost[symmetric] lessThan_Suc setprod_constant sums_iff J_def) 
+  finally have **: "\<PP>(\<omega> in \<P>. first_jondo \<omega> = i) = init i"
+    unfolding 1 using jondos_non_empty p_f 2
+    by (simp add: lessThan_Suc_atMost[symmetric] lessThan_Suc setprod_constant sums_iff J_def) 
+  
+  from server_view1[OF l] * ** i show ?thesis by simp
+qed
+
 lemma server_view:
   shows "\<PP>(\<omega> in \<P>. last_jondo \<omega> = first_jondo \<omega>) = J"
 proof -
@@ -576,12 +656,9 @@ lemma events_hit_colls[intro]:
   by (auto simp: hit_colls_def intro!: p_space_Collect)
 
 lemma events_first_collI:
-  "(\<And>n. {\<omega>\<in>UNIV \<rightarrow> valid_states. P n \<omega>} \<in> sets p_space) \<Longrightarrow>
-    {\<omega>\<in>UNIV \<rightarrow> valid_states. P (first_coll \<omega>) \<omega>} \<in> sets p_space"
-  using assms unfolding first_coll_def
-  apply (rule sets_Collect_Least[of p_space, unfolded space_p_space])
-  apply (auto intro!: p_space_Collect)
-  done
+  assumes P: "(\<And>n. {\<omega>\<in>UNIV \<rightarrow> valid_states. P n \<omega>} \<in> sets p_space)"
+  shows "{\<omega>\<in>UNIV \<rightarrow> valid_states. P (first_coll \<omega>) \<omega>} \<in> sets p_space"
+  using assms unfolding first_coll_def space_p_space[symmetric] by measurable
 
 lemma events_first_coll[intro]:
   "{\<omega>\<in>UNIV \<rightarrow> valid_states. first_coll \<omega> = n} \<in> sets p_space"

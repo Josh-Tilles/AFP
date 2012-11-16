@@ -243,13 +243,7 @@ lemma pvalid_eq_until:
   done
 
 lemma reward_measurable: "reward F \<in> borel_measurable p_space"
-proof (cases F)
-  case (Future F)
-  then have "reward (Future F) = reward_until (svalid F)"
-    unfolding reward_until_def [abs_def] hitting_time_def [abs_def] by simp
-  with Future show ?thesis
-    by auto
-qed (auto intro!: borel_measurable_ereal borel_measurable_setsum)
+  by (cases F) simp_all
 
 subsection {* Implementation of @{text Sat} *}
 
@@ -670,7 +664,7 @@ proof -
     apply (subst positive_integral_cmult)
     apply (rule borel_measurable_ereal)
     using measurable_comp[OF measurable_nat_case measurable_hitting_time]
-    apply (auto simp: comp_def cong: measurable_cong')
+    apply (auto simp: comp_def cong: measurable_cong_sets)
     done
   also have "\<dots> < \<infinity>"
     using positive_integral_hitting_time_finite[OF `s \<in> S` svalid_subset_S until] `0 \<le> Mr`
@@ -756,7 +750,7 @@ proof -
     from positive_integral_PInf_AE[OF _ this]
       measurable_comp[OF measurable_nat_case reward_measurable, OF `s \<in> S`]
     have "AE x in path_space s. reward (Future F) (nat_case s x) \<noteq> \<infinity>"
-      by (simp add: comp_def del: reward.simps cong: measurable_cong')
+      by (simp add: comp_def del: reward.simps cong: measurable_cong_sets)
     then have "AE \<omega> in path_space s. \<omega> \<in> nat_case s -` until S ?F \<inter> space (path_space s)"
     proof (rule AE_mp, intro AE_I2 impI IntI)
       fix \<omega> assume "\<omega> \<in> space (path_space s)"
@@ -843,7 +837,7 @@ proof -
     apply (auto 
       simp add: space_path_space Pi_iff reward_measurable
       simp del: reward.simps
-      cong: measurable_cong'
+      cong: measurable_cong_sets
       intro!: add_nonneg_nonneg AE_I2)
     apply (auto intro!: setsum_nonneg)
     done
@@ -966,7 +960,7 @@ next
         by (intro positive_integral_add AE_I2)
            (auto intro!: borel_measurable_ereal borel_measurable_add 
                          setsum_nonneg add_nonneg_nonneg \<rho>_nneg \<iota>_nneg
-                 cong: measurable_cong')
+                 cong: measurable_cong_sets)
       also have "\<dots> = (\<Sum>s'\<in>S. \<tau> s s' * (\<rho> s + \<iota> s s')) + 
         (\<integral>\<^isup>+\<omega>. (\<Sum>i<k. \<rho> (\<omega> i) + \<iota> (\<omega> i) (\<omega> (Suc i))) \<partial>path_space s)"
         using `s \<in> S` by (subst positive_integral_select_0) (auto intro: add_nonneg_nonneg \<iota>_nneg \<rho>_nneg)
@@ -993,8 +987,7 @@ next
     proof (induct k arbitrary: s)
       case 0 with emeasure_space_1 show ?case by simp
     next
-      case (Suc k) then show ?case
-        by (simp add: positive_integral_eq_sum borel_measurable_ereal measurable_\<rho>)
+      case (Suc k) then show ?case by (simp add: positive_integral_eq_sum[of s])
     qed }
   then show ?case by auto
 

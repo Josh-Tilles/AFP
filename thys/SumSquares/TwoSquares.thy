@@ -82,7 +82,7 @@ proof -
     also with t have "\<dots> = s^2 + 1" by simp
     also have "\<dots> \<le> ?p*(?p - 1) - ?p + 2"
     proof -
-      from s0p have "s \<le> ?p - 1" by (auto simp add: less_int_def)
+      from s0p have "s \<le> ?p - 1" by (auto simp add: less_le)
       with s0p have "s^2 \<le> (?p - 1)^2" by (simp only: power_mono)
       also have "\<dots> = ?p*(?p - 1) - 1*(?p - 1)" 
         by (simp only: power2_eq_square left_diff_distrib)
@@ -101,7 +101,7 @@ proof -
       with p0 have "?p*t < ?p*0" by (simp only: zmult_zless_mono2)
       with t have "s^2 + 1 < 0" by auto }
     moreover have "s^2 \<ge> 0" by (simp only: zero_le_power2)
-    ultimately show False by (auto simp add: less_int_def)
+    ultimately show False by (auto simp add: less_le)
   qed
   moreover
   { assume "t = 1" 
@@ -140,7 +140,7 @@ proof -
             ?n1*?p - ?n1*(2*x*r) - ?n1*(2*y*s) + ?n1^2*r^2 + ?n1^2*s^2"
             by (simp only: mult_ac power_mult_distrib)
           finally show "?C = ?n1*(?p - 2*x*r - 2*y*s + ?n1*(r^2 + s^2))" 
-            by (simp only: power_mult_distrib right_distrib mult_ac
+            by (simp only: power_mult_distrib distrib_left mult_ac
           left_diff_distrib right_diff_distrib power2_eq_square)
         qed
         then obtain m1 where m1: "?C = ?n1*m1" by (auto simp add: dvd_def)
@@ -186,9 +186,9 @@ proof -
             by (simp add: eval_nat_numeral field_simps)
           with m1 have 
             "?n1^2*(?p*m1) = ?n1^2*((r*v + s*w + m1)^2 + (r*w - s*v)^2)"
-            by (simp only: mult_ac power2_eq_square, simp add: right_distrib)
+            by (simp only: mult_ac power2_eq_square, simp add: distrib_left)
           hence "?n1^2*(?p*m1 - (r*v+s*w+m1)^2 - (r*w-s*v)^2) = 0"
-            by (auto simp add: right_distrib right_diff_distrib)
+            by (auto simp add: distrib_left right_diff_distrib)
           moreover from n1pos have "?n1^2 \<noteq> 0" by (simp add: power2_eq_square)
           ultimately show ?thesis by simp
         qed
@@ -255,7 +255,7 @@ proof -
       with qf1pt show False by simp
     qed
     hence ?thesis by (unfold is_sum2sq_def sum2sq_def, auto) }
-  ultimately show ?thesis by (auto simp add: less_int_def)
+  ultimately show ?thesis by (auto simp add: less_le)
 qed
 
 end

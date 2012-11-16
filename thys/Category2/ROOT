@@ -1,0 +1,12 @@
+session Category2 (AFP) = HOL +
+  options [timeout = 3600]
+  theories [document = false]
+    "~~/src/HOL/Library/FuncSet"
+    "~~/src/HOL/Library/Multiset"
+    "~~/src/HOL/ZF/MainZF"
+  theories
+    MonadicEquationalTheory
+    Yoneda
+  files
+    "document/root.bib"
+    "document/root.tex"

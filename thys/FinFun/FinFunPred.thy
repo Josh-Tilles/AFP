@@ -2,14 +2,19 @@
     Author:     Andreas Lochbihler
 *)
 
+(*
+=============================================================================
+FinFun is now part of the Isabelle distribution. The entry is kept for
+archival; maintained but not developed further. Use the Isabelle distribution
+version instead.
+=============================================================================
+*)
+
 header {*
   Predicates modelled as FinFuns
 *}
 
-theory FinFunPred 
-imports
-  FinFun 
-begin
+theory FinFunPred imports FinFun begin
 
 text {* Instantiate FinFun predicates just like predicates *}
 

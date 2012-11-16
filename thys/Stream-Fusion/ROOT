@@ -1,0 +1,7 @@
+session "Stream-Fusion" (AFP) = HOLCF +
+  options [timeout = 3600]
+  theories
+    StreamFusion
+  files
+    "document/root.bib"
+    "document/root.tex"
