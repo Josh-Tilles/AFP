@@ -1,0 +1,6 @@
+session "Gauss-Jordan-Elim-Fun" (AFP) = HOL +
+  options [timeout = 60]
+  theories
+    Gauss_Jordan_Elim_Fun
+  files
+    "document/root.tex"

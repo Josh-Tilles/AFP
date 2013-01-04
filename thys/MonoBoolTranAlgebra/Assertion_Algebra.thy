@@ -21,9 +21,6 @@ definition
   assert :: "'a::mbt_algebra Assertion \<Rightarrow> 'a"  ("{\<cdot> _ }" [0] 1000) where
   "{\<cdot>p} =  Rep_Assertion p"
 
-lemma [simp]: "Assertion = assertion"
-  by (simp add: Assertion_def)
-
 definition 
   "abs_wpt x = Abs_Assertion (wpt x)"
 

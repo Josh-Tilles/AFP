@@ -1,0 +1,7 @@
+session Marriage (AFP) = HOL +
+  options [timeout = 60]
+  theories
+    Marriage
+  files
+    "document/root.bib"
+    "document/root.tex"

@@ -29,6 +29,11 @@ IMAGE_BASIC = $(OUT)/$(IMAGE_BASE_NAME)-Basic
 USEDIR = $(ISABELLE_TOOL) usedir -v true -i true -g true -d pdf -V outline=/proof,/ML $(JINJATHREADS_OPTIONS)
 USEDIR_NO_DOCUMENT = $(ISABELLE_TOOL) usedir -v true -i false -g false -d false $(JINJATHREADS_OPTIONS)
 
+
+# time limit (in sec)
+MAXTIME = 14400
+
+
 ## dependencies
 
 # test run and proof document
@@ -38,7 +43,7 @@ HOL-Word:
 
 $(SESSION-NAME)-Basic: HOL-Word $(LOG)/$(BASE-IMAGE)-$(SESSION-NAME)-Basic.gz
 
-$(LOG)/$(BASE-IMAGE)-$(SESSION-NAME)-Basic.gz: $(IMAGE) ROOT-Basic.ML ../Coinductive/*.thy ../FinFun/*.thy Basic/*.thy
+$(LOG)/$(BASE-IMAGE)-$(SESSION-NAME)-Basic.gz: $(IMAGE) ROOT-Basic.ML ../Coinductive/*.thy Basic/*.thy
 	$(USEDIR_NO_DOCUMENT) -b -f ROOT-Basic.ML $(IMAGE) $(IMAGE_BASE_NAME)-Basic
 
 $(SESSION-NAME)-Common: $(SESSION-NAME)-Basic $(LOG)/$(BASE-IMAGE)-$(SESSION-NAME)-Common.gz

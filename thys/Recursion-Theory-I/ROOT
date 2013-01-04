@@ -1,0 +1,7 @@
+session "Recursion-Theory-I" (AFP) = HOL +
+  options [timeout = 3600]
+  theories
+    RecEnSet
+  files
+    "document/root.bib"
+    "document/root.tex"

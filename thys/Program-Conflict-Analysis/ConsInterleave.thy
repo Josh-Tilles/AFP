@@ -28,7 +28,7 @@ lemma mon_pl_unconc: "!!b. mon_pl (a@b) = mon_pl a \<union> mon_pl b"
   by (induct a) auto
 
 lemma mon_pl_ileq: "w\<preceq>w' \<Longrightarrow> mon_pl w \<subseteq> mon_pl w'"
-  by (induct rule: less_eq_list.induct) auto
+  by (induct rule: less_eq_list_induct) auto
 
 lemma mon_pl_set: "mon_pl w = \<Union>{ fst e \<union> snd e | e. e\<in>set w }"
   by (unfold mon_pl_def) (safe, auto simp add: Bex_def foldl_set)
@@ -100,7 +100,7 @@ lemma cil_induct'[case_names both_empty left_empty right_empty append]: "\<lbrak
   apply auto
   done
   
-lemma cil_induct_fix\<alpha>: "\<lbrakk>
+lemma cil_induct_fix_\<alpha>: "\<lbrakk>
   P \<alpha> [] []; 
   \<And>ad ae. P \<alpha> [] (ad # ae); 
   \<And>z aa. P \<alpha> (z # aa) [];
@@ -114,7 +114,7 @@ lemma cil_induct_fix\<alpha>: "\<lbrakk>
   apply auto
   done
 
-lemma cil_induct_fix\<alpha>'[case_names both_empty left_empty right_empty append]: "\<lbrakk>
+lemma cil_induct_fix_\<alpha>'[case_names both_empty left_empty right_empty append]: "\<lbrakk>
   P \<alpha> [] []; 
   \<And>ad ae. P \<alpha> [] (ad # ae); 
   \<And>z aa. P \<alpha> (z # aa) [];
@@ -150,7 +150,7 @@ lemma cil_set_induct[induct set, case_names empty left right]: "!!\<alpha> w1 w2
   \<rbrakk> \<Longrightarrow> P w \<alpha> w1 w2" 
   by (induct w) (auto intro!: cil_contains_empty elim: cil_cons_cases)
 
-lemma cil_set_induct_fix\<alpha>[induct set, case_names empty left right]: "!!w1 w2. \<lbrakk> 
+lemma cil_set_induct_fix_\<alpha>[induct set, case_names empty left right]: "!!w1 w2. \<lbrakk> 
     w\<in>w1\<otimes>\<^bsub>\<alpha>\<^esub>w2; 
     P [] \<alpha> [] []; 
     !!e w' w1' w2. \<lbrakk>w'\<in>w1'\<otimes>\<^bsub>\<alpha>\<^esub>w2; fst (\<alpha> e) \<inter> mon_pl (map \<alpha> w2) = {}; 
@@ -182,7 +182,7 @@ lemma cil_subset_il': "w\<in>w1\<otimes>\<^bsub>\<alpha>\<^esub>w2 \<Longrightar
 
 -- {* Consistent interleaving preserves the set of letters of both operands *}
 lemma cil_set: "w\<in>w1\<otimes>\<^bsub>\<alpha>\<^esub>w2 \<Longrightarrow> set w = set w1 \<union> set w2"
-  by (induct rule: cil_set_induct_fix\<alpha>) auto
+  by (induct rule: cil_set_induct_fix_\<alpha>) auto
 corollary cil_mon_pl: "w\<in>w1\<otimes>\<^bsub>\<alpha>\<^esub>w2 
   \<Longrightarrow> mon_pl (map \<alpha> w) = mon_pl (map \<alpha> w1) \<union> mon_pl (map \<alpha> w2)" 
   by (subst mon_pl_unconc[symmetric]) (simp add: mon_pl_set cil_set, blast 20)
@@ -241,7 +241,7 @@ qed
 -- {* Parts of the abstraction can be moved to the operands *}
 (* FIXME: ?? Something strange is going on with the simplification of \<alpha>\<circ>f and implicit \<eta>-contraction/expansion, hence this lengthy isar proof. Usually, this proof should be a just few lines apply-script !*)
 lemma cil_map: "w\<in>w1 \<otimes>\<^bsub>(\<alpha>\<circ>f)\<^esub> w2 \<Longrightarrow> map f w \<in> map f w1 \<otimes>\<^bsub>\<alpha>\<^esub> map f w2" 
-proof (induct rule: cil_set_induct_fix\<alpha>)
+proof (induct rule: cil_set_induct_fix_\<alpha>)
   case empty thus ?case by auto
 next
   case (left e w' w1' w2) 

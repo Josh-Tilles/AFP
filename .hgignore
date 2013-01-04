@@ -1,13 +1,7 @@
 syntax: glob
 
 *~
-
-thys/JinjaThreads/generated
-
-thys/Collections/generated
-thys/Huffman/generated
-thys/Refine_Monadic/generated
-thys/Refine_Monadic/Userguide.pdf
+.DS_Store
 
 thys/Tree-Automata/code/haskell/generated/Nat.hs
 thys/Tree-Automata/code/haskell/generated/Ta.hs
@@ -26,3 +20,13 @@ thys/ClockSynchInst/document/bound_prec_enh.cvc
 thys/ClockSynchInst/document/bound_prec_enh.ics
 thys/ClockSynchInst/document/bound_prec_enh4.cvc
 thys/ClockSynchInst/document/bound_prec_enh7.cvc
+
+thys/Well_Quasi_Orders/generated/
+
+thys/JinjaThreads/Execute/JVM_Execute2.ML
+thys/JinjaThreads/Execute/JWellForm.ML
+thys/JinjaThreads/Execute/J_Execute.ML
+thys/JinjaThreads/JVM_Execute2.ML
+thys/JinjaThreads/JWellForm.ML
+thys/JinjaThreads/J_Execute.ML
+

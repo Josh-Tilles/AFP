@@ -53,8 +53,16 @@ proof -
   qed
 qed
 
-lemma map_nth_Suc: "map f [0 ..< Suc n] = f 0 # map (\<lambda> i. f (Suc i)) [0 ..< n]"
+lemma map_upt_Suc: "map f [0 ..< Suc n] = f 0 # map (\<lambda> i. f (Suc i)) [0 ..< n]"
   by (induct n arbitrary: f, auto)
+
+lemma map_upt_add: "map f [0 ..< n + m] = map f [0 ..< n] @ map (\<lambda> i. f (i + n)) [0 ..< m]"
+proof (induct n arbitrary: f)
+  case (Suc n f)
+  have "map f [0 ..< Suc n + m] = map f [0 ..< Suc (n+m)]" by simp
+  also have "\<dots> = f 0 # map (\<lambda> i. f (Suc i)) [0 ..< n + m]" unfolding map_upt_Suc ..
+  finally show ?case unfolding Suc map_upt_Suc by simp
+qed simp
 
 lemma all_Suc_conv:
   "(\<forall>i<Suc n. P i) \<longleftrightarrow> P 0 \<and> (\<forall>i<n. P (Suc i))" (is "?l = ?r")
@@ -121,7 +129,7 @@ proof (induct xs arbitrary: ys, simp)
   then obtain y yys where ys: "ys = y # yys" by (cases ys, auto)
   with Cons have len: "length xs = length yys" by simp
   show ?case unfolding ys 
-    by (simp del: upt_Suc add: map_nth_Suc, unfold Cons(1)[OF len], simp) 
+    by (simp del: upt_Suc add: map_upt_Suc, unfold Cons(1)[OF len], simp) 
 qed
 
 lemma nth_map_conv:
@@ -171,5 +179,47 @@ next
     by (simp add: ac_simps)
 qed
 
+fun max_list :: "nat list \<Rightarrow> nat" where
+  "max_list [] = 0"
+| "max_list (x # xs) = max x (max_list xs)"
+
+lemma max_list: "x \<in> set xs \<Longrightarrow> x \<le> max_list xs"
+  by (induct xs) auto
+  
+lemma max_list_mem: "xs \<noteq> [] \<Longrightarrow> max_list xs \<in> set xs"
+proof (induct xs)
+  case (Cons x xs)
+  show ?case
+  proof (cases "x \<ge> max_list xs")
+    case True
+    thus ?thesis by auto
+  next
+    case False
+    hence max: "max_list xs > x" by auto
+    hence nil: "xs \<noteq> []" by (cases xs, auto)
+    from max have max: "max x (max_list xs) = max_list xs" by auto
+    from Cons(1)[OF nil] max show ?thesis by auto
+  qed
+qed simp
+
+lemma max_list_set: "max_list xs = (if set xs = {} then 0 else (THE x. x \<in> set xs \<and> (\<forall> y \<in> set xs. y \<le> x)))"
+proof (cases "xs = []")
+  case True thus ?thesis by simp
+next
+  case False
+  note p = max_list_mem[OF this] max_list[of _ xs] 
+  from False have id: "(set xs = {}) = False" by simp
+  show ?thesis unfolding id if_False
+  proof (rule the_equality[symmetric], intro conjI ballI, rule p, rule p)
+    fix x 
+    assume "x \<in> set xs \<and> (\<forall> y \<in> set xs. y \<le> x)"
+    hence mem: "x \<in> set xs" and le: "\<And> y. y \<in> set xs \<Longrightarrow> y \<le> x" by auto
+    from max_list[OF mem] le[OF max_list_mem[OF False]] 
+    show "x = max_list xs" by simp
+  qed
+qed
+      
+lemma max_list_eq_set: "set xs = set ys \<Longrightarrow> max_list xs = max_list ys"
+  unfolding max_list_set by simp
 
 end

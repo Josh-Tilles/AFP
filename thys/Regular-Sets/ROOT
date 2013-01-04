@@ -1,0 +1,12 @@
+session "Regular-Sets" (AFP) = HOL +
+  options [timeout = 300]
+  theories [document = false]
+    "~~/src/HOL/Library/While_Combinator"
+    "~~/src/HOL/Library/Reflection"
+  theories
+    Regexp_Method
+    pEquivalence_Checking
+    Equivalence_Checking2
+  files
+    "document/root.bib"
+    "document/root.tex"
