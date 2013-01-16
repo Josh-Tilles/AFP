@@ -1642,30 +1642,37 @@ lemma in_image_msetE:
 
 text {* Multiset Union *}
 (*MOVE*)
-definition "mset_Union M = fold_mset op + {#} M"
+definition mset_Union :: "'a multiset multiset \<Rightarrow> 'a multiset"
+where
+  "mset_Union M = Multiset.fold op + {#} M"
 
-interpretation mplus_left_comm: comp_fun_commute 
-  "op + :: 'a multiset \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset"
-  by unfold_locales
-     (auto simp add: union_ac)
+lemma comp_fun_commute_mset_Union:
+  "comp_fun_commute (plus :: 'a multiset \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset)"
+proof qed (auto simp add: union_ac)
 
-lemma mset_Union_empty[simp]: "mset_Union {#} = {#}"
+lemma mset_Union_empty [simp]:
+  "mset_Union {#} = {#}"
   by (simp add: mset_Union_def)
 
-lemma mset_Union_insert: "mset_Union (A + {#x#}) = mset_Union A + x"
-  by (induct A)
-     (auto simp add: mset_Union_def union_ac)
+lemma mset_Union_single [simp]:
+  "mset_Union {#x#} = x"
+proof -
+  interpret comp_fun_commute "plus :: 'a multiset \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset"
+    by (fact comp_fun_commute_mset_Union)
+  show ?thesis by (simp add: mset_Union_def)
+qed
 
-lemma mset_Union_single[simp]: "mset_Union {#x#} = x"
-  by (simp add: mset_Union_def)
+lemma mset_Union_un [simp]:
+  "mset_Union (A + B) = mset_Union A + mset_Union B"
+proof -
+  interpret comp_fun_commute "plus :: 'a multiset \<Rightarrow> 'a multiset \<Rightarrow> 'a multiset"
+    by (fact comp_fun_commute_mset_Union)
+  show ?thesis by (induct B) (auto simp add: mset_Union_def union_ac)
+qed
 
-lemma mset_Union_un[simp]: "mset_Union (A+B) = mset_Union A + mset_Union B"
-  apply (induct A)
-  apply (auto)
-  apply (subgoal_tac "A+{#x#}+B = (A+B) + {#x#}")
-  apply (simp add: mset_Union_insert)
-  apply (auto simp add: union_ac)
-  done
+corollary mset_Union_insert:
+  "mset_Union (A + {#x#}) = mset_Union A + x"
+  by simp
 
 lemma in_mset_UnionE:
   assumes "e\<in>#mset_Union M"
@@ -2040,8 +2047,8 @@ lemma findMin_correct:
   apply auto
 proof -
   case goal1
-  from goal1(3) have "(y,eprio y) \<in># queue_to_multiset_aux q"
-    apply (auto elim!: in_image_msetE)
+  from goal1(3) have "(a,eprio a) \<in># queue_to_multiset_aux q"
+    apply -
     apply (frule bsmap_fs_dep)
     apply simp
     done
@@ -2119,7 +2126,7 @@ lemma level_measure:
   "x \<in> set_of (queue_to_multiset q) \<Longrightarrow> (x,(Element e a q))\<in>measure level"
   "x \<in># (queue_to_multiset q) \<Longrightarrow> (x,(Element e a q))\<in>measure level"
   apply (case_tac [!] x)
-  apply (auto dest: level_m)
+  apply (auto dest: level_m simp del: set_of_image_mset)
   done
 
 text {*
@@ -2230,7 +2237,7 @@ proof -
   from findMin_correct[OF IQ NE] have
     FMIQ: "findMin q \<in># queue_to_multiset q" and
     FMIN: "!!y. y\<in>#(queue_to_multiset q) \<Longrightarrow> eprio (findMin q) \<le> eprio y"
-    by auto
+    by (auto simp del: set_of_image_mset)
   from FMIQ I have FMEI: "elem_invar (findMin q)" by auto
   from I have FEI: "!!y. y\<in>#(queue_to_multiset q) \<Longrightarrow> elem_invar y" by auto
   
@@ -2310,7 +2317,7 @@ theorem bs_empty_correct: "h=bs_empty \<longleftrightarrow> bs_to_mset h = {#}"
   apply simp
   done
 
-lemma bs_mset_of_empty_[simp]:
+lemma bs_mset_of_empty[simp]:
   "bs_to_mset bs_empty = {#}"
   by (simp add: bs_empty_def)
 
@@ -2368,7 +2375,7 @@ interpretation BsSkewBinomialHeapStruc: Bootstrapped .
 subsection "Hiding the Invariant"
 
 subsubsection "Datatype"
-typedef (open) ('e, 'a) SkewBinomialHeap =
+typedef ('e, 'a) SkewBinomialHeap =
   "{q :: ('e,'a::linorder) BsSkewHeap. BsSkewBinomialHeapStruc.bs_invar q }"
   apply (rule_tac x="BsSkewBinomialHeapStruc.bs_empty" in exI)
   apply (auto)
@@ -2604,3 +2611,4 @@ text {*
 
 
 end
+

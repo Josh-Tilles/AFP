@@ -1,0 +1,9 @@
+session SenSocialChoice (AFP) = HOL +
+  options [timeout = 600]
+  theories
+    Arrow
+    Sen
+    May
+  files
+    "document/root.bib"
+    "document/root.tex"

@@ -2,7 +2,7 @@ theory Girth_Chromatic_Misc
 imports
   "~~/src/HOL/Main"
   "~~/src/HOL/Library/Extended_Real"
-  "~~/src/HOL/Number_Theory/Binomial"
+  "~~/src/HOL/Library/Binomial"
 begin
 
 section {* Auxilliary lemmas and setup *}
@@ -24,30 +24,7 @@ text {*
 abbreviation evseq :: "(nat \<Rightarrow> bool) \<Rightarrow> bool" (binder "\<forall>\<^isup>\<infinity>" 10) where
   "evseq P \<equiv> eventually P sequentially"
 
-text {* Remove non-standard induction rule for nat (installed by Cong (via Binomial)): *}
-declare Cong.induct'_nat[induct del]
-
 subsection {* Numbers *}
-
-lemma ereal_divide_right_mono:
-  fixes a b c :: ereal
-  assumes "a \<le> b" "0 < c"
-  shows "a / c \<le> b / c"
-using assms by (cases a b c rule: ereal3_cases) (auto intro: divide_right_mono)
-
-lemma ereal_divide_left_mono:
-  fixes a b c :: ereal
-  assumes "b \<le> a" "0 < c" "0 < a * b"
-  shows "c / a \<le> c / b"
-using assms by (cases a b c rule: ereal3_cases)
-  (auto intro: divide_left_mono simp: field_simps sign_simps split: split_if_asm)
-
-lemma ereal_of_enat_less_iff: "ereal_of_enat a < ereal_of_enat b \<longleftrightarrow> a < b"
-  by (cases a b rule: enat2_cases) auto
-
-
-lemma ereal_of_enat_inf: "ereal_of_enat a = \<infinity> \<longleftrightarrow> a = \<infinity>"
-  by (cases a) auto
 
 lemma enat_in_Inf:
   fixes S :: "enat set"
@@ -154,24 +131,6 @@ lemma dist_real_noabs_less:
   fixes a b c :: real assumes "dist a b < c" shows "a - b < c"
 using assms by (simp add: dist_real_def)
 
-
-lemma fact_div_fact_le_pow:
-  assumes "r \<le> n" shows "fact n div fact (n - r) \<le> n ^ r"
-proof -
-  have "\<And>r. r \<le> n \<Longrightarrow> \<Prod>{n - r..n} = (n - r) * \<Prod>{Suc (n - r)..n}"
-    by (subst setprod_insert[symmetric]) (auto simp: atLeastAtMost_insertL)
-  with assms show ?thesis
-    by (induct r rule: nat.induct) (auto simp add: fact_div_fact Suc_diff_Suc mult_le_mono)
-qed
-
-lemma choose_le_pow:
-  assumes "r \<le> n" shows "n choose r \<le> n ^ r"
-proof -
-  have "n choose r \<le> fact n div fact (n - r)"
-    using `r \<le> n` by (simp add: choose_altdef_nat div_le_mono2)
-  with fact_div_fact_le_pow[OF assms] show ?thesis by auto
-qed
-
 lemma n_choose_2_nat:
   fixes n :: nat shows "(n choose 2) = (n * (n - 1)) div 2"
 proof -
@@ -181,10 +140,10 @@ proof -
     then obtain m where "n = Suc (Suc m)"
       by (metis add_Suc le_Suc_ex numeral_2_eq_2)
     moreover have "(n choose 2) = (fact n div fact (n - 2)) div 2"
-      using `2 \<le> n` by (simp add: choose_altdef_nat
+      using `2 \<le> n` by (simp add: binomial_altdef_nat
         div_mult2_eq[symmetric] nat_mult_commute numeral_2_eq_2)
     ultimately show ?thesis by (simp add: algebra_simps)
-  qed (auto simp: not_le)
+  qed (auto simp: binomial_eq_0)
 qed
 
 lemma powr_less_one:
@@ -244,7 +203,7 @@ by (rule exI[where x="Suc c"]) (auto intro: assms)
 lemma LIMSEQ_neg_powr:
   assumes s: "s < 0"
   shows "(%x. (real x) powr s) ----> 0"
-by (rule tendsto_neg_powr[OF assms real_tendsto_inf_real])
+by (rule tendsto_neg_powr[OF assms filterlim_real_sequentially])
 
 lemma LIMSEQ_inv_powr:
   assumes "0 < c" "0 < d"

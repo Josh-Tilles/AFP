@@ -1,0 +1,11 @@
+session Datatype_Order_Generator (AFP) = HOL +
+  options [timeout = 300]
+  theories [document=false]
+    "../Collections/common/HashCode"
+    "~~/src/HOL/Library/Countable"
+  theories
+    Derive
+    Derive_Examples
+  files
+    "document/root.bib"
+    "document/root.tex"

@@ -11,16 +11,6 @@ text{* This theory is based on work by Brozowski \cite{Brzozowski64} and Antimir
 subsection {* Brozowski's derivatives of regular expressions *}
 
 fun
-  nullable :: "'a rexp \<Rightarrow> bool"
-where
-  "nullable (Zero) = False"
-| "nullable (One) = True"
-| "nullable (Atom c) = False"
-| "nullable (Plus r1 r2) = (nullable r1 \<or> nullable r2)"
-| "nullable (Times r1 r2) = (nullable r1 \<and> nullable r2)"
-| "nullable (Star r) = True"
-
-fun
   deriv :: "'a \<Rightarrow> 'a rexp \<Rightarrow> 'a rexp"
 where
   "deriv c (Zero) = Zero"
@@ -38,23 +28,26 @@ where
 | "derivs (c # s) r = derivs s (deriv c r)"
 
 
-lemma nullable_iff:
-  shows "nullable r \<longleftrightarrow> [] \<in> lang r"
-by (induct r) (auto simp add: conc_def split: if_splits)
-
-lemma Deriv_deriv:
-  shows "Deriv c (lang r) = lang (deriv c r)"
+lemma lang_deriv: "lang (deriv c r) = Deriv c (lang r)"
 by (induct r) (simp_all add: nullable_iff)
 
-lemma Derivs_derivs:
-  shows "Derivs s (lang r) = lang (derivs s r)"
-by (induct s arbitrary: r) (simp_all add: Deriv_deriv)
+lemma lang_derivs: "lang (derivs s r) = Derivs s (lang r)"
+by (induct s arbitrary: r) (simp_all add: lang_deriv)
+
+text {* A regular expression matcher: *}
+
+definition matcher :: "'a rexp \<Rightarrow> 'a list \<Rightarrow> bool" where
+"matcher r s = nullable (derivs s r)"
+
+lemma matcher_correctness: "matcher r s \<longleftrightarrow> s \<in> lang r"
+by (induct s arbitrary: r)
+   (simp_all add: nullable_iff lang_deriv matcher_def Deriv_def)
 
 
 subsection {* Antimirov's partial derivatives *}
 
 abbreviation
-  "Timess rs r \<equiv> {Times r' r | r'. r' \<in> rs}"
+  "Timess rs r \<equiv> (\<Union>r' \<in> rs. {Times r' r})"
 
 fun
   pderiv :: "'a \<Rightarrow> 'a rexp \<Rightarrow> 'a rexp set"
@@ -126,11 +119,11 @@ subsection {* Relating derivatives and partial derivatives *}
 
 lemma deriv_pderiv:
   shows "(\<Union> lang ` (pderiv c r)) = lang (deriv c r)"
-unfolding Deriv_deriv[symmetric] Deriv_pderiv by simp
+unfolding lang_deriv Deriv_pderiv by simp
 
 lemma derivs_pderivs:
   shows "(\<Union> lang ` (pderivs s r)) = lang (derivs s r)"
-unfolding Derivs_derivs[symmetric] Derivs_pderivs by simp
+unfolding lang_derivs Derivs_pderivs by simp
 
 
 subsection {* Finiteness property of partial derivatives *}
@@ -208,7 +201,7 @@ proof (induct s rule: rev_induct)
   have "pderivs (s @ [c]) (Times r1 r2) = pderiv_set c (pderivs s (Times r1 r2))" 
     by (simp add: pderivs_snoc)
   also have "\<dots> \<subseteq> pderiv_set c (Timess (pderivs s r1) r2 \<union> (pderivs_lang (PSuf s) r2))"
-    using ih by (auto) (blast)
+    using ih by fast
   also have "\<dots> = pderiv_set c (Timess (pderivs s r1) r2) \<union> pderiv_set c (pderivs_lang (PSuf s) r2)"
     by (simp)
   also have "\<dots> = pderiv_set c (Timess (pderivs s r1) r2) \<union> pderivs_lang (PSuf s @@ {[c]}) r2"
@@ -218,7 +211,7 @@ proof (induct s rule: rev_induct)
     by auto
   also 
   have "\<dots> \<subseteq> Timess (pderiv_set c (pderivs s r1)) r2 \<union> pderiv c r2 \<union> pderivs_lang (PSuf s @@ {[c]}) r2"
-    by (auto simp add: if_splits) (blast)
+    by (auto simp add: if_splits)
   also have "\<dots> = Timess (pderivs (s @ [c]) r1) r2 \<union> pderiv c r2 \<union> pderivs_lang (PSuf s @@ {[c]}) r2"
     by (simp add: pderivs_snoc)
   also have "\<dots> \<subseteq> Timess (pderivs (s @ [c]) r1) r2 \<union> pderivs_lang (PSuf (s @ [c])) r2"
@@ -255,9 +248,9 @@ proof (induct s rule: rev_induct)
   { assume asm: "s \<noteq> []"
     have "pderivs (s @ [c]) (Star r) = pderiv_set c (pderivs s (Star r))" by (simp add: pderivs_snoc)
     also have "\<dots> \<subseteq> pderiv_set c (Timess (pderivs_lang (PSuf s) r) (Star r))"
-      using ih[OF asm] by (auto) (blast)
+      using ih[OF asm] by fast
     also have "\<dots> \<subseteq> Timess (pderiv_set c (pderivs_lang (PSuf s) r)) (Star r) \<union> pderiv c (Star r)"
-      by (auto split: if_splits) (blast)+
+      by (auto split: if_splits)
     also have "\<dots> \<subseteq> Timess (pderivs_lang (PSuf (s @ [c])) r) (Star r) \<union> (Timess (pderiv c r) (Star r))"
       by (simp only: PSuf_snoc pderivs_lang_snoc pderivs_lang_union)
          (auto simp add: pderivs_lang_def)
@@ -267,11 +260,7 @@ proof (induct s rule: rev_induct)
   }
   moreover
   { assume asm: "s = []"
-    then have ?case
-      apply (auto simp add: pderivs_lang_def pderivs_snoc PSuf_def)
-      apply(rule_tac x = "[c]" in exI)
-      apply(auto)
-      done
+    then have ?case by (auto simp add: pderivs_lang_def pderivs_snoc PSuf_def)
   }
   ultimately show ?case by blast
 qed (simp)
@@ -312,19 +301,5 @@ by (simp add: finite_pderivs_lang_UNIV1)
 lemma finite_pderivs_lang:
   shows "finite (pderivs_lang A r)"
 by (metis finite_pderivs_lang_UNIV pderivs_lang_subset rev_finite_subset subset_UNIV)
-
-
-subsection {* A regular expression matcher based on Brozowski's derivatives *}
-
-fun
-  matcher :: "'a rexp \<Rightarrow> 'a list \<Rightarrow> bool"
-where
-  "matcher r s = nullable (derivs s r)"
-
-lemma matcher_correctness:
-  shows "matcher r s \<longleftrightarrow> s \<in> lang r"
-by (induct s arbitrary: r)
-   (simp_all add: nullable_iff Deriv_deriv[symmetric] Deriv_def)
-
 
 end

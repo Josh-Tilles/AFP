@@ -50,25 +50,7 @@ end
 definition nat_mono :: "nat \<Rightarrow> bool" where "nat_mono x \<equiv> x \<noteq> 0"
 
 interpretation nat_SN: SN_strict_mono_ordered_semiring_1 1 "op > :: nat \<Rightarrow> nat \<Rightarrow> bool" nat_mono
-proof (unfold_locales)
-  have "SN {(x,y). (y :: nat) < x}" (is "SN ?gt")
-  proof (rule ccontr, unfold SN_defs, clarify)
-    fix x f
-    assume steps: "\<forall> i. (f i, f (Suc i)) \<in> ?gt"
-    have "\<forall> i. f i + i \<le> f 0"
-    proof 
-      fix i
-      show "f i + i \<le> f 0"
-      proof (induct i, simp)
-        case (Suc i)
-        with spec[OF steps, of i] show ?case by auto
-      qed
-    qed
-    hence "f (Suc (f 0)) + Suc (f 0) \<le> f 0" by blast
-    thus False by auto
-  qed
-  thus "SN {(x,y). (y :: nat) \<succeq> 0 \<and> y < x}" by auto
-qed (auto simp: nat_mono_def)
+  by (unfold_locales, insert SN_nat_gt, auto simp: nat_mono_def)
 
 instantiation nat :: poly_carrier 
 begin 
@@ -214,7 +196,7 @@ lemma rat_gt_SN: assumes dpos: "\<delta> > 0" shows "SN {(x,y). 0 \<le> y \<and>
   from this obtain p where p: "?p = p + 1" and ppos: "0 \<le> p" by auto
   have id2: "\<And> n. n * numeratord * denom0 * (denomd * denom0) = n * ?p" by auto
   from contra square denomd denom0 show False 
-  proof (simp add: p id2, simp add: right_distrib left_distrib)
+  proof (simp add: p id2, simp add: distrib_left distrib_right)
     let ?r = "numerator0 * denomd * (denomd * denom0)"
     let ?rr = "?r - p - 1"
     assume ass: "\<And> n. p + int n * p + (1 + int n) \<le> ?r"

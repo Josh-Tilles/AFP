@@ -1,0 +1,23 @@
+session Well_Quasi_Orders (AFP) = HOL +
+  options [timeout = 200]
+  theories [document = false]
+    "../Abstract-Rewriting/Seq"
+    "~~/src/HOL/Library/Infinite_Set"
+    "~~/src/HOL/Library/Ramsey"
+  theories
+    "~~/src/HOL/Library/Sublist"
+    Restricted_Predicates
+    Minimal_Bad_Sequences
+    Almost_Full_Relations
+    Well_Quasi_Orders
+    Finite_Tree
+    Kruskal
+    Wqo_Instances
+    Nash_Williams
+    Kruskal_Tree
+    Multiset_Extension
+    Kruskal_Terms
+  files
+    "document/root.bib"
+    "document/root.tex"
+

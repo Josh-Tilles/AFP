@@ -2,9 +2,9 @@ theory Girth_Chromatic
 imports
   Ugraphs
   Girth_Chromatic_Misc
-  Probability
+  "~~/src/HOL/Probability/Probability"
 
-  "~~/src/HOL/Number_Theory/Binomial"
+  "~~/src/HOL/Library/Binomial"
   "~~/src/HOL/Decision_Procs/Approximation"
 begin
 
@@ -77,7 +77,7 @@ lemma emeasure_eq:
 lemma integrable_P[intro, simp]: "integrable P f"
   using finite_edges by (simp add: integrable_point_measure_finite P_def)
 
-lemma borel_measurable_P[intro, simp]: "f \<in> borel_measurable P"
+lemma borel_measurable_P[measurable]: "f \<in> borel_measurable P"
   unfolding P_def by simp
   
 lemma prob_space_P: "prob_space P"
@@ -326,7 +326,7 @@ proof -
   then have "prob ?L \<le> (\<Sum>vs \<in> ?k_sets. prob {es \<in> space P. vs \<in> independent_sets (edge_ugraph es)})"
     by (auto intro!: finite_measure_subadditive_finite simp: space_eq sets_eq)
   also have "\<dots> = (n choose k)*((1 - p) ^ (k choose 2))"
-    by (simp add: prob_k_indep real_eq_of_nat S_verts_def card_subsets_nat)
+    by (simp add: prob_k_indep real_eq_of_nat S_verts_def n_subsets)
   finally show ?thesis using `k \<ge> 2` by (simp add: le_\<alpha>_iff)
 qed
 
@@ -366,7 +366,7 @@ proof -
       using A by (auto intro: pG.random_prob_independent)
     also have "\<dots> \<le> n powr ?nr n * (1 - p n) powr (?nr n choose 2)"
       using A
-      by (simp add: powr_realpow power_real_of_nat choose_le_pow del: real_of_nat_power)
+      by (simp add: powr_realpow power_real_of_nat binomial_le_pow del: real_of_nat_power)
     also have "\<dots> = n powr ?nr n * (1 - p n) powr (?nr n * (?nr n - 1) / 2)"
       by (cases "even (?nr n - 1)")
          (auto simp: n_choose_2_nat nat_even_iff_2_dvd[symmetric] real_of_nat_div)

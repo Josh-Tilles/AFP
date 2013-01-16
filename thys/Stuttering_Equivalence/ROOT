@@ -1,0 +1,8 @@
+session Stuttering_Equivalence (AFP) = HOL +
+  options [timeout = 300]
+  theories
+    Samplers
+    StutterEquivalence
+  files
+    "document/root.bib"
+    "document/root.tex"
