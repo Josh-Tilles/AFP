@@ -679,8 +679,8 @@ lemma no_bad_of_special_shape_imp_good:
 lemma almost_full_on_lists:
   assumes "almost_full_on P A"
   shows "almost_full_on (list_hembeq P) (lists A)"
-    (is "almost_full_on ?P ?A")
 proof (rule ccontr)
+  let ?P = "list_hembeq P"
   interpret list_mbs: mbs "\<lambda>_. ?P" suffix lists
   proof -
     show "mbs (\<lambda>_. ?P) suffix lists"
@@ -690,7 +690,7 @@ proof (rule ccontr)
   qed
   note refl = reflp_on_list_hembeq [of P A]
 
-  assume "\<not> almost_full_on ?P ?A"
+  assume "\<not> ?thesis"
   then obtain f where "\<forall>i. f i \<in> lists A" and "bad ?P f"
     unfolding almost_full_on_def by blast
   from list_mbs.mbs [OF this] obtain m where bad: "bad ?P m"
@@ -747,8 +747,6 @@ proof (rule ccontr)
     with `bad ?P c` have False by blast
   }
   then have no_special_bad_seq: "\<not> (\<exists>\<phi>. (\<forall>i. \<phi> i \<ge> \<phi> 0) \<and> bad ?P (t \<circ> \<phi>))" by blast
-  then have "\<not> (\<exists>\<phi>. (\<forall>i j. i < j \<longrightarrow> \<phi> i < \<phi> j) \<and> bad ?P (t \<circ> \<phi>))"
-    by (metis le0 less_mono_imp_le_mono)
 
   let ?H = "{h i | i. True}"
   let ?T = "{t i | i. True}"
@@ -769,7 +767,7 @@ proof (rule ccontr)
     have "?T \<subseteq> lists A"
     proof
       fix B assume "B \<in> ?T"
-      then obtain i where B: "B = t i" by auto
+      then obtain i where "B = t i" by auto
       hence "suffixeq B (m i)" by (simp)
       with in_lists [of i] show "B \<in> lists A" by (auto simp: suffixeq_def)
     qed
