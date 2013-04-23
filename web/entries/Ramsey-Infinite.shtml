@@ -60,7 +60,7 @@ This formalization of Ramsey's theorem (infinitary version) is taken from Boolos
 <p></p>
 
 <!--#set var="name" value="Ramsey-Infinite" -->
-<!--#set var="binfo" value="../browser_info/current/HOL/${name}" -->
+<!--#set var="binfo" value="../browser_info/current/AFP/${name}" -->
 
 <!--#set var="doc" value="${binfo}/document.pdf" -->
 <!--#set var="outline" value="${binfo}/outline.pdf" -->

@@ -12,7 +12,7 @@ imports BigStep WellType
   "~~/src/HOL/Library/Quotient_Product"
   "~~/src/HOL/Library/Quotient_Set"
   "~~/src/HOL/Library/Quotient_Option"
-  "~~/src/HOL/Library/Efficient_Nat"
+  "~~/src/HOL/Library/Code_Target_Numeral"
 begin
 
 section{* General redefinitions *}
@@ -727,10 +727,7 @@ lemma LAss':
   "\<lbrakk> P,E \<turnstile> \<langle>e,s\<^isub>0\<rangle> \<Rightarrow>' \<langle>Val v,(h,l)\<rangle>; E V = Some T;
      P \<turnstile> T casts v to v'; l' = l(V\<mapsto>v') \<rbrakk>
   \<Longrightarrow> P,E \<turnstile> \<langle>V:=e,s\<^isub>0\<rangle> \<Rightarrow>' \<langle>Val v',(h,l')\<rangle>"
-apply transfer (* FIXME, why does transfer not do the right thing here?? *)
-apply(erule (3) LAss)
-unfolding fun_rel_eq prod_rel_eq option_rel_eq set_rel_eq Transfer.Rel_def
-by(rule eval'.transfer)
+by (transfer) (erule (3) LAss)
 
 lemma LAssThrow':
   "P,E \<turnstile> \<langle>e,s\<^isub>0\<rangle> \<Rightarrow>' \<langle>throw e',s\<^isub>1\<rangle> \<Longrightarrow>
@@ -922,12 +919,6 @@ axiomatization
 where
   new_Addr'_code [code]: "new_Addr' h = lowest (Option.is_none \<circ> h) 0"
     -- {* admissible: a tightening of the specification of @{const new_Addr'} *}
-
-lemma [transfer_rule]:
- "(prod_rel (op = ===> option_rel (prod_rel op = (set_rel (prod_rel op = cr_mapping)))) op = ===>
-   prod_rel (op = ===> option_rel (prod_rel op = (set_rel (prod_rel op = cr_mapping))))
-   (op = ===> option_rel op =) ===> op =) op = op ="
-unfolding fun_rel_eq option_rel_eq by transfer_prover
 
 lemma eval'_cases
   [consumes 1,
@@ -1178,6 +1169,8 @@ next
 qed
 
 subsection {* Examples *}
+
+declare [[values_timeout = 100]]
 
 values [expected "{Val (Intg 5)}"]
   "{fst (e', s') | e' s'. 
