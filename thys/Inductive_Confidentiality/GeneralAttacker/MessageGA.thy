@@ -842,7 +842,6 @@ ML
 {*
 (*Analysis of Fake cases.  Also works for messages that forward unknown parts,
   but this application is no longer necessary if analz_insert_eq is used.
-  Abstraction over i is ESSENTIAL: it delays the dereferencing of claset
   DEPENDS UPON "X" REFERRING TO THE FRADULENT MESSAGE *)
 
 fun impOfSubs th = th RSN (2, @{thm rev_subsetD})
@@ -860,7 +859,7 @@ fun Fake_insert_simp_tac ss i =
 
 fun atomic_spy_analz_tac ctxt =
   SELECT_GOAL
-   (Fake_insert_simp_tac (simpset_of ctxt) 1 THEN
+   (Fake_insert_simp_tac ctxt 1 THEN
     IF_UNSOLVED
       (Blast.depth_tac
         (ctxt addIs [@{thm analz_insertI}, impOfSubs @{thm analz_subset_parts}]) 4 1));
@@ -873,7 +872,7 @@ fun spy_analz_tac ctxt i =
        (REPEAT o CHANGED)
            (res_inst_tac ctxt [(("x", 1), "X")] (insert_commute RS ssubst) 1),
        (*...allowing further simplifications*)
-       simp_tac (simpset_of ctxt) 1,
+       simp_tac ctxt 1,
        REPEAT (FIRSTGOAL (resolve_tac [allI,impI,notI,conjI,iffI])),
        DEPTH_SOLVE (atomic_spy_analz_tac ctxt 1)]) i);
 *}
@@ -925,7 +924,7 @@ method_setup atomic_spy_analz = {*
     "for debugging spy_analz"
 
 method_setup Fake_insert_simp = {*
-    Scan.succeed (SIMPLE_METHOD' o Fake_insert_simp_tac o simpset_of) *}
+    Scan.succeed (SIMPLE_METHOD' o Fake_insert_simp_tac) *}
     "for debugging spy_analz"
 
 end

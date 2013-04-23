@@ -72,7 +72,7 @@ proof (rule antisym) -- "this splits an equation into two inequalities"
     by (metis add_lub eq_refl star_1l)
   thus "x\<^sup>\<star> \<cdot> x\<^sup>\<star> \<le> x\<^sup>\<star>"
     by (metis star_inductl)
-  show "x\<^sup>\<star> \<le> x\<^sup>\<star> \<cdot> x\<^sup>\<star>"
+  next show "x\<^sup>\<star> \<le> x\<^sup>\<star> \<cdot> x\<^sup>\<star>"
     by (metis mult_isor mult_onel star_ref)
 qed
 
@@ -119,7 +119,7 @@ proof
     by (metis calculation eq_iff star_inductl_var_eq)
 qed
 
-lemma star_inductl_var_eq2: "y = x \<cdot> y \<longleftrightarrow> y = x\<^sup>\<star> \<cdot> y"
+lemma "y = x \<cdot> y \<longleftrightarrow> y = x\<^sup>\<star> \<cdot> y"
   nitpick [expect=genuine] -- "2-element counterexample"
 oops
 
@@ -245,7 +245,7 @@ lemma star_star_closure: "x\<^sup>\<star> \<le> z\<^sup>\<star> \<longrightarrow
 lemma star_closed_unfold: "x\<^sup>\<star> = x \<longrightarrow> x = 1 + x \<cdot> x"
   by (metis star_plus_one star_trans_eq)
 
-lemma star_closed_unfold: "x\<^sup>\<star> = x \<longleftrightarrow> x = 1 + x \<cdot> x"
+lemma "x\<^sup>\<star> = x \<longleftrightarrow> x = 1 + x \<cdot> x"
   nitpick [expect=genuine] -- "3-element counterexample"
 oops
 
@@ -649,7 +649,13 @@ qed
 text {* The following property appears in process algebra. *}
 
 lemma troeger [simp]: "(x + y)\<^sup>\<star> \<cdot> z = x\<^sup>\<star> \<cdot> (y \<cdot> (x+y)\<^sup>\<star> \<cdot> z + z)"
-  by (metis add.commute distrib_right mult.assoc mult_onel mult_oner opp_mult_def distrib_left star_sum_unfold)
+  using [[metis_verbose=false]]
+    -- {* Theorem {\em opp\_mult\_def} is not actually required for
+          {\em metis} to find a proof, but (interestingly enough) it
+          considerably speeds up the proof search. We suppress the
+          ``unused theorem'' warning that {\em metis} would generate
+          in verbose mode. *}
+  by (metis add.commute distrib_left distrib_right mult.assoc mult_onel mult_oner opp_mult_def star_sum_unfold)
 
 text {* The following properties are related to a property from
 propositional dynamic logic which has been attributed to Albert
