@@ -1,3 +1,5 @@
+chapter AFP
+
 session JinjaThreads (AFP) = "HOL-Word" +
   options [timeout = 14400, document_graph]
   theories

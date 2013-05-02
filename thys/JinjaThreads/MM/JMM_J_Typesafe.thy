@@ -145,8 +145,7 @@ proof -
     prefer 43 (* RedCall *)
     apply(fastforce dest: J_heap_base.red_reds.RedCall)
 
-    apply(simp_all)
-    apply(blast intro: J_heap_base.red_reds.intros dest: heap_base.heap_read_typed_into_heap_read heap_base.heap_read_typed_typed dest: heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD2] heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD1])+
+    apply(auto intro: J_heap_base.red_reds.intros dest: heap_base.heap_read_typed_into_heap_read heap_base.heap_read_typed_typed dest: heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD2] heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD1])
     done
   moreover have "(?rhs1a \<longrightarrow> ?rhs1b \<longrightarrow> ?lhs1) \<and> (?rhs2a \<longrightarrow> ?rhs2b \<longrightarrow> ?lhs2)"
     apply(induct rule: J_heap_base.red_reds.induct)
@@ -160,8 +159,7 @@ proof -
     prefer 43 (* RedCall *)
     apply(fastforce dest: J_heap_base.red_reds.RedCall)
 
-    apply simp_all
-    apply(blast intro: J_heap_base.red_reds.intros intro!: heap_base.heap_read_typedI dest: heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD1] intro: heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD2])+
+    apply(auto intro: J_heap_base.red_reds.intros intro!: heap_base.heap_read_typedI dest: heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD1] intro: heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD2])
     done
   ultimately show "?lhs1 \<longleftrightarrow> ?rhs1a \<and> ?rhs1b" "?lhs2 \<longleftrightarrow> ?rhs2a \<and> ?rhs2b" by blast+
 qed
@@ -182,7 +180,7 @@ apply(erule multithreaded_base.\<E>.cases, hypsubst)
 apply(rule multithreaded_base.\<E>.intros)
 apply(subst if_mred_heap_read_typedD[abs_def])
 apply(erule if_mthr_Runs_heap_read_typedI)
-apply(auto simp add: image_Un lset_lmap[symmetric] lmap_lconcat lmap_compose[symmetric] o_def split_def simp del: lset_lmap lmap_compose)
+apply(auto simp add: image_Un lset_lmap[symmetric] lmap_lconcat llist.map_comp' o_def split_def simp del: lset_lmap)
 done
 
 lemma jmm'_redI:
@@ -317,7 +315,7 @@ proof -
       assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset \<xi>"
         and adal: "P \<turnstile>jmm ad@al : T"
       from read obtain a where a: "enat a < llength \<xi>" "action_obs \<xi> a = NormalAction (ReadMem ad al v)"
-        unfolding lset_def by(auto simp add: action_obs_def)
+        unfolding lset_conv_lnth by(auto simp add: action_obs_def)
       with J_allocated_heap_conf'.mred_known_addrs_typing'[OF jmm_J_allocated_heap_conf' wfP jmm_start_heap_ok]
         J_heap_conf.J_start_state_sconf_type_ok[OF jmm_J_heap_conf wfP ok]
         wf_sys is_justified_by_imp_is_weakly_justified_by[OF justified wf] range n
@@ -335,7 +333,7 @@ proof -
     assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset E"
       and adal: "P \<turnstile>jmm ad@al : T"
     from read obtain a where a: "enat a < llength E" "action_obs E a = NormalAction (ReadMem ad al v)"
-      unfolding lset_def by(auto simp add: action_obs_def)
+      unfolding lset_conv_lnth by(auto simp add: action_obs_def)
     with jmm_J_allocated_heap_conf' wfP ok legal_imp_weakly_legal_execution[OF legal]
     have "\<exists>T. P \<turnstile>jmm ad@al : T \<and> P \<turnstile>jmm v :\<le> T"
       unfolding jmm_typeof_addr'_conv_jmm_type_addr[symmetric, abs_def]
@@ -378,7 +376,7 @@ proof -
       assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset \<xi>"
         and adal: "P \<turnstile>jmm ad@al : T"
       from read obtain a where a: "enat a < llength \<xi>" "action_obs \<xi> a = NormalAction (ReadMem ad al v)"
-        unfolding lset_def by(auto simp add: action_obs_def)
+        unfolding lset_conv_lnth by(auto simp add: action_obs_def)
       with J_allocated_heap_conf'.mred_known_addrs_typing'[OF jmm_J_allocated_heap_conf' wfP jmm_start_heap_ok]
         J_heap_conf.J_start_state_sconf_type_ok[OF jmm_J_heap_conf wfP ok]
         wf_sys justified range n
@@ -396,7 +394,7 @@ proof -
     assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset E"
       and adal: "P \<turnstile>jmm ad@al : T"
     from read obtain a where a: "enat a < llength E" "action_obs E a = NormalAction (ReadMem ad al v)"
-      unfolding lset_def by(auto simp add: action_obs_def)
+      unfolding lset_conv_lnth by(auto simp add: action_obs_def)
     with jmm_J_allocated_heap_conf' wfP ok legal
     have "\<exists>T. P \<turnstile>jmm ad@al : T \<and> P \<turnstile>jmm v :\<le> T"
       unfolding jmm_typeof_addr'_conv_jmm_type_addr[symmetric, abs_def]
