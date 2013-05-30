@@ -259,6 +259,9 @@ begin
 lemma equal_ceq: "equal (ceq' :: 'a \<Rightarrow> 'a \<Rightarrow> bool)"
 using ID_ceq_neq_None by(clarsimp)(rule ID_ceq)
 
+(* workaround for the next theorem *)
+declare Domainp_forall_transfer[where A = "pcr_set_dlist op=", simplified set_dlist.domain_eq, transfer_rule]
+
 lemma set_dlist_induct [case_names Nil insert, induct type: set_dlist]:
   fixes dxs :: "'a :: ceq set_dlist"
   assumes Nil: "P empty" and Cons: "\<And>a dxs. \<lbrakk> \<not> member dxs a; P dxs \<rbrakk> \<Longrightarrow> P (insert a dxs)"
@@ -281,10 +284,10 @@ qed
 
 lemma fold_transfer2 [transfer_rule]:
   assumes "is_equality A"
-  shows "((A ===> cr_set_dlist ===> cr_set_dlist) ===>
-    (cr_set_dlist :: 'a list \<Rightarrow> 'a set_dlist \<Rightarrow> bool) ===> cr_set_dlist ===> cr_set_dlist)
+  shows "((A ===> pcr_set_dlist op = ===> pcr_set_dlist op =) ===>
+    (pcr_set_dlist op = :: 'a list \<Rightarrow> 'a set_dlist \<Rightarrow> bool) ===> pcr_set_dlist op = ===> pcr_set_dlist op =)
      List.fold DList_Set.fold"
-unfolding Transfer.Rel_def
+unfolding Transfer.Rel_def set_dlist.pcr_cr_eq
 proof(rule fun_relI)+
   fix f :: "'a \<Rightarrow> 'b list \<Rightarrow> 'b list" and g and xs :: "'a list" and ys and b :: "'b list" and c
   assume fg: "(A ===> cr_set_dlist ===> cr_set_dlist) f g"
@@ -383,11 +386,11 @@ begin
 
 lemma Inf_fin_member: 
   "dxs \<noteq> empty \<Longrightarrow> Inf_fin (Collect (member (dxs :: 'a set_dlist))) = fold inf (tl dxs) (hd dxs)"
-by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Inf_fin_set_fold simp del: set.simps)
+by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Inf_fin.set_eq_fold simp del: set.simps)
 
 lemma Sup_fin_member: 
   "dxs \<noteq> empty \<Longrightarrow> Sup_fin (Collect (member (dxs :: 'a set_dlist))) = fold sup (tl dxs) (hd dxs)"
-by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Sup_fin_set_fold simp del: set.simps)
+by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Sup_fin.set_eq_fold simp del: set.simps)
 
 end
 

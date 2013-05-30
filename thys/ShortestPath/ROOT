@@ -1,3 +1,5 @@
+chapter AFP
+
 session "ShortestPath" (AFP) = Graph_Theory +
   options [timeout = 3600]
   theories

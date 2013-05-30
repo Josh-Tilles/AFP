@@ -27,11 +27,12 @@ sig
   val abs_state: term -> term option
   val abs_var: Proof.context -> term -> (string * typ)
   val split_state: Proof.context -> string -> typ -> term -> (term * term list)
-  val ex_tac: term list -> tactic (* the term-list is the list of selectors as
-                                     returned by split_state. They may be used to
-                                     construct the instatiation of the existentially
-                                     quantified state.
-                                  *)
+  val ex_tac: Proof.context -> term list -> tactic
+    (* the term-list is the list of selectors as
+       returned by split_state. They may be used to
+       construct the instatiation of the existentially
+       quantified state.
+    *)
 end;
 
 functor GeneraliseFun (structure SplitState: SPLIT_STATE) =
@@ -135,7 +136,7 @@ fun split_thm qnt ctxt s T t =
                                 (HOLogic.mk_Trueprop (list_exists (vs, t')),
                                  HOLogic.mk_Trueprop (HOLogic.mk_exists (s,T,t))))
   in (case qnt of
-        Hol_ex => Goal.prove ctxt [] [] prop (fn _ => SplitState.ex_tac vars)
+        Hol_ex => Goal.prove ctxt [] [] prop (fn _ => SplitState.ex_tac ctxt vars)
       | _ => let 
                val rP = cterm_of thy (conc_of genRefl');
                val thm0 = Thm.instantiate ([], [(rP, cterm_of thy prop)]) genRefl';
@@ -285,7 +286,7 @@ fun generalise_over_tac P i st =
         in 
           (init (Thm.adjust_maxidx_cterm 0 (List.nth (Drule.cprems_of st, i - 1)))
            |> rtac meta_spec_protect' 1
-           |> Seq.maps (fn st' => Thm.bicompose false 
+           |> Seq.maps (fn st' => Thm.bicompose {flatten = true, match = false, incremented = false}
                         (false, Goal.conclude st', Thm.nprems_of st') i st))
         end
       | NONE => no_tac st)
@@ -301,7 +302,7 @@ fun generalise_tac ctxt i st =
     val r = Goal.conclude (generalise ctxt ct');
   in (init (Thm.adjust_maxidx_cterm 0 (List.nth (Drule.cprems_of st, i - 1)))
       |> (rtac r 1 THEN rtac (Drule.protectI) 1)
-      |> Seq.maps (fn st' => Thm.bicompose false 
+      |> Seq.maps (fn st' => Thm.bicompose {flatten = true, match = false, incremented = false}
                     (false, Goal.conclude st', Thm.nprems_of st') i st))
   end
 

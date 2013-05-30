@@ -71,7 +71,7 @@ locale J0_J1_heap_base =
   constrains addr2thread_id :: "('addr :: addr) \<Rightarrow> 'thread_id"
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -202,15 +202,15 @@ apply(fastforce simp add: sim_move01_def sim_moves01_def \<tau>red1r_Val \<tau>r
 done
 
 lemma sim_move01_reds:
-  "\<lbrakk> allocate h (Class_type C) = (h', \<lfloor>a\<rfloor>); ta0 = \<lbrace>NewHeapElem a (Class_type C)\<rbrace>; ta = \<lbrace>NewHeapElem a (Class_type C)\<rbrace> \<rbrakk>
+  "\<lbrakk> (h', a) \<in> allocate h (Class_type C); ta0 = \<lbrace>NewHeapElem a (Class_type C)\<rbrace>; ta = \<lbrace>NewHeapElem a (Class_type C)\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (new C) (new C) h xs ta (addr a) h' xs"
-  "allocate h (Class_type C) = (h', None) \<Longrightarrow> sim_move01 P t \<epsilon> (new C) (new C) h xs \<epsilon> (THROW OutOfMemory) h' xs"
-  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = (h', \<lfloor>a\<rfloor>); 0 <=s i;
+  "allocate h (Class_type C) = {} \<Longrightarrow> sim_move01 P t \<epsilon> (new C) (new C) h xs \<epsilon> (THROW OutOfMemory) h xs"
+  "\<lbrakk> (h', a) \<in> allocate h (Array_type T (nat (sint i))); 0 <=s i;
      ta0 = \<lbrace>NewHeapElem a (Array_type T (nat (sint i)))\<rbrace>; ta = \<lbrace>NewHeapElem a (Array_type T (nat (sint i)))\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move01 P t ta0 (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs ta (addr a) h' xs"
   "i <s 0 \<Longrightarrow> sim_move01 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW NegativeArraySize) h xs"
-  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = (h', None); 0 <=s i \<rbrakk>
-  \<Longrightarrow> sim_move01 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW OutOfMemory) h' xs"
+  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = {}; 0 <=s i \<rbrakk>
+  \<Longrightarrow> sim_move01 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW OutOfMemory) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; P \<turnstile> U \<le> T \<rbrakk>
   \<Longrightarrow> sim_move01 P t \<epsilon> (Cast T (Val v)) (Cast T (Val v)) h xs \<epsilon> (Val v) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; \<not> P \<turnstile> U \<le> T \<rbrakk>
@@ -535,11 +535,11 @@ next
     { assume "V \<in> set Vs"
       hence "hidden (Vs @ [V]) (index Vs V)" by(rule hidden_index)
       with `bisim (Vs @ [V]) e E' xs` have "unmod E' (index Vs V)"
-	by -(rule hidden_bisim_unmod)
+        by -(rule hidden_bisim_unmod)
       moreover from `length Vs + max_vars {V:T=vo; e} \<le> length xs` `V \<in> set Vs`
       have "index Vs V < length xs" by(auto intro: index_less_aux)
       ultimately have "xs ! index Vs V = xs' ! index Vs V"
-	using sim_move01_preserves_unmod[OF red'] by(simp) }
+        using sim_move01_preserves_unmod[OF red'] by(simp) }
     moreover from red' have "length xs = length xs'" by(rule sim_move01_preserves_len[symmetric])
     ultimately have rel: "x'(V := x V) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs']"
       using `lcl (h, x) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `length Vs + max_vars {V:T=vo; e} \<le> length xs`
@@ -553,7 +553,7 @@ next
       case (Some v)
       moreover
       with `x' \<subseteq>\<^sub>m [Vs @ [V] [\<mapsto>] xs']` have "[Vs @ [V] [\<mapsto>] xs'] V = \<lfloor>v\<rfloor>"
-	by(auto simp add: map_le_def dest: bspec)
+        by(auto simp add: map_le_def dest: bspec)
       moreover
       from `length Vs + max_vars {V:T=vo; e} \<le> length xs` have "length Vs < length xs" by auto
       ultimately have "xs' ! length Vs = v" using `length xs = length xs'` by(simp)
@@ -573,13 +573,13 @@ next
     { assume "V \<in> set Vs"
       hence "hidden (Vs @ [V]) (index Vs V)" by(rule hidden_index)
       with `bisim (Vs @ [V]) e E' (xs[length Vs := v])` have "unmod E' (index Vs V)"
-	by -(rule hidden_bisim_unmod)
+        by -(rule hidden_bisim_unmod)
       moreover from `length Vs + max_vars {V:T=vo; e} \<le> length xs` `V \<in> set Vs`
       have "index Vs V < length xs" by(auto intro: index_less_aux)
       moreover from `length Vs + max_vars {V:T=vo; e} \<le> length xs` `V \<in> set Vs`
       have "(xs[length Vs := v]) ! index Vs V = xs ! index Vs V" by(simp)
       ultimately have "xs ! index Vs V = xs' ! index Vs V"
-	using sim_move01_preserves_unmod[OF red', of "index Vs V"] by(simp) }
+        using sim_move01_preserves_unmod[OF red', of "index Vs V"] by(simp) }
     moreover from red' have "length xs = length xs'" by(auto dest: sim_move01_preserves_len)
     ultimately have rel: "x'(V := x V) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs']"
       using `lcl (h, x) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `length Vs + max_vars {V:T=vo; e} \<le> length xs`
@@ -605,13 +605,13 @@ next
     { assume "V \<in> set Vs"
       hence "hidden (Vs @ [V]) (index Vs V)" by(rule hidden_index)
       with `bisim (Vs @ [V]) e E' xs` have "unmod E' (index Vs V)"
-	by -(rule hidden_bisim_unmod)
+        by -(rule hidden_bisim_unmod)
       moreover from `length Vs + max_vars {V:T=vo; e} \<le> length xs` `V \<in> set Vs`
       have "index Vs V < length xs" by(auto intro: index_less_aux)
       moreover from `length Vs + max_vars {V:T=vo; e} \<le> length xs` `V \<in> set Vs`
       have "(xs[length Vs := v]) ! index Vs V = xs ! index Vs V" by(simp)
       ultimately have "xs ! index Vs V = xs' ! index Vs V"
-	using sim_move01_preserves_unmod[OF red', of "index Vs V"] by(simp) }
+        using sim_move01_preserves_unmod[OF red', of "index Vs V"] by(simp) }
     moreover from red' have "length xs = length xs'" by(auto dest: sim_move01_preserves_len)
     ultimately have rel: "x'(V := x V) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs']"
       using `lcl (h, x) \<subseteq>\<^sub>m [Vs [\<mapsto>] xs]` `length Vs + max_vars {V:T=vo; e} \<le> length xs`
@@ -948,15 +948,15 @@ proof -
 qed
 
 lemma sim_move10_reds:
-  "\<lbrakk> allocate h (Class_type C) = (h', \<lfloor>a\<rfloor>); ta1 = \<lbrace>NewHeapElem a (Class_type C)\<rbrace>; ta = \<lbrace>NewHeapElem a (Class_type C)\<rbrace> \<rbrakk>
+  "\<lbrakk> (h', a) \<in> allocate h (Class_type C); ta1 = \<lbrace>NewHeapElem a (Class_type C)\<rbrace>; ta = \<lbrace>NewHeapElem a (Class_type C)\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (new C) e1' (new C) h xs ta (addr a) h' xs"
-  "allocate h (Class_type C) = (h', None) \<Longrightarrow> sim_move10 P t \<epsilon> (new C) e1' (new C) h xs \<epsilon> (THROW OutOfMemory) h' xs"
-  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = (h', \<lfloor>a\<rfloor>); 0 <=s i;
+  "allocate h (Class_type C) = {} \<Longrightarrow> sim_move10 P t \<epsilon> (new C) e1' (new C) h xs \<epsilon> (THROW OutOfMemory) h xs"
+  "\<lbrakk> (h', a) \<in> allocate h (Array_type T (nat (sint i))); 0 <=s i;
      ta1 = \<lbrace>NewHeapElem a (Array_type T (nat (sint i)))\<rbrace>; ta = \<lbrace>NewHeapElem a (Array_type T (nat (sint i)))\<rbrace> \<rbrakk>
   \<Longrightarrow> sim_move10 P t ta1 (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs ta (addr a) h' xs"
   "i <s 0 \<Longrightarrow> sim_move10 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW NegativeArraySize) h xs"
-  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = (h', None); 0 <=s i \<rbrakk>
-  \<Longrightarrow> sim_move10 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW OutOfMemory) h' xs"
+  "\<lbrakk> allocate h (Array_type T (nat (sint i))) = {}; 0 <=s i \<rbrakk>
+  \<Longrightarrow> sim_move10 P t \<epsilon> (newA T\<lfloor>Val (Intg i)\<rceil>) e1' (newA T\<lfloor>Val (Intg i)\<rceil>) h xs \<epsilon> (THROW OutOfMemory) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; P \<turnstile> U \<le> T \<rbrakk>
   \<Longrightarrow> sim_move10 P t \<epsilon> (Cast T (Val v)) e1' (Cast T (Val v)) h xs \<epsilon> (Val v) h xs"
   "\<lbrakk> typeof\<^bsub>h\<^esub> v = \<lfloor>U\<rfloor>; \<not> P \<turnstile> U \<le> T \<rbrakk>
@@ -1288,12 +1288,12 @@ next
     { assume "V' \<in> set Vs"
       hence "hidden (Vs @ [V']) (index Vs V')" by(rule hidden_index)
       with `bisim (Vs @ [V']) E e (lcl (h, x))` have "unmod e (index Vs V')"
-	by(auto intro: hidden_bisim_unmod)
+        by(auto intro: hidden_bisim_unmod)
       moreover from `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` `V' \<in> set Vs`
       have "index Vs V' < length x" by(auto intro: index_less_aux)
       ultimately have "x ! index Vs V' = x' ! index Vs V'"
-	using red1_preserves_unmod[OF `False,compP1 P,t \<turnstile>1 \<langle>e,(h, x)\<rangle> -ta\<rightarrow> \<langle>e',(h', x')\<rangle>`]
-	by(simp) }
+        using red1_preserves_unmod[OF `False,compP1 P,t \<turnstile>1 \<langle>e,(h, x)\<rangle> -ta\<rightarrow> \<langle>e',(h', x')\<rangle>`]
+        by(simp) }
     with `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` 
       `X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']` `length x = length x'` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl (h, x)]`
     have rel: "X'(V' := X V') \<subseteq>\<^sub>m [Vs [\<mapsto>] x']" by(auto intro: Block_lem)
@@ -1321,12 +1321,12 @@ next
     { assume "V' \<in> set Vs"
       hence "hidden (Vs @ [V']) (index Vs V')" by(rule hidden_index)
       with `bisim (Vs @ [V']) E e (lcl (h, x))` have "unmod e (index Vs V')"
-	by(auto intro: hidden_bisim_unmod)
+        by(auto intro: hidden_bisim_unmod)
       moreover from `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` `V' \<in> set Vs`
       have "index Vs V' < length x" by(auto intro: index_less_aux)
       ultimately have "x ! index Vs V' = x' ! index Vs V'"
-	using red1_preserves_unmod[OF `False,compP1 P,t \<turnstile>1 \<langle>e,(h, x)\<rangle> -ta\<rightarrow> \<langle>e',(h', x')\<rangle>`]
-	by(simp) }
+        using red1_preserves_unmod[OF `False,compP1 P,t \<turnstile>1 \<langle>e,(h, x)\<rangle> -ta\<rightarrow> \<langle>e',(h', x')\<rangle>`]
+        by(simp) }
     with `length Vs + max_vars {V:T=None; e} \<le> length (lcl (h, x))` 
       `X' \<subseteq>\<^sub>m [Vs @ [V'] [\<mapsto>] x']` `length x = length x'` `X \<subseteq>\<^sub>m [Vs [\<mapsto>] lcl (h, x)]`
     have rel: "X'(V' := X V') \<subseteq>\<^sub>m [Vs [\<mapsto>] x']" by(auto intro: Block_lem)

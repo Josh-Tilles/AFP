@@ -26,16 +26,7 @@ translations
   "case p of XCONST LNil :: 'a \<Rightarrow> a | x ## l \<Rightarrow> b" \<rightharpoonup> "CONST llist_case a (\<lambda>x l. b) p"
 
 
-lemmas llistE = llist_cases
-
-lemma llist_split: "P (llist_case f1 f2 x) =
-  ((x = LNil \<longrightarrow> P f1) \<and> (\<forall> a xs. x = a ## xs \<longrightarrow> P (f2 a xs)))"
-  by (cases "x") auto
-
-lemma llist_split_asm:
-"P (llist_case f1 f2 x) =
-  (\<not> (x = LNil \<and> \<not> P f1 \<or> (\<exists>a llist. x = a ## llist \<and> \<not> P (f2 a llist))))"
-  by (cases "x") auto
+lemmas llistE = llist.exhaust
 
 section{*Finite and infinite llists over an alphabet*}
 
@@ -70,9 +61,6 @@ notation (xsymbols)
   poslsts ("(_\<^sup>\<spadesuit>)" [1000] 999)
 
 subsection{*Facts about all llists*}
-
-lemma neq_LNil_conv: "(xs \<noteq> LNil) = (\<exists>y ys. xs = y ## ys)"
-  by (cases xs) auto
 
 lemma alllsts_UNIV [iff]:
   "s \<in> UNIV\<^sup>\<infinity>"
@@ -306,15 +294,8 @@ subsection{*Simplification*}
 lemma lapp_inf [simp]:
   assumes "s \<in> A\<^sup>\<omega>"
   shows "s @@ t = s"
-proof -
-  from `s \<in> A\<^sup>\<omega>` have "(lappend s t, s) \<in> (\<lambda>u. (u@@t, u))`A\<^sup>\<omega>" by auto
-  thus ?thesis
-  proof(coinduct rule: llist_equalityI)
-    case (Eqllist q)
-    then obtain u where "u \<in> A\<^sup>\<omega>" "q = (lappend u t, u)" by auto
-    thus ?case by cases auto
-  qed
-qed
+using assms
+by(coinduct s rule: llist_fun_coinduct_invar)(auto elim: inflsts_cases)
 
 lemma LNil_is_lappend_conv [iff]:
 "(LNil = s @@ t) = (s = LNil \<and> t = LNil)"
@@ -592,7 +573,7 @@ qed
 lemma ll2f_lem1:
  "t !! (Suc i) = Some x \<Longrightarrow> \<exists> y. t !! i = Some y"
 proof (induct i arbitrary: x t)
-  case 0 thus ?case by (auto split: llist_split llist_split_asm)
+  case 0 thus ?case by (auto split: llist.splits)
 next
   case (Suc k) thus ?case
     by (cases t) auto
@@ -602,7 +583,7 @@ lemmas ll2f_Suc_Some = ll2f_lem1 [THEN exE]
 
 lemma ll2f_None_Suc: "t !! i = None \<Longrightarrow> t !! Suc i = None"
 proof (induct i arbitrary: t)
-  case 0 thus ?case by (auto split: llist_split)
+  case 0 thus ?case by (auto split: llist.split)
 next
   case (Suc k) thus ?case by (cases t) auto
 qed
@@ -612,7 +593,7 @@ lemma ll2f_None_le:
 proof (induct i arbitrary: t j)
   case 0 thus ?case by simp
 next
-  case (Suc k) thus ?case by (cases j) (auto split: llist_split)
+  case (Suc k) thus ?case by (cases j) (auto split: llist.split)
 qed
 
 lemma ll2f_Some_le:
@@ -1137,13 +1118,13 @@ lemma prefix_lemma:
   and R: "\<And> s. \<lbrakk> s \<in> A\<^sup>\<star>; s \<le> x\<rbrakk> \<Longrightarrow> s \<le> y"
   shows "x = y"
 proof-
-  let ?r = "{(x, y). x\<in>A\<^sup>\<omega> \<and> y\<in>A\<^sup>\<omega> \<and> finpref A x \<subseteq> finpref A y}"
-  have "(x, y) \<in> ?r" using xinf yinf
+  let ?r = "\<lambda>x y. x\<in>A\<^sup>\<omega> \<and> y\<in>A\<^sup>\<omega> \<and> finpref A x \<subseteq> finpref A y"
+  have "?r x y" using xinf yinf
     by (auto simp: finpref_def intro: R)
   thus ?thesis
-  proof (coinduct rule: llist_equalityI)
-    case (Eqllist q)
-    then obtain a b where q: "q = (a, b)" and ainf: "a \<in> A\<^sup>\<omega>"
+  proof (coinduct rule: llist.strong_coinduct)
+    case (Eq_llist a b)
+    hence ainf: "a \<in> A\<^sup>\<omega>"
       and binf: "b \<in> A\<^sup>\<omega>" and pref: "finpref A a \<subseteq> finpref A b" by auto
     from ainf show ?case
     proof cases
@@ -1153,7 +1134,7 @@ proof-
         case (LCons b' l'')
         with acons pref have "a' = b'" "finpref A l' \<subseteq> finpref A l''"
           by (auto simp: finpref_def)
-        thus ?thesis using acons LCons q by auto
+        thus ?thesis using acons LCons by auto
       qed
     qed
   qed

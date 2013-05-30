@@ -29,10 +29,10 @@ let
          (Syntax.const @{type_syntax fun} $ ty $ 
            (Syntax.const @{type_syntax fun} $ ty $ Syntax.const @{type_syntax bool}))))
     | ceq_tr ts = raise TERM ("ceq_tr", ts);
-in [(@{syntax_const "_CEQ"}, ceq_tr)] end
+in [(@{syntax_const "_CEQ"}, K ceq_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun ceq_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name fun}, [T, _])])) ts =
@@ -79,9 +79,14 @@ definition "CEQ(Enum.finite_3) = Some op ="
 instance by(intro_classes)(simp add: ceq_finite_3_def)
 end
 
-instantiation code_numeral :: ceq begin
-definition "CEQ(code_numeral) = Some op ="
-instance by(intro_classes)(simp add: ceq_code_numeral_def)
+instantiation integer :: ceq begin
+definition "CEQ(integer) = Some op ="
+instance by(intro_classes)(simp add: ceq_integer_def)
+end
+
+instantiation natural :: ceq begin
+definition "CEQ(natural) = Some op ="
+instance by(intro_classes)(simp add: ceq_natural_def)
 end
 
 instantiation nibble :: ceq begin
