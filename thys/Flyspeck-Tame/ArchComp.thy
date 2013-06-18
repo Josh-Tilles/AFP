@@ -3,14 +3,14 @@
 header "Comparing Enumeration and Archive"
 
 theory ArchComp
-imports ArchCompProps "~~/src/HOL/Library/Efficient_Nat"
+imports ArchCompProps "~~/src/HOL/Library/Code_Target_Numeral"
 begin
 
 method_setup cond_eval = {*
   Scan.succeed (fn ctxt =>
     SIMPLE_METHOD'
      (if getenv "ISABELLE_FULL_TEST" = "true" then eval_tac ctxt
-      else SELECT_GOAL (Skip_Proof.cheat_tac (Proof_Context.theory_of ctxt))))
+      else Skip_Proof.cheat_tac))
 *} "solve goal by evaluation if ISABELLE_FULL_TEST=true)"
 
 

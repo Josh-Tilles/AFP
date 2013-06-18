@@ -56,6 +56,9 @@ where "thread_toString' = toString"
 definition trace_toString :: "thread_id \<times> (addr, thread_id) obs_event list \<Rightarrow> String.literal"
 where "trace_toString = toString"
 
+code_modulename SML
+  Cardinality Set
+
 export_code
   wf_J_prog' exec_J_rr exec_J_rnd 
   j_Program

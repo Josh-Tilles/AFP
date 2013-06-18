@@ -1,3 +1,5 @@
+chapter AFP
+
 session Ordinary_Differential_Equations (AFP) = "HOL-Multivariate_Analysis" +
   options [timeout = 600]
   theories [document = false]
@@ -6,16 +8,15 @@ session Ordinary_Differential_Equations (AFP) = "HOL-Multivariate_Analysis" +
     "~~/src/HOL/Library/Float"
   theories [document = false]
     "~~/src/HOL/Decision_Procs/Approximation"
-    "~~/src/HOL/Library/FrechetDeriv"
   theories
     Bounded_Continuous_Function
     Initial_Value_Problem
     Picard_Lindeloef_Qualitative
     One_Step_Method
     Runge_Kutta
-    Runge_Kutta_Ex
-    Runge_Kutta_Ex2
-    Runge_Kutta_Ex3
+    Euler_Ex
+    Euler_Ex2
+    Euler_Ex3
   files
     "document/root.bib"
     "document/root.tex"

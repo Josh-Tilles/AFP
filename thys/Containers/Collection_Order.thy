@@ -39,10 +39,10 @@ let
            (Syntax.const @{type_syntax fun} $ ty $
              (Syntax.const @{type_syntax fun} $ ty $ Syntax.const @{type_syntax bool})))))
     | corder_tr ts = raise TERM ("corder_tr", ts);
-in [(@{syntax_const "_CORDER"}, corder_tr)] end
+in [(@{syntax_const "_CORDER"}, K corder_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun corder_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name prod}, [Type (@{type_name fun}, [T, _]), _])])) ts =
@@ -146,11 +146,20 @@ definition "CORDER(Enum.finite_5) = None"
 instance by(intro_classes)(simp add: corder_finite_5_def)
 end
 
-instantiation code_numeral :: corder begin
-definition "CORDER(code_numeral) = Some (less_eq, less)"
+instantiation integer :: corder begin
+definition "CORDER(integer) = Some (less_eq, less)"
 instance
 apply(intro_classes)
-apply(simp_all add: corder_code_numeral_def)
+apply(simp_all add: corder_integer_def)
+apply(unfold_locales)
+done
+end
+
+instantiation natural :: corder begin
+definition "CORDER(natural) = Some (less_eq, less)"
+instance
+apply(intro_classes)
+apply(simp_all add: corder_natural_def)
 apply(unfold_locales)
 done
 end
@@ -329,9 +338,14 @@ definition "cproper_interval = (proper_interval :: int proper_interval)"
 instance by intro_classes (simp add: cproper_interval_int_def corder_int_def ID_Some proper_interval_class.axioms)
 end
 
-instantiation code_numeral :: cproper_interval begin
-definition "cproper_interval = (proper_interval :: code_numeral proper_interval)"
-instance by intro_classes (simp add: cproper_interval_code_numeral_def corder_code_numeral_def ID_Some proper_interval_class.axioms)
+instantiation integer :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: integer proper_interval)"
+instance by intro_classes (simp add: cproper_interval_integer_def corder_integer_def ID_Some proper_interval_class.axioms)
+end
+
+instantiation natural :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: natural proper_interval)"
+instance by intro_classes (simp add: cproper_interval_natural_def corder_natural_def ID_Some proper_interval_class.axioms)
 end
 
 instantiation nibble :: cproper_interval begin

@@ -357,7 +357,6 @@ next time locale @{term "Square_impl"} is invoked this lemma is immediately avai
 as fact, which the verification condition generator can use.
 *}
 apply (hoare_rule HoarePartial.ProcNoRec1)
-term "\<acute>R :== \<acute>N * \<acute>N"
  txt "@{subgoals[display]}"
  txt {* The method @{text "hoare_rule"}, like @{text "rule"} applies a 
      single rule, but additionally does some ``obvious'' steps:
@@ -872,7 +871,7 @@ when we construct a well-founded relation on the product of state space and proc
 names.
 *}
 
-ML {* bind_thm ("HoareTotal_ProcRec2", Hoare.gen_proc_rec Hoare.Total 2)*}
+ML {* bind_thm ("HoareTotal_ProcRec2", Hoare.gen_proc_rec @{context} Hoare.Total 2)*}
 
 
 text {*
