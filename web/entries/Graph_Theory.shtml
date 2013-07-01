@@ -32,7 +32,7 @@
         <td class="data" width="80%">Graph Theory</td></tr>
 
     <tr><td class="datahead">Author:</td>
-        <td class="data">Lars Noschinski (noschinl /at/ in /dot/ tum /dot/ de)</td></tr>
+        <td class="data"><a href="http://www21.in.tum.de/~noschinl/">Lars Noschinski</a></td></tr>
 
     <tr><td class="datahead">Submission date:</td>
         <td class="data">2013-04-28</td></tr>
@@ -53,7 +53,7 @@ This formalization is used to prove characterizations of Euler Trails, Shortest 
   journal = {Archive of Formal Proofs},
   month   = apr,
   year    = 2013,
-  note    = {\url{http://afp.sf.net/entries/Graph_Theory},
+  note    = {\url{http://afp.sf.net/entries/Graph_Theory.shtml},
             Formal proof development},
   ISSN    = {2150-914x},
 }</pre>
