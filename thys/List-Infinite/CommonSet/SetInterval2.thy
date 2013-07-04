@@ -910,11 +910,8 @@ thm distrib_lattice_class.axioms
 interpretation min_max2:
   distrib_lattice min "op \<le> :: 'a::linorder \<Rightarrow> 'a \<Rightarrow> bool" "op <" max
 ..
-print_theorems
-term distrib_lattice_class
+
 lemma "class.distrib_lattice (min::('a::linorder \<Rightarrow> 'a \<Rightarrow> 'a)) (op \<le>) (op <) max"
-print_locale distrib_lattice
-thm distrib_lattice_class.intro
 apply (subgoal_tac "class.order (op \<le>) (op <)")
  prefer 2
  apply (rule class.order.intro)
@@ -1113,7 +1110,6 @@ apply (rule less_imp_neq)
 by (rule Max_less_iMin_imp_less)
 
 
-thm Min.in_idem
 lemma iMin_in_idem: "n \<in> I \<Longrightarrow> min n (iMin I) = iMin I"
 by (simp add: iMin_le min_eqR)
 
@@ -1124,21 +1120,17 @@ apply (subst iMin_Un)
 apply simp_all
 done
 
-thm Min.insert_remove
 lemma iMin_insert_remove: "
   iMin (insert n I) = 
   (if I - {n} = {} then n else min n (iMin (I - {n})))"
 by (metis iMin_insert iMin_singleton insert_Diff_single)
 
-thm Min.remove
 lemma iMin_remove: "n \<in> I \<Longrightarrow> iMin I = (if I - {n} = {} then n else min n (iMin (I - {n})))"
 by (metis iMin_insert_remove insert_absorb)
 
-thm Min.subset_idem
 lemma iMin_subset_idem: "\<lbrakk> B \<noteq> {}; B \<subseteq> A \<rbrakk> \<Longrightarrow> min (iMin B) (iMin A) = iMin A"
 by (metis iMin_subset min_max.inf_absorb2)
 
-thm Min.union_inter
 lemma iMin_union_inter: "A \<inter> B \<noteq> {} \<Longrightarrow> min (iMin (A \<union> B)) (iMin (A \<inter> B)) = min (iMin A) (iMin B)"
 by (metis Int_empty_left Int_lower2 Un_absorb2 Un_assoc Un_empty iMin_Un)
 
@@ -1488,7 +1480,7 @@ lemma atMost_atLeastAtMost_0_conv: "{..i::nat} = {0..i}"
 by (simp add: set_interval_defs)
 
 lemma atLeastAtMost_subset_atMost: "(k::'a::order) \<le> k' \<Longrightarrow> {l..k} \<subseteq> {..k'}"
-by (clarsimp, blast intro: order_trans)
+by (simp)
 
 thm image_add_lemmas
 thm image_Suc_lemmas

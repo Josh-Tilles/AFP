@@ -59,12 +59,12 @@ by(simp add: ka_locals_def)
 lemma kas_append [simp]: "kas (es @ es') = kas es \<union> kas es'"
 by(induct es) auto
 
-lemma kas_map_Val [simp]: "kas (map Val vs) = (\<Union>ka_Val ` set vs)"
+lemma kas_map_Val [simp]: "kas (map Val vs) = \<Union>(ka_Val ` set vs)"
 by(induct vs) auto
 
 lemma ka_blocks:
   "\<lbrakk> length pns = length Ts; length vs = length Ts \<rbrakk> 
-  \<Longrightarrow> ka (blocks pns Ts vs body) = (\<Union>ka_Val ` set vs) \<union> ka body"
+  \<Longrightarrow> ka (blocks pns Ts vs body) = \<Union>(ka_Val ` set vs) \<union> ka body"
 by(induct pns Ts vs body rule: blocks.induct)(auto)
 
 lemma WT_ka: "P,E \<turnstile> e :: T \<Longrightarrow> ka e = {}"
@@ -185,7 +185,7 @@ locale J_allocated_heap = allocated_heap +
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -198,19 +198,19 @@ context J_allocated_heap begin
 
 lemma red_allocated_mono: "P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle> \<Longrightarrow> allocated (hp s) \<subseteq> allocated (hp s')"
   and reds_allocated_mono: "P,t \<turnstile> \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle> \<Longrightarrow> allocated (hp s) \<subseteq> allocated (hp s')"
-by(induct rule: red_reds.inducts)(auto dest: allocate_allocatedD allocate_allocated_fail heap_write_allocated_same red_external_allocated_mono del: subsetI)
+by(induct rule: red_reds.inducts)(auto dest: allocate_allocatedD heap_write_allocated_same red_external_allocated_mono del: subsetI)
 
 lemma red_allocatedD:
   "\<lbrakk> P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub> \<rbrakk> \<Longrightarrow> ad \<in> allocated (hp s') \<and> ad \<notin> allocated (hp s)"
   and reds_allocatedD:
   "\<lbrakk> P,t \<turnstile> \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub> \<rbrakk> \<Longrightarrow> ad \<in> allocated (hp s') \<and> ad \<notin> allocated (hp s)"
-by(induct rule: red_reds.inducts)(auto dest: allocate_allocatedD allocate_allocated_fail heap_write_allocated_same red_external_allocatedD)
+by(induct rule: red_reds.inducts)(auto dest: allocate_allocatedD heap_write_allocated_same red_external_allocatedD)
 
 lemma red_allocated_NewHeapElemD:
   "\<lbrakk> P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle>; ad \<in> allocated (hp s'); ad \<notin> allocated (hp s) \<rbrakk> \<Longrightarrow> \<exists>CTn. NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>"
   and reds_allocated_NewHeapElemD:
   "\<lbrakk> P,t \<turnstile> \<langle>es, s\<rangle> [-ta\<rightarrow>] \<langle>es', s'\<rangle>; ad \<in> allocated (hp s'); ad \<notin> allocated (hp s) \<rbrakk> \<Longrightarrow> \<exists>CTn. NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>"
-by(induct rule: red_reds.inducts)(auto dest: allocate_allocated_fail allocate_allocatedD heap_write_allocated_same red_external_NewHeapElemD)
+by(induct rule: red_reds.inducts)(auto dest: allocate_allocatedD heap_write_allocated_same red_external_NewHeapElemD)
 
 lemma mred_allocated_multithreaded:
   "allocated_multithreaded addr2thread_id thread_id2addr empty_heap allocate typeof_addr heap_write allocated final_expr (mred P) P"
@@ -449,7 +449,7 @@ locale J_allocated_heap_conf =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -536,7 +536,7 @@ context J_allocated_heap_conf begin
 lemma executions_sc:
   assumes wf: "wf_J_prog P"
   and wf_start: "wf_start_state P C M vs"
-  and vs2: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and vs2: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "executions_sc_hb (J_\<E> P C M vs status) P"
   (is "executions_sc_hb ?E P")
 proof -
@@ -741,7 +741,7 @@ locale J_allocated_progress =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -754,7 +754,7 @@ lemma non_speculative_read:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "red_mthr.if.non_speculative_read (init_fin_lift_state status (J_start_state P C M vs)) 
                                           (w_values P (\<lambda>_. {}) (map snd (lift_start_obs start_tid start_heap_obs)))"
   (is "red_mthr.if.non_speculative_read ?start_state ?start_vs")
@@ -797,7 +797,7 @@ proof(rule red_mthr.if.non_speculative_readI)
   from wf wf_start have ts_ok_start: "ts_ok (init_fin_lift (\<lambda>t x h. \<exists>ET. sconf_type_ok ET t x h)) (thr ?start_state) (shr ?start_state)"
     unfolding ts_ok_init_fin_lift_init_fin_lift_state shr_start_state by(rule J_start_state_sconf_type_ok)
   have sc': "non_speculative P ?start_vs (lmap snd (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of ttas))))"
-    using sc by(simp add: lmap_lconcat lmap_compose[symmetric] o_def split_def lconcat_llist_of[symmetric] del: lmap_compose)
+    using sc by(simp add: lmap_lconcat llist.map_comp' o_def split_def lconcat_llist_of[symmetric])
 
   from start_state_vs_conf[OF wf_prog_wf_syscls[OF wf]]
   have vs_conf_start: "vs_conf P (shr ?start_state) ?start_vs"
@@ -853,7 +853,7 @@ lemma J_cut_and_update:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "red_mthr.if.cut_and_update (init_fin_lift_state status (J_start_state P C M vs))
            (mrw_values P empty (map snd (lift_start_obs start_tid start_heap_obs)))"
 proof -
@@ -895,7 +895,7 @@ lemma J_drf:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "drf (J_\<E> P C M vs status) P"
 proof -
   from wf_start obtain Ts T pns body D where ok: "start_heap_ok"
@@ -918,7 +918,7 @@ lemma J_sc_legal:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "sc_legal (J_\<E> P C M vs status) P"
 proof -
   from wf_start obtain Ts T pns body D where ok: "start_heap_ok"
@@ -961,7 +961,7 @@ lemma J_jmm_consistent:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "jmm_consistent (J_\<E> P C M vs status) P"
   (is "jmm_consistent ?\<E> P")
 proof -
@@ -974,7 +974,7 @@ lemma J_ex_sc_exec:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "\<exists>E ws. E \<in> J_\<E> P C M vs status \<and> P \<turnstile> (E, ws) \<surd> \<and> sequentially_consistent P (E, ws)"
   (is "\<exists>E ws. _ \<in> ?\<E> \<and> _")
 proof -
@@ -991,7 +991,7 @@ proof -
   moreover from Red have tsa: "thread_start_actions_ok ?E"
     by(blast intro: red_mthr.thread_start_actions_ok_init_fin red_mthr.mthr.if.\<E>.intros)
   from sc have "ta_seq_consist P empty (lmap snd ?E)"
-    unfolding lmap_lappend_distrib lmap_lconcat lmap_compose[symmetric] split_def o_def lmap_llist_of map_map snd_conv
+    unfolding lmap_lappend_distrib lmap_lconcat llist.map_comp' split_def o_def lmap_llist_of map_map snd_conv
     by(simp add: ta_seq_consist_lappend ta_seq_consist_start_heap_obs)
   from ta_seq_consist_imp_sequentially_consistent[OF tsa jmm.\<E>_new_actions_for_fun[OF `?E \<in> ?\<E>`] this]
   obtain ws where "sequentially_consistent P (?E, ws)" "P \<turnstile> (?E, ws) \<surd>" by iprover
@@ -1002,7 +1002,7 @@ theorem J_consistent:
   assumes wf: "wf_J_prog P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "\<exists>E ws. legal_execution P (J_\<E> P C M vs status) (E, ws)"
 proof -
   let ?\<E> = "J_\<E> P C M vs status"

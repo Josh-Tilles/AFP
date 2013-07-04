@@ -122,7 +122,8 @@ end
 lemma (in heap_conf) hconf_start_heap:
   "wf_prog wf_md P \<Longrightarrow> hconf start_heap"
 unfolding start_heap_def start_heap_data_def initialization_list_def sys_xcpts_list_def
-by(auto split: prod.split elim!: hconf_allocate_mono simp add: is_class_xcpt create_initial_object_simps)
+using hconf_empty
+by -(simp add: create_initial_object_simps del: hconf_empty, clarsimp split: prod.split elim!: not_empty_pairE simp del: hconf_empty, drule (1) allocate_Eps, drule (1) hconf_allocate_mono, simp add: is_class_xcpt)+
 
 lemma subcls1_wfD:
   "\<lbrakk> P \<turnstile> C \<prec>\<^sup>1 D; wf_prog wf_md P \<rbrakk> \<Longrightarrow> D \<noteq> C \<and> \<not> (subcls1 P)\<^sup>+\<^sup>+ D C"
@@ -641,7 +642,7 @@ proof -
       then obtain T' fm' where "map_of FDTs' (F, D) = \<lfloor>(T', fm')\<rfloor>" by(auto)
       with hasf' have "P \<turnstile> D' \<preceq>\<^sup>* D" by(auto dest!: map_of_SomeD intro: has_fields_decl_above)
       with classD DnObj have "(subcls1 P)^++ D D"
-	by(auto intro: subcls1.intros rtranclp_into_tranclp2)
+        by(auto intro: subcls1.intros rtranclp_into_tranclp2)
       with wf show False by(auto dest: subcls_irrefl)
     qed
     ultimately show ?thesis using FD hasf'

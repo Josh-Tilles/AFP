@@ -235,15 +235,15 @@ next
     proof(cases xs)
       case Nil
       thus ?thesis using a
-	by(auto)
+        by(auto)
     next
       case (Cons X XS)
       with a have x: "x = X" and "replicate n x = XS @ ys" by auto
       hence "\<exists>m\<le>n. XS = replicate m x \<and> ys = replicate (n - m) x"
-	by -(rule IH[THEN iffD1])
+        by -(rule IH[THEN iffD1])
       then obtain m where "m \<le> n" and XS: "XS = replicate m x" and ys: "ys = replicate (n - m) x" by blast
       with x Cons show ?thesis
-	by(fastforce)
+        by(fastforce)
     qed
   next
     assume "\<exists>m\<le>Suc n. xs = replicate m x \<and> ys = replicate (Suc n - m) x"
@@ -452,10 +452,7 @@ let
       NONE => NONE
     | SOME (i, k, j) => SOME (swap_params_conv ctxt k j (K (swap_prems_conv i)) ct))
 in
-  fn _ =>
-    fn ss =>
-      fn ct =>
-        mk_swap_rrule (Simplifier.the_context ss) ct
+  fn _ => mk_swap_rrule
 end
 *}
 declare [[simproc del: rearrange_eqs]]
@@ -857,10 +854,11 @@ subsection {* Concatenation for @{typ String.literal} *}
 definition concat :: "String.literal list \<Rightarrow> String.literal"
 where [code del]: "concat xs = implode (List.concat (map explode xs))"
 
-code_const concat
-  (SML "String.concat")
-  (Haskell "concat")
-  (OCaml "String.concat \"\"")
+code_printing
+  constant concat \<rightharpoonup>
+    (SML) "String.concat"
+    and (Haskell) "concat"
+    and (OCaml) "String.concat \"\""
 
 hide_const (open) concat
 

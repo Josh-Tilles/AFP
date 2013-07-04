@@ -774,7 +774,7 @@ lemma setsum_rv:
 (*<*)proof (cases "finite K")
   case False
   hence "(\<lambda>t. \<Sum>k\<in>K. f k t) = (\<lambda>t. 0)"
-    by (simp add: setsum_def)
+    by simp
   with ms show ?thesis
     by (simp add: const_rv)
 next
@@ -1356,10 +1356,10 @@ proof -
           have "u m n t \<le> muh n u m t"
             by (induct n) (auto simp add: upclose_def le_max_iff_disj)
           also 
-          from pos1 have "\<forall>n. muh n u m t \<le> muh (Suc n) u m t" 
-            by simp
-          hence "muh n u m t \<le> muh (n+(m-n)) u m t" 
-            by (rule lemma_f_mono_add) 
+          from pos1 have "incseq (\<lambda>n. muh n u m t)" 
+            by (simp add: incseq_Suc_iff)
+          hence "muh n u m t \<le> muh (n+(m-n)) u m t"
+            unfolding incseq_def by simp
           with le have "muh n u m t \<le> muh m u m t" 
             by simp
           finally show "u m n t \<le> muh m u m t" .

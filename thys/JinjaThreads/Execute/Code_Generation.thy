@@ -11,20 +11,19 @@ imports
   "../BV/BCVExec"
   "../Compiler/Compiler"
   "../../Coinductive/Lazy_TLList"
-  "~~/src/HOL/Library/Code_Integer"
+  "~~/src/HOL/Library/Code_Target_Int"
   "~~/src/HOL/Library/Code_Char"
-  "~~/src/HOL/Library/Efficient_Nat"
+  "~~/src/HOL/Library/Code_Target_Numeral"
 begin
-
-hide_const (open) Multiset.join
 
 text {* Avoid module dependency cycles. *}
 (* FIXME: Eliminate dependency cycle in Isabelle library *) 
-code_modulename SML
-  More_Set Set
-  Set Set
-  Complete_Lattices Set
-  Complete_Partial_Order Set
+
+code_identifier
+  code_module More_Set \<rightharpoonup> (SML) Set
+| code_module Set \<rightharpoonup> (SML) Set
+| code_module Complete_Lattices \<rightharpoonup> (SML) Set
+| code_module Complete_Partial_Order \<rightharpoonup> (SML) Set
 
 text {* new code equation for @{term "insort_insert_key"} to avoid module dependency cycle with @{term "set"}. *}
 lemma insort_insert_key_code [code]:

@@ -7,7 +7,7 @@ header {* \isaheader{Example Welltypings}\label{sec:BVExample} *}
 
 theory BVExample
 imports "../JVM/JVMListExample" BVSpecTypeSafe BVExec
-  "~~/src/HOL/Library/Efficient_Nat"
+  "~~/src/HOL/Library/Code_Target_Numeral"
 begin
 
 text {*
@@ -503,8 +503,8 @@ qed
 
 definition some_elem :: "'a set \<Rightarrow> 'a" where [code del]:
   "some_elem = (%S. SOME x. x : S)"
-code_const some_elem
-  (SML "(case/ _ of/ Set/ xs/ =>/ hd/ xs)")
+code_printing
+  constant some_elem \<rightharpoonup> (SML) "(case/ _ of/ Set/ xs/ =>/ hd/ xs)"
 
 text {* This code setup is just a demonstration and \emph{not} sound! *}
 notepad begin
@@ -571,7 +571,7 @@ definition test2 where
 definition test3 where "test3 = \<phi>\<^sub>a"
 definition test4 where "test4 = \<phi>\<^sub>m"
 
-ML {* 
+ML_val {* 
   if @{code test1} = @{code map} @{code OK} @{code test3} then () else error "wrong result";
   if @{code test2} = @{code map} @{code OK} @{code test4} then () else error "wrong result" 
 *}
