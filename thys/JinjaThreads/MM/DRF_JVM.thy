@@ -243,7 +243,7 @@ locale JVM_allocated_heap = allocated_heap +
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -259,7 +259,7 @@ lemma exec_instr_allocated_mono:
   "\<lbrakk> (ta, xcp', h', frs') \<in> exec_instr i P t h stk loc C M pc frs; check_instr i P h stk loc C M pc frs \<rbrakk>
   \<Longrightarrow> allocated h \<subseteq> allocated h'"
 apply(cases i)
-apply(auto 4 4 simp add: split_beta has_method_def is_native.simps split: split_if_asm sum.split_asm intro: allocate_allocated_mono' dest: heap_write_allocated_same dest!: red_external_aggr_allocated_mono del: subsetI)
+apply(auto 4 4 simp add: split_beta has_method_def is_native.simps split: split_if_asm sum.split_asm intro: allocate_allocated_mono dest: heap_write_allocated_same dest!: red_external_aggr_allocated_mono del: subsetI)
 done
 
 lemma mexecd_allocated_mono:
@@ -277,7 +277,7 @@ lemma exec_instr_allocatedD:
      check_instr i P h stk loc C M pc frs; NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub> \<rbrakk>
   \<Longrightarrow> ad \<in> allocated h' \<and> ad \<notin> allocated h"
 apply(cases i)
-apply(auto 4 4 split: split_if_asm prod.split_asm dest: allocate_allocatedD allocate_allocated_fail dest!: red_external_aggr_allocatedD simp add: has_method_def is_native.simps)
+apply(auto 4 4 split: split_if_asm prod.split_asm dest: allocate_allocatedD dest!: red_external_aggr_allocatedD simp add: has_method_def is_native.simps)
 done
 
 lemma mexecd_allocatedD:
@@ -296,7 +296,7 @@ lemma exec_instr_NewHeapElemD:
      ad \<in> allocated h'; ad \<notin> allocated h \<rbrakk>
   \<Longrightarrow> \<exists>CTn. NewHeapElem ad CTn \<in> set \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>"
 apply(cases i)
-apply(auto 4 3 split: split_if_asm prod.split_asm sum.split_asm dest: allocate_allocatedD allocate_allocated_fail heap_write_allocated_same dest!: red_external_aggr_NewHeapElemD simp add: is_native.simps has_method_def)
+apply(auto 4 3 split: split_if_asm prod.split_asm sum.split_asm dest: allocate_allocatedD heap_write_allocated_same dest!: red_external_aggr_NewHeapElemD simp add: is_native.simps has_method_def)
 done
 
 lemma mexecd_NewHeapElemD:
@@ -489,10 +489,10 @@ proof -
   from assms show ?thesis
   proof(cases i)
     case New with assms show ?thesis
-      by(auto dest: hext_allocate vs_conf_allocate intro: vs_conf_hext)
+      by(auto 4 4 dest: hext_allocate vs_conf_allocate intro: vs_conf_hext)
   next
     case NewArray with assms show ?thesis
-      by(auto dest: hext_allocate vs_conf_allocate intro: vs_conf_hext cong: if_cong)
+      by(auto 4 4 dest: hext_allocate vs_conf_allocate intro: vs_conf_hext cong: if_cong)
   next
     case Invoke with assms show ?thesis
       by(fastforce dest: red_external_aggr_non_speculative_vs_conf simp add: has_method_def is_native.simps)
@@ -557,7 +557,7 @@ locale JVM_allocated_heap_conf =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -640,7 +640,7 @@ qed
 lemma executions_sc:
   assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and wf_start: "wf_start_state P C M vs"
-  and vs2: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and vs2: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "executions_sc_hb (JVMd_\<E> P C M vs status) P"
     (is "executions_sc_hb ?E P")
 proof -
@@ -813,7 +813,7 @@ locale JVM_allocated_progress =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -823,10 +823,10 @@ locale JVM_allocated_progress =
 begin
 
 lemma non_speculative_read:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "execd_mthr.if.non_speculative_read (init_fin_lift_state status (JVM_start_state P C M vs)) 
                                             (w_values P (\<lambda>_. {}) (map snd (lift_start_obs start_tid start_heap_obs)))"
   (is "execd_mthr.if.non_speculative_read ?start_state ?start_vs")
@@ -871,7 +871,7 @@ proof(rule execd_mthr.if.non_speculative_readI)
     unfolding ts_ok_init_fin_lift_init_fin_lift_state by(simp add: start_state_def split_beta)
 
   have sc': "non_speculative P ?start_vs (lmap snd (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of ttas))))"
-    using sc by(simp add: lmap_lconcat lmap_compose[symmetric] o_def split_def lconcat_llist_of[symmetric] del: lmap_compose)
+    using sc by(simp add: lmap_lconcat llist.map_comp' o_def split_def lconcat_llist_of[symmetric])
   from start_state_vs_conf[OF wf_prog_wf_syscls[OF wf']]
   have vs_conf_start: "vs_conf P (shr ?start_state) ?start_vs"
     by(simp add:init_fin_lift_state_conv_simps start_state_def split_beta)
@@ -922,10 +922,10 @@ proof(rule execd_mthr.if.non_speculative_readI)
 qed
 
 lemma JVM_cut_and_update:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P" 
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "execd_mthr.if.cut_and_update (init_fin_lift_state status (JVM_start_state P C M vs))
            (mrw_values P empty (map snd (lift_start_obs start_tid start_heap_obs)))"
 proof -
@@ -959,10 +959,10 @@ proof -
 qed
 
 lemma JVM_drf:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "drf (JVMd_\<E> P C M vs status) P"
 proof -
   from wf_start obtain Ts T meth D where ok: "start_heap_ok"
@@ -984,10 +984,10 @@ proof -
 qed
 
 lemma JVM_sc_legal:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
 shows "sc_legal (JVMd_\<E> P C M vs status) P"
 proof -
   from wf_start obtain Ts T meth D where ok: "start_heap_ok"
@@ -1029,10 +1029,10 @@ proof -
 qed
 
 lemma JVM_jmm_consistent:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "jmm_consistent (JVMd_\<E> P C M vs status) P"
     (is "jmm_consistent ?\<E> P")
 proof -
@@ -1042,10 +1042,10 @@ proof -
 qed
 
 lemma JVM_ex_sc_exec:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "\<exists>E ws. E \<in> JVMd_\<E> P C M vs status \<and> P \<turnstile> (E, ws) \<surd> \<and> sequentially_consistent P (E, ws)"
   (is "\<exists>E ws. _ \<in> ?\<E> \<and> _")
 proof -
@@ -1062,7 +1062,7 @@ proof -
   moreover from Red have tsa: "thread_start_actions_ok ?E"
     by(blast intro: execd_mthr.thread_start_actions_ok_init_fin execd_mthr.mthr.if.\<E>.intros)
   from sc have "ta_seq_consist P empty (lmap snd ?E)"
-    unfolding lmap_lappend_distrib lmap_lconcat lmap_compose[symmetric] split_def o_def lmap_llist_of map_map snd_conv
+    unfolding lmap_lappend_distrib lmap_lconcat llist.map_comp' split_def o_def lmap_llist_of map_map snd_conv
     by(simp add: ta_seq_consist_lappend ta_seq_consist_start_heap_obs)
   from ta_seq_consist_imp_sequentially_consistent[OF tsa jmm.\<E>_new_actions_for_fun[OF `?E \<in> ?\<E>`] this]
   obtain ws where "sequentially_consistent P (?E, ws)" "P \<turnstile> (?E, ws) \<surd>" by iprover
@@ -1070,10 +1070,10 @@ proof -
 qed
 
 theorem JVM_consistent:
-  assumes wf: "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes wf: "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and hrt: "heap_read_typeable hconf P"
   and wf_start: "wf_start_state P C M vs"
-  and ka: "\<Union>ka_Val ` set vs \<subseteq> set start_addrs"
+  and ka: "\<Union>(ka_Val ` set vs) \<subseteq> set start_addrs"
   shows "\<exists>E ws. legal_execution P (JVMd_\<E> P C M vs status) (E, ws)"
 proof -
   let ?\<E> = "JVMd_\<E> P C M vs status"

@@ -65,7 +65,7 @@ print_translation {*
                  (Const (@{type_syntax "list"}, _) $ o1))))] =
       if t1 = t2 andalso t2 = t3 andalso t3 = t4 then Syntax.const @{type_syntax thread_action} $ l $ t1 $ x $ m $ w $ o1
       else raise Match;
-  in [(@{type_syntax "prod"}, tr')]
+  in [(@{type_syntax "prod"}, K tr')]
   end
 *}
 typ "('l,'t,'x,'m,'w,'o) thread_action"
@@ -188,15 +188,9 @@ translations
   "_ta_lock la l" == "CONST inject_thread_action (CONST Pair la l)"
   "_ta_block (_ta_snoc btas bta)" == "CONST thread_action'_to_thread_action bta (_ta_block btas)"
 
-setup {*
-  Adhoc_Overloading.add_overloaded @{const_name inject_thread_action}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name NewThreadAction}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name ConditionalAction}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name WaitSetAction}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name InterruptAction}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name ObsAction}
-  #> Adhoc_Overloading.add_variant @{const_name inject_thread_action} @{const_name LockAction}
-*}
+
+adhoc_overloading
+  inject_thread_action NewThreadAction ConditionalAction WaitSetAction InterruptAction ObsAction LockAction
 
 lemma ta_upd_proj_simps [simp]:
   shows ta_obs_proj_simps:
@@ -318,7 +312,7 @@ print_translation {*
       if t1 = t2 andalso t1 = t3 andalso t1 = t4 andalso l1 = l2
       then Syntax.const @{type_syntax state} $ l1 $ t1 $ x $ m $ w
       else raise Match;
-  in [(@{type_syntax "prod"}, tr')]
+  in [(@{type_syntax "prod"}, K tr')]
   end
 *}
 typ "('l,'t,'x,'m,'w) state"
@@ -515,7 +509,7 @@ print_translation {*
         andalso t1 = t2 andalso t2 = t3 andalso t3 = t4 andalso t4 = t5
       then Syntax.const @{type_syntax semantics} $ l $ t1 $ x1 $ m1 $ w $ o1
       else raise Match;
-  in [(@{type_syntax fun}, tr')]
+  in [(@{type_syntax fun}, K tr')]
   end
 *}
 typ "('l,'t,'x,'m,'w,'o) semantics"

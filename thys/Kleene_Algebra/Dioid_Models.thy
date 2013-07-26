@@ -298,7 +298,7 @@ path and an empty one is undefined; the fusion of two non-empty paths
 appends the tail of the second path to the first one.
 
 We need to use a total alternative and make sure that undefined paths
-do not contribute to the complex product.  *}
+do not contribute to the complex product. *}
 
 fun p_fusion :: "'a path \<Rightarrow> 'a path \<Rightarrow> 'a path" where
   "p_fusion [] _ = []"
@@ -699,13 +699,6 @@ begin
 
 end (* instantiation *)
 
-instantiation mreal :: dioid_one_zero
-begin
-
-  instance ..
-
-end (* instantiation *)
-
 
 subsection {* The Min-Plus Dioid *}
 
@@ -777,13 +770,6 @@ begin
      by (cases x, cases y, simp_all add: plus_preal_def, metis linorder_le_cases min_max.inf_absorb2 min_max.le_iff_inf)
     show "x * (y + z) = x * y + x * z"
       by (cases x, cases y, cases z, simp_all add: plus_preal_def times_preal_def)   qed
-
-end (* instantiation *)
-
-instantiation preal :: dioid_one_zero
-begin
-
-  instance ..
 
 end (* instantiation *)
 
@@ -862,11 +848,5 @@ begin
 
 end (* instantiation *)
 
-instantiation pnat :: dioid_one_zero
-begin
-
-  instance ..
-
-end (* instantiation *)
-
 end
+

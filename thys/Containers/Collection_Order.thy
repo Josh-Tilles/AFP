@@ -39,10 +39,10 @@ let
            (Syntax.const @{type_syntax fun} $ ty $
              (Syntax.const @{type_syntax fun} $ ty $ Syntax.const @{type_syntax bool})))))
     | corder_tr ts = raise TERM ("corder_tr", ts);
-in [(@{syntax_const "_CORDER"}, corder_tr)] end
+in [(@{syntax_const "_CORDER"}, K corder_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun corder_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name prod}, [Type (@{type_name fun}, [T, _]), _])])) ts =
@@ -66,6 +66,9 @@ qed
 
 end
 
+definition is_corder :: "'a :: corder itself \<Rightarrow> bool"
+where "is_corder _ \<longleftrightarrow> ID CORDER('a) \<noteq> None"
+
 subsection {* Instantiations for HOL types *}
 
 instantiation unit :: corder begin
@@ -77,6 +80,9 @@ apply(unfold_locales)
 done
 end
 
+lemma is_corder_unit [simp, code_post]: "is_corder TYPE(unit)"
+by(simp add: is_corder_def corder_unit_def ID_Some)
+
 instantiation bool :: corder begin
 definition "CORDER(bool) = Some (less_eq, less)"
 instance
@@ -85,6 +91,9 @@ apply(simp add: corder_bool_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_bool [simp, code_post]: "is_corder TYPE(bool)"
+by(simp add: is_corder_def corder_bool_def ID_Some)
 
 instantiation nat :: corder begin
 definition "CORDER(nat) = Some (less_eq, less)"
@@ -95,6 +104,9 @@ apply(unfold_locales)
 done
 end
 
+lemma is_corder_nat [simp, code_post]: "is_corder TYPE(nat)"
+by(simp add: is_corder_def corder_nat_def ID_Some)
+
 instantiation int :: corder begin
 definition "CORDER(int) = Some (less_eq, less)"
 instance
@@ -103,6 +115,9 @@ apply(simp add: corder_int_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_int [simp, code_post]: "is_corder TYPE(int)"
+by(simp add: is_corder_def corder_int_def ID_Some)
 
 instantiation Enum.finite_1 :: corder begin
 definition "CORDER(Enum.finite_1) = Some (less_eq, less)"
@@ -113,6 +128,9 @@ apply(unfold_locales)
 done
 end
 
+lemma is_corder_finite_1 [simp, code_post]: "is_corder TYPE(Enum.finite_1)"
+by(simp add: is_corder_def corder_finite_1_def ID_Some)
+
 instantiation Enum.finite_2 :: corder begin
 definition "CORDER(Enum.finite_2) = Some (less_eq, less)"
 instance
@@ -122,6 +140,9 @@ apply(unfold_locales)
 done
 end
 
+lemma is_corder_finite_2 [simp, code_post]: "is_corder TYPE(Enum.finite_2)"
+by(simp add: is_corder_def corder_finite_2_def ID_Some)
+
 instantiation Enum.finite_3 :: corder begin
 definition "CORDER(Enum.finite_3) = Some (less_eq, less)"
 instance
@@ -130,6 +151,9 @@ apply(simp add: corder_finite_3_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_finite_3 [simp, code_post]: "is_corder TYPE(Enum.finite_3)"
+by(simp add: is_corder_def corder_finite_3_def ID_Some)
 
 text {* 
   Do not provide an order for @{typ Enum.finite_4} and @{typ Enum.finite_5}
@@ -141,19 +165,40 @@ definition "CORDER(Enum.finite_4) = None"
 instance by(intro_classes)(simp add: corder_finite_4_def)
 end
 
+lemma is_corder_finite_4 [simp]: "\<not> is_corder TYPE(Enum.finite_4)"
+by(simp add: is_corder_def corder_finite_4_def ID_None)
+
 instantiation Enum.finite_5 :: corder begin
 definition "CORDER(Enum.finite_5) = None"
 instance by(intro_classes)(simp add: corder_finite_5_def)
 end
 
-instantiation code_numeral :: corder begin
-definition "CORDER(code_numeral) = Some (less_eq, less)"
+lemma is_corder_finite_5 [simp]: "\<not> is_corder TYPE(Enum.finite_5)"
+by(simp add: is_corder_def corder_finite_5_def ID_None)
+
+instantiation integer :: corder begin
+definition "CORDER(integer) = Some (less_eq, less)"
 instance
 apply(intro_classes)
-apply(simp_all add: corder_code_numeral_def)
+apply(simp_all add: corder_integer_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_integer [simp, code_post]: "is_corder TYPE(integer)"
+by(simp add: is_corder_def corder_integer_def ID_Some)
+
+instantiation natural :: corder begin
+definition "CORDER(natural) = Some (less_eq, less)"
+instance
+apply(intro_classes)
+apply(simp_all add: corder_natural_def)
+apply(unfold_locales)
+done
+end
+
+lemma is_corder_natural [simp, code_post]: "is_corder TYPE(natural)"
+by(simp add: is_corder_def corder_natural_def ID_Some)
 
 instantiation nibble :: corder begin
 definition "CORDER(nibble) \<equiv> Some (less_eq, less)"
@@ -164,6 +209,9 @@ apply(unfold_locales)
 done
 end
 
+lemma is_corder_nibble [simp, code_post]: "is_corder TYPE(nibble)"
+by(simp add: is_corder_def corder_nibble_def ID_Some)
+
 instantiation char :: corder begin
 definition "CORDER(char) = Some (less_eq, less)"
 instance
@@ -172,6 +220,9 @@ apply(clarsimp simp add: corder_char_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_char [simp, code_post]: "is_corder TYPE(char)"
+by(simp add: is_corder_def corder_char_def ID_Some)
 
 instantiation sum :: (corder, corder) corder begin
 definition "CORDER('a + 'b) = 
@@ -203,6 +254,10 @@ proof(intro_classes)
 qed
 end
 
+lemma is_corder_sum [simp, code_post]:
+  "is_corder TYPE('a + 'b) \<longleftrightarrow> is_corder TYPE('a :: corder) \<and> is_corder TYPE('b :: corder)"
+by(simp add: is_corder_def corder_sum_def ID_None ID_Some split: option.split)
+
 instantiation prod :: (corder, corder) corder begin
 definition "CORDER('a * 'b) =
   (case ID CORDER('a) of None \<Rightarrow> None
@@ -226,6 +281,10 @@ proof
 qed
 end
 
+lemma is_corder_prod [simp, code_post]:
+  "is_corder TYPE('a \<times> 'b) \<longleftrightarrow> is_corder TYPE('a :: corder) \<and> is_corder TYPE('b :: corder)"
+by(simp add: is_corder_def corder_prod_def ID_None ID_Some split: option.split)
+
 instantiation list :: (corder) corder begin
 definition "CORDER('a list) =
   Option.map (\<lambda>(leq, lt). (\<lambda>xs ys. ord.lexord_eq lt xs ys, ord.lexord lt)) (ID CORDER('a))"
@@ -243,6 +302,10 @@ proof
 qed
 end
 
+lemma is_corder_list [simp, code_post]:
+  "is_corder TYPE('a list) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_list_def ID_def)
+
 instantiation String.literal :: corder begin
 definition "CORDER(String.literal) = Some (op \<le>, op <)"
 instance
@@ -251,6 +314,9 @@ apply(clarsimp simp add: corder_literal_def)
 apply(unfold_locales)
 done
 end
+
+lemma is_corder_literal [simp, code_post]: "is_corder TYPE(String.literal)"
+by(simp add: is_corder_def corder_literal_def ID_Some)
 
 instantiation option :: (corder) corder begin
 definition "CORDER('a option) =
@@ -270,15 +336,27 @@ proof
 qed
 end
 
+lemma is_corder_option [simp, code_post]:
+  "is_corder TYPE('a option) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_option_def ID_def)
+
 instantiation "fun" :: (type, type) corder begin
 definition "CORDER('a \<Rightarrow> 'b) = None"
 instance by(intro_classes)(simp add: corder_fun_def)
 end
 
+lemma is_corder_fun [simp]: "\<not> is_corder TYPE('a \<Rightarrow> 'b)"
+by(simp add: is_corder_def corder_fun_def ID_None)
+
 instantiation set :: (corder) corder begin
 definition "CORDER('a set) = Option.map (\<lambda>(leq, lt). (ord.set_less_eq leq, ord.set_less leq)) (ID CORDER('a))"
 instance by(intro_classes)(auto simp add: corder_set_def intro: linorder.set_less_eq_linorder ID_corder)
 end
+
+lemma is_corder_set [simp, code_post]:
+  "is_corder TYPE('a set) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_set_def ID_def)
+
 
 definition cless_eq_set :: "'a :: corder set \<Rightarrow> 'a set \<Rightarrow> bool" 
 where [simp, code del]: "cless_eq_set = fst (the (ID CORDER('a set)))"
@@ -329,9 +407,14 @@ definition "cproper_interval = (proper_interval :: int proper_interval)"
 instance by intro_classes (simp add: cproper_interval_int_def corder_int_def ID_Some proper_interval_class.axioms)
 end
 
-instantiation code_numeral :: cproper_interval begin
-definition "cproper_interval = (proper_interval :: code_numeral proper_interval)"
-instance by intro_classes (simp add: cproper_interval_code_numeral_def corder_code_numeral_def ID_Some proper_interval_class.axioms)
+instantiation integer :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: integer proper_interval)"
+instance by intro_classes (simp add: cproper_interval_integer_def corder_integer_def ID_Some proper_interval_class.axioms)
+end
+
+instantiation natural :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: natural proper_interval)"
+instance by intro_classes (simp add: cproper_interval_natural_def corder_natural_def ID_Some proper_interval_class.axioms)
 end
 
 instantiation nibble :: cproper_interval begin
