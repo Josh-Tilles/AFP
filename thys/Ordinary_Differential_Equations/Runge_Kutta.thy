@@ -1,7 +1,7 @@
 header{* Runge-Kutta methods*}
 theory Runge_Kutta
 imports
-  One_Step_Method "~~/src/HOL/Library/FrechetDeriv" "~~/src/HOL/Library/Float"
+  One_Step_Method "~~/src/HOL/Library/Float"
 begin
 text{*\label{sec:rk}*}
 
@@ -73,13 +73,6 @@ definition runge_kutta_float where
 
 subsection {* Euler method is consistent *}
 text{*\label{sec:rk-euler-cons}*}
-
-lemma DERIV_conv_has_vector_derivative:
-  "DERIV f x :> f' = (f has_vector_derivative f') (at x)"
-proof -
-  have "\<And>s. (\<lambda>xa. xa *\<^sub>R f') = op * f'" by auto
-  thus ?thesis by (simp add: DERIV_conv_has_derivative has_vector_derivative_def)
-qed
 
 lemma euler_increment:
   shows "euler_increment f h t x = f (t, x)"

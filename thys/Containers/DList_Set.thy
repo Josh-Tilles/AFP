@@ -115,12 +115,38 @@ subsection {* The type of distinct lists *}
 
 typedef 'a :: ceq set_dlist =
   "{xs::'a list. equal_base.list_distinct ceq' xs \<or> ID CEQ('a) = None}"
-  morphisms list_of_dlist Abs_dlist
+  morphisms list_of_dlist Abs_dlist'
 proof
   show "[] \<in> ?set_dlist" by(simp)
 qed
 
-setup_lifting type_definition_set_dlist
+definition Abs_dlist :: "'a :: ceq list \<Rightarrow> 'a set_dlist" 
+where 
+  "Abs_dlist xs = Abs_dlist' 
+  (if equal_base.list_distinct ceq' xs \<or> ID CEQ('a) = None then xs 
+   else equal_base.list_remdups ceq' xs)"
+
+lemma Abs_dlist_inverse:
+  fixes y :: "'a :: ceq list"
+  assumes "y \<in> {xs. equal_base.list_distinct ceq' xs \<or> ID CEQ('a) = None}"
+  shows "list_of_dlist (Abs_dlist y) = y"
+using assms by(auto simp add: Abs_dlist_def Abs_dlist'_inverse)
+
+lemma list_of_dlist_inverse: "Abs_dlist (list_of_dlist dxs) = dxs"
+by(cases dxs)(simp add: Abs_dlist'_inverse Abs_dlist_def)
+
+lemma type_definition_set_dlist':
+  "type_definition list_of_dlist Abs_dlist
+  {xs :: 'a :: ceq list. equal_base.list_distinct ceq' xs \<or> ID CEQ('a) = None}"
+by(unfold_locales)(rule set_dlist.list_of_dlist Abs_dlist_inverse list_of_dlist_inverse)+
+
+lemmas Abs_dlist_cases[cases type: set_dlist] = 
+  type_definition.Abs_cases[OF type_definition_set_dlist'] 
+  and Abs_dlist_induct[induct type: set_dlist] =
+  type_definition.Abs_induct[OF type_definition_set_dlist'] and
+  Abs_dlist_inject = type_definition.Abs_inject[OF type_definition_set_dlist']
+
+setup_lifting type_definition_set_dlist'
 
 subsection {* Operations *}
 
@@ -253,11 +279,18 @@ proof -
   show ?thesis by(simp add: product.rep_eq fold.rep_eq)
 qed
 
+lemma set_list_of_dlist_Abs_dlist:
+  "set (list_of_dlist (Abs_dlist xs)) = set xs"
+by(clarsimp simp add: Abs_dlist_def Abs_dlist'_inverse)(subst Abs_dlist'_inverse, auto dest: equal.equal_eq[OF ID_ceq])
+
 context assumes ID_ceq_neq_None: "ID CEQ('a :: ceq) \<noteq> None"
 begin
 
 lemma equal_ceq: "equal (ceq' :: 'a \<Rightarrow> 'a \<Rightarrow> bool)"
 using ID_ceq_neq_None by(clarsimp)(rule ID_ceq)
+
+(* workaround for the next theorem *)
+declare Domainp_forall_transfer[where A = "pcr_set_dlist op=", simplified set_dlist.domain_eq, transfer_rule]
 
 lemma set_dlist_induct [case_names Nil insert, induct type: set_dlist]:
   fixes dxs :: "'a :: ceq set_dlist"
@@ -281,10 +314,10 @@ qed
 
 lemma fold_transfer2 [transfer_rule]:
   assumes "is_equality A"
-  shows "((A ===> cr_set_dlist ===> cr_set_dlist) ===>
-    (cr_set_dlist :: 'a list \<Rightarrow> 'a set_dlist \<Rightarrow> bool) ===> cr_set_dlist ===> cr_set_dlist)
+  shows "((A ===> pcr_set_dlist op = ===> pcr_set_dlist op =) ===>
+    (pcr_set_dlist op = :: 'a list \<Rightarrow> 'a set_dlist \<Rightarrow> bool) ===> pcr_set_dlist op = ===> pcr_set_dlist op =)
      List.fold DList_Set.fold"
-unfolding Transfer.Rel_def
+unfolding Transfer.Rel_def set_dlist.pcr_cr_eq
 proof(rule fun_relI)+
   fix f :: "'a \<Rightarrow> 'b list \<Rightarrow> 'b list" and g and xs :: "'a list" and ys and b :: "'b list" and c
   assume fg: "(A ===> cr_set_dlist ===> cr_set_dlist) f g"
@@ -383,11 +416,11 @@ begin
 
 lemma Inf_fin_member: 
   "dxs \<noteq> empty \<Longrightarrow> Inf_fin (Collect (member (dxs :: 'a set_dlist))) = fold inf (tl dxs) (hd dxs)"
-by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Inf_fin_set_fold simp del: set.simps)
+by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Inf_fin.set_eq_fold simp del: set.simps)
 
 lemma Sup_fin_member: 
   "dxs \<noteq> empty \<Longrightarrow> Sup_fin (Collect (member (dxs :: 'a set_dlist))) = fold sup (tl dxs) (hd dxs)"
-by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Sup_fin_set_fold simp del: set.simps)
+by transfer(clarsimp simp add: ID_ceq_neq_None equal.equal_eq[OF equal_ceq] List.member_def[abs_def] neq_Nil_conv Sup_fin.set_eq_fold simp del: set.simps)
 
 end
 

@@ -108,7 +108,7 @@ lemma jvm_mstate_of_jvm_mstate'_sc_start_state [simp]:
 by(simp add: sc.start_state_def split_beta fun_eq_iff)
 
 lemma sc_jvm_start_state_invar:
-  assumes "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and "sc_wf_start_state P C M vs"
   shows "sc_state_\<alpha> (sc_jvm_start_state_refine P C M vs) \<in> sc_jvm_state_invar P \<Phi>"
 unfolding sc_jvm_state_invar_def Int_iff mem_Collect_eq
@@ -330,8 +330,8 @@ apply(rule JVM_rnd.random_scheduler_scheduler)
 apply(rule sc_exec_deterministic[OF assms])
 done
 
-ML {* @{code exec_JVM_rr} *}
+ML_val {* @{code exec_JVM_rr} *}
 
-ML {* @{code exec_JVM_rnd} *}
+ML_val {* @{code exec_JVM_rnd} *}
 
 end

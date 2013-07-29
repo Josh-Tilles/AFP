@@ -1,7 +1,7 @@
-session Topology (AFP) = "HOL-Library" +
-  options [timeout = 3600]
-  theories [document = false]
-    "../Lazy-Lists-II/LList2"
+chapter AFP
+
+session Topology (AFP) = "Lazy-Lists-II" +
+  options [timeout = 600]
   theories
     LList_Topology
   files
