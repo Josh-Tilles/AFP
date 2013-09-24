@@ -180,7 +180,7 @@ begin
       (\<forall>v\<in>N. conn src v \<and> min_dist src v = Suc d) \<and>
       (\<forall>v\<in>V. conn src v \<and> min_dist src v \<le> Suc d) \<and>
       (\<forall>v. conn src v \<and> min_dist src v \<le> d \<longrightarrow> v \<in> V) \<and>
-      (\<forall>v. conn src v \<and> min_dist src v = Suc d \<longrightarrow> v \<in> N \<union> ((\<Union>succ`C) - V))
+      (\<forall>v. conn src v \<and> min_dist src v = Suc d \<longrightarrow> v \<in> N \<union> ((\<Union>(succ`C)) - V))
     )) \<and> (
     f \<longrightarrow> conn src dst \<and> min_dist src dst = d
     )"
@@ -218,7 +218,7 @@ begin
     \begin{itemize}
       \item The initialization of the variables occur after the loop in
           our formulation. This is just a syntactic difference, as our loop
-          construct has the form @{text "WHILEI I c f \<sigma>\<^isub>0"}, where @{text "\<sigma>\<^isub>0"}
+          construct has the form @{text "WHILEI I c f \<sigma>\<^sub>0"}, where @{text "\<sigma>\<^sub>0"}
           is the initial state, and @{text "I"} is the loop invariant;
       \item We translated the textual specification 
         {\em remove one vertex @{text "v"} from @{text "C"}} as accurately as

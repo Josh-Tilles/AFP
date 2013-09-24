@@ -50,7 +50,7 @@ print_translation {*
       if a1 = a2 andalso a2 = a3 andalso a3 = a4 andalso a4 = a5 
       then Syntax.const @{type_syntax "J1_thread_action"} $ a1 $ t $ h
       else raise Match;
-    in [(@{type_syntax "Jinja_thread_action"}, tr')]
+    in [(@{type_syntax "Jinja_thread_action"}, K tr')]
   end
 *}
 typ "('addr,'thread_id,'heap) J1_thread_action"
@@ -72,7 +72,7 @@ print_translation {*
       if a1 = a2 andalso a2 = a3 andalso a3 = a4 andalso a4 = a5 andalso a5 = a6
       then Syntax.const @{type_syntax "J1_state"} $ a1 $ t $ h
       else raise Match;
-    in [(@{type_syntax "state"}, tr')]
+    in [(@{type_syntax "state"}, K tr')]
   end
 *}
 typ "('addr, 'thread_id, 'heap) J1_state"
@@ -97,18 +97,18 @@ where
 | "max_vars (AAss a i e) = max (max (max_vars a) (max_vars i)) (max_vars e)"
 | "max_vars (a\<bullet>length) = max_vars a"
 | "max_vars (e\<bullet>F{D}) = max_vars e"
-| "max_vars (FAss e\<^isub>1 F D e\<^isub>2) = max (max_vars e\<^isub>1) (max_vars e\<^isub>2)"
+| "max_vars (FAss e\<^sub>1 F D e\<^sub>2) = max (max_vars e\<^sub>1) (max_vars e\<^sub>2)"
 | "max_vars (e\<bullet>M(es)) = max (max_vars e) (max_varss es)"
 | "max_vars ({V:T=vo; e}) = max_vars e + 1"
 -- "sync and insync will need an extra local variable when compiling to bytecode to store the object that is being synchronized on until its release"
 | "max_vars (sync\<^bsub>V\<^esub> (e') e) = max (max_vars e') (max_vars e + 1)"
 | "max_vars (insync\<^bsub>V\<^esub> (a) e) = max_vars e + 1"
-| "max_vars (e\<^isub>1;;e\<^isub>2) = max (max_vars e\<^isub>1) (max_vars e\<^isub>2)"
-| "max_vars (if (e) e\<^isub>1 else e\<^isub>2) =
-   max (max_vars e) (max (max_vars e\<^isub>1) (max_vars e\<^isub>2))"
+| "max_vars (e\<^sub>1;;e\<^sub>2) = max (max_vars e\<^sub>1) (max_vars e\<^sub>2)"
+| "max_vars (if (e) e\<^sub>1 else e\<^sub>2) =
+   max (max_vars e) (max (max_vars e\<^sub>1) (max_vars e\<^sub>2))"
 | "max_vars (while (b) e) = max (max_vars b) (max_vars e)"
 | "max_vars (throw e) = max_vars e"
-| "max_vars (try e\<^isub>1 catch(C V) e\<^isub>2) = max (max_vars e\<^isub>1) (max_vars e\<^isub>2 + 1)"
+| "max_vars (try e\<^sub>1 catch(C V) e\<^sub>2) = max (max_vars e\<^sub>1) (max_vars e\<^sub>2 + 1)"
 
 | "max_varss [] = 0"
 | "max_varss (e#es) = max (max_vars e) (max_varss es)"

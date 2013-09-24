@@ -1,8 +1,10 @@
 (*  Title:      Containers/Collection_Enum.thy
-    Author:     Andreas Lochbihler, KIT *)
+    Author:     Andreas Lochbihler, KIT
+                René Thiemann, UIBK *)
 
 theory Collection_Enum imports
   Auxiliary
+  Containers_Generator
 begin
 
 section {* A type class for optional enumerations *}
@@ -53,10 +55,10 @@ let
                (Syntax.const @{type_syntax fun} $ ty $ (Syntax.const @{type_syntax bool})) $
                (Syntax.const @{type_syntax bool}))))))
     | cenum_tr ts = raise TERM ("cenum_tr", ts);
-in [(@{syntax_const "_CENUM"}, cenum_tr)] end
+in [(@{syntax_const "_CENUM"}, K cenum_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun cenum_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name prod}, [Type (@{type_name list}, [T]), _])])) ts =
@@ -65,6 +67,29 @@ let
 in [(@{const_syntax cEnum}, cenum_tr')]
 end
 *}
+
+subsection {* Generator for the @{class cenum}-class *}
+
+text {*
+This generator registers itself at the derive-manager for the class @{class cenum}.
+To be more precise, one can currently only choose to not support enumeration 
+by passing "no" as parameter.  
+
+\begin{itemize}
+\item \texttt{instantiation type :: (type,\ldots,type) (no) cenum}
+\end{itemize}
+*}
+
+text {*
+This generator can be used for arbitrary types, not just datatypes. 
+*}
+
+ML_file "cenum_generator.ML"
+
+setup {*
+  Cenum_Generator.setup
+*}
+
 
 subsection {* Instantiations *}
 
@@ -269,29 +294,11 @@ definition "CENUM(char) = Some (enum_class.enum, enum_class.enum_all, enum_class
 instance by(intro_classes)(auto simp add: cEnum_char_def enum_UNIV enum_all_UNIV enum_ex_UNIV)
 end
 
-instantiation list :: (type) cenum begin
-definition "CENUM('a list) = None"
-instance by(intro_classes)(simp_all add: cEnum_list_def)
-end
-
-instantiation nat :: cenum begin
-definition "CENUM(nat) = None"
-instance by(intro_classes)(simp_all add: cEnum_nat_def)
-end
-
-instantiation int :: cenum begin
-definition "CENUM(int) = None"
-instance by(intro_classes)(simp_all add: cEnum_int_def)
-end
-
-instantiation code_numeral :: cenum begin
-definition "CENUM(code_numeral) = None"
-instance by(intro_classes)(simp_all add: cEnum_code_numeral_def)
-end
-
-instantiation String.literal :: cenum begin
-definition "CENUM(String.literal) = None"
-instance by(intro_classes)(simp_all add: cEnum_literal_def)
-end
+derive (no) cenum list
+derive (no) cenum nat
+derive (no) cenum int
+derive (no) cenum integer
+derive (no) cenum natural
+derive (no) cenum String.literal
 
 end

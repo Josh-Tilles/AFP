@@ -1,9 +1,12 @@
 (* Title:      Containers/Collection_Order.thy
-   Author:     Andreas Lochbihler, KIT *)
+    Author:     Andreas Lochbihler, KIT
+                René Thiemann, UIBK *)
 
 theory Collection_Order
 imports
   Set_Linorder
+  Containers_Generator
+  "../Datatype_Order_Generator/Order_Generator"
 begin
 
 chapter {* Light-weight containers *}
@@ -39,10 +42,10 @@ let
            (Syntax.const @{type_syntax fun} $ ty $
              (Syntax.const @{type_syntax fun} $ ty $ Syntax.const @{type_syntax bool})))))
     | corder_tr ts = raise TERM ("corder_tr", ts);
-in [(@{syntax_const "_CORDER"}, corder_tr)] end
+in [(@{syntax_const "_CORDER"}, K corder_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun corder_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name prod}, [Type (@{type_name fun}, [T, _]), _])])) ts =
@@ -66,112 +69,73 @@ qed
 
 end
 
-subsection {* Instantiations for HOL types *}
+definition is_corder :: "'a :: corder itself \<Rightarrow> bool"
+where "is_corder _ \<longleftrightarrow> ID CORDER('a) \<noteq> None"
 
-instantiation unit :: corder begin
-definition "CORDER(unit) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_unit_def)
-apply(unfold_locales)
-done
-end
+subsection {* Generator for the @{class corder}-class *}
 
-instantiation bool :: corder begin
-definition "CORDER(bool) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_bool_def)
-apply(unfold_locales)
-done
-end
+text {*
+This generator registers itself at the derive-manager for the class
+@{class corder}. To be more precise, one can choose whether one does not want to
+support a linear order by passing parameter "no", one wants to register an arbitrary type which
+is already in class @{class linorder} using parameter "linorder", or
+one wants to generate a new linear order by passing no parameter.
+In the last case, one demands that the type is a datatype
+and that all non-recursive types of that datatype are in class @{class linorder}. 
 
-instantiation nat :: corder begin
-definition "CORDER(nat) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_nat_def)
-apply(unfold_locales)
-done
-end
+\begin{itemize}
+\item \texttt{instantiation type :: (type,\ldots,type) (no) corder}
+\item \texttt{instantiation type :: (linorder,\ldots,linorder) corder}
+\item \texttt{instantiation datatype :: (linorder,\ldots,linorder) (linorder) corder}
+\end{itemize}
 
-instantiation int :: corder begin
-definition "CORDER(int) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_int_def)
-apply(unfold_locales)
-done
-end
-
-instantiation Enum.finite_1 :: corder begin
-definition "CORDER(Enum.finite_1) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_finite_1_def)
-apply(unfold_locales)
-done
-end
-
-instantiation Enum.finite_2 :: corder begin
-definition "CORDER(Enum.finite_2) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_finite_2_def)
-apply(unfold_locales)
-done
-end
-
-instantiation Enum.finite_3 :: corder begin
-definition "CORDER(Enum.finite_3) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp add: corder_finite_3_def)
-apply(unfold_locales)
-done
-end
-
-text {* 
-  Do not provide an order for @{typ Enum.finite_4} and @{typ Enum.finite_5}
-  just as they does not instantiate @{class order}.
+If the parameter "no" is not used, then the corresponding
+@{term is_corder}-theorem is automatically generated and attributed with 
+\texttt{[simp, code-post]}.
 *}
 
-instantiation Enum.finite_4 :: corder begin
-definition "CORDER(Enum.finite_4) = None"
-instance by(intro_classes)(simp add: corder_finite_4_def)
-end
 
-instantiation Enum.finite_5 :: corder begin
-definition "CORDER(Enum.finite_5) = None"
-instance by(intro_classes)(simp add: corder_finite_5_def)
-end
+text {* 
+To create a new ordering, we just invoke the functionality provided by the order generator.
+The only difference is the boilerplate-code, which for the order generator has to perform
+the class instantiation for an order, whereas here we have to invoke the methods to 
+satisfy the corresponding locale for linear orders.
+*}
 
-instantiation code_numeral :: corder begin
-definition "CORDER(code_numeral) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(simp_all add: corder_code_numeral_def)
-apply(unfold_locales)
-done
-end
+text {*
+This generator can be used for arbitrary types, not just datatypes. 
+When passing no parameters, we get same limitation as for the order generator.
+For mutual recursive datatypes, only for the first mentioned datatype the instantiations 
+of the @{class corder} classes are derived.
+*}
 
-instantiation nibble :: corder begin
-definition "CORDER(nibble) \<equiv> Some (less_eq, less)"
-instance
-apply intro_classes
-apply(clarsimp simp add: corder_nibble_def)
-apply(unfold_locales)
-done
-end
+lemma corder_intro: "class.linorder le lt \<Longrightarrow> a = Some (le, lt)\<Longrightarrow> a = Some (le',lt') \<Longrightarrow>
+  class.linorder le' lt'" by auto
 
-instantiation char :: corder begin
-definition "CORDER(char) = Some (less_eq, less)"
-instance
-apply(intro_classes)
-apply(clarsimp simp add: corder_char_def)
-apply(unfold_locales)
-done
-end
+ML_file "corder_generator.ML"
+
+setup {*
+  Corder_Generator.setup
+*}
+
+
+subsection {* Instantiations for HOL types *}
+
+derive (linorder) corder unit
+derive (linorder) corder bool
+derive (linorder) corder nat
+derive (linorder) corder int
+derive (linorder) corder Enum.finite_1
+derive (linorder) corder Enum.finite_2 
+derive (linorder) corder Enum.finite_3
+derive (no) corder Enum.finite_4
+derive (no) corder Enum.finite_5
+
+derive (linorder) corder integer
+derive (linorder) corder natural
+derive (linorder) corder nibble
+derive (linorder) corder char
+derive (linorder) corder String.literal
 
 instantiation sum :: (corder, corder) corder begin
 definition "CORDER('a + 'b) = 
@@ -203,6 +167,10 @@ proof(intro_classes)
 qed
 end
 
+lemma is_corder_sum [simp, code_post]:
+  "is_corder TYPE('a + 'b) \<longleftrightarrow> is_corder TYPE('a :: corder) \<and> is_corder TYPE('b :: corder)"
+by(simp add: is_corder_def corder_sum_def ID_None ID_Some split: option.split)
+
 instantiation prod :: (corder, corder) corder begin
 definition "CORDER('a * 'b) =
   (case ID CORDER('a) of None \<Rightarrow> None
@@ -226,6 +194,10 @@ proof
 qed
 end
 
+lemma is_corder_prod [simp, code_post]:
+  "is_corder TYPE('a \<times> 'b) \<longleftrightarrow> is_corder TYPE('a :: corder) \<and> is_corder TYPE('b :: corder)"
+by(simp add: is_corder_def corder_prod_def ID_None ID_Some split: option.split)
+
 instantiation list :: (corder) corder begin
 definition "CORDER('a list) =
   Option.map (\<lambda>(leq, lt). (\<lambda>xs ys. ord.lexord_eq lt xs ys, ord.lexord lt)) (ID CORDER('a))"
@@ -243,14 +215,9 @@ proof
 qed
 end
 
-instantiation String.literal :: corder begin
-definition "CORDER(String.literal) = Some (op \<le>, op <)"
-instance
-apply(intro_classes)
-apply(clarsimp simp add: corder_literal_def)
-apply(unfold_locales)
-done
-end
+lemma is_corder_list [simp, code_post]:
+  "is_corder TYPE('a list) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_list_def ID_def)
 
 instantiation option :: (corder) corder begin
 definition "CORDER('a option) =
@@ -270,15 +237,24 @@ proof
 qed
 end
 
-instantiation "fun" :: (type, type) corder begin
-definition "CORDER('a \<Rightarrow> 'b) = None"
-instance by(intro_classes)(simp add: corder_fun_def)
-end
+lemma is_corder_option [simp, code_post]:
+  "is_corder TYPE('a option) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_option_def ID_def)
+
+derive (no) corder "fun"
+
+lemma is_corder_fun [simp]: "\<not> is_corder TYPE('a \<Rightarrow> 'b)"
+by(simp add: is_corder_def corder_fun_def ID_None)
 
 instantiation set :: (corder) corder begin
 definition "CORDER('a set) = Option.map (\<lambda>(leq, lt). (ord.set_less_eq leq, ord.set_less leq)) (ID CORDER('a))"
 instance by(intro_classes)(auto simp add: corder_set_def intro: linorder.set_less_eq_linorder ID_corder)
 end
+
+lemma is_corder_set [simp, code_post]:
+  "is_corder TYPE('a set) \<longleftrightarrow> is_corder TYPE('a :: corder)"
+by(simp add: is_corder_def corder_set_def ID_def)
+
 
 definition cless_eq_set :: "'a :: corder set \<Rightarrow> 'a set \<Rightarrow> bool" 
 where [simp, code del]: "cless_eq_set = fst (the (ID CORDER('a set)))"
@@ -329,9 +305,14 @@ definition "cproper_interval = (proper_interval :: int proper_interval)"
 instance by intro_classes (simp add: cproper_interval_int_def corder_int_def ID_Some proper_interval_class.axioms)
 end
 
-instantiation code_numeral :: cproper_interval begin
-definition "cproper_interval = (proper_interval :: code_numeral proper_interval)"
-instance by intro_classes (simp add: cproper_interval_code_numeral_def corder_code_numeral_def ID_Some proper_interval_class.axioms)
+instantiation integer :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: integer proper_interval)"
+instance by intro_classes (simp add: cproper_interval_integer_def corder_integer_def ID_Some proper_interval_class.axioms)
+end
+
+instantiation natural :: cproper_interval begin
+definition "cproper_interval = (proper_interval :: natural proper_interval)"
+instance by intro_classes (simp add: cproper_interval_natural_def corder_natural_def ID_Some proper_interval_class.axioms)
 end
 
 instantiation nibble :: cproper_interval begin

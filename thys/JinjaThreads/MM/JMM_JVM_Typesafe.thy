@@ -33,7 +33,7 @@ locale JVM_allocated_heap_conf' =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -141,7 +141,7 @@ lemma exec_instr_heap_read_typed:
 apply(cases i)
 apply(simp_all add: JVM_heap_base.exec_instr.simps split_beta cong: conj_cong)
 
-apply(auto dest: heap_base.heap_read_typed_into_heap_read)[2]
+apply(auto dest: heap_base.heap_read_typed_into_heap_read)[4]
 apply(blast dest:  heap_base.heap_read_typed_typed heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD2] heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD1])
 apply(auto dest: heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD1] intro: heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD2] heap_base.heap_read_typedI)[1]
 apply(blast dest:  heap_base.heap_read_typed_typed heap_base'.addr_loc_type_conv_addr_loc_type[THEN fun_cong, THEN fun_cong, THEN fun_cong, THEN iffD2] heap_base'.conf_conv_conf[THEN fun_cong, THEN fun_cong, THEN iffD1])
@@ -190,7 +190,7 @@ apply(erule multithreaded_base.\<E>.cases, hypsubst)
 apply(rule multithreaded_base.\<E>.intros)
 apply(subst if_mexecd_heap_read_typed[abs_def])
 apply(erule if_mthr_Runs_heap_read_typedI)
-apply(auto simp add: image_Un lset_lmap[symmetric] lmap_lconcat lmap_compose[symmetric] o_def split_def simp del: lset_lmap lmap_compose)
+apply(auto simp add: image_Un lset_lmap[symmetric] lmap_lconcat llist.map_comp o_def split_def simp del: lset_lmap)
 done
 
 lemma jmm'_exec_instrI:
@@ -198,9 +198,9 @@ lemma jmm'_exec_instrI:
      final_thread.actions_ok (final_thread.init_fin_final JVM_final) s t ta \<rbrakk>
   \<Longrightarrow> \<exists>ta xcphfrs. (ta, xcphfrs) \<in> JVM_heap_base.exec_instr addr2thread_id thread_id2addr spurious_wakeups empty_heap allocate typeof_addr (heap_base.heap_read_typed typeof_addr jmm_heap_read P) jmm_heap_write i P t h stk loc C M pc frs \<and> final_thread.actions_ok (final_thread.init_fin_final JVM_final) s t ta"
 apply(cases i)
-apply(auto simp add: JVM_heap_base.exec_instr.simps split_beta final_thread.actions_ok_iff intro!: jmm_heap_read_typed_default_val simp del: split_paired_Ex split: split_if_asm)
+apply(auto simp add: JVM_heap_base.exec_instr.simps split_beta final_thread.actions_ok_iff intro!: jmm_heap_read_typed_default_val rev_image_eqI simp del: split_paired_Ex split: split_if_asm)
 apply(drule red_external_aggr_heap_read_typedI)
-apply(fastforce simp add: final_thread.actions_ok_iff simp del: split_paired_Ex)+
+apply((fastforce simp add: final_thread.actions_ok_iff simp del: split_paired_Ex)+)[2]
 done
 
 lemma jmm'_execI:
@@ -304,7 +304,7 @@ proof -
       assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset \<xi>"
         and adal: "P \<turnstile>jmm ad@al : T"
       from read obtain a where a: "enat a < llength \<xi>" "action_obs \<xi> a = NormalAction (ReadMem ad al v)"
-        unfolding lset_def by(auto simp add: action_obs_def)
+        unfolding lset_conv_lnth by(auto simp add: action_obs_def)
 
       have "ts_ok (\<lambda>t (xcp, frs) h. JVM_heap_conf_base.correct_state addr2thread_id jmm_empty jmm_allocate (\<lambda>_. jmm_typeof_addr' P) jmm_hconf P \<Phi> t (xcp, h, frs)) (thr (jmm_JVM_start_state P C M vs)) jmm.start_heap"
 
@@ -326,7 +326,7 @@ proof -
     assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset E"
       and adal: "P \<turnstile>jmm ad@al : T"
     from read obtain a where a: "enat a < llength E" "action_obs E a = NormalAction (ReadMem ad al v)"
-      unfolding lset_def by(auto simp add: action_obs_def)
+      unfolding lset_conv_lnth by(auto simp add: action_obs_def)
     with jmm_JVMd_allocated_heap_conf' \<Phi> ok legal_imp_weakly_legal_execution[OF legal]
     have "\<exists>T. P \<turnstile>jmm ad@al : T \<and> P \<turnstile>jmm v :\<le> T"
       unfolding jmm_typeof_addr'_conv_jmm_typeof_addr[symmetric, abs_def]
@@ -369,7 +369,7 @@ proof -
       assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset \<xi>"
         and adal: "P \<turnstile>jmm ad@al : T"
       from read obtain a where a: "enat a < llength \<xi>" "action_obs \<xi> a = NormalAction (ReadMem ad al v)"
-        unfolding lset_def by(auto simp add: action_obs_def)
+        unfolding lset_conv_lnth by(auto simp add: action_obs_def)
 
       have "ts_ok (\<lambda>t (xcp, frs) h. JVM_heap_conf_base.correct_state addr2thread_id jmm_empty jmm_allocate (\<lambda>_. jmm_typeof_addr' P) jmm_hconf P \<Phi> t (xcp, h, frs)) (thr (jmm_JVM_start_state P C M vs)) jmm.start_heap"
 
@@ -391,7 +391,7 @@ proof -
     assume read: "NormalAction (ReadMem ad al v) \<in> snd ` lset E"
       and adal: "P \<turnstile>jmm ad@al : T"
     from read obtain a where a: "enat a < llength E" "action_obs E a = NormalAction (ReadMem ad al v)"
-      unfolding lset_def by(auto simp add: action_obs_def)
+      unfolding lset_conv_lnth by(auto simp add: action_obs_def)
     with jmm_JVMd_allocated_heap_conf' \<Phi> ok legal
     have "\<exists>T. P \<turnstile>jmm ad@al : T \<and> P \<turnstile>jmm v :\<le> T"
       unfolding jmm_typeof_addr'_conv_jmm_typeof_addr[symmetric, abs_def]

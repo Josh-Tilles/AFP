@@ -8,7 +8,34 @@ imports
   List_Fusion
 begin
 
-section {* More operations for red-black trees *}
+section {* More on red-black trees *}
+
+subsection {* More lemmas *}
+
+context linorder begin
+
+lemma is_rbt_fold_rbt_insert:
+  "is_rbt t \<Longrightarrow> is_rbt (RBT_Impl.fold rbt_insert t' t)"
+by(simp add: rbt_insert_def is_rbt_fold_rbt_insertwk)
+
+lemma rbt_sorted_fold_insert: "rbt_sorted t \<Longrightarrow> rbt_sorted (RBT_Impl.fold rbt_insert t' t)"
+by(induct t' arbitrary: t)(simp_all add: rbt_insert_rbt_sorted)
+
+lemma rbt_lookup_rbt_insert': "rbt_sorted t \<Longrightarrow> rbt_lookup (rbt_insert k v t) = rbt_lookup t(k \<mapsto> v)"
+by(simp add: rbt_insert_def rbt_lookup_rbt_insertwk fun_eq_iff split: option.split)
+
+lemma rbt_lookup_fold_rbt_insert:
+  "rbt_sorted t2 \<Longrightarrow> 
+  rbt_lookup (RBT_Impl.fold rbt_insert t1 t2) = rbt_lookup t2 ++ map_of (rev (RBT_Impl.entries t1))"
+proof(induction t1 arbitrary: t2)
+  case Empty thus ?case by simp
+next
+  case (Branch c l x k r)
+  show ?case using Branch.prems
+    by(simp add: map_add_def Branch.IH rbt_insert_rbt_sorted rbt_sorted_fold_insert rbt_lookup_rbt_insert' fun_eq_iff split: option.split)
+qed
+
+end
 
 subsection {* Build the cross product of two RBTs *}
 
@@ -93,10 +120,10 @@ unfolding rbt_product_def alist_product_code RBT_Impl.fold_def ..
 end
 
 context
-  fixes leq_a :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<sqsubseteq>\<^isub>a" 50) 
-  and less_a :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<sqsubset>\<^isub>a" 50) 
-  and leq_b :: "'b \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<sqsubseteq>\<^isub>b" 50) 
-  and less_b :: "'b \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<sqsubset>\<^isub>b" 50) 
+  fixes leq_a :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<sqsubseteq>\<^sub>a" 50) 
+  and less_a :: "'a \<Rightarrow> 'a \<Rightarrow> bool" (infix "\<sqsubset>\<^sub>a" 50) 
+  and leq_b :: "'b \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<sqsubseteq>\<^sub>b" 50) 
+  and less_b :: "'b \<Rightarrow> 'b \<Rightarrow> bool" (infix "\<sqsubset>\<^sub>b" 50) 
   assumes lin_a: "class.linorder leq_a less_a" 
   and lin_b: "class.linorder leq_b less_b"
 begin
@@ -111,10 +138,10 @@ lemmas linorder_prod = linorder_prod[OF lin_a lin_b]
 
 lemma sorted_alist_product: 
   assumes xs: "linorder.sorted leq_a (map fst xs)" "distinct (map fst xs)"
-  and ys: "linorder.sorted op \<sqsubseteq>\<^isub>b (map fst ys)"
+  and ys: "linorder.sorted op \<sqsubseteq>\<^sub>b (map fst ys)"
   shows "linorder.sorted op \<sqsubseteq> (map fst (alist_product f xs ys))"
 proof -
-  interpret a!: linorder "op \<sqsubseteq>\<^isub>a" "op \<sqsubset>\<^isub>a" by(fact lin_a)
+  interpret a!: linorder "op \<sqsubseteq>\<^sub>a" "op \<sqsubset>\<^sub>a" by(fact lin_a)
 
   note [simp] = 
     linorder.sorted.Nil[OF linorder_prod] linorder.sorted_Cons[OF linorder_prod]
@@ -136,16 +163,16 @@ proof -
 qed
 
 lemma is_rbt_rbt_product:
-  "\<lbrakk> ord.is_rbt op \<sqsubset>\<^isub>a rbt1; ord.is_rbt op \<sqsubset>\<^isub>b rbt2 \<rbrakk>
+  "\<lbrakk> ord.is_rbt op \<sqsubset>\<^sub>a rbt1; ord.is_rbt op \<sqsubset>\<^sub>b rbt2 \<rbrakk>
   \<Longrightarrow> ord.is_rbt op \<sqsubset> (rbt_product f rbt1 rbt2)"
 unfolding rbt_product_def
 by(blast intro: linorder.is_rbt_rbtreeify[OF linorder_prod] sorted_alist_product linorder.rbt_sorted_entries[OF lin_a] ord.is_rbt_rbt_sorted linorder.distinct_entries[OF lin_a] linorder.rbt_sorted_entries[OF lin_b] distinct_alist_product linorder.distinct_entries[OF lin_b])
 
 lemma rbt_lookup_rbt_product:
-  "\<lbrakk> ord.is_rbt op \<sqsubset>\<^isub>a rbt1; ord.is_rbt op \<sqsubset>\<^isub>b rbt2 \<rbrakk>
+  "\<lbrakk> ord.is_rbt op \<sqsubset>\<^sub>a rbt1; ord.is_rbt op \<sqsubset>\<^sub>b rbt2 \<rbrakk>
   \<Longrightarrow> ord.rbt_lookup op \<sqsubset> (rbt_product f rbt1 rbt2) (a, c) =
-     (case ord.rbt_lookup op \<sqsubset>\<^isub>a rbt1 a of None \<Rightarrow> None
-      | Some b \<Rightarrow> Option.map (f a b c) (ord.rbt_lookup op \<sqsubset>\<^isub>b rbt2 c))"
+     (case ord.rbt_lookup op \<sqsubset>\<^sub>a rbt1 a of None \<Rightarrow> None
+      | Some b \<Rightarrow> Option.map (f a b c) (ord.rbt_lookup op \<sqsubset>\<^sub>b rbt2 c))"
 by(simp add: rbt_product_def linorder.rbt_lookup_rbtreeify[OF linorder_prod] linorder.is_rbt_rbtreeify[OF linorder_prod] sorted_alist_product linorder.rbt_sorted_entries[OF lin_a] ord.is_rbt_rbt_sorted linorder.distinct_entries[OF lin_a] linorder.rbt_sorted_entries[OF lin_b] distinct_alist_product linorder.distinct_entries[OF lin_b] map_of_alist_product linorder.map_of_entries[OF lin_a] linorder.map_of_entries[OF lin_b] cong: option.case_cong)
 
 end

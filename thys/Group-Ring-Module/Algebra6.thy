@@ -841,7 +841,7 @@ apply (frule pol_expr_unique2[of "add_cf S (scf_d R S X p (Suc d))
  apply (subst  polyn_expr_short[of "scf_d R S X p (Suc d)" d], assumption,
         simp)
  apply (subst  polyn_expr_short[of "scf_d R S X q (Suc d)" d], assumption,
-        simp) thm polyn_add_n
+        simp)
  apply (subst polyn_add_n[of d "snd (scf_d R S X p (Suc d))" 
                "snd (scf_d R S X q (Suc d))"])
  apply (simp add:split_pol_coeff, simp add:split_pol_coeff,
@@ -1207,7 +1207,7 @@ apply (simp add:deg_def)
 done
 
 lemma (in PolynRg) minus_deg_in_aug_minf:"\<lbrakk>p \<in> carrier R; p \<noteq> \<zero>\<rbrakk> \<Longrightarrow>
-                   - (deg R S X p) \<in> Z\<^bsub>-\<infinity>\<^esub>"
+                   - (deg R S X p) \<in> Z\<^sub>-\<^sub>\<infinity>"
 apply (frule deg_in_aug_minf[of p],
       frule pol_nonzero[THEN sym, of p],
       simp add:aug_minf_def,
@@ -3232,7 +3232,7 @@ apply (simp add:deg_ant_int[THEN sym])
         frule_tac p = "f" in deg_in_aug_minf,
         frule_tac p = "q \<plusminus> qa" in deg_in_aug_minf,
         simp add:diff_ant_def,
-        subgoal_tac "-(deg R S X f) \<in> Z\<^bsub>-\<infinity>\<^esub>") 
+        subgoal_tac "-(deg R S X f) \<in> Z\<^sub>-\<^sub>\<infinity>") 
 apply (subst aadd_assoc_m[of _ "deg R S X f" "- deg R S X f"],
        simp add:Zminf_pOp_closed, assumption+,
        (simp add:aadd_minus_r, simp add:aadd_0_r), simp add:amax_ge_l,

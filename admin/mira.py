@@ -13,10 +13,7 @@ from mira import misc
 
 
 afp_settings='''
-ML_PLATFORM=x86-linux
-ML_HOME="/home/polyml/polyml-svn/x86-linux"
-ML_SYSTEM="polyml-5.5.0"
-ML_OPTIONS="-H 1000"
+ML_OPTIONS="-H 1000 --gcthreads 4"
 
 ISABELLE_BUILD_OPTIONS="threads=4 parallel_proofs=2"
 '''
@@ -28,14 +25,7 @@ def AFP(*args):
     """Main AFP test, excluding very large sessions"""
 
     afp_thys = path.join(args[2][1], 'thys')
-    return isabelle.isabelle_build(*(args + ("-j", afp_jobs, "-d", afp_thys, "-g", "AFP")), more_settings=afp_settings)
-
-@configuration(repos = [Isabelle, AFP], deps = [(AFP, [0, 1])])
-def AFP_big(*args):
-    """Large Sessions from AFP"""
-
-    afp_thys = path.join(args[2][1], 'thys')
-    return isabelle.isabelle_build(*(args + ("-j", afp_jobs, "-d", afp_thys, "-g", "AFP_big")), more_settings=afp_settings)
+    return isabelle.isabelle_build(*(args + ("-j", afp_jobs, "-d", afp_thys, "-g", "AFP")), more_settings=afp_settings, keep_results=False)
 
 
 # AFP-based Judgement Day configurations

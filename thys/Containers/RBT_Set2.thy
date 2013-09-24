@@ -4,7 +4,6 @@
 theory RBT_Set2 
 imports
   RBT_Mapping2
-  "~~/src/HOL/Library/Quotient_Set"
 begin
 
 section {* Sets implemented by red-black trees *}
@@ -276,7 +275,7 @@ by(auto simp add: member_lookup fun_eq_iff lookup_meet[OF ID_corder_neq_None] sp
 
 lemma member_inter_list [simp]:
   "member (inter_list (t :: 'a set_rbt) xs) = (\<lambda>x. member t x \<and> x \<in> set xs)"
-by transfer(auto simp add: ID_corder_neq_None fun_eq_iff linorder.rbt_lookup_fold_rbt_insert[OF set_linorder] ord.Empty_is_rbt map_of_map_Pair_key ord.rbt_lookup.simps option_rel_unfold split: split_if_asm option.split_asm)
+by transfer(auto simp add: ID_corder_neq_None fun_eq_iff linorder.rbt_lookup_fold_rbt_insert[OF set_linorder] ord.Empty_is_rbt map_of_map_Pair_key ord.rbt_lookup.simps option_rel_def split: split_if_asm option.split_asm)
 
 lemma member_filter [simp]:
   "member (filter P (t :: 'a set_rbt)) = (\<lambda>x. member t x \<and> P x)"
@@ -327,13 +326,30 @@ using ID_corder_neq_None by(clarsimp)(rule ID_corder)
 
 lemma Inf_fin_member:
   "(rbt :: 'a set_rbt) \<noteq> RBT_Set2.empty \<Longrightarrow> Inf_fin (Collect (member rbt)) = RBT_Set2.fold1 inf rbt"
-by(transfer)(clarsimp simp add: ID_corder_neq_None linorder.rbt_lookup_keys[OF set_linorder2] ord.is_rbt_rbt_sorted RBT_Impl_fold1_def neq_Empty_conv, simp add: Inf_fin_set_fold[symmetric])
+by(transfer)(clarsimp simp add: ID_corder_neq_None linorder.rbt_lookup_keys[OF set_linorder2] ord.is_rbt_rbt_sorted RBT_Impl_fold1_def neq_Empty_conv, simp add: Inf_fin.set_eq_fold[symmetric])
 
 lemma Sup_fin_member:
   "(rbt :: 'a set_rbt) \<noteq> RBT_Set2.empty \<Longrightarrow> Sup_fin (Collect (member rbt)) = RBT_Set2.fold1 sup rbt"
-by(transfer)(clarsimp simp add: ID_corder_neq_None linorder.rbt_lookup_keys[OF set_linorder2] ord.is_rbt_rbt_sorted RBT_Impl_fold1_def neq_Empty_conv, simp add: Sup_fin_set_fold[symmetric])
+by(transfer)(clarsimp simp add: ID_corder_neq_None linorder.rbt_lookup_keys[OF set_linorder2] ord.is_rbt_rbt_sorted RBT_Impl_fold1_def neq_Empty_conv, simp add: Sup_fin.set_eq_fold[symmetric])
 
 end
+
+lemma set_keys_Mapping_RBT: "set (keys (Mapping_RBT t)) = set (RBT_Impl.keys t)"
+proof(cases t)
+  case Empty thus ?thesis
+    by(clarsimp simp add: Mapping_RBT_def keys.rep_eq is_corder_def Mapping_RBT'_inverse ord.is_rbt_def ord.rbt_sorted.simps)
+next
+  case (Branch c l k v r)
+  show ?thesis
+  proof(cases "is_corder TYPE('a) \<and> \<not> ord.is_rbt cless (Branch c l k v r)")
+    case False thus ?thesis using Branch
+      by(auto simp add: Mapping_RBT_def keys.rep_eq is_corder_def Mapping_RBT'_inverse simp del: not_None_eq)
+  next
+    case True
+    thus ?thesis using Branch
+      by(clarsimp simp add: Mapping_RBT_def keys.rep_eq is_corder_def Mapping_RBT'_inverse RBT_ext.linorder.is_rbt_fold_rbt_insert[OF ID_corder] linorder.rbt_insert_is_rbt[OF ID_corder] ord.Empty_is_rbt)(subst linorder.rbt_lookup_keys[OF ID_corder, symmetric], assumption, auto simp add: linorder.rbt_sorted_fold_insert[OF ID_corder] RBT_ext.linorder.rbt_lookup_fold_rbt_insert[OF ID_corder] RBT_ext.linorder.rbt_lookup_rbt_insert'[OF ID_corder] linorder.rbt_insert_rbt_sorted[OF ID_corder] ord.is_rbt_rbt_sorted ord.Empty_is_rbt dom_map_of_conv_image_fst RBT_Impl.keys_def ord.rbt_lookup.simps)
+  qed
+qed
 
 hide_const (open) member empty insert remove bulkload union keys fold fold_rev filter all ex product Id_on init
 

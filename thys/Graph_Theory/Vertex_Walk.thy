@@ -174,7 +174,7 @@ next
   qed
 qed
 
-lemma (in wf_digraph) vwalk_pseudo_digraph_consI:
+lemma (in wf_digraph) vwalk_wf_digraph_consI:
   assumes "vwalk p G"
   assumes "(a, hd p) \<in> arcs_ends G"
   shows "vwalk (a # p) G"
@@ -631,7 +631,7 @@ lemma concat_vpath_exists:
   obtains r where "vpath r G" "hd r = u" "last r = w"
 using concat_vpath_is_vpath[OF assms] by blast
 
-lemma (in pseudo_digraph) vpaths_finite:
+lemma (in fin_digraph) vpaths_finite:
   shows "finite {p. vpath p G}"
 proof -
   have "{p. vpath p G}
@@ -654,7 +654,7 @@ proof -
 qed
 
 lemma (in wf_digraph) reachable_vwalk_conv:
-  "u \<rightarrow>\<^isup>*\<^bsub>G\<^esub> v \<longleftrightarrow> (\<exists>p. vwalk p G \<and> hd p = u \<and> last p = v)" (is "?L \<longleftrightarrow> ?R")
+  "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<longleftrightarrow> (\<exists>p. vwalk p G \<and> hd p = u \<and> last p = v)" (is "?L \<longleftrightarrow> ?R")
 proof
   assume ?L then show ?R
   proof (induct rule: converse_reachable_induct)
@@ -686,7 +686,7 @@ next
 qed
 
 lemma (in wf_digraph) reachable_vpath_conv:
-  "u \<rightarrow>\<^isup>*\<^bsub>G\<^esub> v \<longleftrightarrow> (\<exists>p. vpath p G \<and> hd p = u \<and> last p = v)" (is "?L \<longleftrightarrow> ?R")
+  "u \<rightarrow>\<^sup>*\<^bsub>G\<^esub> v \<longleftrightarrow> (\<exists>p. vpath p G \<and> hd p = u \<and> last p = v)" (is "?L \<longleftrightarrow> ?R")
 proof
   assume ?L then obtain p where "vwalk p G" "hd p = u" "last p = v"
     by (auto simp: reachable_vwalk_conv)

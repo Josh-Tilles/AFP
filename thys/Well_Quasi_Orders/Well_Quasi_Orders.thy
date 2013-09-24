@@ -7,13 +7,15 @@
 header {* Well-Quasi-Orders *}
 
 theory Well_Quasi_Orders
-imports Almost_Full_Relations
+imports
+  Almost_Full_Relations
+  "../Regular-Sets/Regexp_Method"
 begin
 
-section {* Basic Definitions *}
+subsection {* Basic Definitions *}
 
 definition wqo_on :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "wqo_on P A \<equiv> transp_on P A \<and> almost_full_on P A"
+  "wqo_on P A \<longleftrightarrow> transp_on P A \<and> almost_full_on P A"
 
 lemma wqo_onI [Pure.intro]:
   "\<lbrakk>transp_on P A; almost_full_on P A\<rbrakk> \<Longrightarrow> wqo_on P A"
@@ -31,6 +33,10 @@ lemma wqo_on_imp_almost_full_on:
   "wqo_on P A \<Longrightarrow> almost_full_on P A"
   by (auto simp: wqo_on_def)
 
+lemma wqo_on_imp_qo_on:
+  "wqo_on P A \<Longrightarrow> qo_on P A"
+  by (metis qo_on_def wqo_on_imp_reflp_on wqo_on_imp_transp_on)
+
 lemma wqo_on_imp_good:
   "wqo_on P A \<Longrightarrow> \<forall>i. f i \<in> A \<Longrightarrow> good P f"
   by (auto simp: wqo_on_def almost_full_on_def)
@@ -41,24 +47,44 @@ lemma wqo_on_subset:
     and transp_on_subset [of A B P]
   unfolding wqo_on_def by blast
 
+subsection {* Equivalent Definitions *}
+
+text {*Given a quasi-order @{term P}, the following statements are equivalent:
+\begin{enumerate}
+\item @{term P} is a almost-full.
+\item @{term P} does neither allow decreasing chains nor antichains.
+\item Every quasi-order extending @{term P} is well-founded.
+\end{enumerate}
+*}
+
+lemma wqo_af_conv:
+  assumes "qo_on P A"
+  shows "wqo_on P A \<longleftrightarrow> almost_full_on P A"
+  using assms by (metis qo_on_def wqo_on_def)
+
+lemma wqo_wf_and_no_antichain_conv:
+  assumes "qo_on P A"
+  shows "wqo_on P A \<longleftrightarrow> wfp_on (strict P) A \<and> \<not> (\<exists>f. antichain_on P f A)"
+  unfolding wqo_af_conv [OF assms]
+  using qo_af_imp_wf_and_no_antichain [OF assms]
+    and wf_and_no_antichain_imp_qo_extension_wf [of P A]
+    and every_qo_extension_wf_imp_af [OF _ assms]
+    by blast
+
+lemma wqo_extensions_wf_conv:
+  assumes "qo_on P A"
+  shows "wqo_on P A \<longleftrightarrow>
+    (\<forall>Q. (\<forall>x\<in>A. \<forall>y\<in>A. P x y \<longrightarrow> Q x y) \<and>
+    qo_on Q A \<longrightarrow> wfp_on (strict Q) A)"
+  unfolding wqo_af_conv [OF assms]
+  using qo_af_imp_wf_and_no_antichain [OF assms]
+    and wf_and_no_antichain_imp_qo_extension_wf [of P A]
+    and every_qo_extension_wf_imp_af [OF _ assms]
+    by blast
+
 lemma wqo_on_imp_wfp_on:
-  assumes "wqo_on P A"
-  shows "wfp_on (strict P) A"
-    (is "wfp_on ?P A")
-proof (rule ccontr)
-  have "transp_on ?P A" by (rule transp_on_imp_transp_on_strict [OF wqo_on_imp_transp_on [OF assms]])
-  hence "transp_on ?P\<inverse>\<inverse> A" by (rule transp_on_converse)
-  have "irreflp_on ?P A" ..
-  assume "\<not> wfp_on ?P A"
-  then obtain f where *: "\<forall>i. f i \<in> A"
-    and **: "\<forall>i. ?P (f (Suc i)) (f i)" by (auto simp: wfp_on_def)
-  from chain_on_transp_on_less [of f A"?P\<inverse>\<inverse>", OF _ `transp_on ?P\<inverse>\<inverse> A`] and * and **
-    have "\<forall>i j. i < j \<longrightarrow> ?P (f j) (f i)" by auto
-  with `irreflp_on ?P A` have "\<forall>i j. i < j \<longrightarrow> \<not> (P\<^sup>=\<^sup>= (f i) (f j))"
-    unfolding irreflp_on_def using * by force
-  hence "bad P f" by (auto simp: good_def)
-  with * and assms show False unfolding wqo_on_def almost_full_on_def by blast
-qed
+  "wqo_on P A \<Longrightarrow> wfp_on (strict P) A"
+  by (metis (no_types) wqo_on_imp_qo_on wqo_wf_and_no_antichain_conv)
 
 text {*The homomorphic image of a wqo set is wqo.*}
 lemma wqo_on_hom:
@@ -145,7 +171,7 @@ proof -
 qed
 
 
-subsection {* Dickson's Lemma for Wqo *}
+subsection {* Dickson's Lemma *}
 
 lemma wqo_on_Sigma:
   fixes A1 :: "'a set" and A2 :: "'b set"
@@ -162,13 +188,17 @@ proof -
   } ultimately show ?thesis by (auto simp: wqo_on_def)
 qed
 
+lemmas dickson = wqo_on_Sigma
 
-subsection {* Higman's Lemma for Wqo *}
+
+subsection {* Higman's Lemma *}
 
 lemma wqo_on_lists:
   assumes "wqo_on P A" shows "wqo_on (list_hembeq P) (lists A)"
   using assms and almost_full_on_lists
     and transp_on_list_hembeq by (auto simp: wqo_on_def)
+
+lemmas higman = wqo_on_lists
 
 text {*Every reflexive and transitive relation on a finite set is a wqo.*}
 lemma finite_wqo_on:

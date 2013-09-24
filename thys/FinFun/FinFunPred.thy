@@ -18,12 +18,12 @@ theory FinFunPred imports FinFun begin
 
 text {* Instantiate FinFun predicates just like predicates *}
 
-type_synonym 'a pred\<^isub>f = "'a \<Rightarrow>\<^sub>f bool"
+type_synonym 'a pred\<^sub>f = "'a \<Rightarrow>\<^sub>f bool"
 
 instantiation "finfun" :: (type, ord) ord
 begin
 
-definition le_finfun_def [code del]: "f \<le> g \<longleftrightarrow> (\<forall>x. f\<^sub>f x \<le> g\<^sub>f x)"
+definition le_finfun_def [code del]: "f \<le> g \<longleftrightarrow> (\<forall>x. (f)\<^sub>f x \<le> (g)\<^sub>f x)"
 
 definition [code del]: "(f\<Colon>'a \<Rightarrow>\<^sub>f 'b) < g \<longleftrightarrow> f \<le> g \<and> \<not> f \<ge> g"
 
@@ -41,20 +41,20 @@ instance "finfun" :: (type, preorder) preorder
 instance "finfun" :: (type, order) order
 by(intro_classes)(auto simp add: le_finfun_def order_antisym_conv intro: finfun_ext)
 
-instantiation "finfun" :: (type, bot) bot begin
+instantiation "finfun" :: (type, order_bot) order_bot begin
 definition "bot = finfun_const bot"
 instance by(intro_classes)(simp add: bot_finfun_def le_finfun_def)
 end
 
-lemma bot_finfun_apply [simp]: "bot\<^sub>f = (\<lambda>_. bot)"
+lemma bot_finfun_apply [simp]: "(bot)\<^sub>f = (\<lambda>_. bot)"
 by(auto simp add: bot_finfun_def)
 
-instantiation "finfun" :: (type, top) top begin
+instantiation "finfun" :: (type, order_top) order_top begin
 definition "top = finfun_const top"
 instance by(intro_classes)(simp add: top_finfun_def le_finfun_def)
 end
 
-lemma top_finfun_apply [simp]: "top\<^sub>f = (\<lambda>_. top)"
+lemma top_finfun_apply [simp]: "(top)\<^sub>f = (\<lambda>_. top)"
 by(auto simp add: top_finfun_def)
 
 instantiation "finfun" :: (type, inf) inf begin
@@ -62,7 +62,7 @@ definition [code]: "inf f g = (\<lambda>(x, y). inf x y) \<circ>\<^sub>f (f, g)\
 instance ..
 end
 
-lemma inf_finfun_apply [simp]: "(inf f g)\<^sub>f = inf f\<^sub>f g\<^sub>f"
+lemma inf_finfun_apply [simp]: "(inf f g)\<^sub>f = inf (f)\<^sub>f (g)\<^sub>f"
 by(auto simp add: inf_finfun_def o_def inf_fun_def)
 
 instantiation "finfun" :: (type, sup) sup begin
@@ -70,7 +70,7 @@ definition [code]: "sup f g = (\<lambda>(x, y). sup x y) \<circ>\<^sub>f (f, g)\
 instance ..
 end
 
-lemma sup_finfun_apply [simp]: "(sup f g)\<^sub>f = sup f\<^sub>f g\<^sub>f"
+lemma sup_finfun_apply [simp]: "(sup f g)\<^sub>f = sup (f)\<^sub>f (g)\<^sub>f"
 by(auto simp add: sup_finfun_def o_def sup_fun_def)
 
 instance "finfun" :: (type, semilattice_inf) semilattice_inf
@@ -92,7 +92,7 @@ definition "f - g = split (op -) \<circ>\<^sub>f (f, g)\<^sup>f"
 instance ..
 end
 
-lemma minus_finfun_apply [simp]: "(f - g)\<^sub>f = f\<^sub>f - g\<^sub>f"
+lemma minus_finfun_apply [simp]: "(f - g)\<^sub>f = (f)\<^sub>f - (g)\<^sub>f"
 by(simp add: minus_finfun_def o_def fun_diff_def)
 
 instantiation "finfun" :: (type, uminus) uminus begin
@@ -100,7 +100,7 @@ definition "- A = uminus \<circ>\<^sub>f A"
 instance ..
 end
 
-lemma uminus_finfun_apply [simp]: "(- g)\<^sub>f = - g\<^sub>f"
+lemma uminus_finfun_apply [simp]: "(- g)\<^sub>f = - (g)\<^sub>f"
 by(simp add: uminus_finfun_def o_def fun_Compl_def)
 
 instance "finfun" :: (type, boolean_algebra) boolean_algebra
@@ -111,13 +111,13 @@ text {*
   Replicate predicate operations for FinFuns
 *}
 
-abbreviation finfun_empty :: "'a pred\<^isub>f" ("{}\<^sub>f")
+abbreviation finfun_empty :: "'a pred\<^sub>f" ("{}\<^sub>f")
 where "{}\<^sub>f \<equiv> bot"
 
-abbreviation finfun_UNIV :: "'a pred\<^isub>f" 
+abbreviation finfun_UNIV :: "'a pred\<^sub>f" 
 where "finfun_UNIV \<equiv> top"
 
-definition finfun_single :: "'a \<Rightarrow> 'a pred\<^isub>f"
+definition finfun_single :: "'a \<Rightarrow> 'a pred\<^sub>f"
 where [code]: "finfun_single x = finfun_empty(\<^sup>f x := True)"
 
 lemma finfun_single_apply [simp]:
@@ -129,18 +129,18 @@ lemma [iff]:
   and bot_neq_finfun_single: "bot \<noteq> finfun_single x"
 by(simp_all add: expand_finfun_eq fun_eq_iff)
 
-lemma finfun_leI [intro!]: "(!!x. A\<^sub>f x \<Longrightarrow> B\<^sub>f x) \<Longrightarrow> A \<le> B"
+lemma finfun_leI [intro!]: "(!!x. (A)\<^sub>f x \<Longrightarrow> (B)\<^sub>f x) \<Longrightarrow> A \<le> B"
 by(simp add: le_finfun_def)
 
-lemma finfun_leD [elim]: "\<lbrakk> A \<le> B; A\<^sub>f x \<rbrakk> \<Longrightarrow> B\<^sub>f x"
+lemma finfun_leD [elim]: "\<lbrakk> A \<le> B; (A)\<^sub>f x \<rbrakk> \<Longrightarrow> (B)\<^sub>f x"
 by(simp add: le_finfun_def)
 
 text {* Bounded quantification.
   Warning: @{text "finfun_Ball"} and @{text "finfun_Ex"} may raise an exception, they should not be used for quickcheck
 *}
 
-definition finfun_Ball_except :: "'a list \<Rightarrow> 'a pred\<^isub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
-where [code del]: "finfun_Ball_except xs A P = (\<forall>a. A\<^sub>f a \<longrightarrow> a \<in> set xs \<or> P a)"
+definition finfun_Ball_except :: "'a list \<Rightarrow> 'a pred\<^sub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
+where [code del]: "finfun_Ball_except xs A P = (\<forall>a. (A)\<^sub>f a \<longrightarrow> a \<in> set xs \<or> P a)"
 
 lemma finfun_Ball_except_const:
   "finfun_Ball_except xs (\<lambda>\<^sup>f b) P \<longleftrightarrow> \<not> b \<or> set xs = UNIV \<or> FinFun.code_abort (\<lambda>u. finfun_Ball_except xs (\<lambda>\<^sup>f b) P)"
@@ -159,15 +159,15 @@ lemma finfun_Ball_except_update_code [code]:
   shows "finfun_Ball_except xs (finfun_update_code f a b) P = ((a \<in> set xs \<or> (b \<longrightarrow> P a)) \<and> finfun_Ball_except (a # xs) f P)"
 by(simp add: finfun_Ball_except_update)
 
-definition finfun_Ball :: "'a pred\<^isub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
-where [code del]: "finfun_Ball A P = Ball {x. A\<^sub>f x} P"
+definition finfun_Ball :: "'a pred\<^sub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
+where [code del]: "finfun_Ball A P = Ball {x. (A)\<^sub>f x} P"
 
 lemma finfun_Ball_code [code]: "finfun_Ball = finfun_Ball_except []"
 by(auto intro!: ext simp add: finfun_Ball_except_def finfun_Ball_def)
 
 
-definition finfun_Bex_except :: "'a list \<Rightarrow> 'a pred\<^isub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
-where [code del]: "finfun_Bex_except xs A P = (\<exists>a. A\<^sub>f a \<and> a \<notin> set xs \<and> P a)"
+definition finfun_Bex_except :: "'a list \<Rightarrow> 'a pred\<^sub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
+where [code del]: "finfun_Bex_except xs A P = (\<exists>a. (A)\<^sub>f a \<and> a \<notin> set xs \<and> P a)"
 
 lemma finfun_Bex_except_const:
   "finfun_Bex_except xs (\<lambda>\<^sup>f b) P \<longleftrightarrow> b \<and> set xs \<noteq> UNIV \<and> FinFun.code_abort (\<lambda>u. finfun_Bex_except xs (\<lambda>\<^sup>f b) P)"
@@ -186,8 +186,8 @@ lemma finfun_Bex_except_update_code [code]:
   shows "finfun_Bex_except xs (finfun_update_code f a b) P \<longleftrightarrow> ((a \<notin> set xs \<and> b \<and> P a) \<or> finfun_Bex_except (a # xs) f P)"
 by(simp add: finfun_Bex_except_update)
 
-definition finfun_Bex :: "'a pred\<^isub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
-where [code del]: "finfun_Bex A P = Bex {x. A\<^sub>f x} P"
+definition finfun_Bex :: "'a pred\<^sub>f \<Rightarrow> ('a \<Rightarrow> bool) \<Rightarrow> bool"
+where [code del]: "finfun_Bex A P = Bex {x. (A)\<^sub>f x} P"
 
 lemma finfun_Bex_code [code]: "finfun_Bex = finfun_Bex_except []"
 by(auto intro!: ext simp add: finfun_Bex_except_def finfun_Bex_def)
@@ -196,54 +196,54 @@ by(auto intro!: ext simp add: finfun_Bex_except_def finfun_Bex_def)
 text {* Automatically replace predicate operations by finfun predicate operations where possible *}
 
 lemma iso_finfun_le [code_unfold]:
-  "A\<^sub>f \<le> B\<^sub>f \<longleftrightarrow> A \<le> B"
+  "(A)\<^sub>f \<le> (B)\<^sub>f \<longleftrightarrow> A \<le> B"
 by (metis le_finfun_def le_funD le_funI)
 
 lemma iso_finfun_less [code_unfold]:
-  "A\<^sub>f < B\<^sub>f \<longleftrightarrow> A < B"
+  "(A)\<^sub>f < (B)\<^sub>f \<longleftrightarrow> A < B"
 by (metis iso_finfun_le less_finfun_def less_fun_def)
 
 lemma iso_finfun_eq [code_unfold]:
-  "A\<^sub>f = B\<^sub>f \<longleftrightarrow> A = B"
+  "(A)\<^sub>f = (B)\<^sub>f \<longleftrightarrow> A = B"
 by(simp add: expand_finfun_eq)
 
 lemma iso_finfun_sup [code_unfold]:
-  "sup A\<^sub>f B\<^sub>f = (sup A B)\<^sub>f"
+  "sup (A)\<^sub>f (B)\<^sub>f = (sup A B)\<^sub>f"
 by(simp)
 
 lemma iso_finfun_disj [code_unfold]:
-  "A\<^sub>f x \<or> B\<^sub>f x \<longleftrightarrow> (sup A B)\<^sub>f x"
+  "(A)\<^sub>f x \<or> (B)\<^sub>f x \<longleftrightarrow> (sup A B)\<^sub>f x"
 by(simp add: sup_fun_def)
 
 lemma iso_finfun_inf [code_unfold]:
-  "inf A\<^sub>f B\<^sub>f = (inf A B)\<^sub>f"
+  "inf (A)\<^sub>f (B)\<^sub>f = (inf A B)\<^sub>f"
 by(simp)
 
 lemma iso_finfun_conj [code_unfold]:
-  "A\<^sub>f x \<and> B\<^sub>f x \<longleftrightarrow> (inf A B)\<^sub>f x"
+  "(A)\<^sub>f x \<and> (B)\<^sub>f x \<longleftrightarrow> (inf A B)\<^sub>f x"
 by(simp add: inf_fun_def)
 
 lemma iso_finfun_empty_conv [code_unfold]:
-  "(\<lambda>_. False) = {}\<^sub>f\<^sub>f"
+  "(\<lambda>_. False) = ({}\<^sub>f)\<^sub>f"
 by simp
 
 lemma iso_finfun_UNIV_conv [code_unfold]:
-  "(\<lambda>_. True) = finfun_UNIV\<^sub>f"
+  "(\<lambda>_. True) = (finfun_UNIV)\<^sub>f"
 by simp
 
 lemma iso_finfun_upd [code_unfold]:
-  fixes A :: "'a pred\<^isub>f"
-  shows "A\<^sub>f(x := b) = (A(\<^sup>f x := b))\<^sub>f"
+  fixes A :: "'a pred\<^sub>f"
+  shows "(A)\<^sub>f(x := b) = (A(\<^sup>f x := b))\<^sub>f"
 by(simp add: fun_eq_iff)
 
 lemma iso_finfun_uminus [code_unfold]:
-  fixes A :: "'a pred\<^isub>f"
-  shows "- A\<^sub>f = (- A)\<^sub>f"
+  fixes A :: "'a pred\<^sub>f"
+  shows "- (A)\<^sub>f = (- A)\<^sub>f"
 by(simp)
 
 lemma iso_finfun_minus [code_unfold]:
-  fixes A :: "'a pred\<^isub>f"
-  shows "A\<^sub>f - B\<^sub>f = (A - B)\<^sub>f"
+  fixes A :: "'a pred\<^sub>f"
+  shows "(A)\<^sub>f - (B)\<^sub>f = (A - B)\<^sub>f"
 by(simp)
 
 text {*
@@ -253,11 +253,11 @@ text {*
 *}
 
 lemma iso_finfun_Ball_Ball:
-  "(\<forall>x. A\<^sub>f x \<longrightarrow> P x) \<longleftrightarrow> finfun_Ball A P"
+  "(\<forall>x. (A)\<^sub>f x \<longrightarrow> P x) \<longleftrightarrow> finfun_Ball A P"
 by(simp add: finfun_Ball_def)
 
 lemma iso_finfun_Bex_Bex:
-  "(\<exists>x. A\<^sub>f x \<and> P x) \<longleftrightarrow> finfun_Bex A P"
+  "(\<exists>x. (A)\<^sub>f x \<and> P x) \<longleftrightarrow> finfun_Bex A P"
 by(simp add: finfun_Bex_def)
 
 text {* Test replacement setup *}

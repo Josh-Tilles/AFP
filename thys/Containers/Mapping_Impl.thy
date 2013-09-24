@@ -1,23 +1,20 @@
 (*  Title:      Containers/Mapping_Impl.thy
-    Author:     Andreas Lochbihler, KIT *)
+    Author:     Andreas Lochbihler, KIT
+                René Thiemann, UIBK *)
 
 theory Mapping_Impl imports 
   RBT_Mapping2
   AssocList
   "~~/src/HOL/Library/Mapping"
   Set_Impl
+  Containers_Generator
 begin
 
 section {* Different implementations of maps *}
 
-code_modulename SML
-  Mapping Mapping_Impl
-  Mapping_Impl Mapping_Impl
-
-definition map_impl_unsupported_operation :: "(unit \<Rightarrow> 'a) \<Rightarrow> 'a"
-where [simp, code del]: "map_impl_unsupported_operation f = f ()"
-
-code_abort "map_impl_unsupported_operation"
+code_identifier
+  code_module Mapping \<rightharpoonup> (SML) Mapping_Impl
+| code_module Mapping_Impl \<rightharpoonup> (SML) Mapping_Impl
 
 subsection {* Map implementations *}
 
@@ -40,18 +37,25 @@ by(simp_all)(transfer, rule)+
 
 lemma [code, code del]: "Mapping.is_empty = Mapping.is_empty" ..
 
+context
+begin
+interpretation lifting_syntax .
+
 lemma is_empty_transfer [transfer_rule]:
-  "(cr_mapping ===> op =) (\<lambda>m. m = empty) Mapping.is_empty"
+  "(pcr_mapping op = op = ===> op =) (\<lambda>m. m = empty) Mapping.is_empty"
+unfolding mapping.pcr_cr_eq
 apply(rule fun_relI)
 apply(case_tac y)
 apply(simp add: Mapping.is_empty_def cr_mapping_def Mapping_inverse Mapping.keys.rep_eq)
 done
 
+end
+
 lemma is_empty_Mapping [code]:
   fixes t :: "('a :: corder, 'b) mapping_rbt" shows
   "Mapping.is_empty (Assoc_List_Mapping al) \<longleftrightarrow> al = DAList.empty"
   "Mapping.is_empty (RBT_Mapping t) \<longleftrightarrow>
-  (case ID CORDER('a) of None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.is_empty (RBT_Mapping t))
+  (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''is_empty RBT_Mapping: corder = None'') (\<lambda>_. Mapping.is_empty (RBT_Mapping t))
                      | Some _ \<Rightarrow> RBT_Mapping2.is_empty t)"
 apply(simp_all split: option.split)
  apply(transfer, case_tac al, simp_all)
@@ -65,7 +69,7 @@ lemma update_Mapping [code]:
   "Mapping.update k v (Mapping m) = Mapping (m(k \<mapsto> v))"
   "Mapping.update k v (Assoc_List_Mapping al) = Assoc_List_Mapping (DAList.update k v al)"
   "Mapping.update k v (RBT_Mapping t) =
-  (case ID CORDER('a) of None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.update k v (RBT_Mapping t))
+  (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''update RBT_Mapping: corder = None'') (\<lambda>_. Mapping.update k v (RBT_Mapping t))
                      | Some _ \<Rightarrow> RBT_Mapping (RBT_Mapping2.insert k v t))" (is ?RBT)
 by(simp_all split: option.split)(transfer, simp)+
 
@@ -76,7 +80,7 @@ lemma delete_Mapping [code]:
   "Mapping.delete k (Mapping m) = Mapping (m(k := None))"
   "Mapping.delete k (Assoc_List_Mapping al) = Assoc_List_Mapping (AssocList.delete k al)"
   "Mapping.delete k (RBT_Mapping t) = 
-  (case ID CORDER('a) of None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.delete k (RBT_Mapping t))
+  (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''delete RBT_Mapping: corder = None'') (\<lambda>_. Mapping.delete k (RBT_Mapping t))
                      | Some _ \<Rightarrow> RBT_Mapping (RBT_Mapping2.delete k t))"
 by(simp_all split: option.split)(transfer, simp)+
 
@@ -99,18 +103,24 @@ qed
 
 lemma [code, code del]: "Mapping.size = Mapping.size" ..
 
+context
+begin
+interpretation lifting_syntax .
+
 lemma Mapping_size_transfer [transfer_rule]:
-  "(cr_mapping ===> op =) (card \<circ> dom) Mapping.size"
+  "(pcr_mapping op = op = ===> op =) (card \<circ> dom) Mapping.size"
 apply(rule fun_relI)
 apply(case_tac y)
-apply(simp add: Mapping.size_def Mapping.keys.rep_eq Mapping_inverse cr_mapping_def)
+apply(simp add: Mapping.size_def Mapping.keys.rep_eq Mapping_inverse mapping.pcr_cr_eq cr_mapping_def)
 done
+
+end
 
 lemma size_Mapping [code]:
   fixes t :: "('a :: corder, 'b) mapping_rbt" shows
   "Mapping.size (Assoc_List_Mapping al) = size al"
   "Mapping.size (RBT_Mapping t) =
-  (case ID CORDER('a) of None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.size (RBT_Mapping t))
+  (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''size RBT_Mapping: corder = None'') (\<lambda>_. Mapping.size (RBT_Mapping t))
                      | Some _ \<Rightarrow> length (RBT_Mapping2.entries t))"
 apply(simp_all split: option.split)
 apply(transfer, simp add: dom_map_of_conv_image_fst set_map[symmetric] distinct_card del: set_map)
@@ -187,7 +197,7 @@ let
      (Syntax.const @{syntax_const "_constrain"} $ Syntax.const @{const_syntax "mapping_impl"} $
        (Syntax.const @{type_syntax phantom} $ ty $ Syntax.const @{type_syntax mapping_impl}))
     | mapping_impl_tr ts = raise TERM ("mapping_impl_tr", ts);
-in [(@{syntax_const "_MAPPING_IMPL"}, mapping_impl_tr)] end
+in [(@{syntax_const "_MAPPING_IMPL"}, K mapping_impl_tr)] end
 *}
 
 lemma [code, code del]: "Mapping.empty = Mapping.empty" ..
@@ -197,55 +207,40 @@ lemma Mapping_empty_code [code, code_unfold]:
    mapping_empty (of_phantom MAPPING_IMPL('a))"
 by simp
 
-instantiation unit :: mapping_impl begin
-definition "MAPPING_IMPL(unit) = Phantom(unit) mapping_Assoc_List"
-instance ..
-end
+subsection {* Generator for the @{class mapping_impl}-class *}
 
-instantiation bool :: mapping_impl begin
-definition "MAPPING_IMPL(bool) = Phantom(bool) mapping_Assoc_List"
-instance ..
-end
+text {*
+This generator registers itself at the derive-manager for the classes @{class mapping_impl}.
+Here, one can choose
+the desired implementation via the parameter. 
 
-instantiation nat :: mapping_impl begin
-definition "MAPPING_IMPL(nat) \<equiv> Phantom(nat) mapping_RBT"
-instance ..
-end
+\begin{itemize}
+\item \texttt{instantiation type :: (type,\ldots,type) (rbt,assoclist,mapping,choose, or arbitrary constant name) mapping-impl}
+\end{itemize}
+*}
 
-instantiation int :: mapping_impl begin
-definition "MAPPING_IMPL(int) = Phantom(int) mapping_RBT"
-instance ..
-end
 
-instantiation Enum.finite_1 :: mapping_impl begin
-definition "MAPPING_IMPL(Enum.finite_1) = Phantom(Enum.finite_1) mapping_Assoc_List"
-instance ..
-end
+text {*
+This generator can be used for arbitrary types, not just datatypes. 
+*}
 
-instantiation Enum.finite_2 :: mapping_impl begin
-definition "MAPPING_IMPL(Enum.finite_2) = Phantom(Enum.finite_2) mapping_Assoc_List"
-instance ..
-end
+ML_file "mapping_impl_generator.ML" 
 
-instantiation Enum.finite_3 :: mapping_impl begin
-definition "MAPPING_IMPL(Enum.finite_3) = Phantom(Enum.finite_3) mapping_Assoc_List"
-instance ..
-end
+setup {*
+  Mapping_Impl_Generator.setup
+*}
 
-instantiation code_numeral :: mapping_impl begin
-definition "MAPPING_IMPL(code_numeral) = Phantom(code_numeral) mapping_RBT"
-instance ..
-end
-
-instantiation nibble :: mapping_impl begin
-definition "MAPPING_IMPL(nibble) = Phantom(nibble) mapping_Assoc_List"
-instance ..
-end
-
-instantiation char :: mapping_impl begin
-definition "MAPPING_IMPL(char) = Phantom(char) mapping_RBT"
-instance ..
-end
+derive (assoclist) mapping_impl unit
+derive (assoclist) mapping_impl bool
+derive (rbt) mapping_impl nat
+derive (mapping_RBT) mapping_impl int (* shows usage of constant names *)
+derive (assoclist) mapping_impl Enum.finite_1
+derive (assoclist) mapping_impl Enum.finite_2
+derive (assoclist) mapping_impl Enum.finite_3
+derive (rbt) mapping_impl integer
+derive (rbt) mapping_impl natural
+derive (assoclist) mapping_impl nibble
+derive (rbt) mapping_impl char
 
 instantiation sum :: (mapping_impl, mapping_impl) mapping_impl begin
 definition "MAPPING_IMPL('a + 'b) = Phantom('a + 'b) 
@@ -259,25 +254,15 @@ definition "MAPPING_IMPL('a * 'b) = Phantom('a * 'b)
 instance ..
 end
 
-instantiation list :: (type) mapping_impl begin
-definition "MAPPING_IMPL('a list) = Phantom('a list) mapping_Choose"
-instance ..
-end
-
-instantiation String.literal :: mapping_impl begin
-definition "MAPPING_IMPL(String.literal) = Phantom(String.literal) mapping_RBT"
-instance ..
-end
+derive (choose) mapping_impl list
+derive (rbt) mapping_impl String.literal
 
 instantiation option :: (mapping_impl) mapping_impl begin
 definition "MAPPING_IMPL('a option) = Phantom('a option) (of_phantom MAPPING_IMPL('a))"
 instance ..
 end
 
-instantiation set :: (type) mapping_impl begin
-definition "MAPPING_IMPL('a set) = Phantom('a set) mapping_Choose"
-instance ..
-end
+derive (choose) mapping_impl set
 
 instantiation phantom :: (type, mapping_impl) mapping_impl begin
 definition "MAPPING_IMPL(('a, 'b) phantom) = Phantom (('a, 'b) phantom) 

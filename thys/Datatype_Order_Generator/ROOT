@@ -1,10 +1,12 @@
+chapter AFP
+
 session Datatype_Order_Generator (AFP) = "HOL-Library" +
-  options [timeout = 300]
+  options [timeout = 600]
   theories [document=false]
     "../Collections/common/HashCode"
   theories
     Derive
-    Derive_Examples
+    Derive_Examples 
   files
     "document/root.bib"
     "document/root.tex"

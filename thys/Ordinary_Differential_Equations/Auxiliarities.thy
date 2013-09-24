@@ -7,8 +7,8 @@ subsection {* Euclidean Components *}
 
 lemma sqrt_le_rsquare:
   assumes "\<bar>x\<bar> \<le> sqrt y"
-  shows "x\<twosuperior> \<le> y"
-  using assms real_sqrt_le_iff[of "x\<twosuperior>"] by simp
+  shows "x\<^sup>2 \<le> y"
+  using assms real_sqrt_le_iff[of "x\<^sup>2"] by simp
 
 lemma fst_Basis[simp]: "i \<in> Basis \<Longrightarrow> (i, 0) \<in> Basis"
   by (simp add: Basis_prod_def)
@@ -123,52 +123,14 @@ by (auto elim: pair_less_elim1 pair_less_elim2)
 
 lemma pair_interval_iff[simp]: "{(a1, a2)..(b1, b2)} = {a1..b1}\<times>{a2..b2}" by auto
 
-subsubsection {* Continuity of Pair-function *}
-
-lemma continuous_on_fst: "continuous_on X fst"
-  unfolding continuous_on_def
-  by (intro ballI tendsto_intros)
-
-lemma continuous_on_snd: "continuous_on X snd"
-  unfolding continuous_on_def
-  by (intro ballI tendsto_intros)
-
-lemma continuous_at_fst:
-  fixes x::"'a::euclidean_space \<times> 'b::euclidean_space"
-  shows "continuous (at x) fst"
-  unfolding continuous_def netlimit_at
-  by (intro tendsto_intros)
-
-lemma continuous_at_snd:
-  fixes x::"'a::euclidean_space \<times> 'b::euclidean_space"
-  shows "continuous (at x) snd"
-  unfolding continuous_def netlimit_at
-  by (intro tendsto_intros)
-
-lemma continuous_at_Pair:
-  fixes x::"'a::euclidean_space \<times> 'b::euclidean_space"
-  assumes "continuous (at x) f"
-  assumes "continuous (at x) g"
-  shows "continuous (at x) (\<lambda>x. (f x, g x))"
-  using assms unfolding continuous_def
-  by (intro tendsto_intros)
-
-lemma continuous_on_Pair:
-  fixes x::"'a::euclidean_space \<times> 'b::euclidean_space"
-  assumes "continuous_on S f"
-  assumes "continuous_on S g"
-  shows "continuous_on S (\<lambda>x. (f x, g x))"
-  using assms unfolding continuous_on_def
-  by (auto intro: tendsto_intros)
-
-lemmas continuous_intros = continuous_intros
-  continuous_at_fst continuous_at_snd
-  continuous_at_Pair
-lemmas continuous_on_intros = continuous_on_intros
-  continuous_on_fst continuous_on_snd
-  continuous_on_Pair
-
 subsection {* Derivatives *}
+
+lemma DERIV_conv_has_vector_derivative:
+  "DERIV f x :> f' = (f has_vector_derivative f') (at x)"
+proof -
+  have "\<And>s. (\<lambda>xa. xa *\<^sub>R f') = op * f'" by auto
+  thus ?thesis by (simp add: DERIV_conv_has_derivative has_vector_derivative_def)
+qed
 
 lemma has_vector_derivative_imp:
   assumes "x \<in> s"
@@ -221,13 +183,9 @@ lemma continuous_xy:
   assumes f_cont: "continuous_on (S \<times> U) f"
   assumes y_cont: "continuous_on S y"
   shows "continuous_on S (\<lambda>x. f (x, y x))"
-proof -
-  have "(\<lambda>x. f (x, y x)) = (f o (\<lambda>x. (x, y x)))" by auto
-  moreover have "(\<lambda>x. (x, y x)) ` S \<subseteq> (S \<times> U)" using defined by auto
-  ultimately show "continuous_on S (\<lambda>t. f (t, y t))" using f_cont y_cont
-    by (auto intro!: continuous_on_compose continuous_on_Pair continuous_on_id
-      continuous_on_subset[where t="(\<lambda>x. (x, y x)) ` S"])
-qed
+  using continuous_on_compose2[OF continuous_on_subset[where t="(\<lambda>x. (x, y x)) ` S", OF f_cont]
+                                  continuous_on_Pair[OF continuous_on_id y_cont]] defined
+  by auto
 
 lemma has_derivative_within_union:
   assumes "(f has_derivative g) (at x within s)"
@@ -327,8 +285,7 @@ proof -
     by (rule has_derivative_within_subset) auto
   thus "(f has_vector_derivative f' x) (at x)"
     using assms(1-2)
-    by (auto simp add: has_derivative_within_subset has_vector_derivative_def
-      has_derivative_within_open)
+    by (simp add: has_vector_derivative_def has_derivative_within_open[OF _ open_greaterThanLessThan])
 qed
 
 lemma obtain_linear_continuation_at:
@@ -412,10 +369,10 @@ lemma Sup_real_mult:
 using assms
 proof (intro antisym)
   have "Sup S \<le> Sup (op * a ` S) / a" using assms
-    by (intro Sup_least mult_imp_le_div_pos Sup_upper[where z = "a * z"]) auto
+    by (intro cSup_least mult_imp_le_div_pos cSup_upper[where z = "a * z"]) auto
   thus "a * Sup S \<le> Sup (op * a ` S)"
     by (simp add: ac_simps pos_le_divide_eq[OF assms(1)])
-qed (auto intro!: mult_mono Sup_least)
+qed (auto intro!: mult_mono cSup_least intro: cSup_upper)
 
 subsection {* Banach on type class *}
 

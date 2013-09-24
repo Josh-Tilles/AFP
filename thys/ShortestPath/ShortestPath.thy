@@ -9,7 +9,7 @@ section {*Shortest Path (with non-negative edge costs)*}
 text{* The following theory is used in the verification of a certifying algorithm's checker for shortest path. For more information see \cite{FrameworkVerificationofCertifyingComputations}. *}
 
 locale basic_sp = 
-  pseudo_digraph +
+  fin_digraph +
   fixes dist :: "'a \<Rightarrow> ereal"
   fixes c :: "'b \<Rightarrow> real"
   fixes s :: "'a"
@@ -101,11 +101,11 @@ lemma (in basic_sp) dist_le_cost:
       using awalk_cost_append p'e by simp
   qed
 
-lemma (in pseudo_digraph) witness_path:
+lemma (in fin_digraph) witness_path:
   assumes "\<mu> c s v = ereal r"
   shows "\<exists> p. apath s p v \<and> \<mu> c s v = awalk_cost c p"
 proof -
-  have sv: "s \<rightarrow>\<^isup>* v" 
+  have sv: "s \<rightarrow>\<^sup>* v" 
     using shortest_path_inf[of s v c] assms by fastforce
   { 
     fix p assume "awalk s p v"
@@ -127,7 +127,7 @@ proof (rule ccontr)
     show "\<And>r. \<mu> c s v = ereal r \<Longrightarrow> False"
     proof -
       fix r assume r_asm: "\<mu> c s v = ereal r"
-      hence sv: "s \<rightarrow>\<^isup>* v"
+      hence sv: "s \<rightarrow>\<^sup>* v"
         using shortest_path_inf[where u=s and v=v and f=c] by auto
       obtain p where 
         "awalk s p v" 

@@ -917,10 +917,6 @@ definition
                    \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a" where
   "fPRoject n B x = (\<lambda>f\<in>ac_fProd_Rg n B. f x)"
 
-abbreviation
-  FPRODRING  ("(fr\<Pi>\<^sub>_/ _)" [72,73]72) where
-  "fr\<Pi>\<^sub>n B == fprodrg n B"
-
 lemma fprodrg_ring:"\<forall>k \<le> n. Ring (B k) \<Longrightarrow> Ring (fprodrg n B)"
 apply (simp add:fprodrg_def)
 apply (frule ac_fProd_Prod)
@@ -1465,7 +1461,7 @@ done
 
 lemma (in Ring) prime_ideal_cont1Tr:"ideal R A  \<Longrightarrow> 
       \<forall>P. ((P \<in> {j. j \<le> (n::nat)} \<rightarrow> {X. prime_ideal R X}) \<and> 
-                   (A \<subseteq> \<Union> P ` {j. j \<le> n})) \<longrightarrow> (\<exists>i\<le> n. A \<subseteq> (P i))"
+                   (A \<subseteq> \<Union> (P ` {j. j \<le> n}))) \<longrightarrow> (\<exists>i\<le> n. A \<subseteq> (P i))"
 apply (induct_tac n)
  apply (rule allI, rule impI)
  apply (erule conjE)
@@ -1484,7 +1480,7 @@ apply (rule allI, rule impI)
                simp+, erule conjE, simp add:compose_def,blast)
  (** last_step induction assumption is of no use **)
 apply (thin_tac "\<forall>P. P \<in> {j. j \<le> n} \<rightarrow> {X. prime_ideal R X} \<and>
-               A \<subseteq> \<Union>P ` {j. j \<le> n} \<longrightarrow>
+               A \<subseteq> \<Union>(P ` {j. j \<le> n}) \<longrightarrow>
                (\<exists>i\<le>n. A \<subseteq> P i)",
        rule contrapos_pp, simp+)
  apply (cut_tac n = n and P = P in prod_prime [of A], assumption)
@@ -1531,7 +1527,7 @@ lemma (in Ring) prime_ideal_cont1:"\<lbrakk>ideal R A; \<forall>i \<le> (n::nat)
 apply (frule prime_ideal_cont1Tr[of A n])
 apply (frule_tac a = P in forall_spec,
        thin_tac "\<forall>P. P \<in> {j. j \<le> n} \<rightarrow> {X. prime_ideal R X} \<and> 
-       A \<subseteq> \<Union>P ` {j. j \<le> n} \<longrightarrow> (\<exists>i\<le>n. A \<subseteq> P i)")
+       A \<subseteq> \<Union>(P ` {j. j \<le> n}) \<longrightarrow> (\<exists>i\<le>n. A \<subseteq> P i)")
 apply (rule conjI, simp,
        rule subsetI, simp,
        frule_tac c = x in subsetD[of A "\<Union>{X. \<exists>i\<le>n. X = P i}"], assumption+,
@@ -4805,7 +4801,7 @@ apply (cut_tac n = "fst c" in le_refl, blast)
 done 
 
 lemma (in PolynRg) deg_in_aug_minf:"p \<in> carrier R \<Longrightarrow>
-                                   deg R S X p \<in> Z\<^bsub>-\<infinity>\<^esub>"
+                                   deg R S X p \<in> Z\<^sub>-\<^sub>\<infinity>"
 apply (simp add:aug_minf_def deg_def an_def)
 done
 

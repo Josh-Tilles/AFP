@@ -16,7 +16,7 @@ interpretation nrec!:
 
 lemma nrec_admissible: "nrec.admissible (\<lambda>(f::'a \<Rightarrow> 'b nres).
   (\<forall>x0. f x0 \<le> SPEC (P x0)))"
-  apply (rule ccpo.admissibleI[OF nrec.ccpo])
+  apply (rule ccpo.admissibleI)
   apply (unfold fun_lub_def)
   apply (intro allI impI)
   apply (rule Sup_least)
@@ -67,7 +67,7 @@ qed
 *)
 
 declaration {* Partial_Function.init "nrec" @{term nrec.fixp_fun}
-  @{term nrec.mono_body} @{thm nrec.fixp_rule_uc} 
+  @{term nrec.mono_body} @{thm nrec.fixp_rule_uc} @{thm nrec.fixp_induct_uc}
   (*SOME @{thm fixp_induct_nrec'}*) NONE *}
 
 lemma bind_mono_pfun[partial_function_mono]:
@@ -99,7 +99,7 @@ proof -
   have [simp]: "\<And>A x. {y. \<exists>f\<in>A. y = f x} = (\<lambda>f. f x)`A" by auto
 
   show ?thesis
-    apply (rule ccpo.admissibleI[OF drec.ccpo])
+    apply (rule ccpo.admissibleI)
     apply (unfold fun_lub_def)
     apply clarsimp
     apply (drule_tac x=x in point_chainI)
@@ -114,7 +114,7 @@ proof -
 qed
 
 declaration {* Partial_Function.init "drec" @{term drec.fixp_fun}
-  @{term drec.mono_body} @{thm drec.fixp_rule_uc} NONE *}
+  @{term drec.mono_body} @{thm drec.fixp_rule_uc} @{thm drec.fixp_induct_uc} NONE *}
 
 lemma drec_bind_mono_pfun[partial_function_mono]:
   "\<lbrakk> drec.mono_body B; \<And>y. drec.mono_body (\<lambda>f. C y f) \<rbrakk> \<Longrightarrow> 

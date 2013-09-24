@@ -1,8 +1,9 @@
 (*  Title:      Containers/Collection_Eq.thy
-    Author:     Andreas Lochbihler, KIT *)
-
+    Author:     Andreas Lochbihler, KIT
+                René Thiemann, UIBK *)
 theory Collection_Eq imports
   Auxiliary
+  Containers_Generator
 begin
 
 section {* A type class for optional equality testing *}
@@ -29,10 +30,10 @@ let
          (Syntax.const @{type_syntax fun} $ ty $ 
            (Syntax.const @{type_syntax fun} $ ty $ Syntax.const @{type_syntax bool}))))
     | ceq_tr ts = raise TERM ("ceq_tr", ts);
-in [(@{syntax_const "_CEQ"}, ceq_tr)] end
+in [(@{syntax_const "_CEQ"}, K ceq_tr)] end
 *}
 
-typed_print_translation (advanced) {*
+typed_print_translation {*
 let
   fun ceq_tr' ctxt
     (Type (@{type_name option}, [Type (@{type_name fun}, [T, _])])) ts =
@@ -42,142 +43,67 @@ in [(@{const_syntax ceq}, ceq_tr')]
 end
 *}
 
+definition is_ceq :: "'a :: ceq itself \<Rightarrow> bool"
+where "is_ceq _ \<longleftrightarrow> ID CEQ('a) \<noteq> None"
+
+subsection {* Generator for the @{class ceq}-class *}
+
+text {*
+This generator registers itself at the derive-manager for the class @{class ceq}.
+To be more precise, one can choose whether one wants to take @{term "op ="} as function
+for @{term ceq} by passing "eq" as parameter, 
+whether equality should not be supported by passing "no" as parameter,
+or whether an own definition for equality should be derived by not passing
+any parameters. The last possibility only works for datatypes.
+
+\begin{itemize}
+\item \texttt{instantiation type :: (type,\ldots,type) (eq) ceq}
+\item \texttt{instantiation type :: (type,\ldots,type) (no) ceq}
+\item \texttt{instantiation datatype :: (ceq,\ldots,ceq) ceq}
+\end{itemize}
+
+If the parameter "no" is not used, then the corresponding
+@{term is_ceq}-theorem is also automatically generated and attributed with 
+\texttt{[simp, code-post]}.
+*}
+
+
+text {*
+This generator can be used for arbitrary types, not just datatypes. 
+*}
+
+ML_file "ceq_generator.ML"
+
+setup {*
+  Ceq_Generator.setup
+*}
+
 subsection {* Type class instances for HOL types *}
 
-instantiation unit :: ceq begin
-definition "CEQ(unit) = Some (\<lambda>_ _. True)"
-instance by(intro_classes)(simp add: ceq_unit_def fun_eq_iff)
-end
+derive (eq) ceq unit
+lemma [code]: "CEQ(unit) = Some (\<lambda>_ _. True)"
+  unfolding ceq_unit_def by (simp, intro ext, auto)
+derive (eq) ceq bool
+derive (eq) ceq nat
+derive (eq) ceq int
+derive (eq) ceq Enum.finite_1
+derive (eq) ceq Enum.finite_2
+derive (eq) ceq Enum.finite_3
+derive (eq) ceq Enum.finite_4
+derive (eq) ceq Enum.finite_5
+derive (eq) ceq integer
+derive (eq) ceq natural
+derive (eq) ceq nibble
+derive (eq) ceq char
+derive (eq) ceq String.literal
+derive ceq sum
+derive ceq prod
+derive ceq list
+derive ceq option
+derive (no) ceq "fun"
 
-instantiation bool :: ceq begin
-definition "CEQ(bool) = Some op ="
-instance by(intro_classes)(simp add: ceq_bool_def)
-end
-
-instantiation nat :: ceq begin
-definition "CEQ(nat) = Some op ="
-instance by(intro_classes)(simp add: ceq_nat_def)
-end
-
-instantiation int :: ceq begin
-definition "CEQ(int) = Some op ="
-instance by(intro_classes)(simp add: ceq_int_def)
-end
-
-instantiation Enum.finite_1 :: ceq begin
-definition "CEQ(Enum.finite_1) = Some op ="
-instance by(intro_classes)(simp add: ceq_finite_1_def)
-end
-
-instantiation Enum.finite_2 :: ceq begin
-definition "CEQ(Enum.finite_2) = Some op ="
-instance by(intro_classes)(simp add: ceq_finite_2_def)
-end
-
-instantiation Enum.finite_3 :: ceq begin
-definition "CEQ(Enum.finite_3) = Some op ="
-instance by(intro_classes)(simp add: ceq_finite_3_def)
-end
-
-instantiation code_numeral :: ceq begin
-definition "CEQ(code_numeral) = Some op ="
-instance by(intro_classes)(simp add: ceq_code_numeral_def)
-end
-
-instantiation nibble :: ceq begin
-definition "CEQ(nibble) \<equiv> Some op ="
-instance by intro_classes(simp add: ceq_nibble_def)
-end
-
-instantiation char :: ceq begin
-definition "CEQ(char) = Some op ="
-instance by(intro_classes)(simp add: ceq_char_def)
-end
-
-instantiation sum :: (ceq, ceq) ceq begin
-text {* Do not use @{term "op ="} because that would pull in @{class equal} on component types for code generation *}
-definition "CEQ('a + 'b) = 
-  (case ID CEQ('a) of None \<Rightarrow> None
-   | Some eq_a \<Rightarrow>
-     case ID CEQ('b) of None \<Rightarrow> None
-     | Some eq_b \<Rightarrow> 
-       Some (\<lambda>x y. case x of Inl xl \<Rightarrow> (case y of Inl yl \<Rightarrow> eq_a xl yl | _ \<Rightarrow> False)
-                   | Inr xr \<Rightarrow> (case y of Inr yr \<Rightarrow> eq_b xr yr | _ \<Rightarrow> False)))"
-instance
-proof(intro_classes)
-  fix eq
-  assume "CEQ('a + 'b) = Some eq"
-  then obtain eq_a eq_b where a: "ID CEQ('a) = Some eq_a" 
-    and b: "ID CEQ('b) = Some eq_b"
-    and eq: "\<And>x y. eq x y = (case x of Inl xl \<Rightarrow> (case y of Inl yl \<Rightarrow> eq_a xl yl | _ \<Rightarrow> False) 
-                             | Inr xr \<Rightarrow> (case y of Inr yr \<Rightarrow> eq_b xr yr | _ \<Rightarrow> False))"
-    by(auto simp add: ceq_sum_def split: option.splits)
-  from ID_ceq[OF a] ID_ceq[OF b] show "eq = op ="
-    by(simp add: fun_eq_iff eq split: sum.split)
-qed
-end
-
-instantiation prod :: (ceq, ceq) ceq begin
-definition "CEQ('a * 'b) =
-  (case ID CEQ('a) of None \<Rightarrow> None
-   | Some eq_a \<Rightarrow>
-     case ID CEQ('b) of None \<Rightarrow> None
-     | Some eq_b \<Rightarrow>
-       Some (\<lambda>(x1, x2) (y1, y2). eq_a x1 y1 \<and> eq_b x2 y2))"
-instance
-proof
-  fix eq
-  assume "CEQ('a * 'b) = Some eq"
-  then obtain eq_a eq_b
-    where a: "ID CEQ('a) = Some eq_a" 
-    and b: "ID CEQ('b) = Some eq_b"
-    and eq: "\<And>x1 x2 y1 y2. eq (x1, x2) (y1, y2) \<longleftrightarrow> eq_a x1 y1 \<and> eq_b x2 y2"
-    by(auto simp add: ceq_prod_def split: option.split_asm)
-  from ID_ceq[OF a] ID_ceq[OF b] show "eq = op =" by(simp add: fun_eq_iff eq)
-qed
-end
-
-instantiation list :: (ceq) ceq begin
-definition "CEQ('a list) = Option.map (\<lambda>eq. (\<lambda>xs ys. list_all2 eq xs ys)) (ID CEQ('a))"
-instance
-proof
-  fix eq
-  assume "CEQ('a list) = Some eq"
-  then obtain eq_a where a: "ID CEQ('a) = Some eq_a"
-    and eq: "\<And>xs ys. eq xs ys \<longleftrightarrow> list_all2 eq_a xs ys"
-    by(auto simp add: ceq_list_def)
-  from ID_ceq[OF a] show "eq = op ="
-    by(simp add: eq[abs_def] list_all2_eq[symmetric, abs_def])
-qed
-end
-
-instantiation option :: (ceq) ceq begin
-definition "CEQ('a option) =
-  Option.map
-    (\<lambda>eq. \<lambda>x y. case x of None \<Rightarrow> Option.is_none y 
-                | Some x' \<Rightarrow> case y of None \<Rightarrow> False | Some y' \<Rightarrow> eq x' y')
-    (ID CEQ('a))"
-instance
-proof
-  fix eq
-  assume "CEQ('a option) = Some eq"
-  then obtain eq_a where a: "ID CEQ('a) = Some eq_a"
-    and eq: "\<And>x y. eq x y \<longleftrightarrow> 
-       (case x of None \<Rightarrow> Option.is_none y | Some x' \<Rightarrow> case y of None \<Rightarrow> False | Some y' \<Rightarrow> eq_a x' y')"
-    by(auto simp add: ceq_option_def)
-  show "eq = op =" by(auto intro!: ext simp add: eq ID_ceq[OF a] Option.is_none_def split: option.splits)
-qed
-end
-
-instantiation "fun" :: (type, type) ceq begin
-definition "CEQ('a \<Rightarrow> 'b) = None"
-instance by(intro_classes)(simp add: ceq_fun_def)
-end
-
-instantiation String.literal :: ceq begin
-definition "CEQ(String.literal) = Some op ="
-instance by(intro_classes)(simp add: ceq_literal_def)
-end
+lemma is_ceq_fun [simp]: "\<not> is_ceq TYPE('a \<Rightarrow> 'b)"
+  by(simp add: is_ceq_def ceq_fun_def ID_None) 
 
 definition set_eq :: "'a set \<Rightarrow> 'a set \<Rightarrow> bool" 
 where [code del]: "set_eq = op ="
@@ -191,6 +117,9 @@ instantiation set :: (ceq) ceq begin
 definition "CEQ('a set) = (case ID CEQ('a) of None \<Rightarrow> None | Some _ \<Rightarrow> Some set_eq)"
 instance by(intro_classes)(simp add: ceq_set_def set_eq_def split: option.splits)
 end
+
+lemma is_ceq_set [simp, code_post]: "is_ceq TYPE('a set) \<longleftrightarrow> is_ceq TYPE('a :: ceq)"
+by(simp add: is_ceq_def ceq_set_def ID_None ID_Some split: option.split)
 
 lemma ID_ceq_set_not_None_iff [simp]: "ID CEQ('a set) \<noteq> None \<longleftrightarrow> ID CEQ('a :: ceq) \<noteq> None"
 by(simp add: ceq_set_def ID_def split: option.splits)

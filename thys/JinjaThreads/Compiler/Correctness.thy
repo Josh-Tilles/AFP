@@ -31,7 +31,7 @@ locale J_JVM_heap_conf_base =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"
@@ -42,12 +42,12 @@ begin
 definition bisimJ2JVM :: 
   "(('addr,'thread_id,'addr expr\<times>'addr locals,'heap,'addr) state, 
     ('addr,'thread_id,'addr option \<times> 'addr frame list,'heap,'addr) state) bisim"
-where "bisimJ2JVM = red_red0.mbisim \<circ>\<^isub>B red0_Red1'.mbisim \<circ>\<^isub>B mbisim_Red1'_Red1 \<circ>\<^isub>B Red1_execd.mbisim"
+where "bisimJ2JVM = red_red0.mbisim \<circ>\<^sub>B red0_Red1'.mbisim \<circ>\<^sub>B mbisim_Red1'_Red1 \<circ>\<^sub>B Red1_execd.mbisim"
 
 definition tlsimJ2JVM ::
   "('thread_id \<times> ('addr, 'thread_id, 'heap) J_thread_action,
     'thread_id \<times> ('addr, 'thread_id, 'heap) jvm_thread_action) bisim"
-where "tlsimJ2JVM = red_red0.mta_bisim \<circ>\<^isub>B red0_Red1'.mta_bisim \<circ>\<^isub>B op = \<circ>\<^isub>B Red1_execd.mta_bisim"
+where "tlsimJ2JVM = red_red0.mta_bisim \<circ>\<^sub>B red0_Red1'.mta_bisim \<circ>\<^sub>B op = \<circ>\<^sub>B Red1_execd.mta_bisim"
 
 end
 
@@ -64,7 +64,7 @@ locale J_JVM_conf_read =
   and thread_id2addr :: "'thread_id \<Rightarrow> 'addr"
   and spurious_wakeups :: bool
   and empty_heap :: "'heap"
-  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr option)"
+  and allocate :: "'heap \<Rightarrow> htype \<Rightarrow> ('heap \<times> 'addr) set"
   and typeof_addr :: "'heap \<Rightarrow> 'addr \<rightharpoonup> htype"
   and heap_read :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> bool"
   and heap_write :: "'heap \<Rightarrow> 'addr \<Rightarrow> addr_loc \<Rightarrow> 'addr val \<Rightarrow> 'heap \<Rightarrow> bool"

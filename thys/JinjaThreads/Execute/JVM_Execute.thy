@@ -59,7 +59,7 @@ where
   "sc_jvm_start_state_refine \<equiv> 
    sc_start_state_refine (rm_empty ()) rm_update (rm_empty ()) (rs_empty ()) (\<lambda>C M Ts T (mxs, mxl0, b) vs. (None, [([], Null # vs @ replicate mxl0 undefined_value, C, M, 0)]))"
 
-abbreviation sc_jvm_state_invar :: "addr jvm_prog \<Rightarrow> ty\<^isub>P \<Rightarrow> (addr,thread_id,addr jvm_thread_state,heap,addr) state set"
+abbreviation sc_jvm_state_invar :: "addr jvm_prog \<Rightarrow> ty\<^sub>P \<Rightarrow> (addr,thread_id,addr jvm_thread_state,heap,addr) state set"
 where "sc_jvm_state_invar P \<Phi> \<equiv> {s. sc_execute.correct_state_ts P \<Phi> (thr s) (shr s)}"
 
 lemma eval_sc_mexec:
@@ -68,7 +68,7 @@ lemma eval_sc_mexec:
 by(rule ext)+(fastforce intro!: SUP1_I simp add: sc.exec_1_eq')
 
 lemma sc_jvm_start_state_invar: 
-  assumes "wf_jvm_prog\<^sub>\<Phi> P"
+  assumes "wf_jvm_prog\<^bsub>\<Phi>\<^esub> P"
   and "sc_wf_start_state P C M vs"
   shows "sc_state_\<alpha> (sc_jvm_start_state_refine P C M vs) \<in> sc_jvm_state_invar P \<Phi>"
 using sc_execute.correct_jvm_state_initial[OF assms]
@@ -151,8 +151,8 @@ apply(rule sc_execute.mexec_deterministic[OF assms sc_deterministic_heap_ops])
 apply(simp add: sc_spurious_wakeups)
 done
 
-ML {* @{code exec_JVM_rr} *}
+ML_val {* @{code exec_JVM_rr} *}
 
-ML {* @{code exec_JVM_rnd} *}
+ML_val {* @{code exec_JVM_rnd} *}
 
 end

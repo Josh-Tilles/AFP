@@ -8,7 +8,7 @@ theory Resumption imports
 begin
 
 text {*
-  This development defines the following codatatype:
+  This theory defines the following codatatype:
 
 \begin{verbatim}
 codatatype ('a,'b,'c,'d) resumption =
@@ -16,6 +16,7 @@ codatatype ('a,'b,'c,'d) resumption =
   | Linear 'b "('a,'b,'c,'d) resumption"
   | Branch 'c "'d => ('a,'b,'c,'d) resumption"
 \end{verbatim}
+
 *}
 
 subsection {* Auxiliary definitions and lemmata similar to @{theory Datatype} *}
@@ -183,9 +184,7 @@ lemma resumption_case_simps [simp, code]:
   and resumption_case_Branch: "resumption_case t l br (Branch c rs) = br c rs"
 by(simp_all add: Terminal_def Linear_def Branch_def resumption_case_def Abs_resumption_inverse resumption.intros Rep_resumption Rep_resumption_inverse)
 
-translations
-  "case p of XCONST Terminal a \<Rightarrow> t | XCONST Linear b r \<Rightarrow> l | XCONST Branch c rs \<Rightarrow> d" \<rightleftharpoons> "CONST resumption_case (\<lambda>a. t) (\<lambda>b r. l) (\<lambda>c rs. d) p"
-  "case p of (XCONST Terminal :: 'a) a \<Rightarrow> t | (XCONST Linear :: 'b) b r \<Rightarrow> l | (XCONST Branch :: 'c) c rs \<Rightarrow> d" \<rightharpoonup> "CONST resumption_case (\<lambda>a. t) (\<lambda>b r. l) (\<lambda>c rs. d) p"
+declare [[case_translation resumption_case Terminal Linear Branch]]
 
 lemma resumption_case_cert:
   assumes "CASE \<equiv> resumption_case t l br"

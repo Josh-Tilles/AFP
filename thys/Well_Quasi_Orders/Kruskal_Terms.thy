@@ -4,7 +4,7 @@
     License:    LGPL
 *)
 
-header {* Kruskal's Tree Theorem -- Infinite Version for Terms *}
+header {* Kruskal's Tree Theorem for Almost-Full Relations -- Infinite Version for Terms *}
 
 theory Kruskal_Terms
 imports
@@ -196,20 +196,18 @@ lemma almost_full_on_terms:
   assumes "almost_full_on P F"
   shows "almost_full_on (term_hemb F P)\<^sup>=\<^sup>= (terms F)"
 proof (rule ccontr)
+  let ?A = "terms F"
   let ?P = "(term_hemb F P)\<^sup>=\<^sup>="
-  interpret term_mbs: mbs "\<lambda>F. (term_hemb F P)\<^sup>=\<^sup>=" subtree "terms"
-  proof
-    fix F s t u
-    assume "u \<in> terms F" and "term_hembeq F P s t" and "subtree t u"
-    then show "term_hembeq F P s u" by (rule term_hembeq_subtree)
-  qed (auto intro: wfp_on_subtree_terms subtree_terms elim: subtree_trans)
-  have refl: "reflp_on ?P (terms F)" by (auto simp: reflp_on_def)
+  interpret term_mbs: mbs subtree ?A
+    by (unfold_locales)
+       (auto intro: wfp_on_subtree_terms elim: subtree_trans)
+  have refl: "reflp_on ?P ?A" by (auto simp: reflp_on_def)
 
   assume "\<not> ?thesis"
   then obtain f where "\<forall>i. f i \<in> terms F" and "bad ?P f"
     unfolding almost_full_on_def by blast
   from term_mbs.mbs [OF this] obtain m where bad: "bad ?P m"
-    and mb: "\<And>n. mbs.min_at (\<lambda>F. (term_hemb F P)\<^sup>=\<^sup>=) subtree F m n"
+    and mb: "\<And>n. mbs.min_at subtree ?A ?P m n"
     and in_terms: "\<And>i. m i \<in> terms F"
     by blast
   obtain r s where [simp]: "\<And>i. r i = root (m i)" "\<And>i. s i = succs (m i)" by force
@@ -252,21 +250,13 @@ proof (rule ccontr)
         ultimately have False using `bad ?P m` by (auto simp: good_def)
       } ultimately show False by arith
     qed
-    have "\<forall>i<?n. c i = m i" by simp
+    have "\<forall>i. c i \<in> terms F"
+      using in_terms
+      by (simp add: c_def) (metis `\<And>i. s i = succs (m i)` in_succs terms_root_succs)
+    moreover have "\<forall>i<?n. c i = m i" by simp
     moreover have "subtree (c ?n) (m ?n)"
       using in_succs_imp_subtree and in_terms and in_succs
       by (fastforce dest!: terms_imp_trees)
-    moreover have "\<forall>i\<ge>?n. \<exists>j\<ge>?n. subtree\<^sup>=\<^sup>= (c i) (m j)"
-    proof (intro allI impI)
-      fix i
-      let ?i = "i - ?n"
-      assume "?n \<le> i"
-      with ge have "?n \<le> \<phi> ?i" by auto
-      from `?n \<le> i` have "c i = t ?i" by auto
-      with in_succs_imp_subtree and in_succs and in_terms
-        have "subtree\<^sup>=\<^sup>= (c i) (m (\<phi> ?i))" by (fastforce dest!: terms_imp_trees)
-      thus "\<exists>j\<ge>?n. subtree\<^sup>=\<^sup>= (c i) (m j)" using `?n \<le> \<phi> ?i` by auto
-    qed
     ultimately have "good ?P c"
       using mb [of ?n, unfolded term_mbs.min_at_def, rule_format] by simp
     with `bad ?P c` have False by blast
@@ -579,7 +569,7 @@ lemma irreflp_on_term_hemb_terms:
   assumes "wfp_on P F"
   shows "irreflp_on (term_hemb F P) (terms F)"
 proof -
- let ?P = "term_hemb F P" and ?Q = "mulex_on P F"
+  let ?P = "term_hemb F P" and ?Q = "mulex_on P F"
   let ?A = "terms F" and ?B = "multisets F"
   from assms [THEN irreflp_on_mulex_on]
     have "irreflp_on ?Q ?B" .

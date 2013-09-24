@@ -41,7 +41,6 @@ instance bool :: wellorder
 apply (rule wf_wellorderI)
  apply (rule_tac t="{(x, y). x < y}" and s="{(False, True)}" in subst)
   apply fastforce
- thm wf_def
  apply (unfold wf_def, blast)
 apply intro_classes
 done
@@ -262,7 +261,8 @@ let
       val (t',Q) = Syntax_Trans.atomic_abs_tr' abs'
     in Syntax.const syn $ P $ t $ t' $ i $ Q end
 in
-[(@{const_syntax "iUntil"}, btr' "_iUntil"), (@{const_syntax "iSince"}, btr' "_iSince")]
+ [(@{const_syntax "iUntil"}, K (btr' "_iUntil")),
+  (@{const_syntax "iSince"}, K (btr' "_iSince"))]
 end
 *}
 
@@ -278,7 +278,8 @@ let
       val (t',Q) = Syntax_Trans.atomic_abs_tr' abs'
     in Syntax.const syn $ P $ t $ t' $ i $ Q end
 in
-[(@{const_syntax "iWeakUntil"}, btr' "_iWeakUntil"), (@{const_syntax "iWeakSince"}, btr' "_iWeakSince")]
+ [(@{const_syntax "iWeakUntil"}, K (btr' "_iWeakUntil")),
+  (@{const_syntax "iWeakSince"}, K (btr' "_iWeakSince"))]
 end
 *}
 
@@ -294,7 +295,8 @@ let
       val (t',Q) = Syntax_Trans.atomic_abs_tr' abs'
     in Syntax.const syn $ P $ t $ t' $ i $ Q end
 in
-[(@{const_syntax "iRelease"}, btr' "_iRelease"), (@{const_syntax "iTrigger"}, btr' "_iTrigger")]
+ [(@{const_syntax "iRelease"}, K (btr' "_iRelease")),
+  (@{const_syntax "iTrigger"}, K (btr' "_iTrigger"))]
 end
 *}
 
@@ -1494,7 +1496,6 @@ apply (rule iffI)
   apply (subgoal_tac "t1 \<in> I \<down>< (t - t mod k) \<union> I \<down>\<ge> (t - t mod k)")
    prefer 2
    apply (simp add: cut_less_cut_ge_ident)
-   find_theorems "_ < iMin _" "_ \<notin> _"
   apply (subgoal_tac "t1 \<notin> I \<down>\<ge> (t - t mod k)")
    prefer 2
    apply (blast dest: not_less_iMin)

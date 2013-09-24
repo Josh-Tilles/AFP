@@ -1,5 +1,5 @@
-theory Runge_Kutta_Ex3
-  imports Runge_Kutta_Ex
+theory Euler_Ex3
+  imports Euler_Ex
 begin
 
 subsection{* $\dot{x}~t := x^2 + t^2$ *}
@@ -10,7 +10,7 @@ locale example3_aux = fixes t0' x0' :: float and b r T::real
   assumes interval_pos: "t0' \<le> T"
 begin
 
-definition "B = (max \<bar>x0' - \<bar>b\<bar>\<bar> \<bar>x0' + \<bar>b\<bar>\<bar>)\<twosuperior> + (max \<bar>T\<bar> \<bar>t0'\<bar>)\<twosuperior>"
+definition "B = (max \<bar>x0' - \<bar>b\<bar>\<bar> \<bar>x0' + \<bar>b\<bar>\<bar>)\<^sup>2 + (max \<bar>T\<bar> \<bar>t0'\<bar>)\<^sup>2"
 
 definition "L = 2 * max \<bar>x0' - abs b - abs r\<bar> \<bar>x0' + abs b + abs r\<bar>"
 
@@ -46,33 +46,7 @@ begin
 lemma derivative_of_square_x_plus_square_t:
   fixes t x::real
   shows "((\<lambda>(t, x). x^2 + t^2) has_derivative (\<lambda>(dt, dx). 2*x*dx + 2*t*dt)) (at (t, x))"
-proof -
-  have "((\<lambda>tx. (tx \<bullet> (0,1))^2 + (tx \<bullet> (1,0))^2) has_derivative
-    (\<lambda>dtx. 2 * ((t, x) \<bullet> (0, 1)) * (dtx \<bullet> (0, 1)) + 2 * ((t, x) \<bullet> (1, 0)) * (dtx \<bullet> (1, 0)))) (at (t, x))"
-  proof -
-    have f: "(\<lambda>x. (x \<bullet> (0,1))\<twosuperior>) = (\<lambda>x. x^2)o(\<lambda>x. x \<bullet> (0,1))" by auto
-    have f': "(\<lambda>dtx. 2*((t, x) \<bullet> (0,1))*(dtx \<bullet> (0,1))) =
-      (op * (of_nat 2 * ((t, x) \<bullet> (0,1)) ^ (2 - 1)))o(\<lambda>h. h \<bullet> (0,1))" by auto
-    have "((\<lambda>x. (x \<bullet> (0,1))\<twosuperior>) has_derivative (\<lambda>h. 2 * ((t, x) \<bullet> (0,1)) * (h \<bullet> (0,1)))) (at (t, x))"
-      unfolding f f'
-      by (intro diff_chain_at has_derivative_intros FDERIV_power[unfolded FDERIV_conv_has_derivative])
-    moreover
-    have f: "(\<lambda>x. (x \<bullet> (1,0))\<twosuperior>) = (\<lambda>x. x^2)o(\<lambda>x. x \<bullet> (1,0))" by auto
-    have f': "(\<lambda>dtx. 2*((t, x) \<bullet> (1,0))*(dtx \<bullet> (1,0))) =
-      (op * (of_nat 2 * ((t, x) \<bullet> (1,0)) ^ (2 - 1)))o(\<lambda>h. h \<bullet> (1,0))" by auto
-    have "((\<lambda>x. (x \<bullet> (1,0))\<twosuperior>) has_derivative (\<lambda>h. 2 * ((t, x) \<bullet> (1,0)) * (h \<bullet> (1,0)))) (at (t, x))"
-      unfolding f f'
-      by (intro diff_chain_at has_derivative_intros FDERIV_power[unfolded FDERIV_conv_has_derivative])
-    ultimately
-    show ?thesis by (intro has_derivative_intros)
-  qed
-  also have "(\<lambda>tx. (tx \<bullet> (0,1))\<twosuperior> + (tx \<bullet> (1,0))^2) = (\<lambda>(t, x). x^2 + t^2)"
-    by auto
-  also have "(\<lambda>dtx. 2 * ((t, x) \<bullet> (0,1)) * (dtx \<bullet> (0,1)) + 2 * ((t, x) \<bullet> (1,0)) * (dtx \<bullet> (1,0))) =
-    (\<lambda>(dt, dx). 2 * x * dx + 2 * t * dt)"
-    by auto
-  finally show ?thesis .
-qed
+  by (auto intro!: FDERIV_eq_intros)
 
 lemma derivative:
   fixes tx::"real \<times> real"
@@ -103,7 +77,7 @@ lemma f_bounded:
   assumes "x \<in> D"
   shows "\<bar>f (s, x)\<bar> \<le> B"
 proof -
-  have "abs (x\<twosuperior> + s^2) \<le> x^2 + s^2"
+  have "abs (x\<^sup>2 + s^2) \<le> x^2 + s^2"
     by (metis abs_of_nonneg order_eq_iff sum_power2_ge_zero)
   also have "s^2 \<le> max (abs t0) (abs T) ^ 2" using assms
     apply (auto simp add: real_abs_le_square_iff[symmetric] bounded_abs i_def)
@@ -215,7 +189,7 @@ lemma i_max_correct: "\<And>i. i \<le> i_max \<Longrightarrow> E.Delta i \<le> T
   unfolding H_def T'_def t0'_def i_max_def
   by simp
 
-definition "euler_result3 i = euler_float e' (\<lambda>(t, x). x\<twosuperior> + t\<twosuperior>) x0' E.Delta i"
+definition "euler_result3 i = euler_float e' (\<lambda>(t, x). x\<^sup>2 + t\<^sup>2) x0' E.Delta i"
 
 lemma convergence:
   assumes i: "i \<le> i_max"

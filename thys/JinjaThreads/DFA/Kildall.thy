@@ -422,7 +422,7 @@ proof -
    (\<forall>ts\<in>list n A. ss0 [\<sqsubseteq>\<^sub>r] ts \<and> stables r step ts \<longrightarrow> ss [\<sqsubseteq>\<^sub>r] ts) \<and>
    (\<forall>p\<in> s_\<alpha> w. p < n)" and
    r = "{(ss',ss) . ss \<in> list n A \<and> ss' \<in> list n A \<and> ss [\<sqsubset>\<^sub>r] ss'} <*lex*> s_finite_psubset"
-	 in while_rule)
+         in while_rule)
 
   -- "Invariant holds initially:"
   apply (simp add:stables_def)
@@ -559,16 +559,16 @@ proof -
   apply(insert `Semilat A r f` semilat kildall_properties[of A])
   apply(simp add:stables_def)
   apply clarify
-  apply(subgoal_tac "kildall r f step \<tau>s\<^isub>0 \<in> list n A")
+  apply(subgoal_tac "kildall r f step \<tau>s\<^sub>0 \<in> list n A")
    prefer 2 apply (simp(no_asm_simp))
   apply (rule iffI)
-   apply (rule_tac x = "kildall r f step \<tau>s\<^isub>0" in bexI) 
+   apply (rule_tac x = "kildall r f step \<tau>s\<^sub>0" in bexI) 
     apply (rule conjI)
      apply (blast)
     apply (simp  (no_asm_simp))
    apply(assumption)
   apply clarify
-  apply(subgoal_tac "kildall r f step \<tau>s\<^isub>0!p <=_r \<tau>s!p")
+  apply(subgoal_tac "kildall r f step \<tau>s\<^sub>0!p <=_r \<tau>s!p")
    apply simp
   apply (blast intro!: le_listD less_lengthI)
   done

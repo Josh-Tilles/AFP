@@ -2,7 +2,6 @@
    Author:     Andreas Lochbihler, ETH Zurich *)
 (*<*)
 theory Containers_Userguide imports
-  "../Datatype_Order_Generator/Order_Generator"
   Card_Datatype
   List_Proper_Interval
   Containers
@@ -85,7 +84,7 @@ datatype expr = Var vname | Lit int | Add expr expr
 fun vars :: "expr \<Rightarrow> vname set" where
   "vars (Var v) = {v}"
 | "vars (Lit i) = {}"
-| "vars (Add e\<^isub>1 e\<^isub>2) = vars e\<^isub>1 \<union> vars e\<^isub>2"
+| "vars (Add e\<^sub>1 e\<^sub>2) = vars e\<^sub>1 \<union> vars e\<^sub>2"
 
 value [code] "vars (Var ''x'')"
 
@@ -97,7 +96,7 @@ datatype 'a expr' = Var' 'a | Lit' int | Add' "'a expr'" "'a expr'"
 fun vars' ::  "'a expr' \<Rightarrow> 'a set" where
   "vars' (Var' v) = {v}"
 | "vars' (Lit' i) = {}"
-| "vars' (Add' e\<^isub>1 e\<^isub>2) = vars' e\<^isub>1 \<union> vars' e\<^isub>2"
+| "vars' (Add' e\<^sub>1 e\<^sub>2) = vars' e\<^sub>1 \<union> vars' e\<^sub>2"
 
 value [code] "vars' (Var' (1 :: int))"
 
@@ -147,17 +146,30 @@ text {*
   Whenever possible, @{term "CEQ('a)"} should provide an executable equality operator.
   Otherwise, membership tests on such sets will raise an exception at run-time.
 
-  The instantiations of @{class ceq} follow the following pattern:
+  For data types, the @{text derive} command can automatically instantiates of @{class ceq},
+  we only have to tell it whether an equality operation should be provided or not (parameter @{text no}).
 *}
 (*<*)end(*>*)
 
-instantiation expr :: ceq begin
-definition "CEQ(expr) = Some op ="
-instance by(intro_classes)(simp add: ceq_expr_def)
+derive (eq) ceq expr
+
+datatype example = Example
+derive (no) ceq example
+
+text {*
+  In the remainder of this subsection, we look at how to manually instantiate a type for @{class ceq}.
+  First, the simple case of a type constructor @{text simple_tycon} without parameters that already is an instance of @{class equal}:
+*}
+typedecl simple_tycon
+arities simple_tycon :: equal
+
+instantiation simple_tycon :: ceq begin
+definition "CEQ(simple_tycon) = Some op ="
+instance by(intro_classes)(simp add: ceq_simple_tycon_def)
 end
 
 text {*
-  For polymorphic types, this is a bit more involved.
+  For polymorphic types, this is a bit more involved, as the next example with @{typ "'a expr'"} illustrates (note that we could have delegated all this to @{text derive}). 
   First, we need an operation that implements equality tests with respect to a given equality operation on the polymorphic type.
   For data types, we can use the relator which the transfer package (method @{text transfer}) requires and the BNF package from @{file "~~/src/HOL/BNF/BNF.thy"} generates automatically.
   As we have used the old datatype package for @{typ "'a expr'"}, we must define it manually:
@@ -168,14 +180,14 @@ fun expr'_rel :: "'a expr' \<Rightarrow> 'b expr' \<Rightarrow> bool"
 where
   "expr'_rel (Var' v)      (Var' v')        \<longleftrightarrow> R v v'"
 | "expr'_rel (Lit' i)        (Lit' i')         \<longleftrightarrow> i = i'"
-| "expr'_rel (Add' e\<^isub>1 e\<^isub>2) (Add' e\<^isub>1' e\<^isub>2') \<longleftrightarrow> expr'_rel e\<^isub>1 e\<^isub>1' \<and> expr'_rel e\<^isub>2 e\<^isub>2'"
+| "expr'_rel (Add' e\<^sub>1 e\<^sub>2) (Add' e\<^sub>1' e\<^sub>2') \<longleftrightarrow> expr'_rel e\<^sub>1 e\<^sub>1' \<and> expr'_rel e\<^sub>2 e\<^sub>2'"
 | "expr'_rel _                 _                \<longleftrightarrow> False"
 end
 
 text {* If we give HOL equality as parameter, the relator is equality: *}
 
-lemma expr'_rel_eq: "expr'_rel op = e\<^isub>1 e\<^isub>2 \<longleftrightarrow> e\<^isub>1 = e\<^isub>2"
-by(induct e\<^isub>1 e\<^isub>2 rule: expr'_rel.induct) simp_all
+lemma expr'_rel_eq: "expr'_rel op = e\<^sub>1 e\<^sub>2 \<longleftrightarrow> e\<^sub>1 = e\<^sub>2"
+by(induct e\<^sub>1 e\<^sub>2 rule: expr'_rel.induct) simp_all
 text {*
   Then, the instantiation is again canonical:
 *}
@@ -214,17 +226,23 @@ text {*
   If you cannot or do not want to implement a linear order on your type, you can default to @{term "None"}.
   In that case, you will not be able to use your type as elements of sets or as keys in maps implemented by search trees.
 
-  If the type is already instantiates @{class linorder} and we wish to use that order also for the search tree, instantiation is again canonical.
-  (For our datatype @{typ "expr"}, we use Thiemann's order generator \cite{Thiemann2012AFP}.)
+  If the type is already instantiates @{class linorder} and we wish to use that order also for the search tree, instantiation is again canonical:
+  For our data type @{typ expr}, derive does everything!
 *}
 (*<*)end(*>*)
 (*<*);(*>*)
 derive linorder expr
+derive (linorder) corder expr
 (*<*);(*>*)
 
-instantiation expr :: corder begin
-definition "CORDER(expr) = Some (op \<le>, op <)"
-instance by(intro_classes)(simp add: corder_expr_def, unfold_locales)
+text {*
+  In general, the pattern for type constructors without parameters looks as follows:
+*}
+arities simple_tycon :: linorder
+
+instantiation simple_tycon :: corder begin
+definition "CORDER(simple_tycon) = Some (op \<le>, op <)"
+instance by(intro_classes)(simp add: corder_simple_tycon_def, unfold_locales)
 end
 
 (*<*)
@@ -238,7 +256,8 @@ lemma less_expr_iff:
 by(case_tac [!] e)(simp_all add: less_expr_def)
 (*>*)
 text {* 
-  For polymorphic types like @{typ "'a expr'"}, we must first define an order that thake the order on the type variable @{typ "'a"} as a parameter.
+  For polymorphic types like @{typ "'a expr'"}, we should not do everything manually:
+  Frist, we must define an order that takes the order on the type variable @{typ "'a"} as a parameter.
   This is necessary to maintain the separation between Isabelle/HOL's type classes (like @{class linorder}) and LC's.
   (Alternatively, you can also use the order generator and the same pattern as for @{typ expr}, but you will then never be able to use unorderable variable names in generated code for sets of expressions, e.g., @{typ "int set expr' set"} -- if you stick to the separation, such things will still be possible.)
 *}
@@ -251,41 +270,41 @@ where
 | "Var' x       \<sqsubset> _               \<longleftrightarrow> True"
 | "Lit' i        \<sqsubset> Lit' i'         \<longleftrightarrow> i < i'"
 | "Lit' _        \<sqsubset> Add' _ _      \<longleftrightarrow> True"
-| "Add' e\<^isub>1 e\<^isub>2 \<sqsubset> Add' e\<^isub>1' e\<^isub>2' \<longleftrightarrow> 
-   e\<^isub>1 \<sqsubset> e\<^isub>1' \<or> \<not> e\<^isub>1' \<sqsubset> e\<^isub>1 \<and> e\<^isub>2 \<sqsubset> e\<^isub>2'"
-   -- {* Note that we avoid an explicit equality test here by using @{text "\<not> e\<^isub>1' \<sqsubset> e\<^isub>1"} *}
+| "Add' e\<^sub>1 e\<^sub>2 \<sqsubset> Add' e\<^sub>1' e\<^sub>2' \<longleftrightarrow> 
+   e\<^sub>1 \<sqsubset> e\<^sub>1' \<or> \<not> e\<^sub>1' \<sqsubset> e\<^sub>1 \<and> e\<^sub>2 \<sqsubset> e\<^sub>2'"
+   -- {* Note that we avoid an explicit equality test here by using @{text "\<not> e\<^sub>1' \<sqsubset> e\<^sub>1"} *}
 | "_             \<sqsubset> _                \<longleftrightarrow> False"
 by pat_completeness simp_all
 termination by size_change
 
 definition less_eq_expr' :: "'a expr' \<Rightarrow> 'a expr' \<Rightarrow> bool" (infix "\<sqsubseteq>" 50)
-where "e\<^isub>1 \<sqsubseteq> e\<^isub>2 \<longleftrightarrow> \<not> e\<^isub>2 \<sqsubset> e\<^isub>1"
+where "e\<^sub>1 \<sqsubseteq> e\<^sub>2 \<longleftrightarrow> \<not> e\<^sub>2 \<sqsubset> e\<^sub>1"
 
 lemma expr'_linorder:
   assumes linorder: "class.linorder le_a lt_a"
   shows "class.linorder op \<sqsubseteq> op \<sqsubset>"
 proof -
   interpret linorder le_a lt_a by(rule assms)
-  { fix e\<^isub>1 e\<^isub>2
-    have "\<lbrakk> e\<^isub>1 \<sqsubset> e\<^isub>2; e\<^isub>2 \<sqsubset> e\<^isub>1 \<rbrakk> \<Longrightarrow> False"
-      by(induct e\<^isub>1 e\<^isub>2 rule: less_expr'.induct) auto }
-  hence lt_eq: "\<And>e\<^isub>1 e\<^isub>2. e\<^isub>1 \<sqsubset> e\<^isub>2 \<longleftrightarrow> e\<^isub>1 \<sqsubseteq> e\<^isub>2 \<and> \<not> e\<^isub>2\<sqsubseteq> e\<^isub>1" 
+  { fix e\<^sub>1 e\<^sub>2
+    have "\<lbrakk> e\<^sub>1 \<sqsubset> e\<^sub>2; e\<^sub>2 \<sqsubset> e\<^sub>1 \<rbrakk> \<Longrightarrow> False"
+      by(induct e\<^sub>1 e\<^sub>2 rule: less_expr'.induct) auto }
+  hence lt_eq: "\<And>e\<^sub>1 e\<^sub>2. e\<^sub>1 \<sqsubset> e\<^sub>2 \<longleftrightarrow> e\<^sub>1 \<sqsubseteq> e\<^sub>2 \<and> \<not> e\<^sub>2\<sqsubseteq> e\<^sub>1" 
     and "\<And>e. e \<sqsubseteq> e" unfolding less_eq_expr'_def by auto
   moreover
-  { fix e\<^isub>1 e\<^isub>2
-    have "\<lbrakk> e\<^isub>1 \<sqsubseteq> e\<^isub>2; e\<^isub>2 \<sqsubseteq> e\<^isub>1 \<rbrakk> \<Longrightarrow> e\<^isub>1 = e\<^isub>2"
+  { fix e\<^sub>1 e\<^sub>2
+    have "\<lbrakk> e\<^sub>1 \<sqsubseteq> e\<^sub>2; e\<^sub>2 \<sqsubseteq> e\<^sub>1 \<rbrakk> \<Longrightarrow> e\<^sub>1 = e\<^sub>2"
       unfolding less_eq_expr'_def 
-      by(induct e\<^isub>1 e\<^isub>2 rule: less_expr'.induct) auto }
+      by(induct e\<^sub>1 e\<^sub>2 rule: less_expr'.induct) auto }
   note antisym = this
   moreover
-  { fix e\<^isub>1 e\<^isub>2
-    have "e\<^isub>1 \<sqsubseteq> e\<^isub>2 \<or> e\<^isub>2 \<sqsubseteq> e\<^isub>1" unfolding less_eq_expr'_def
-      by(induct e\<^isub>1 e\<^isub>2 rule: less_expr'.induct) auto }
+  { fix e\<^sub>1 e\<^sub>2
+    have "e\<^sub>1 \<sqsubseteq> e\<^sub>2 \<or> e\<^sub>2 \<sqsubseteq> e\<^sub>1" unfolding less_eq_expr'_def
+      by(induct e\<^sub>1 e\<^sub>2 rule: less_expr'.induct) auto }
   moreover
-  { fix e\<^isub>1 e\<^isub>2 e\<^isub>3
-    have "\<lbrakk> e\<^isub>1 \<sqsubseteq> e\<^isub>2; e\<^isub>2 \<sqsubseteq> e\<^isub>3 \<rbrakk> \<Longrightarrow> e\<^isub>1 \<sqsubseteq> e\<^isub>3"
-      apply(induct e\<^isub>1 e\<^isub>2 arbitrary: e\<^isub>3 rule: less_expr'.induct)
-      apply(case_tac [!] e\<^isub>3)
+  { fix e\<^sub>1 e\<^sub>2 e\<^sub>3
+    have "\<lbrakk> e\<^sub>1 \<sqsubseteq> e\<^sub>2; e\<^sub>2 \<sqsubseteq> e\<^sub>3 \<rbrakk> \<Longrightarrow> e\<^sub>1 \<sqsubseteq> e\<^sub>3"
+      apply(induct e\<^sub>1 e\<^sub>2 arbitrary: e\<^sub>3 rule: less_expr'.induct)
+      apply(case_tac [!] e\<^sub>3)
       apply(simp_all add: less_eq_expr'_def)
       apply(fold less_eq_expr'_def lt_eq[symmetric])
       using antisym by(auto 6 2) }
@@ -333,21 +352,19 @@ text {*
   For maps, the choices are @{term "mapping_Assoc_List"} (associative list without duplicates), @{term "mapping_RBT"} (red-black tree), and @{term "mapping_Mapping"} (closures with function update).
   Again, there is also the @{term "mapping_Choose"} heuristics.
   
+  For simple cases, @{text derive} can be used again (even if the type is not a data type).
   Consider, e.g., the following instantiations:
   @{typ "expr set"} uses RBTs, @{typ "(expr, _) mapping"} and @{typ "'a expr' set"} use the heuristics, and @{typ "('a expr', _) mapping"} uses the same implementation as @{typ "('a, _) mapping"}.
 *}
 (*<*)end(*>*)
 
-instantiation expr :: "{set_impl, mapping_impl}" begin
-definition "SET_IMPL(expr) = Phantom(expr) set_RBT"
-definition "MAPPING_IMPL(expr) = Phantom(expr) mapping_Choose"
-instance ..
-end
+derive (rbt) set_impl expr
+derive (choose) mapping_impl expr
+derive (choose) set_impl expr'
 
-instantiation expr' :: (type) set_impl begin
-definition "SET_IMPL('a expr') = Phantom('a expr') set_Choose"
-instance ..
-end
+text {*
+  More complex cases such as taking the implementation preference of a type parameter must be done manually.
+*}
 
 instantiation expr' :: (mapping_impl) mapping_impl begin
 definition
@@ -362,9 +379,11 @@ definition empty where "empty = Mapping.empty"
 declare (in -) mynamespace.empty_def [code]
 (*>*)
 text {* 
-  To see the effect of the different configurations, consider the following examples where @{term [names_short] "empty"} 
-  refers to @{term "Mapping.empty"}.
-
+  To see the effect of the different configurations, consider the following examples where @{term [names_short] "empty"} refers to @{term "Mapping.empty"}.
+  For that, we must disable pretty printing for sets as follows:
+*}
+declare (*<*)(in -) (*>*)pretty_sets[code_post del]
+text {*
   \begin{center}
     \small
     \begin{tabular}{ll}
@@ -384,7 +403,7 @@ text {*
       \\
       \midrule
       @{term [source] "{} :: string expr' set"}
-      &
+     &
       @{value [names_short] "{} :: string expr' set"}
       \\
       @{term [source] "{} :: (nat \<Rightarrow> nat) expr' set"}
@@ -411,7 +430,10 @@ text {*
   By default, @{typ bool} prefers distinct (associative) lists over RBTs, because there are just two elements.
   As @{typ "bool expr'"} enherits the choice for maps from @{typ bool}, an associative list implements @{term [source] "empty :: (bool expr', unit) mapping"}.
   For sets, in contrast, @{term "SET_IMPL('a expr')"} discards @{typ 'a}'s preferences and picks RBTs, because there is a comparison operation.
+
+  Finally, let's enable pretty-printing for sets again:
 *}
+declare (*<*)(in -) (*>*)pretty_sets [code_post]
 (*<*)
   (* The following value commands ensure that the code generator executes @{value ...} above,
      I could not find a way to specify [code] to @{value}. *)
@@ -450,10 +472,7 @@ definition "CENUM(expr) = None"
 instance by(intro_classes)(simp_all add: cEnum_expr_def)
 end
 
-instantiation expr' :: (type) cenum begin
-definition "CENUM('a expr') = None"
-instance by(intro_classes)(simp_all add: cEnum_expr'_def)
-end
+derive (no) cenum expr'
 
 text_raw {* \par\medskip \isastyletext For example, *}
 value [code] "({b. b = True}, {x. x > Lit 0})"
@@ -809,8 +828,8 @@ text {*
   Typically, these just dispatch to the operations on the type from \S\ref{subsection:hide:invariants}.
   Some operations depend on the type class operations from \S\ref{subsection:introduce:type:class} being defined; then, the code equation must check that the operations are indeed defined.
   If not, there is usually no way to implement the operation, so the code should raise an exception.
-  Logically, we use a function of type @{typ "(unit \<Rightarrow> 'a) \<Rightarrow> 'a"} with definition @{term "\<lambda>f. f ()"}, but declare it as \isamarkuptrue\isacommand{code{\isacharunderscore}abort}\isamarkupfalse{} to generate an exception when the code executes (the unit closure avoids non-termination in strict languages).
-  This function gets the unit-closure of the equation's left-hand side as argument, because it is then trivial to prove equality.
+  Logically, we use the function @{term "Code.abort"} of type @{typ "String.literal \<Rightarrow> (unit \<Rightarrow> 'a) \<Rightarrow> 'a"} with definition @{term "\<lambda>_ f. f ()"}, but the generated code raises an exception \texttt{Fail} with the given message (the unit closure avoids non-termination in strict languages).
+  This function gets the exception message and the unit-closure of the equation's left-hand side as argument, because it is then trivial to prove equality.
 
   Again, we only show a small set of operations; a realistic implementation should cover as many as possible.
 *}
@@ -825,14 +844,14 @@ by simp(transfer, simp)
 lemma update_Trie_Mapping [code]:
   "Mapping.update k v (Trie_Mapping t) = 
   (case ID cbl :: 'k cbl of
-     None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.update k v (Trie_Mapping t))
+     None \<Rightarrow> Code.abort (STR ''update Trie_Mapping: cbl = None'') (\<lambda>_. Mapping.update k v (Trie_Mapping t))
    | Some _ \<Rightarrow> Trie_Mapping (update k v t))"
 by(simp split: option.split add: lookup_update Mapping.update.abs_eq)
 
 lemma keys_Trie_Mapping [code]:
   "Mapping.keys (Trie_Mapping t) =
   (case ID cbl :: 'k cbl of
-     None \<Rightarrow> map_impl_unsupported_operation (\<lambda>_. Mapping.keys (Trie_Mapping t))
+     None \<Rightarrow> Code.abort (STR ''keys Trie_Mapping: cbl = None'') (\<lambda>_. Mapping.keys (Trie_Mapping t))
    | Some _ \<Rightarrow> keys t)"
 by(simp add: Mapping.keys.abs_eq keys_conv_dom_lookup split: option.split)
 
@@ -910,6 +929,10 @@ by(simp add: mapping_impl_unit_def)
 
 value [code] "Mapping.empty :: (unit, int) mapping"
 
+text {*
+  You can also use your new pseudo-constructor with @{text derive} in instantiations, just give its name as option:
+*}
+derive (mapping_Trie) mapping_impl simple_tycon
 
 section {* Changing the configuration *}
 
@@ -1007,8 +1030,8 @@ text_raw {* \label{subsection:set_impl_unsupported_operation} *}
 
 text {*
   Not all combinations of data and container implementation are possible.
-  For example, you cannot implement a set of functions with an RBT, because there is no order on @{typ "'a \<Rightarrow> 'b"}.
-  If you try, the code will raise exceptions like \texttt{set\_impl\_unsupported\_operation} or \texttt{map\_impl\_unsupported\_operation} or \texttt{Match}.
+  For example, you cannot implement a set of functions with a RBT, because there is no order on @{typ "'a \<Rightarrow> 'b"}.
+  If you try, the code will raise an exception \texttt{Fail} (with an exception message) or \texttt{Match}.
   They can occur in three cases:
 
   \begin{enumerate}
@@ -1044,19 +1067,16 @@ where
 ML_val {*
 fun test_fail s f =
   let
-    val error = Fail ("exception Fail \"" ^ s ^ "\" expected")
+    fun error s' = Fail ("exception Fail \"" ^ s ^ "\" expected, but got " ^ s')
   in
-    (f (); raise error)
+    (f (); raise (error "no exception") )
     handle
-      Fail s' => if s = s' then () else raise error
+      Fail s' => if s = s' then () else raise (error s')
   end;
 
-fun test_siuo f = test_fail "set_impl_unsupported_operation" f;
-fun test_miuo f = test_fail "map_impl_unsupported_operation" f;
-
-test_siuo @{code test_set_impl_unsupported_operation1};
-test_siuo @{code test_set_impl_unsupported_operation2};
-test_miuo @{code test_mapping_impl_unsupported_operation};
+test_fail "union RBT_set Set_Monad: corder = None" @{code test_set_impl_unsupported_operation1};
+test_fail "image Collect_set" @{code test_set_impl_unsupported_operation2};
+test_fail "is_empty RBT_Mapping: corder = None" @{code test_mapping_impl_unsupported_operation};
 *}
 (*>*)
 

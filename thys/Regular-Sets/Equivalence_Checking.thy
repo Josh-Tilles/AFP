@@ -145,31 +145,30 @@ done
 type_synonym rexp_pair = "nat rexp * nat rexp"
 type_synonym rexp_pairs = "rexp_pair list"
 
-definition is_bisimulation :: 
-  "nat list \<Rightarrow> rexp_pairs \<Rightarrow> bool"
+definition is_bisimulation ::  "nat list \<Rightarrow> rexp_pair set \<Rightarrow> bool"
 where
-"is_bisimulation as ps =
-  (\<forall>(r,s)\<in> set ps. (atoms r \<union> atoms s \<subseteq> set as) \<and> (nullable r \<longleftrightarrow> nullable s) \<and>
-    (\<forall>a\<in>set as. (nderiv a r, nderiv a s) \<in> set ps))"
+"is_bisimulation as R =
+  (\<forall>(r,s)\<in> R. (atoms r \<union> atoms s \<subseteq> set as) \<and> (nullable r \<longleftrightarrow> nullable s) \<and>
+    (\<forall>a\<in>set as. (nderiv a r, nderiv a s) \<in> R))"
 
 lemma bisim_lang_eq:
 assumes bisim: "is_bisimulation as ps"
-assumes "(r, s) \<in> set ps"
+assumes "(r, s) \<in> ps"
 shows "lang r = lang s"
 proof -
-  def ps' \<equiv> "(Zero, Zero) # ps"
+  def ps' \<equiv> "insert (Zero, Zero) ps"
   from bisim have bisim': "is_bisimulation as ps'"
     by (auto simp: ps'_def is_bisimulation_def)
 
-  let ?R = "\<lambda>K L. (\<exists>(r,s)\<in>set ps'. K = lang r \<and> L = lang s)"
+  let ?R = "\<lambda>K L. (\<exists>(r,s)\<in>ps'. K = lang r \<and> L = lang s)"
   show ?thesis
   proof (rule language_coinduct[where R="?R"])
-    from `(r, s) \<in> set ps` 
-    have "(r, s) \<in> set ps'" by (auto simp: ps'_def)
+    from `(r, s) \<in> ps` 
+    have "(r, s) \<in> ps'" by (auto simp: ps'_def)
     thus "?R (lang r) (lang s)" by auto
   next
     fix K L assume "?R K L"
-    then obtain r s where rs: "(r, s) \<in> set ps'"
+    then obtain r s where rs: "(r, s) \<in> ps'"
       and KL: "K = lang r" "L = lang s" by auto
     with bisim' have "nullable r \<longleftrightarrow> nullable s"
       by (auto simp: is_bisimulation_def)
@@ -179,7 +178,7 @@ proof -
     proof cases
       assume "a \<in> set as"
       with rs bisim'
-      have "(nderiv a r, nderiv a s) \<in> set ps'"
+      have "(nderiv a r, nderiv a s) \<in> ps'"
         by (auto simp: is_bisimulation_def)
       thus ?thesis by (force simp: KL lang_nderiv)
     next
@@ -198,51 +197,119 @@ qed
 
 subsection {* Closure computation *}
 
-fun test :: "rexp_pairs * rexp_pairs \<Rightarrow> bool" where
-"test (ws, ps) = (case ws of [] \<Rightarrow>  False | (p,q)#_ \<Rightarrow> nullable p = nullable q)"
-
-fun step :: "nat list \<Rightarrow> rexp_pairs * rexp_pairs \<Rightarrow> rexp_pairs * rexp_pairs"
-where "step as (ws,ps) =
-    (let 
-      (r, s) = hd ws;
-      ps' = (r, s) # ps;
-      succs = map (\<lambda>a. (nderiv a r, nderiv a s)) as;
-      new = filter (\<lambda>p. p \<notin> set ps' \<union> set ws) succs
-    in (new @ tl ws, ps'))"
-
 definition closure ::
-  "nat list \<Rightarrow> rexp_pairs * rexp_pairs
-   \<Rightarrow> (rexp_pairs * rexp_pairs) option" where
-"closure as = while_option test (step as)"
+  "nat list \<Rightarrow> rexp_pair \<Rightarrow> (rexp_pairs * rexp_pair set) option" where
+"closure as = rtrancl_while (%(r,s). nullable r = nullable s)
+  (%(r,s). map (\<lambda>a. (nderiv a r, nderiv a s)) as)"
 
 definition pre_bisim :: "nat list \<Rightarrow> nat rexp \<Rightarrow> nat rexp \<Rightarrow>
- rexp_pairs * rexp_pairs \<Rightarrow> bool"
+ rexp_pairs * rexp_pair set \<Rightarrow> bool"
 where
-"pre_bisim as r s = (\<lambda>(ws,ps).
- ((r, s) \<in> set ws \<union> set ps) \<and>
- (\<forall>(r,s)\<in> set ws \<union> set ps. atoms r \<union> atoms s \<subseteq> set as) \<and>
- (\<forall>(r,s)\<in> set ps. (nullable r \<longleftrightarrow> nullable s) \<and>
-   (\<forall>a\<in>set as. (nderiv a r, nderiv a s) \<in> set ps \<union> set ws)))"
+"pre_bisim as r s = (\<lambda>(ws,R).
+ (r,s) \<in> R \<and> set ws \<subseteq> R \<and>
+ (\<forall>(r,s)\<in> R. atoms r \<union> atoms s \<subseteq> set as) \<and>
+ (\<forall>(r,s)\<in> R - set ws. (nullable r \<longleftrightarrow> nullable s) \<and>
+   (\<forall>a\<in>set as. (nderiv a r, nderiv a s) \<in> R)))"
 
 theorem closure_sound:
-assumes result: "closure as ([(r,s)],[]) = Some([],ps)"
+assumes result: "closure as (r,s) = Some([],R)"
 and atoms: "atoms r \<union> atoms s \<subseteq> set as"
 shows "lang r = lang s"
 proof-
-  { fix st have "pre_bisim as r s st \<Longrightarrow> test st \<Longrightarrow> pre_bisim as r s (step as st)"
+  let ?test = "%(ws,_). ws \<noteq> [] \<and> (%(r,s). nullable r = nullable s)(hd ws)"
+  let ?step = "(%(ws,R).
+     let x = hd ws; new = filter (\<lambda>y. y \<notin> R) ((\<lambda>(r,s). map (\<lambda>a. (nderiv a r, nderiv a s)) as) x)
+     in (new @ tl ws, set new \<union> insert x R))"
+  { fix st have "pre_bisim as r s st \<Longrightarrow> ?test st \<Longrightarrow> pre_bisim as r s (?step st)"
       unfolding pre_bisim_def
-      by (cases st) (auto simp: split_def split: list.splits prod.splits
-        dest!: subsetD[OF atoms_nderiv]) }
+      by (cases st, auto simp: Let_def neq_Nil_conv Ball_def split_def split: list.splits prod.splits
+        dest!: subsetD[OF atoms_nderiv], blast+)
+ }
   moreover
   from atoms
-  have "pre_bisim as r s ([(r,s)],[])" by (simp add: pre_bisim_def)
-  ultimately have pre_bisim_ps: "pre_bisim as r s ([],ps)"
-    by (rule while_option_rule[OF _ result[unfolded closure_def]])
-  then have "is_bisimulation as ps" "(r, s) \<in> set ps"
-    by (auto simp: pre_bisim_def is_bisimulation_def test_def)
+  have "pre_bisim as r s ([(r,s)],{(r,s)})" by (simp add: pre_bisim_def)
+  ultimately have pre_bisim_ps: "pre_bisim as r s ([],R)"
+    by (rule while_option_rule[OF _ result[unfolded closure_def rtrancl_while_def]])
+  then have "is_bisimulation as R" "(r, s) \<in> R"
+    by (auto simp: pre_bisim_def is_bisimulation_def)
   thus "lang r = lang s" by (rule bisim_lang_eq)
 qed
 
+subsection {* Bisimulation-free proof of closure computation *}
+
+text{* The equivalence check can be viewed as the product construction
+of two automata. The state space is the reflexive transitive closure of
+the pair of next-state functions, i.e. derivatives. *}
+
+lemma rtrancl_nderiv_nderivs: defines "nderivs == foldl (%r a. nderiv a r)"
+shows "{((r,s),(nderiv a r,nderiv a s))| r s a. a : A}^* =
+       {((r,s),(nderivs r w,nderivs s w))| r s w. w : lists A}" (is "?L = ?R")
+proof-
+  note [simp] = nderivs_def
+  { fix r s r' s'
+    have "((r,s),(r',s')) : ?L \<Longrightarrow> ((r,s),(r',s')) : ?R"
+    proof(induction rule: converse_rtrancl_induct2)
+      case refl show ?case by (force intro!: foldl.simps(1)[symmetric])
+    next
+      case step thus ?case by(force intro!: foldl.simps(2)[symmetric])
+    qed
+  } moreover
+  { fix r s r' s'
+    { fix w have "\<forall>x\<in>set w. x \<in> A \<Longrightarrow> ((r, s), nderivs r w, nderivs s w) :?L"
+      proof(induction w rule: rev_induct)
+        case Nil show ?case by simp
+      next
+        case snoc thus ?case by (auto elim!: rtrancl_into_rtrancl)
+      qed
+    } 
+    hence "((r,s),(r',s')) : ?R \<Longrightarrow> ((r,s),(r',s')) : ?L" by auto
+  } ultimately show ?thesis by (auto simp: in_lists_conv_set) blast
+qed
+
+lemma atoms_lang: "w : lang r \<Longrightarrow> set w \<subseteq> atoms r"
+proof(induction r arbitrary: w)
+  case Times thus ?case by fastforce
+next
+  case Star thus ?case by (fastforce simp add: star_conv_concat)
+qed auto
+
+lemma nullable_nderivs:
+  "nullable (foldl (%r a. nderiv a r) r w) = (w : lang r)"
+by (induct w arbitrary: r) (simp_all add: nullable_iff lang_nderiv Deriv_def)
+
+lemma lang_eq_ext: "(lang r = lang s) =
+  (\<forall>w \<in> lists(atoms r \<union> atoms s). w \<in> lang r \<longleftrightarrow> w \<in> lang s)" (is "?L = ?R")
+proof
+  assume ?L thus ?R by auto
+next
+  assume R: ?R
+  show ?L
+  proof(rule set_eqI)
+    fix w show "w \<in> lang r \<longleftrightarrow> w \<in> lang s"
+    proof (cases "set w \<subseteq> atoms r \<union> atoms s")
+      case True thus ?thesis using R by auto
+    next
+      case False thus ?thesis using R using atoms_lang by blast
+    qed
+  qed
+qed
+
+theorem closure_sound_complete:
+assumes result: "closure as (r,s) = Some(ws,R)"
+and atoms: "set as = atoms r \<union> atoms s"
+shows "ws = [] \<longleftrightarrow> lang r = lang s"
+proof -
+  have leq: "(lang r = lang s) =
+  (\<forall>(r',s') \<in> {((r0,s0),(nderiv a r0,nderiv a s0))| r0 s0 a. a : set as}^* `` {(r,s)}.
+    nullable r' = nullable s')"
+    by(simp add: atoms rtrancl_nderiv_nderivs Ball_def lang_eq_ext imp_ex nullable_nderivs
+         del:Un_iff)
+  have "{(x,y). y \<in> set ((\<lambda>(p,q). map (\<lambda>a. (nderiv a p, nderiv a q)) as) x)} =
+    {((r,s), nderiv a r, nderiv a s) |r s a. a \<in> set as}"
+    by auto
+  with atoms rtrancl_while_Some[OF result[unfolded closure_def]]
+  show ?thesis by (auto simp add: leq Ball_def split: if_splits)
+qed
 
 subsection {* The overall procedure *}
 
@@ -258,18 +325,20 @@ where
 lemma set_add_atoms: "set (add_atoms r as) = atoms r \<union> set as"
 by (induct r arbitrary: as) auto
 
-definition check_eqv :: "nat rexp \<Rightarrow> nat rexp \<Rightarrow> bool"
-where
+
+definition check_eqv :: "nat rexp \<Rightarrow> nat rexp \<Rightarrow> bool" where
 "check_eqv r s =
-  (case closure (add_atoms r (add_atoms s [])) ([(norm r, norm s)], []) of
+  (let nr = norm r; ns = norm s; as = add_atoms nr (add_atoms ns [])
+   in case closure as (nr, ns) of
      Some([],_) \<Rightarrow> True | _ \<Rightarrow> False)"
 
 lemma soundness: 
 assumes "check_eqv r s" shows "lang r = lang s"
 proof -
-  let ?as = "add_atoms r (add_atoms s [])"
-  obtain ps where 1: "closure ?as ([(norm r,norm s)],[]) = Some([],ps)"
-    using assms by (auto simp: check_eqv_def split:option.splits list.splits)
+  let ?nr = "norm r" let ?ns = "norm s"
+  let ?as = "add_atoms ?nr (add_atoms ?ns [])"
+  obtain R where 1: "closure ?as (?nr,?ns) = Some([],R)"
+    using assms by (auto simp: check_eqv_def Let_def split:option.splits list.splits)
   then have "lang (norm r) = lang (norm s)"
     by (rule closure_sound) (auto simp: set_add_atoms dest!: subsetD[OF atoms_norm])
   thus "lang r = lang s" by simp

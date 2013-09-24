@@ -6,9 +6,12 @@
 header {* Quotient preservation and respectfulness theorems for coinductive lists *}
 
 theory Quotient_Coinductive_List imports
-  "~~/src/HOL/Library/Quotient_Syntax"
-  Coinductive_List_Lib
+  "~~/src/HOL/Library/Quotient_List"
+  "~~/src/HOL/Library/Quotient_Set"
+  Coinductive_List
 begin
+
+subsection {* Rules for the Quotient package *}
 
 lemma transpD: "\<lbrakk> transp R; R a b; R b c \<rbrakk> \<Longrightarrow> R a c"
   by (erule transpE) blast
@@ -23,25 +26,12 @@ lemma id_preserve [quot_preserve]:
   using Quotient3_abs_rep [OF assms] by (simp add: fun_eq_iff)
 
 enriched_type lmap: lmap
-   by (simp_all add: fun_eq_iff id_def)
+   by (simp_all add: fun_eq_iff id_def llist.map_comp)
 
-lemma reflp_llist_all2: "reflp R \<Longrightarrow> reflp (llist_all2 R)"
-  by (auto intro!: reflpI elim: reflpE simp add: llist_all2_conv_all_lnth)
+declare lmap_id [id_simps]
 
 lemma symp_llist_all2: "symp R \<Longrightarrow> symp (llist_all2 R)"
   by (rule sympI) (auto simp add: llist_all2_conv_all_lnth elim: sympE)
-
-lemma llist_all2_trans:
-  "\<lbrakk> llist_all2 P xs ys; llist_all2 P ys zs; transp P \<rbrakk>
-  \<Longrightarrow> llist_all2 P xs zs"
-apply(rule llist_all2_all_lnthI)
- apply(simp add: llist_all2_llengthD)
-apply(frule llist_all2_llengthD)
-apply(drule (1) llist_all2_lnthD)
-apply(drule llist_all2_lnthD)
- apply simp
-apply(erule (2) transpD)
-done
 
 lemma transp_llist_all2: "transp R \<Longrightarrow> transp (llist_all2 R)"
   by (rule transpI) (rule llist_all2_trans)
@@ -50,9 +40,20 @@ lemma llist_equivp [quot_equiv]:
   "equivp R \<Longrightarrow> equivp (llist_all2 R)"
   by (simp add: equivp_reflp_symp_transp reflp_llist_all2 symp_llist_all2 transp_llist_all2)
 
+lemma llist_unfold_preserve [quot_preserve]:
+  assumes q1: "Quotient3 R1 Abs1 Rep1"
+  and q2: "Quotient3 R2 Abs2 Rep2"
+  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) llist_unfold = llist_unfold"
+  (is "?lhs = ?rhs")
+proof(intro ext)
+  fix IS_LNIL LHD LTL a
+  show "?lhs IS_LNIL LHD LTL a = ?rhs IS_LNIL LHD LTL a"
+    by(coinduct a rule: llist_fun_coinduct)(auto simp add: Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2])
+qed
+
 lemma Quotient_lmap_Abs_Rep:
   "Quotient3 R Abs Rep \<Longrightarrow> lmap Abs (lmap Rep a) = a"
-  by (drule abs_o_rep) (simp add: lmap_id lmap_compose [symmetric] del: lmap_compose)
+  by (drule abs_o_rep) (simp add: lmap_id llist.map_comp)
 
 lemma llist_all2_rel:
   assumes "Quotient3 R Abs Rep"
@@ -63,13 +64,13 @@ proof
   hence "llist_all2 R r r"
     apply -
     apply(rule llist_all2_reflI)
-    apply(clarsimp simp add: lset_def)
+    apply(clarsimp simp add: lset_conv_lnth)
     apply(metis Quotient3_rel[OF assms] llist_all2_lnthD)
     done
   moreover from `?lhs` have "llist_all2 R s s"
     apply -
     apply(rule llist_all2_reflI)
-    apply(clarsimp simp add: lset_def)
+    apply(clarsimp simp add: lset_conv_lnth)
     apply(metis Quotient3_rel[OF assms] llist_all2_lnthD2)
     done
   moreover from `?lhs` have "llength r = llength s" by(rule llist_all2_llengthD)
@@ -84,7 +85,7 @@ proof
 next
   assume ?rhs thus ?lhs
     unfolding lmap_eq_lmap_conv_llist_all2
-    by(clarsimp simp add: llist_all2_conv_all_lnth)(metis Quotient3_rel[OF assms])
+    by(clarsimp simp add: llist_all2_conv_all_lnth simp del: llist_all2_same)(metis Quotient3_rel[OF assms])
 qed
 
 lemma Quotient_llist_all2_lmap_Rep:
@@ -101,19 +102,15 @@ lemma LCons_preserve [quot_preserve]:
   assumes "Quotient3 R Abs Rep"
   shows "(Rep ---> (lmap Rep) ---> (lmap Abs)) LCons = LCons"
 using Quotient3_abs_rep[OF assms]
-by(simp add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp add: fun_eq_iff llist.map_comp o_def)
 
-lemma LCons_respect [quot_respect]:
-  "(R ===> llist_all2 R ===> llist_all2 R) LCons LCons"
-  by (auto intro!: fun_relI)
+lemmas LCons_respect [quot_respect] = LCons_transfer 
 
 lemma LNil_preserve [quot_preserve]:
   "lmap Abs LNil = LNil"
 by simp
 
-lemma LNil_respect [quot_respect]:
-  "llist_all2 R LNil LNil"
-by simp
+lemmas LNil_respect [quot_respect] = LNil_transfer
 
 lemma lmap_preserve [quot_preserve]:
   assumes a: "Quotient3 R1 abs1 rep1"
@@ -121,31 +118,14 @@ lemma lmap_preserve [quot_preserve]:
   shows "((abs1 ---> rep2) ---> (lmap rep1) ---> (lmap abs2)) lmap = lmap"
   and   "((abs1 ---> id) ---> lmap rep1 ---> id) lmap = lmap"
 using Quotient3_abs_rep[OF a] Quotient3_abs_rep[OF b]
-by(simp_all add: fun_eq_iff lmap_compose[symmetric] o_def del: lmap_compose)
+by(simp_all add: fun_eq_iff llist.map_comp o_def)
 
 lemma lmap_respect [quot_respect]:
   shows "((R1 ===> R2) ===> (llist_all2 R1) ===> llist_all2 R2) lmap lmap"
   and   "((R1 ===> op =) ===> (llist_all2 R1) ===> op =) lmap lmap"
-  by (simp_all add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2 fun_rel_def)
+by(fact lmap_transfer)(simp add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2 Transfer.fun_rel_def)
 
-lemma llist_all2_rsp:
-  assumes r: "\<forall>x y. R x y \<longrightarrow> (\<forall>a b. R a b \<longrightarrow> S x a = T y b)"
-  and l1: "llist_all2 R x y"
-  and l2: "llist_all2 R a b"
-  shows "llist_all2 S x a = llist_all2 T y b"
-proof(cases "llength x = llength a")
-  case True
-  thus ?thesis using l1 l2 
-    by(simp add: llist_all2_conv_all_lnth)(blast dest: r[rule_format])
-next
-  case False
-  with llist_all2_llengthD[OF l1] llist_all2_llengthD[OF l2]
-  show ?thesis by(simp add: llist_all2_conv_all_lnth)
-qed
-
-lemma llist_all2_respect [quot_respect]:
-  "((R ===> R ===> op =) ===> llist_all2 R ===> llist_all2 R ===> op =) llist_all2 llist_all2"
-  by (simp add: llist_all2_rsp fun_rel_def)
+lemmas llist_all2_respect [quot_respect] = llist_all2_transfer
 
 lemma llist_all2_preserve [quot_preserve]:
   assumes "Quotient3 R Abs Rep"
@@ -153,57 +133,22 @@ lemma llist_all2_preserve [quot_preserve]:
 using Quotient3_abs_rep[OF assms]
 by(simp add: fun_eq_iff llist_all2_lmap1 llist_all2_lmap2)
 
-lemma llist_all2_eq [id_simps]: "llist_all2 (op =) = (op =)"
-proof(intro ext iffI)
-  fix xs ys
-  assume "llist_all2 (op =) xs ys"
-  hence "(xs, ys) \<in> {(xs, ys). llist_all2 (op =) xs ys}" by blast
-  thus "xs = ys"
-  proof(coinduct rule: llist_equalityI)
-    case (Eqllist q)
-    then obtain xs ys where "q = (xs, ys)" "llist_all2 (op =) xs ys" by blast
-    thus ?case
-      by(cases xs)(case_tac [2] ys, auto simp add: llist_all2_LNil1)
-  qed
-next
-  fix xs ys :: "'a llist"
-  assume "xs = ys"
-  thus "llist_all2 (op =) xs ys"
-    by(simp add: llist_all2_conv_all_lnth)
-qed
-
 lemma llist_all2_preserve2 [quot_preserve]:
   assumes "Quotient3 R Abs Rep"
   shows "(llist_all2 ((Rep ---> Rep ---> id) R) l m) = (l = m)"
   by (simp add: map_fun_def [abs_def] Quotient3_rel_rep [OF assms] llist_all2_eq comp_def)
 
-lemma llist_corec_preserve [quot_preserve]: 
+lemma llist_corec_preserve [quot_preserve]:
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
-  shows "(Rep1 ---> (Abs1 ---> Option.map (map_pair Rep2 Rep1)) ---> lmap Abs2) llist_corec = llist_corec"
+  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> id) ---> 
+          (Abs1 ---> lmap Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) llist_corec = llist_corec"
+  (is "?lhs = ?rhs")
 proof(intro ext)
-  fix a f
-  let ?fmap = "Rep1 ---> (Abs1 ---> Option.map (map_pair Rep2 Rep1)) ---> lmap Abs2"
-  have "(?fmap llist_corec a f, llist_corec a f) \<in>
-        {(?fmap llist_corec a f, llist_corec a f)|a. True}" by blast
-  thus "?fmap llist_corec a f = llist_corec a f"
-  proof(coinduct rule: llist_equalityI)
-    case (Eqllist q)
-    then obtain a where q: "q = (?fmap llist_corec a f, llist_corec a f)" by blast
-    show ?case
-    proof(cases "f a")
-      case None
-      hence ?EqLNil unfolding q
-        using Quotient3_abs_rep[OF q1] by(simp add: llist_corec)
-      thus ?thesis ..
-    next
-      case (Some a')
-      hence ?EqLCons
-        unfolding q using Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2]
-        by(cases a')(simp, subst (1 2) llist_corec, auto)
-      thus ?thesis ..
-    qed
-  qed
+  fix IS_LNIL LHD endORmore LTL_end LTL_more b
+  show "?lhs IS_LNIL LHD endORmore LTL_end LTL_more b = ?rhs IS_LNIL LHD endORmore LTL_end LTL_more b"
+    by(coinduct b rule: llist_fun_coinduct)
+      (auto simp add: Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2] Quotient_lmap_Abs_Rep[OF q2])
 qed
 
 end

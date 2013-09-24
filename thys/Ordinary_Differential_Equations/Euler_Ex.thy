@@ -1,5 +1,5 @@
 header{* Examples *}
-theory Runge_Kutta_Ex
+theory Euler_Ex
   imports Runge_Kutta "~~/src/HOL/Decision_Procs/Approximation"
 begin
 text{*\label{sec:example}*}
@@ -151,7 +151,7 @@ locale example1_aux = fixes t0' x0' :: float and b r T::real
   assumes interval_pos: "t0' \<le> T"
 begin
 
-definition "B = (max \<bar>x0' - \<bar>b\<bar>\<bar> \<bar>x0' + \<bar>b\<bar>\<bar>)\<twosuperior> + max \<bar>T\<bar> \<bar>t0'\<bar>"
+definition "B = (max \<bar>x0' - \<bar>b\<bar>\<bar> \<bar>x0' + \<bar>b\<bar>\<bar>)\<^sup>2 + max \<bar>T\<bar> \<bar>t0'\<bar>"
 
 definition "L = 2 * max \<bar>x0' - abs b - abs r\<bar> \<bar>x0' + abs b + abs r\<bar>"
 
@@ -186,24 +186,7 @@ begin
 lemma derivative_of_square_x_minus_t:
   fixes t x::real
   shows "((\<lambda>(t, x). x^2 - t) has_derivative (\<lambda>(dt, dx). 2*x*dx - dt)) (at (t, x))"
-proof -
-  have "((\<lambda>tx. (tx \<bullet> (0,1))^2 - tx \<bullet> (1,0)) has_derivative
-    (\<lambda>dtx. 2 * ((t, x) \<bullet> (0, 1)) * (dtx \<bullet> (0, 1)) - dtx \<bullet> (1, 0))) (at (t, x))"
-  proof -
-    have f: "(\<lambda>x. (x \<bullet> (0,1))\<twosuperior>) = (\<lambda>x. x^2)o(\<lambda>x. x \<bullet> (0,1))" by auto
-    have f': "(\<lambda>dtx. 2*((t, x) \<bullet> (0,1))*(dtx \<bullet> (0,1))) =
-      (op * (of_nat 2 * ((t, x) \<bullet> (0,1)) ^ (2 - 1)))o(\<lambda>h. h \<bullet> (0,1))" by auto
-    have "((\<lambda>x. (x \<bullet> (0,1))\<twosuperior>) has_derivative (\<lambda>h. 2 * ((t, x) \<bullet> (0,1)) * (h \<bullet> (0,1)))) (at (t, x))"
-      unfolding f f'
-      by (intro diff_chain_at has_derivative_intros FDERIV_power[unfolded FDERIV_conv_has_derivative])
-    thus ?thesis by (intro has_derivative_intros)
-  qed
-  also have "(\<lambda>tx. (tx \<bullet> (0,1))\<twosuperior> - tx \<bullet> (1,0)) = (\<lambda>(t, x). x^2 - t)"
-    by auto
-  also have "(\<lambda>dtx. 2 * ((t, x) \<bullet> (0,1)) * (dtx \<bullet> (0,1)) - (dtx \<bullet> (1,0))) = (\<lambda>(dt, dx). 2 * x * dx - dt)"
-    by auto
-  finally show ?thesis .
-qed
+  by (auto intro!: FDERIV_eq_intros)
 
 lemma derivative:
   fixes tx::"real \<times> real"
@@ -232,7 +215,7 @@ lemma f_bounded:
   assumes "x \<in> D"
   shows "\<bar>f (s, x)\<bar> \<le> B"
 proof -
-  have "abs (x\<twosuperior> - s) \<le> x^2 + abs s"
+  have "abs (x\<^sup>2 - s) \<le> x^2 + abs s"
     by (metis abs_power2 abs_triangle_ineq4)
   also have "abs s \<le> max (abs t0') (abs T)"
     using assms using T' by (auto intro: bounded_abs simp: i_def)
@@ -331,6 +314,10 @@ lemma error_bound: "error_bound \<le> error_bound'"
 
 definition i_max::nat where "i_max = 2 ^ 13"
 
+lemma [code_unfold]: -- {* Workaround to avoid non-pattern @{term "0::int"} in LHS of code equations *}
+  "0 = int_of_integer 0"
+  by simp
+
 lemma T_max: "E.Delta i_max = 0.5" by eval
 
 lemma i_max_correct: "\<And>i. i \<le> i_max \<Longrightarrow> E.Delta i \<le> T'"
@@ -338,7 +325,7 @@ lemma i_max_correct: "\<And>i. i \<le> i_max \<Longrightarrow> E.Delta i \<le> T
   unfolding H_def T'_def t0'_def i_max_def
   by simp
 
-definition "euler_result i = euler_float e' (\<lambda>(t, x). x\<twosuperior> - t) x0' E.Delta i"
+definition "euler_result i = euler_float e' (\<lambda>(t, x). x\<^sup>2 - t) x0' E.Delta i"
 
 lemma convergence:
   assumes i: "i \<le> i_max"

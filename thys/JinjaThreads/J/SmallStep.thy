@@ -34,7 +34,7 @@ print_translation {*
        , h] =
       if a1 = a2 andalso a2 = a3 then Syntax.const @{type_syntax "J_thread_action"} $ a1 $ t $ h
       else raise Match;
-    in [(@{type_syntax "Jinja_thread_action"}, tr')]
+    in [(@{type_syntax "Jinja_thread_action"}, K tr')]
   end
 *}
 typ "('addr,'thread_id,'heap) J_thread_action"
@@ -54,7 +54,7 @@ print_translation {*
        , h, a4] =
       if a1 = a2 andalso a2 = a3 andalso a3 = a4 then Syntax.const @{type_syntax "J_state"} $ a1 $ t $ h
       else raise Match;
-    in [(@{type_syntax "state"}, tr')]
+    in [(@{type_syntax "state"}, K tr')]
   end
 *}
 typ "('addr, 'thread_id, 'heap) J_state"
@@ -122,26 +122,26 @@ for extTA :: "('addr, 'thread_id, 'heap) external_thread_action \<Rightarrow> ('
 and P :: "'addr J_prog" and t :: 'thread_id
 where
   RedNew:
-  "allocate h (Class_type C) = (h', \<lfloor>a\<rfloor>)
+  "(h', a) \<in> allocate h (Class_type C)
   \<Longrightarrow> extTA,P,t \<turnstile> \<langle>new C, (h, l)\<rangle> -\<lbrace>NewHeapElem a (Class_type C)\<rbrace>\<rightarrow> \<langle>addr a, (h', l)\<rangle>"
 
 | RedNewFail:
-  "allocate h (Class_type C) = (h', None)
-  \<Longrightarrow> extTA,P,t \<turnstile> \<langle>new C, (h, l)\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW OutOfMemory, (h', l)\<rangle>"
+  "allocate h (Class_type C) = {}
+  \<Longrightarrow> extTA,P,t \<turnstile> \<langle>new C, (h, l)\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW OutOfMemory, (h, l)\<rangle>"
 
 | NewArrayRed:
   "extTA,P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle> \<Longrightarrow> extTA,P,t \<turnstile> \<langle>newA T\<lfloor>e\<rceil>, s\<rangle> -ta\<rightarrow> \<langle>newA T\<lfloor>e'\<rceil>, s'\<rangle>"
 
 | RedNewArray:
-  "\<lbrakk> 0 <=s i; allocate h (Array_type T (nat (sint i))) = (h', \<lfloor>a\<rfloor>) \<rbrakk>
+  "\<lbrakk> 0 <=s i; (h', a) \<in> allocate h (Array_type T (nat (sint i))) \<rbrakk>
   \<Longrightarrow> extTA,P,t \<turnstile> \<langle>newA T\<lfloor>Val (Intg i)\<rceil>, (h, l)\<rangle> -\<lbrace>NewHeapElem a (Array_type T (nat (sint i)))\<rbrace>\<rightarrow> \<langle>addr a, (h', l)\<rangle>"
 
 | RedNewArrayNegative:
   "i <s 0 \<Longrightarrow> extTA,P,t \<turnstile> \<langle>newA T\<lfloor>Val (Intg i)\<rceil>, s\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW NegativeArraySize, s\<rangle>"
 
 | RedNewArrayFail:
-  "\<lbrakk> 0 <=s i; allocate h (Array_type T (nat (sint i))) = (h', None) \<rbrakk>
-  \<Longrightarrow> extTA,P,t \<turnstile> \<langle>newA T\<lfloor>Val (Intg i)\<rceil>, (h, l)\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW OutOfMemory, (h', l)\<rangle>"
+  "\<lbrakk> 0 <=s i; allocate h (Array_type T (nat (sint i))) = {} \<rbrakk>
+  \<Longrightarrow> extTA,P,t \<turnstile> \<langle>newA T\<lfloor>Val (Intg i)\<rceil>, (h, l)\<rangle> -\<epsilon>\<rightarrow> \<langle>THROW OutOfMemory, (h, l)\<rangle>"
 
 | CastRed:
   "extTA,P,t \<turnstile> \<langle>e, s\<rangle> -ta\<rightarrow> \<langle>e', s'\<rangle> \<Longrightarrow> extTA,P,t \<turnstile> \<langle>Cast C e, s\<rangle> -ta\<rightarrow> \<langle>Cast C e', s'\<rangle>"
@@ -356,8 +356,8 @@ where
 | NewArrayThrow: "extTA,P,t \<turnstile> \<langle>newA T\<lfloor>Throw a\<rceil>, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | CastThrow: "extTA,P,t \<turnstile> \<langle>Cast C (Throw a), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | InstanceOfThrow: "extTA,P,t \<turnstile> \<langle>(Throw a) instanceof T, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
-| BinOpThrow1: "extTA,P,t \<turnstile> \<langle>(Throw a) \<guillemotleft>bop\<guillemotright> e\<^isub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
-| BinOpThrow2: "extTA,P,t \<turnstile> \<langle>(Val v\<^isub>1) \<guillemotleft>bop\<guillemotright> (Throw a), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
+| BinOpThrow1: "extTA,P,t \<turnstile> \<langle>(Throw a) \<guillemotleft>bop\<guillemotright> e\<^sub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
+| BinOpThrow2: "extTA,P,t \<turnstile> \<langle>(Val v\<^sub>1) \<guillemotleft>bop\<guillemotright> (Throw a), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | LAssThrow: "extTA,P,t \<turnstile> \<langle>V:=(Throw a), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | AAccThrow1: "extTA,P,t \<turnstile> \<langle>(Throw a)\<lfloor>i\<rceil>, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | AAccThrow2: "extTA,P,t \<turnstile> \<langle>(Val v)\<lfloor>Throw a\<rceil>, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
@@ -366,15 +366,15 @@ where
 | AAssThrow3: "extTA,P,t \<turnstile> \<langle>(Val v)\<lfloor>Val i\<rceil> := Throw a :: 'addr expr, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | ALengthThrow: "extTA,P,t \<turnstile> \<langle>(Throw a)\<bullet>length, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | FAccThrow: "extTA,P,t \<turnstile> \<langle>(Throw a)\<bullet>F{D}, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
-| FAssThrow1: "extTA,P,t \<turnstile> \<langle>(Throw a)\<bullet>F{D}:=e\<^isub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
+| FAssThrow1: "extTA,P,t \<turnstile> \<langle>(Throw a)\<bullet>F{D}:=e\<^sub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | FAssThrow2: "extTA,P,t \<turnstile> \<langle>Val v\<bullet>F{D}:=(Throw a::'addr expr), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | CallThrowObj: "extTA,P,t \<turnstile> \<langle>(Throw a)\<bullet>M(es), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | CallThrowParams: "\<lbrakk> es = map Val vs @ Throw a # es' \<rbrakk> \<Longrightarrow> extTA,P,t \<turnstile> \<langle>(Val v)\<bullet>M(es), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | BlockThrow: "extTA,P,t \<turnstile> \<langle>{V:T=vo; Throw a}, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | SynchronizedThrow1: "extTA,P,t \<turnstile> \<langle>sync(Throw a) e, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | SynchronizedThrow2: "extTA,P,t \<turnstile> \<langle>insync(a) Throw ad, s\<rangle> -\<lbrace>Unlock\<rightarrow>a, SyncUnlock a\<rbrace>\<rightarrow> \<langle>Throw ad, s\<rangle>"
-| SeqThrow: "extTA,P,t \<turnstile> \<langle>(Throw a);;e\<^isub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
-| CondThrow: "extTA,P,t \<turnstile> \<langle>if (Throw a) e\<^isub>1 else e\<^isub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
+| SeqThrow: "extTA,P,t \<turnstile> \<langle>(Throw a);;e\<^sub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
+| CondThrow: "extTA,P,t \<turnstile> \<langle>if (Throw a) e\<^sub>1 else e\<^sub>2, s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 | ThrowThrow: "extTA,P,t \<turnstile> \<langle>throw(Throw a), s\<rangle> -\<epsilon>\<rightarrow> \<langle>Throw a, s\<rangle>"
 
 inductive_cases red_cases:
@@ -601,9 +601,11 @@ done
 
 end
 
-lemmas [code_pred_intro] =
-  J_heap_base.RedNew J_heap_base.RedNewFail J_heap_base.NewArrayRed J_heap_base.RedNewArray J_heap_base.RedNewArrayNegative
-  J_heap_base.RedNewArrayFail J_heap_base.CastRed J_heap_base.RedCast J_heap_base.RedCastFail J_heap_base.InstanceOfRed
+lemmas [code_pred_intro] = 
+  J_heap_base.RedNew[folded Predicate_Compile.contains_def] J_heap_base.RedNewFail J_heap_base.NewArrayRed 
+  J_heap_base.RedNewArray[folded Predicate_Compile.contains_def]
+  J_heap_base.RedNewArrayNegative J_heap_base.RedNewArrayFail
+  J_heap_base.CastRed J_heap_base.RedCast J_heap_base.RedCastFail J_heap_base.InstanceOfRed
   J_heap_base.RedInstanceOf J_heap_base.BinOpRed1 J_heap_base.BinOpRed2 J_heap_base.RedBinOp J_heap_base.RedBinOpFail 
   J_heap_base.RedVar J_heap_base.LAssRed J_heap_base.RedLAss
   J_heap_base.AAccRed1 J_heap_base.AAccRed2 J_heap_base.RedAAccNull
@@ -693,7 +695,7 @@ proof -
   next
     case ThrowThrow thus ?thesis
       by-(erule (4) ThrowThrow'[OF refl refl refl refl refl refl refl refl refl refl refl])
-  qed(assumption|erule (4) that[OF refl refl refl refl refl refl refl refl refl refl refl])+
+  qed(assumption|erule (4) that[unfolded Predicate_Compile.contains_def, OF refl refl refl refl refl refl refl refl refl refl refl])+
 next
   case reds
   from reds.prems show thesis

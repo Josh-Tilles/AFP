@@ -251,7 +251,7 @@ by(induct arbitrary: m D)(fastforce dest: Methods.intros)+
 
 lemma sees_methods_decl_mono:
   assumes sub: "P \<turnstile> C' \<preceq>\<^sup>* C" and "P \<turnstile> C sees_methods Mm"
-  shows "\<exists>Mm' Mm\<^isub>2. P \<turnstile> C' sees_methods Mm' \<and> Mm' = Mm ++ Mm\<^isub>2 \<and> (\<forall>M m D. Mm\<^isub>2 M = Some(m,D) \<longrightarrow> P \<turnstile> D \<preceq>\<^sup>* C)"
+  shows "\<exists>Mm' Mm\<^sub>2. P \<turnstile> C' sees_methods Mm' \<and> Mm' = Mm ++ Mm\<^sub>2 \<and> (\<forall>M m D. Mm\<^sub>2 M = Some(m,D) \<longrightarrow> P \<turnstile> D \<preceq>\<^sup>* C)"
       (is "\<exists>Mm' Mm2. ?Q C' C Mm' Mm2")
 using assms
 proof (induction rule: converse_rtranclp_induct)
@@ -658,16 +658,10 @@ lemma fields_code [code]:
   "fields P C = Predicate.the (Fields_i_i_o P C)"
 by(simp add: fields_def Predicate.the_def eval_Fields_conv)
 
-code_modulename SML
-  TypeRel TypeRel
-  Decl TypeRel
-
-code_modulename Haskell
-  TypeRel TypeRel
-  Decl TypeRel
-
-code_modulename OCaml
-  TypeRel TypeRel
-  Decl TypeRel
+code_identifier
+  code_module TypeRel \<rightharpoonup>
+    (SML) TypeRel and (Haskell) TypeRel and (OCaml) TypeRel
+| code_module Decl \<rightharpoonup>
+    (SML) TypeRel and (Haskell) TypeRel and (OCaml) TypeRel
 
 end

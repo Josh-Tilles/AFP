@@ -51,12 +51,12 @@ subsection {* Setup *}
       let 
         val ref_thms = (refine0.get ctxt 
           @ add_thms @ refine.get ctxt @ refine2.get ctxt);
-        val prod_ss = (Splitter.add_split @{thm prod.split} HOL_basic_ss);
+        val prod_simpset = (put_simpset HOL_basic_ss ctxt |> Splitter.add_split @{thm prod.split});
         val prod_simp_tac = 
           if Config.get ctxt no_prod_split then 
             K no_tac
           else
-            (simp_tac prod_ss THEN' 
+            (simp_tac prod_simpset THEN' 
               REPEAT_ALL_NEW (resolve_tac @{thms impI allI}));
       in
         REPEAT_ALL_NEW (DETERM o (resolve_tac ref_thms ORELSE' prod_simp_tac))
@@ -161,12 +161,12 @@ instance
   apply (case_tac x, (case_tac [!] y)?, auto) []
   apply (case_tac x, (case_tac [!] y)?, auto) []
   apply (case_tac x, case_tac [!] y, case_tac [!] z, auto) []
-  apply (case_tac a, auto) []
-  apply (case_tac a, auto) []
   apply (case_tac x, auto) []
   apply (case_tac z, fastforce+) []
   apply (case_tac x, auto) []
   apply (case_tac z, fastforce+) []
+  apply auto []
+  apply auto []
   done
   
 end
@@ -403,10 +403,8 @@ lemma bind_SUCCEED[simp]: "bind SUCCEED f = SUCCEED"
 lemma bind_RES: "bind (RES X) f = Sup (f`X)" unfolding bind_def 
   by (auto)
 
-setup {*
-  Adhoc_Overloading.add_variant 
-  @{const_name Monad_Syntax.bind} @{const_name bind}
-*}
+adhoc_overloading
+  Monad_Syntax.bind Refine_Basic.bind
 
 lemma pw_bind_nofail[refine_pw_simps]:
   "nofail (bind M f) \<longleftrightarrow> (nofail M \<and> (\<forall>x. inres M x \<longrightarrow> nofail (f x)))"
@@ -802,7 +800,6 @@ lemma option_rule[refine_vcg]:
 lemma Let_rule[refine_vcg]:
   "f x \<le> SPEC \<Phi> \<Longrightarrow> Let x f \<le> SPEC \<Phi>" by auto
 
-
 text {* The following lemma shows that greatest and least fixed point are equal,
   if we can provide a variant. *}
 thm RECT_eq_REC
@@ -811,7 +808,7 @@ lemma RECT_eq_REC_old:
   assumes I0: "I x"
   assumes IS: "\<And>f x. I x \<Longrightarrow> 
     body (\<lambda>x'. do { ASSERT (I x' \<and> (x',x)\<in>V); f x'}) x \<le> body f x"
-  shows "REC\<^isub>T body x = REC body x"
+  shows "REC\<^sub>T body x = REC body x"
   apply (rule RECT_eq_REC)
   apply (rule WF)
   apply (rule I0)
