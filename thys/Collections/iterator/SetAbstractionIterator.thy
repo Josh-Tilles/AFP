@@ -4,7 +4,7 @@
 *)
 header {* \isaheader{Iterators over Representations of Finite Sets} *}
 theory SetAbstractionIterator
-imports Main SetIterator Misc 
+imports Main SetIterator 
 begin
 
 text {* Sometimes, an iterator does not iterate over an abstract set directly. 

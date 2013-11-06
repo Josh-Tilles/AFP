@@ -4,7 +4,7 @@
 *)
 header {* General Algorithms for Iterators over Finite Sets *}
 theory SetIteratorGA
-imports Main SetIterator SetIteratorOperations
+imports Main "SetIteratorOperations"
 begin
 
 subsection {* Quantification *}
@@ -54,28 +54,28 @@ shows "set (iterate_to_list it) = S0 \<and> distinct (iterate_to_list it)"
 using iterate_to_list_genord_correct [OF it[unfolded set_iterator_def]]
 by simp
 
-lemma iterate_to_list_linord_correct :
-fixes S0 :: "('a::{linorder}) set"
+lemma (in linorder) iterate_to_list_linord_correct :
+fixes S0 :: "'a set"
 assumes it_OK: "set_iterator_linord it S0"
 shows "set (iterate_to_list it) = S0 \<and> distinct (iterate_to_list it) \<and>
        sorted (rev (iterate_to_list it))"
 using it_OK unfolding set_iterator_linord_foldli_conv by auto
 
-lemma iterate_to_list_rev_linord_correct :
-fixes S0 :: "('a::{linorder}) set"
+lemma (in linorder) iterate_to_list_rev_linord_correct :
+fixes S0 :: "'a set"
 assumes it_OK: "set_iterator_rev_linord it S0"
 shows "set (iterate_to_list it) = S0 \<and> distinct (iterate_to_list it) \<and>
        sorted (iterate_to_list it)"
 using it_OK unfolding set_iterator_rev_linord_foldli_conv by auto
 
-lemma iterate_to_list_map_linord_correct :
+lemma (in linorder) iterate_to_list_map_linord_correct :
 assumes it_OK: "map_iterator_linord it m"
 shows "map_of (iterate_to_list it) = m \<and> distinct (map fst (iterate_to_list it)) \<and>
        sorted (map fst (rev (iterate_to_list it)))"
 using it_OK unfolding map_iterator_linord_foldli_conv 
 by clarify (simp add: rev_map[symmetric])
 
-lemma iterate_to_list_map_rev_linord_correct :
+lemma (in linorder) iterate_to_list_map_rev_linord_correct :
 assumes it_OK: "map_iterator_rev_linord it m"
 shows "map_of (iterate_to_list it) = m \<and> distinct (map fst (iterate_to_list it)) \<and>
        sorted (map fst (iterate_to_list it))"
@@ -226,7 +226,7 @@ proof -
     by simp_all
 qed
 
-lemma iterate_sel_no_map_linord_correct :
+lemma (in linorder) iterate_sel_no_map_linord_correct :
 assumes it_OK: "set_iterator_linord it S0"
 shows "iterate_sel_no_map it P = None \<longleftrightarrow> (\<forall>x\<in>S0. \<not>(P x))"
       "iterate_sel_no_map it P = Some x \<Longrightarrow> (x \<in> S0 \<and> P x \<and> (\<forall>x'\<in>S0. P x' \<longrightarrow> x \<le> x'))"
@@ -237,7 +237,7 @@ proof -
     by auto
 qed
 
-lemma iterate_sel_no_map_rev_linord_correct :
+lemma (in linorder) iterate_sel_no_map_rev_linord_correct :
 assumes it_OK: "set_iterator_rev_linord it S0"
 shows "iterate_sel_no_map it P = None \<longleftrightarrow> (\<forall>x\<in>S0. \<not>(P x))"
       "iterate_sel_no_map it P = Some x \<Longrightarrow> (x \<in> S0 \<and> P x \<and> (\<forall>x'\<in>S0. P x' \<longrightarrow> x' \<le> x))"
@@ -260,7 +260,7 @@ proof -
     by (auto simp add: map_to_set_def)
 qed
 
-lemma iterate_sel_no_map_map_linord_correct :
+lemma (in linorder) iterate_sel_no_map_map_linord_correct :
 assumes it_OK: "map_iterator_linord it m"
 shows "iterate_sel_no_map it P = None \<longleftrightarrow> (\<forall>k v. m k = Some v \<longrightarrow> \<not>(P (k, v)))"
       "iterate_sel_no_map it P = Some (k, v) \<Longrightarrow> (m k = Some v \<and> P (k, v) \<and> (\<forall>k' v' . m k' = Some v' \<and>
@@ -271,11 +271,10 @@ proof -
        "iterate_sel_no_map it P = Some (k, v) \<Longrightarrow> (m k = Some v \<and> P (k, v) \<and> (\<forall>k' v' . m k' = Some v' \<and>
            P (k', v') \<longrightarrow> k \<le> k'))"
     apply (auto simp add: map_to_set_def Ball_def) 
-    apply (metis order_refl)
   done
 qed
 
-lemma iterate_sel_no_map_map_rev_linord_correct :
+lemma (in linorder) iterate_sel_no_map_map_rev_linord_correct :
 assumes it_OK: "map_iterator_rev_linord it m"
 shows "iterate_sel_no_map it P = None \<longleftrightarrow> (\<forall>k v. m k = Some v \<longrightarrow> \<not>(P (k, v)))"
       "iterate_sel_no_map it P = Some (k, v) \<Longrightarrow> (m k = Some v \<and> P (k, v) \<and> (\<forall>k' v' . m k' = Some v' \<and>
@@ -286,7 +285,6 @@ proof -
        "iterate_sel_no_map it P = Some (k, v) \<Longrightarrow> (m k = Some v \<and> P (k, v) \<and> (\<forall>k' v' . m k' = Some v' \<and>
            P (k', v') \<longrightarrow> k' \<le> k))"
     apply (auto simp add: map_to_set_def Ball_def) 
-    apply (metis order_refl)
   done
 qed
 

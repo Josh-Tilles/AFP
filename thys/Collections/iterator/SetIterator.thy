@@ -4,7 +4,10 @@
 *)
 header {* \isaheader{Iterators over Finite Sets} *}
 theory SetIterator
-imports Main ListIterator "../common/Misc"
+imports 
+  "../../Automatic_Refinement/Lib/Misc" 
+  "../../Automatic_Refinement/Lib/Foldi" 
+  (*"../../Refine_Monadic/Refine_Monadic"*)
 begin
 
 text {* When reasoning about finite sets, it is often handy to be able to iterate over the elements
@@ -195,6 +198,8 @@ end
 
 
 subsection {* Iterators over Maps *}
+
+type_synonym ('k,'v,'\<sigma>) map_iterator = "('k\<times>'v,'\<sigma>) set_iterator"
 
 text {* Iterator over the key-value pairs of a finite map are called iterators over maps.*}
 abbreviation "map_iterator_genord it m R \<equiv> set_iterator_genord it (map_to_set m) R"
@@ -467,193 +472,202 @@ text {* Selecting according to a linear order is another case that is interestin
  Ordered iterators over maps, i.\,e.\ iterators over key-value pairs,
  use an order on the keys.*}
 
-definition "set_iterator_linord it S0 \<equiv> set_iterator_genord it S0 (\<lambda>a b. (a::('a::{linorder})) \<le> b)"
-definition "set_iterator_rev_linord it S0 \<equiv> set_iterator_genord it S0 (\<lambda>a b. (a::('a::{linorder})) \<ge> b)"
-definition "set_iterator_map_linord it S0 \<equiv> 
-   set_iterator_genord it S0 (\<lambda>kv kv'. ((fst kv)::('a::{linorder})) \<le> fst kv')"
-definition "set_iterator_map_rev_linord it S0 \<equiv> 
-   set_iterator_genord it S0 (\<lambda>kv kv'. ((fst kv)::('a::{linorder})) \<ge> fst kv')"
-abbreviation "map_iterator_linord it m \<equiv> set_iterator_map_linord it (map_to_set m)"
-abbreviation "map_iterator_rev_linord it m \<equiv> set_iterator_map_rev_linord it (map_to_set m)"
+context linorder begin
+  definition "set_iterator_linord it S0 
+    \<equiv> set_iterator_genord it S0 op \<le>"
+  definition "set_iterator_rev_linord it S0 
+    \<equiv> set_iterator_genord it S0 op \<ge>"
+  definition "set_iterator_map_linord it S0 \<equiv> 
+     set_iterator_genord it S0 (\<lambda>(k,_) (k',_). k\<le>k')"
+  definition "set_iterator_map_rev_linord it S0 \<equiv> 
+     set_iterator_genord it S0 (\<lambda>(k,_) (k',_). k\<ge>k')"
+  abbreviation "map_iterator_linord it m \<equiv> 
+    set_iterator_map_linord it (map_to_set m)"
+  abbreviation "map_iterator_rev_linord it m \<equiv> 
+    set_iterator_map_rev_linord it (map_to_set m)"
 
-lemma set_iterator_linord_rule_P:
-"\<lbrakk> set_iterator_linord it S0;
-   I S0 \<sigma>0;
-   !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S0-S \<Longrightarrow> x' \<le> x; \<And>x'. x' \<in> S \<Longrightarrow> x \<le> x'\<rbrakk> \<Longrightarrow> I (S - {x}) (f x \<sigma>);
-   !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S; x' \<in> S0-S\<rbrakk> \<Longrightarrow> x' \<le> x) \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_linord_def
-apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "op\<le>" I \<sigma>0 c f P])
-apply (simp_all add: Ball_def)
-apply (metis order_refl)
-done
+  lemma set_iterator_linord_rule_P:
+  "\<lbrakk> set_iterator_linord it S0;
+     I S0 \<sigma>0;
+     !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S0-S \<Longrightarrow> x' \<le> x; \<And>x'. x' \<in> S \<Longrightarrow> x \<le> x'\<rbrakk> \<Longrightarrow> I (S - {x}) (f x \<sigma>);
+     !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S; x' \<in> S0-S\<rbrakk> \<Longrightarrow> x' \<le> x) \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "op\<le>" I \<sigma>0 c f P])
+  apply (simp_all add: Ball_def)
+  apply (metis order_refl)
+  done
 
-lemma set_iterator_linord_rule_insert_P:
-"\<lbrakk> set_iterator_linord it S0;
-   I {} \<sigma>0;
-   !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S \<Longrightarrow> x' \<le> x; \<And>x'. x' \<in> S0 - S \<Longrightarrow> x \<le> x'\<rbrakk>  \<Longrightarrow> I (insert x S) (f x \<sigma>);
-   !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S0-S; x' \<in> S\<rbrakk> \<Longrightarrow> x' \<le> x) \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_linord_def
-apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "op\<le>" I \<sigma>0 c f P])
-apply (simp_all add: Ball_def)
-apply (metis order_refl)
-done
+  lemma set_iterator_linord_rule_insert_P:
+  "\<lbrakk> set_iterator_linord it S0;
+     I {} \<sigma>0;
+     !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S \<Longrightarrow> x' \<le> x; \<And>x'. x' \<in> S0 - S \<Longrightarrow> x \<le> x'\<rbrakk>  \<Longrightarrow> I (insert x S) (f x \<sigma>);
+     !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S0-S; x' \<in> S\<rbrakk> \<Longrightarrow> x' \<le> x) \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "op\<le>" I \<sigma>0 c f P])
+  apply (simp_all add: Ball_def)
+  apply (metis order_refl)
+  done
 
-lemma set_iterator_rev_linord_rule_P:
-"\<lbrakk> set_iterator_rev_linord it S0;
-   I S0 \<sigma>0;
-   !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S0-S \<Longrightarrow> x \<le> x'; \<And>x'. x' \<in> S \<Longrightarrow> x' \<le> x\<rbrakk> \<Longrightarrow> I (S - {x}) (f x \<sigma>);
-   !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S; x' \<in> S0-S\<rbrakk> \<Longrightarrow> x \<le> x') \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_rev_linord_def
-apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "op\<ge>" I \<sigma>0 c f P])
-apply (simp_all add: Ball_def)
-apply (metis order_refl)
-done
+  lemma set_iterator_rev_linord_rule_P:
+  "\<lbrakk> set_iterator_rev_linord it S0;
+     I S0 \<sigma>0;
+     !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S0-S \<Longrightarrow> x \<le> x'; \<And>x'. x' \<in> S \<Longrightarrow> x' \<le> x\<rbrakk> \<Longrightarrow> I (S - {x}) (f x \<sigma>);
+     !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>x x'. \<lbrakk>x \<in> S; x' \<in> S0-S\<rbrakk> \<Longrightarrow> x \<le> x') \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_rev_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "op\<ge>" I \<sigma>0 c f P])
+  apply (simp_all add: Ball_def)
+  apply (metis order_refl)
+  done
 
-lemma set_iterator_rev_linord_rule_insert_P:
-"\<lbrakk> set_iterator_rev_linord it S0;
-   I {} \<sigma>0;
-   !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S \<Longrightarrow> x \<le> x'; \<And>x'. x' \<in> S0 - S \<Longrightarrow> x' \<le> x\<rbrakk>  \<Longrightarrow> I (insert x S) (f x \<sigma>);
-   !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow>  (\<And>x x'. \<lbrakk>x \<in> S0-S; x' \<in> S\<rbrakk> \<Longrightarrow> x \<le> x') \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_rev_linord_def
-apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "op\<ge>" I \<sigma>0 c f P])
-apply (simp_all add: Ball_def)
-apply (metis order_refl)
-done
-
-
-lemma set_iterator_map_linord_rule_P:
-"\<lbrakk> set_iterator_map_linord it S0;
-   I S0 \<sigma>0;
-   !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S0-S \<Longrightarrow> k' \<le> k;
-                \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (S - {(k,v)}) (f (k,v) \<sigma>);
-   !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S0-S; (k', v') \<in> S\<rbrakk> \<Longrightarrow> k \<le> k') \<Longrightarrow>
-       \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_map_linord_def
-apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "(\<lambda>kv kv'. fst kv \<le> fst kv')" I \<sigma>0 c f P])
-apply simp_all
-apply (auto simp add: Ball_def)
-apply (metis order_refl)
-apply metis
-done
-
-lemma set_iterator_map_linord_rule_insert_P:
-"\<lbrakk> set_iterator_map_linord it S0;
-   I {} \<sigma>0;
-   !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k' \<le> k;
-                \<And>k' v'. (k',v') \<in> S0 - S \<Longrightarrow> k \<le> k'\<rbrakk>  \<Longrightarrow> I (insert (k,v) S) (f (k,v) \<sigma>);
-   !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S; (k', v') \<in> S0-S\<rbrakk> \<Longrightarrow> k \<le> k') \<Longrightarrow>
-          \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_map_linord_def
-apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "(\<lambda>kv kv'. fst kv \<le> fst kv')" I \<sigma>0 c f P])
-apply simp_all
-apply (auto simp add: Ball_def)
-apply (metis order_refl)
-apply metis
-done
-
-lemma set_iterator_map_rev_linord_rule_P:
-"\<lbrakk> set_iterator_map_rev_linord it S0;
-   I S0 \<sigma>0;
-   !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S0-S \<Longrightarrow> k \<le> k';
-                \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> I (S - {(k,v)}) (f (k,v) \<sigma>);
-   !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S0-S; (k', v') \<in> S\<rbrakk> \<Longrightarrow> k' \<le> k) \<Longrightarrow> 
-          \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_map_rev_linord_def
-apply (rule set_iterator_genord.iteratei_rule_P [of it S0 "(\<lambda>kv kv'. fst kv \<ge> fst kv')" I \<sigma>0 c f P])
-apply simp_all
-apply (auto simp add: Ball_def)
-apply (metis order_refl)
-apply metis
-done
-
-lemma set_iterator_map_rev_linord_rule_insert_P:
-"\<lbrakk> set_iterator_map_rev_linord it S0;
-   I {} \<sigma>0;
-   !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k \<le> k';
-               \<And>k' v'. (k',v') \<in> S0 - S \<Longrightarrow> k' \<le> k\<rbrakk>  \<Longrightarrow> I (insert (k,v) S) (f (k,v) \<sigma>);
-   !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
-   !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S; (k', v') \<in> S0-S\<rbrakk> \<Longrightarrow> k' \<le> k) \<Longrightarrow> 
-          \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
- \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
-unfolding set_iterator_map_rev_linord_def
-apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "(\<lambda>kv kv'. fst kv \<ge> fst kv')" I \<sigma>0 c f P])
-apply simp_all
-apply (auto simp add: Ball_def)
-apply (metis order_refl)
-apply metis
-done
+  lemma set_iterator_rev_linord_rule_insert_P:
+  "\<lbrakk> set_iterator_rev_linord it S0;
+     I {} \<sigma>0;
+     !!S \<sigma> x. \<lbrakk> c \<sigma>; x \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>x'. x' \<in> S \<Longrightarrow> x \<le> x'; \<And>x'. x' \<in> S0 - S \<Longrightarrow> x' \<le> x\<rbrakk>  \<Longrightarrow> I (insert x S) (f x \<sigma>);
+     !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow>  (\<And>x x'. \<lbrakk>x \<in> S0-S; x' \<in> S\<rbrakk> \<Longrightarrow> x \<le> x') \<Longrightarrow> \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_rev_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_insert_P [of it S0 "op\<ge>" I \<sigma>0 c f P])
+  apply (simp_all add: Ball_def)
+  apply (metis order_refl)
+  done
 
 
-lemma map_iterator_linord_rule_P:
-  assumes "map_iterator_linord it m"
-      and I0: "I (dom m) \<sigma>0"
-      and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
-               \<And>k'. k' \<in> it \<Longrightarrow> k \<le> k'; 
-               \<And>k'. k' \<in> (dom m)-it \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> I (it - {k}) (f (k, v) \<sigma>)"
-      and IF: "!!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>"
-      and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> {}; \<not> c \<sigma>; I it \<sigma>;
-                \<And>k k'. \<lbrakk>k \<in> (dom m)-it; k' \<in> it\<rbrakk> \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> P \<sigma>"
-  shows "P (it c f \<sigma>0)"
-using assms
-unfolding set_iterator_map_linord_def
-by (rule map_iterator_genord_rule_P) auto
+  lemma set_iterator_map_linord_rule_P:
+  "\<lbrakk> set_iterator_map_linord it S0;
+     I S0 \<sigma>0;
+     !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S0-S \<Longrightarrow> k' \<le> k;
+                  \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (S - {(k,v)}) (f (k,v) \<sigma>);
+     !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S0-S; (k', v') \<in> S\<rbrakk> \<Longrightarrow> k \<le> k') \<Longrightarrow>
+         \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_map_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_P 
+    [of it S0 "(\<lambda>(k,_) (k',_). k \<le> k')" I \<sigma>0 c f P])
+  apply simp_all
+  apply (auto simp add: Ball_def)
+  apply (metis order_refl)
+  apply metis
+  done
 
-lemma map_iterator_linord_rule_insert_P:
-  assumes "map_iterator_linord it m"
-      and I0: "I {} \<sigma>0"
-      and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> dom m - it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
-               \<And>k'. k' \<in> (dom m - it) \<Longrightarrow> k \<le> k'; 
-               \<And>k'. k' \<in> it \<Longrightarrow> k' \<le> k \<rbrakk> \<Longrightarrow> I (insert k it) (f (k, v) \<sigma>)"
-      and IF: "!!\<sigma>. I (dom m) \<sigma> \<Longrightarrow> P \<sigma>"
-      and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> dom m; \<not> c \<sigma>; I it \<sigma>;
-                \<And>k k'. \<lbrakk>k \<in> it; k' \<in> (dom m)-it\<rbrakk> \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> P \<sigma>"
-  shows "P (it c f \<sigma>0)"
-using assms
-unfolding set_iterator_map_linord_def
-by (rule map_iterator_genord_rule_insert_P) auto
+  lemma set_iterator_map_linord_rule_insert_P:
+  "\<lbrakk> set_iterator_map_linord it S0;
+     I {} \<sigma>0;
+     !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k' \<le> k;
+                  \<And>k' v'. (k',v') \<in> S0 - S \<Longrightarrow> k \<le> k'\<rbrakk>  \<Longrightarrow> I (insert (k,v) S) (f (k,v) \<sigma>);
+     !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S; (k', v') \<in> S0-S\<rbrakk> \<Longrightarrow> k \<le> k') \<Longrightarrow>
+            \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_map_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_insert_P 
+    [of it S0 "(\<lambda>(k,_) (k',_). k \<le> k')" I \<sigma>0 c f P])
+  apply simp_all
+  apply (auto simp add: Ball_def)
+  apply (metis order_refl)
+  apply metis
+  done
 
-lemma map_iterator_rev_linord_rule_P:
-  assumes "map_iterator_rev_linord it m"
-      and I0: "I (dom m) \<sigma>0"
-      and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
-               \<And>k'. k' \<in> it \<Longrightarrow> k' \<le> k; 
-               \<And>k'. k' \<in> (dom m)-it \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (it - {k}) (f (k, v) \<sigma>)"
-      and IF: "!!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>"
-      and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> {}; \<not> c \<sigma>; I it \<sigma>;
-                \<And>k k'. \<lbrakk>k \<in> (dom m)-it; k' \<in> it\<rbrakk> \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> P \<sigma>"
-  shows "P (it c f \<sigma>0)"
-using assms
-unfolding set_iterator_map_rev_linord_def
-by (rule map_iterator_genord_rule_P) auto
+  lemma set_iterator_map_rev_linord_rule_P:
+  "\<lbrakk> set_iterator_map_rev_linord it S0;
+     I S0 \<sigma>0;
+     !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S0-S \<Longrightarrow> k \<le> k';
+                  \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> I (S - {(k,v)}) (f (k,v) \<sigma>);
+     !!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> {} \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S0-S; (k', v') \<in> S\<rbrakk> \<Longrightarrow> k' \<le> k) \<Longrightarrow> 
+            \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_map_rev_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_P 
+    [of it S0 "(\<lambda>(k,_) (k',_). k \<ge> k')" I \<sigma>0 c f P])
+  apply simp_all
+  apply (auto simp add: Ball_def)
+  apply (metis order_refl)
+  apply metis
+  done
 
-lemma map_iterator_rev_linord_rule_insert_P:
-  assumes "map_iterator_rev_linord it m"
-      and I0: "I {} \<sigma>0"
-      and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> dom m - it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
-               \<And>k'. k' \<in> (dom m - it) \<Longrightarrow> k' \<le> k; 
-               \<And>k'. k' \<in> it \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (insert k it) (f (k, v) \<sigma>)"
-      and IF: "!!\<sigma>. I (dom m) \<sigma> \<Longrightarrow> P \<sigma>"
-      and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> dom m; \<not> c \<sigma>; I it \<sigma>;
-                \<And>k k'. \<lbrakk>k \<in> it; k' \<in> (dom m)-it\<rbrakk> \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> P \<sigma>"
-  shows "P (it c f \<sigma>0)"
-using assms
-unfolding set_iterator_map_rev_linord_def
-by (rule map_iterator_genord_rule_insert_P) auto
+  lemma set_iterator_map_rev_linord_rule_insert_P:
+  "\<lbrakk> set_iterator_map_rev_linord it S0;
+     I {} \<sigma>0;
+     !!S \<sigma> k v. \<lbrakk> c \<sigma>; (k, v) \<in> S0 - S; I S \<sigma>; S \<subseteq> S0; \<And>k' v'. (k', v') \<in> S \<Longrightarrow> k \<le> k';
+                 \<And>k' v'. (k',v') \<in> S0 - S \<Longrightarrow> k' \<le> k\<rbrakk>  \<Longrightarrow> I (insert (k,v) S) (f (k,v) \<sigma>);
+     !!\<sigma>. I S0 \<sigma> \<Longrightarrow> P \<sigma>;
+     !!\<sigma> S. S \<subseteq> S0 \<Longrightarrow> S \<noteq> S0 \<Longrightarrow> (\<And>k v k' v'. \<lbrakk>(k, v) \<in> S; (k', v') \<in> S0-S\<rbrakk> \<Longrightarrow> k' \<le> k) \<Longrightarrow> 
+            \<not> c \<sigma> \<Longrightarrow> I S \<sigma> \<Longrightarrow> P \<sigma>
+   \<rbrakk> \<Longrightarrow> P (it c f \<sigma>0)"
+  unfolding set_iterator_map_rev_linord_def
+  apply (rule set_iterator_genord.iteratei_rule_insert_P 
+    [of it S0 "(\<lambda>(k,_) (k',_). k \<ge> k')" I \<sigma>0 c f P])
+  apply simp_all
+  apply (auto simp add: Ball_def)
+  apply (metis order_refl)
+  apply metis
+  done
 
+
+  lemma map_iterator_linord_rule_P:
+    assumes "map_iterator_linord it m"
+        and I0: "I (dom m) \<sigma>0"
+        and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
+                 \<And>k'. k' \<in> it \<Longrightarrow> k \<le> k'; 
+                 \<And>k'. k' \<in> (dom m)-it \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> I (it - {k}) (f (k, v) \<sigma>)"
+        and IF: "!!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>"
+        and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> {}; \<not> c \<sigma>; I it \<sigma>;
+                  \<And>k k'. \<lbrakk>k \<in> (dom m)-it; k' \<in> it\<rbrakk> \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> P \<sigma>"
+    shows "P (it c f \<sigma>0)"
+  using assms
+  unfolding set_iterator_map_linord_def
+  by (rule map_iterator_genord_rule_P) auto
+
+  lemma map_iterator_linord_rule_insert_P:
+    assumes "map_iterator_linord it m"
+        and I0: "I {} \<sigma>0"
+        and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> dom m - it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
+                 \<And>k'. k' \<in> (dom m - it) \<Longrightarrow> k \<le> k'; 
+                 \<And>k'. k' \<in> it \<Longrightarrow> k' \<le> k \<rbrakk> \<Longrightarrow> I (insert k it) (f (k, v) \<sigma>)"
+        and IF: "!!\<sigma>. I (dom m) \<sigma> \<Longrightarrow> P \<sigma>"
+        and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> dom m; \<not> c \<sigma>; I it \<sigma>;
+                  \<And>k k'. \<lbrakk>k \<in> it; k' \<in> (dom m)-it\<rbrakk> \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> P \<sigma>"
+    shows "P (it c f \<sigma>0)"
+  using assms
+  unfolding set_iterator_map_linord_def
+  by (rule map_iterator_genord_rule_insert_P) auto
+
+  lemma map_iterator_rev_linord_rule_P:
+    assumes "map_iterator_rev_linord it m"
+        and I0: "I (dom m) \<sigma>0"
+        and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
+                 \<And>k'. k' \<in> it \<Longrightarrow> k' \<le> k; 
+                 \<And>k'. k' \<in> (dom m)-it \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (it - {k}) (f (k, v) \<sigma>)"
+        and IF: "!!\<sigma>. I {} \<sigma> \<Longrightarrow> P \<sigma>"
+        and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> {}; \<not> c \<sigma>; I it \<sigma>;
+                  \<And>k k'. \<lbrakk>k \<in> (dom m)-it; k' \<in> it\<rbrakk> \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> P \<sigma>"
+    shows "P (it c f \<sigma>0)"
+  using assms
+  unfolding set_iterator_map_rev_linord_def
+  by (rule map_iterator_genord_rule_P) auto
+
+  lemma map_iterator_rev_linord_rule_insert_P:
+    assumes "map_iterator_rev_linord it m"
+        and I0: "I {} \<sigma>0"
+        and IP: "!!k v it \<sigma>. \<lbrakk> c \<sigma>; k \<in> dom m - it; m k = Some v; it \<subseteq> dom m; I it \<sigma>;
+                 \<And>k'. k' \<in> (dom m - it) \<Longrightarrow> k' \<le> k; 
+                 \<And>k'. k' \<in> it \<Longrightarrow> k \<le> k'\<rbrakk> \<Longrightarrow> I (insert k it) (f (k, v) \<sigma>)"
+        and IF: "!!\<sigma>. I (dom m) \<sigma> \<Longrightarrow> P \<sigma>"
+        and II: "!!\<sigma> it. \<lbrakk> it \<subseteq> dom m; it \<noteq> dom m; \<not> c \<sigma>; I it \<sigma>;
+                  \<And>k k'. \<lbrakk>k \<in> it; k' \<in> (dom m)-it\<rbrakk> \<Longrightarrow> k' \<le> k\<rbrakk> \<Longrightarrow> P \<sigma>"
+    shows "P (it c f \<sigma>0)"
+  using assms
+  unfolding set_iterator_map_rev_linord_def
+  by (rule map_iterator_genord_rule_insert_P) auto
+end
 
 subsection {* Conversions to foldli *}
 
@@ -678,27 +692,30 @@ lemma set_iterator_I [intro] :
    unfolding set_iterator_foldli_conv
    by blast
 
-lemma set_iterator_linord_foldli_conv :
-  "set_iterator_linord iti S \<longleftrightarrow>
-   (\<exists>l0. distinct l0 \<and> S = set l0 \<and> sorted l0 \<and> iti = foldli l0)"
-unfolding set_iterator_linord_def set_iterator_genord_def by simp
+context linorder begin
+  lemma set_iterator_linord_foldli_conv :
+    "set_iterator_linord iti S \<longleftrightarrow>
+     (\<exists>l0. distinct l0 \<and> S = set l0 \<and> sorted l0 \<and> iti = foldli l0)"
+  unfolding set_iterator_linord_def set_iterator_genord_def by simp
 
-lemma set_iterator_linord_I [intro] :
-  "\<lbrakk>distinct l0; S = set l0; sorted l0; iti = foldli l0\<rbrakk> \<Longrightarrow>
-   set_iterator_linord iti S" 
-   unfolding set_iterator_linord_foldli_conv
-   by blast
+  lemma set_iterator_linord_I [intro] :
+    "\<lbrakk>distinct l0; S = set l0; sorted l0; iti = foldli l0\<rbrakk> \<Longrightarrow>
+     set_iterator_linord iti S" 
+     unfolding set_iterator_linord_foldli_conv
+     by blast
 
-lemma set_iterator_rev_linord_foldli_conv :
-  "set_iterator_rev_linord iti S \<longleftrightarrow>
-   (\<exists>l0. distinct l0 \<and> S = set l0 \<and> sorted (rev l0) \<and> iti = foldli l0)"
-unfolding set_iterator_rev_linord_def set_iterator_genord_def by simp
+  lemma set_iterator_rev_linord_foldli_conv :
+    "set_iterator_rev_linord iti S \<longleftrightarrow>
+     (\<exists>l0. distinct l0 \<and> S = set l0 \<and> sorted (rev l0) \<and> iti = foldli l0)"
+  unfolding set_iterator_rev_linord_def set_iterator_genord_def by simp
 
-lemma set_iterator_rev_linord_I [intro] :
-  "\<lbrakk>distinct l0; S = set l0; sorted (rev l0); iti = foldli l0\<rbrakk> \<Longrightarrow>
-   set_iterator_rev_linord iti S" 
-   unfolding set_iterator_rev_linord_foldli_conv
-   by blast
+  lemma set_iterator_rev_linord_I [intro] :
+    "\<lbrakk>distinct l0; S = set l0; sorted (rev l0); iti = foldli l0\<rbrakk> \<Longrightarrow>
+     set_iterator_rev_linord iti S" 
+     unfolding set_iterator_rev_linord_foldli_conv
+     by blast
+end
+
 
 lemma map_iterator_genord_foldli_conv :
   "map_iterator_genord iti m R \<longleftrightarrow>
@@ -743,28 +760,36 @@ lemma map_iterator_I [intro] :
    unfolding map_iterator_foldli_conv
    by blast
 
-lemma map_iterator_linord_foldli_conv :
-  "map_iterator_linord iti m \<longleftrightarrow>
-   (\<exists>l0. distinct (map fst l0) \<and> m = map_of l0 \<and> sorted (map fst l0) \<and> iti = foldli l0)"
-unfolding set_iterator_map_linord_def map_iterator_genord_foldli_conv by simp
+context linorder begin
 
-lemma map_iterator_linord_I [intro] :
-  "\<lbrakk>distinct (map fst l0); m = map_of l0; sorted (map fst l0); iti = foldli l0\<rbrakk> \<Longrightarrow>
-   map_iterator_linord iti m" 
-   unfolding map_iterator_linord_foldli_conv
-   by blast
+  lemma sorted_by_rel_keys_map_fst:
+    "sorted_by_rel (\<lambda>(k,_) (k',_). R k k') l = sorted_by_rel R (map fst l)"
+    by (induct l) auto
 
-lemma map_iterator_rev_linord_foldli_conv :
-  "map_iterator_rev_linord iti m \<longleftrightarrow>
-   (\<exists>l0. distinct (map fst l0) \<and> m = map_of l0 \<and> sorted (rev (map fst l0)) \<and> iti = foldli l0)"
-unfolding set_iterator_map_rev_linord_def map_iterator_genord_foldli_conv by simp
+  lemma map_iterator_linord_foldli_conv :
+    "map_iterator_linord iti m \<longleftrightarrow>
+     (\<exists>l0. distinct (map fst l0) \<and> m = map_of l0 \<and> sorted (map fst l0) \<and> iti = foldli l0)"
+  unfolding set_iterator_map_linord_def map_iterator_genord_foldli_conv
+  by (simp add: sorted_by_rel_keys_map_fst)
 
-lemma map_iterator_rev_linord_I [intro] :
-  "\<lbrakk>distinct (map fst l0); m = map_of l0; sorted (rev (map fst l0)); iti = foldli l0\<rbrakk> \<Longrightarrow>
-   map_iterator_rev_linord iti m" 
-   unfolding map_iterator_rev_linord_foldli_conv
-   by blast
+  lemma map_iterator_linord_I [intro] :
+    "\<lbrakk>distinct (map fst l0); m = map_of l0; sorted (map fst l0); iti = foldli l0\<rbrakk> \<Longrightarrow>
+     map_iterator_linord iti m" 
+     unfolding map_iterator_linord_foldli_conv
+     by blast
+
+  lemma map_iterator_rev_linord_foldli_conv :
+    "map_iterator_rev_linord iti m \<longleftrightarrow>
+     (\<exists>l0. distinct (map fst l0) \<and> m = map_of l0 \<and> sorted (rev (map fst l0)) \<and> iti = foldli l0)"
+  unfolding set_iterator_map_rev_linord_def map_iterator_genord_foldli_conv 
+  by (simp add: sorted_by_rel_keys_map_fst)
+
+  lemma map_iterator_rev_linord_I [intro] :
+    "\<lbrakk>distinct (map fst l0); m = map_of l0; sorted (rev (map fst l0)); iti = foldli l0\<rbrakk> \<Longrightarrow>
+     map_iterator_rev_linord iti m" 
+     unfolding map_iterator_rev_linord_foldli_conv
+     by blast
 
 end
 
-
+end

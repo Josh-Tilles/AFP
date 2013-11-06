@@ -4,7 +4,7 @@
 *)
 header {* Operations on Set Iterators *}
 theory SetIteratorOperations
-imports Main SetIterator "../common/Misc"
+imports Main SetIterator
 begin
 
 text{* Many operations on sets can be lifted to iterators over sets. This theory tries to introduce
@@ -31,23 +31,23 @@ lemma set_iterator_emp_correct :
   "set_iterator set_iterator_emp {}"
 using set_iterator_intro [OF set_iterator_genord_emp_correct] .
 
-lemma set_iterator_linord_emp_correct :
+lemma (in linorder) set_iterator_linord_emp_correct :
   "set_iterator_linord set_iterator_emp {}"
 unfolding set_iterator_linord_def
 by (fact set_iterator_genord_emp_correct) 
 
-lemma set_iterator_rev_linord_emp_correct :
+lemma (in linorder) set_iterator_rev_linord_emp_correct :
   "set_iterator_rev_linord set_iterator_emp {}"
 unfolding set_iterator_rev_linord_def
 by (fact set_iterator_genord_emp_correct) 
 
-lemma map_iterator_linord_emp_correct :
+lemma (in linorder) map_iterator_linord_emp_correct :
   "map_iterator_linord set_iterator_emp empty"
   "set_iterator_map_linord set_iterator_emp {}"
 unfolding set_iterator_map_linord_def
 by (simp_all add: set_iterator_genord_emp_correct map_to_set_def) 
 
-lemma map_iterator_rev_linord_emp_correct :
+lemma (in linorder) map_iterator_rev_linord_emp_correct :
   "map_iterator_rev_linord set_iterator_emp empty"
   "set_iterator_map_rev_linord set_iterator_emp {}"
 unfolding set_iterator_map_rev_linord_def
@@ -75,22 +75,22 @@ lemma set_iterator_sng_correct :
 unfolding set_iterator_def
 by (rule set_iterator_genord_sng_correct)
 
-lemma set_iterator_linord_sng_correct :
+lemma (in linorder) set_iterator_linord_sng_correct :
   "set_iterator_linord (set_iterator_sng x) {x}"
 unfolding set_iterator_linord_def
 by (simp add: set_iterator_genord_sng_correct) 
 
-lemma set_iterator_rev_linord_sng_correct :
+lemma (in linorder) set_iterator_rev_linord_sng_correct :
   "set_iterator_rev_linord (set_iterator_sng x) {x}"
 unfolding set_iterator_rev_linord_def
 by (simp add: set_iterator_genord_sng_correct) 
 
-lemma map_iterator_linord_sng_correct :
+lemma (in linorder) map_iterator_linord_sng_correct :
   "map_iterator_linord (set_iterator_sng (k,v)) (empty (k \<mapsto> v))"
 unfolding set_iterator_map_linord_def
 by (simp add: set_iterator_genord_sng_correct) 
 
-lemma map_iterator_rev_linord_sng_correct :
+lemma (in linorder) map_iterator_rev_linord_sng_correct :
   "map_iterator_rev_linord (set_iterator_sng (k,v)) (empty (k \<mapsto> v))"
 unfolding set_iterator_map_rev_linord_def
 by (simp add: set_iterator_genord_sng_correct) 
@@ -164,7 +164,7 @@ proof -
   show ?thesis by simp
 qed
 
-lemma set_iterator_linord_union_correct :
+lemma (in linorder) set_iterator_linord_union_correct :
   assumes it_a: "set_iterator_linord it_a S_a"
   assumes it_b: "set_iterator_linord it_b S_b"
   assumes ord_Sab: "\<And>a b. \<lbrakk>a \<in> S_a; b \<in> S_b\<rbrakk> \<Longrightarrow> a < b"
@@ -177,7 +177,7 @@ apply auto
 apply (metis less_le_not_le ord_Sab)
 done
 
-lemma set_iterator_rev_linord_union_correct :
+lemma (in linorder) set_iterator_rev_linord_union_correct :
   assumes it_a: "set_iterator_rev_linord it_a S_a"
   assumes it_b: "set_iterator_rev_linord it_b S_b"
   assumes ord_Sab: "\<And>a b. \<lbrakk>a \<in> S_a; b \<in> S_b\<rbrakk> \<Longrightarrow> a > b"
@@ -190,7 +190,7 @@ apply auto
 apply (metis less_le_not_le ord_Sab)
 done
 
-lemma map_iterator_linord_union_correct :
+lemma (in linorder) map_iterator_linord_union_correct :
   assumes it_a: "set_iterator_map_linord it_a S_a"
   assumes it_b: "set_iterator_map_linord it_b S_b"
   assumes ord_Sab: "\<And>kv kv'. \<lbrakk>kv \<in> S_a; kv' \<in> S_b\<rbrakk> \<Longrightarrow> fst kv < fst kv'"
@@ -204,7 +204,7 @@ lemma map_iterator_linord_union_correct :
   apply (metis less_le_not_le)
 done
 
-lemma map_iterator_rev_linord_union_correct :
+lemma (in linorder) map_iterator_rev_linord_union_correct :
   assumes it_a: "set_iterator_map_rev_linord it_a S_a"
   assumes it_b: "set_iterator_map_rev_linord it_b S_b"
   assumes ord_Sab: "\<And>kv kv'. \<lbrakk>kv \<in> S_a; kv' \<in> S_b\<rbrakk> \<Longrightarrow> fst kv > fst kv'"
@@ -479,14 +479,14 @@ proof -
   thus ?thesis by simp
 qed
 
-lemma set_iterator_linord_filter_correct :
+lemma (in linorder) set_iterator_linord_filter_correct :
   assumes it_OK: "set_iterator_linord it S"
   shows "set_iterator_linord (set_iterator_filter P it) {x. x \<in> S \<and> P x}"
 using assms
 unfolding set_iterator_linord_def
 by (rule set_iterator_genord_filter_correct)
 
-lemma set_iterator_rev_linord_filter_correct :
+lemma (in linorder) set_iterator_rev_linord_filter_correct :
   assumes it_OK: "set_iterator_rev_linord it S"
   shows "set_iterator_rev_linord (set_iterator_filter P it) {x. x \<in> S \<and> P x}"
 using assms
@@ -557,7 +557,7 @@ lemma set_iterator_foldli_correct :
 "distinct xs \<Longrightarrow> set_iterator (foldli xs) (set xs)"
 by (rule set_iterator_I[of xs]) (simp_all)
 
-lemma set_iterator_linord_foldli_correct :
+lemma (in linorder) set_iterator_linord_foldli_correct :
 assumes dist_xs: "distinct xs"
 assumes sorted_xs: "sorted xs"
 shows "set_iterator_linord (foldli xs) (set xs)"
@@ -565,7 +565,7 @@ using assms
 by (rule_tac set_iterator_linord_I[of xs]) (simp_all)
 
 
-lemma set_iterator_rev_linord_foldli_correct :
+lemma (in linorder) set_iterator_rev_linord_foldli_correct :
 assumes dist_xs: "distinct xs"
 assumes sorted_xs: "sorted (rev xs)"
 shows "set_iterator_rev_linord (foldli xs) (set xs)"
@@ -581,7 +581,7 @@ lemma map_iterator_foldli_correct :
 "distinct (map fst xs) \<Longrightarrow> map_iterator (foldli xs) (map_of xs)"
 by (rule map_iterator_I[of xs]) (simp_all)
 
-lemma map_iterator_linord_foldli_correct :
+lemma (in linorder) map_iterator_linord_foldli_correct :
 assumes dist_xs: "distinct (map fst xs)"
 assumes sorted_xs: "sorted (map fst xs)"
 shows "map_iterator_linord (foldli xs) (map_of xs)"
@@ -589,7 +589,7 @@ using assms
 by (rule_tac map_iterator_linord_I[of xs]) (simp_all)
 
 
-lemma map_iterator_rev_linord_foldli_correct :
+lemma (in linorder) map_iterator_rev_linord_foldli_correct :
 assumes dist_xs: "distinct (map fst xs)"
 assumes sorted_xs: "sorted (rev (map fst xs))"
 shows "map_iterator_rev_linord (foldli xs) (map_of xs)"
@@ -607,14 +607,14 @@ lemma set_iterator_foldri_correct :
 "distinct xs \<Longrightarrow> set_iterator (foldri xs) (set xs)"
 by (rule set_iterator_I[of "rev xs"]) (simp_all add: foldri_def)
 
-lemma set_iterator_linord_foldri_correct :
+lemma (in linorder) set_iterator_linord_foldri_correct :
 assumes dist_xs: "distinct xs"
 assumes sorted_xs: "sorted (rev xs)"
 shows "set_iterator_linord (foldri xs) (set xs)"
 using assms
 by (rule_tac set_iterator_linord_I[of "rev xs"]) (simp_all add: foldri_def)
 
-lemma set_iterator_rev_linord_foldri_correct :
+lemma (in linorder) set_iterator_rev_linord_foldri_correct :
 assumes dist_xs: "distinct xs"
 assumes sorted_xs: "sorted xs"
 shows "set_iterator_rev_linord (foldri xs) (set xs)"
@@ -631,7 +631,7 @@ lemma map_iterator_foldri_correct :
 by (rule map_iterator_I[of "rev xs"]) 
    (simp_all add: rev_map[symmetric] foldri_def)
 
-lemma map_iterator_linord_foldri_correct :
+lemma (in linorder) map_iterator_linord_foldri_correct :
 assumes dist_xs: "distinct (map fst xs)"
 assumes sorted_xs: "sorted (rev (map fst xs))"
 shows "map_iterator_linord (foldri xs) (map_of xs)"
@@ -639,7 +639,7 @@ using assms
 by (rule_tac map_iterator_linord_I[of "rev xs"]) 
    (simp_all add: rev_map[symmetric] foldri_def)
 
-lemma map_iterator_rev_linord_foldri_correct :
+lemma (in linorder) map_iterator_rev_linord_foldri_correct :
 assumes dist_xs: "distinct (map fst xs)"
 assumes sorted_xs: "sorted (map fst xs)"
 shows "map_iterator_rev_linord (foldri xs) (map_of xs)"
@@ -687,7 +687,7 @@ apply (rule_tac map_iterator_genord_dom_correct)
 apply simp_all
 done
 
-lemma map_iterator_linord_dom_correct :
+lemma (in linorder) map_iterator_linord_dom_correct :
   assumes it_OK: "map_iterator_linord it m"
   shows "set_iterator_linord (map_iterator_dom it) (dom m)"
 using assms
@@ -697,7 +697,7 @@ apply assumption
 apply auto
 done
 
-lemma map_iterator_rev_linord_dom_correct :
+lemma (in linorder) map_iterator_rev_linord_dom_correct :
   assumes it_OK: "map_iterator_rev_linord it m"
   shows "set_iterator_rev_linord (map_iterator_dom it) (dom m)"
 using assms
@@ -787,21 +787,24 @@ apply (rule_tac map_iterator_genord_dom_filter_correct)
 apply simp_all
 done
 
-lemma map_iterator_linord_dom_filter_correct :
+lemma (in linorder) map_iterator_linord_dom_filter_correct :
   assumes it_OK: "map_iterator_linord it m"
   shows "set_iterator_linord (map_iterator_dom_filter P it) {k. \<exists>v. m k = Some v \<and> P (k, v)}"
 using assms
 unfolding set_iterator_map_linord_def set_iterator_linord_def 
-apply (rule_tac map_iterator_genord_dom_filter_correct [where R = "\<lambda>x x'. fst x \<le> fst x'"])
+apply (rule_tac map_iterator_genord_dom_filter_correct 
+  [where R = "\<lambda>(k,_) (k',_). k\<le>k'"])
 apply (simp_all add: set_iterator_def)
 done
 
-lemma set_iterator_rev_linord_map_filter_correct :
+lemma (in linorder) set_iterator_rev_linord_map_filter_correct :
   assumes it_OK: "map_iterator_rev_linord it m"
-  shows "set_iterator_rev_linord (map_iterator_dom_filter P it) {k. \<exists>v. m k = Some v \<and> P (k, v)}"
+  shows "set_iterator_rev_linord (map_iterator_dom_filter P it) 
+  {k. \<exists>v. m k = Some v \<and> P (k, v)}"
 using assms
 unfolding set_iterator_map_rev_linord_def set_iterator_rev_linord_def 
-apply (rule_tac map_iterator_genord_dom_filter_correct [where R = "\<lambda>x x'. fst x \<ge> fst x'"])
+apply (rule_tac map_iterator_genord_dom_filter_correct 
+  [where R = "\<lambda>(k,_) (k',_). k\<ge>k'"])
 apply (simp_all add: set_iterator_def)
 done
 
