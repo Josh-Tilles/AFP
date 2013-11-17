@@ -425,7 +425,13 @@ lemma [code, code del]:
   "Cardinality.eq_set = Cardinality.eq_set" ..
 
 lemma [code, code del]:
-  "acc = acc" ..
+  "Wellfounded.acc = Wellfounded.acc" ..
+
+lemma [code, code del]:
+  "Bleast = Bleast" ..
+
+lemma [code, code del]:
+  "can_select = can_select" ..
 
 subsection {* Set implementations *}
 
@@ -459,6 +465,18 @@ by(clarsimp simp add: RBT_set_def member_conv_keys)
 
 subsection {* Set operations *}
 
+text {*
+  A collection of all the theorems about @{const Complement}.
+*}
+ML {*
+structure Set_Complement_Eqs = Named_Thms
+(
+  val name = @{binding set_complement_code}
+  val description = "Code equations involving set complement"
+)
+*}
+setup {* Set_Complement_Eqs.setup *}
+
 lemma Collect_code [code]:
   fixes P :: "'a :: cenum \<Rightarrow> bool" shows
   "Collect P =
@@ -476,10 +494,12 @@ lemma finite_code [code]:
   "finite (RBT_set rbt) =
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''finite RBT_set: corder = None'') (\<lambda>_. finite (RBT_set rbt))
                      | Some _ \<Rightarrow> True)"
+  and finite_Complement [set_complement_code]:
   "finite (Complement A) \<longleftrightarrow>
   (if of_phantom (finite_UNIV :: 'c finite_UNIV) then True
    else if finite A then False
    else Code.abort (STR ''finite Complement: infinite set'') (\<lambda>_. finite (Complement A)))"
+  and
   "finite (Set_Monad xs) = True"
   "finite (Collect_set P) \<longleftrightarrow>
   of_phantom (finite_UNIV :: 'c finite_UNIV) \<or> Code.abort (STR ''finite Collect_set'') (\<lambda>_. finite (Collect_set P))"
@@ -498,6 +518,7 @@ lemma card_code [code]:
   "card (Set_Monad xs) =
   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''card Set_Monad: ceq = None'') (\<lambda>_. card (Set_Monad xs))
                  | Some eq \<Rightarrow> length (equal_base.list_remdups eq xs))"
+  and card_Complement [set_complement_code]:
   "card (Complement A) =
    (let a = card A; s = CARD('c)
     in if s > 0 then s - a 
@@ -506,7 +527,7 @@ lemma card_code [code]:
 by(auto simp add: RBT_set_def member_conv_keys distinct_card DList_set_def Let_def card_UNIV Compl_eq_Diff_UNIV card_Diff_subset_Int card_gt_0_iff finite_subset[of A UNIV] List.card_set dest: Collection_Eq.ID_ceq split: option.split)
 
 lemma is_UNIV_code [code]:
-  fixes rbt :: "'a :: cproper_interval set_rbt" 
+  fixes rbt :: "'a :: {cproper_interval, finite_UNIV} set_rbt" 
   and A :: "'b :: card_UNIV set" shows
   "is_UNIV A \<longleftrightarrow>
    (let a = CARD('b);
@@ -517,7 +538,7 @@ lemma is_UNIV_code [code]:
   (is ?generic)
   "is_UNIV (RBT_set rbt) = 
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''is_UNIV RBT_set: corder = None'') (\<lambda>_. is_UNIV (RBT_set rbt))
-                     | Some _ \<Rightarrow> finite (UNIV :: 'a set) \<and> proper_intrvl.exhaustive_fusion cproper_interval rbt_keys_generator (RBT_Set2.init rbt))"
+                     | Some _ \<Rightarrow> of_phantom (finite_UNIV :: 'a finite_UNIV) \<and> proper_intrvl.exhaustive_fusion cproper_interval rbt_keys_generator (RBT_Set2.init rbt))"
   (is ?rbt)
 proof -
   {
@@ -543,7 +564,7 @@ proof -
         by(auto simp add: linorder_proper_interval.exhaustive_correct[OF ID_corder_interval[OF linorder]] sorted_RBT_Set_keys is_UNIV_def RBT_set_conv_keys)
     qed }
   thus ?rbt
-    by(auto simp add: proper_intrvl.exhaustive_fusion_def unfoldr_rbt_keys_generator is_UNIV_def split: option.split)
+    by(auto simp add: finite_UNIV proper_intrvl.exhaustive_fusion_def unfoldr_rbt_keys_generator is_UNIV_def split: option.split)
 
   show ?generic
     by(auto simp add: Let_def is_UNIV_def dest: card_seteq[of UNIV A] dest!: card_ge_0_finite)
@@ -560,6 +581,7 @@ lemma is_empty_code [code]:
   "Set.is_empty (RBT_set rbt) \<longleftrightarrow> 
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''is_empty RBT_set: corder = None'') (\<lambda>_. Set.is_empty (RBT_set rbt))
                   | Some _ \<Rightarrow> RBT_Set2.is_empty rbt)" (is ?RBT_set)
+  and is_empty_Complement [set_complement_code]:
   "Set.is_empty (Complement A) \<longleftrightarrow> is_UNIV A" (is ?Complement)
 proof -
   show ?DList_set
@@ -585,6 +607,7 @@ lemma Set_insert_code [code]:
   "\<And>x. Set.insert x (RBT_set rbt) =
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''insert RBT_set: corder = None'') (\<lambda>_. Set.insert x (RBT_set rbt))
                      | Some _ \<Rightarrow> RBT_set (RBT_Set2.insert x rbt))"
+  and insert_Complement [set_complement_code]:
   "\<And>x. Set.insert x (Complement X) = Complement (Set.remove x X)"
 by(auto split: option.split dest: equal.equal_eq[OF ID_ceq] simp add: DList_set_def DList_Set.member_insert RBT_set_def)
 
@@ -593,13 +616,13 @@ lemma Set_member_code [code]:
   "\<And>x. x \<in> Collect_set A \<longleftrightarrow> A x"
   "\<And>x. x \<in> DList_set dxs \<longleftrightarrow> DList_Set.member dxs x"
   "\<And>x. x \<in> RBT_set rbt \<longleftrightarrow> RBT_Set2.member rbt x"
+  and mem_Complement [set_complement_code]:
   "\<And>x. x \<in> Complement X \<longleftrightarrow> x \<notin> X"
+  and
   "\<And>x. x \<in> Set_Monad xs \<longleftrightarrow>
   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''member Set_Monad: ceq = None'') (\<lambda>_. x \<in> Set_Monad xs)
                  | Some eq \<Rightarrow> equal_base.list_member eq xs x)"
 by(auto simp add: DList_set_def RBT_set_def List.member_def split: option.split dest!: Collection_Eq.ID_ceq)
-
-lemma set_code [code]: "set = Set_Monad" by simp
 
 lemma Set_remove_code [code]:
   fixes rbt :: "'a :: corder set_rbt"
@@ -613,9 +636,11 @@ lemma Set_remove_code [code]:
   "\<And>x. Set.remove x (RBT_set rbt) =
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''remove RBT_set: corder = None'') (\<lambda>_. Set.remove x (RBT_set rbt))
                      | Some _ \<Rightarrow> RBT_set (RBT_Set2.remove x rbt))"
+  and remove_Complement [set_complement_code]:
+  "\<And>x A. Set.remove x (Complement A) = Complement (Set.insert x A)"
 by(auto split: option.split split_if_asm dest: equal.equal_eq[OF ID_ceq] simp add: DList_set_def DList_Set.member_remove RBT_set_def)
 
-lemma Set_uminus_code [code]:
+lemma Set_uminus_code [code, set_complement_code]:
   "- A = Complement A"
   "- (Collect_set P) = Collect_set (\<lambda>x. \<not> P x)"
   "- (Complement B) = B"
@@ -631,7 +656,7 @@ lemma Set_uminus_cenum:
   "- A =
   (case ID CENUM('a) of None \<Rightarrow> Complement A
             | Some (enum, _) \<Rightarrow> Set_Monad (filter (\<lambda>x. x \<notin> A) enum))"
-  "- (Complement B) = B"
+  and "- (Complement B) = B"
 by(auto split: option.split dest: ID_cEnum)
 
 lemma Set_minus_code [code]: "A - B = A \<inter> (- B)"
@@ -673,6 +698,7 @@ lemma Set_union_code [code]:
   "Set_Monad xs \<union> Set_Monad ys = Set_Monad (xs @ ys)"
   "Collect_set A \<union> B = Collect_set (\<lambda>x. A x \<or> x \<in> B)"
   "B \<union> Collect_set A = Collect_set (\<lambda>x. A x \<or> x \<in> B)"
+  and Set_union_Complement [set_complement_code]:
   "Complement B \<union> B' = Complement (B \<inter> - B')"
   "B' \<union> Complement B = Complement (- B' \<inter> B)"
 proof -
@@ -715,9 +741,9 @@ lemma Set_inter_code [code]:
   "G \<inter> RBT_set rbt2 =
    (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''inter RBT_set2: corder = None'') (\<lambda>_. G \<inter> RBT_set rbt2)
                       | Some _ \<Rightarrow> RBT_set (RBT_Set2.filter (\<lambda>x. x \<in> G) rbt2))" (is ?rbt2)
-
+  and Set_inter_Complement [set_complement_code]:
   "Complement B'' \<inter> Complement B''' = Complement (B'' \<union> B''')" (is ?complement)
-
+  and
   "Set_Monad xs \<inter> RBT_set rbt1 =
    (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''inter Set_Monad RBT_set: corder = None'') (\<lambda>_. RBT_set rbt1 \<inter> Set_Monad xs)
                       | Some _ \<Rightarrow> RBT_set (RBT_Set2.inter_list rbt1 xs))" (is ?monad_rbt)
@@ -777,30 +803,6 @@ qed
 lemma UNIV_code [code]: "UNIV = - {}"
 by(simp)
 
-lemma Inter_code [code]:
-  fixes dxs :: "'a :: ceq set set_dlist" 
-  and rbt :: "'b :: corder set set_rbt" shows
-  "Inter (Set_Monad xs) = fold op \<inter> xs UNIV"
-  "Inter (DList_set dxs) = 
-  (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''Inter DList_set: ceq = None'') (\<lambda>_. Inter (DList_set dxs))
-                  | Some _ \<Rightarrow> DList_Set.fold op \<inter> dxs UNIV)"
-  "Inter (RBT_set rbt) =
-  (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''Inter RBT_set: corder = None'') (\<lambda>_. Inter (RBT_set rbt))
-                     | Some _ \<Rightarrow> RBT_Set2.fold op \<inter> rbt UNIV)"
-by(auto simp add: DList_set_def Inf_member RBT_set_def RBT_Set2.fold_conv_fold_keys corder_set_def Inf_set_fold[symmetric] member_conv_keys ID_Some simp del: not_None_eq split: option.splits)
-
-lemma Union_code [code]:
-  fixes dxs :: "'a :: ceq set set_dlist"
-  and rbt :: "'b :: corder set set_rbt" shows
-  "Union (Set_Monad xs) = fold op \<union> xs {}"
-  "Union (DList_set dxs) =
-  (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''Union DList_set: ceq = None'') (\<lambda>_. Union (DList_set dxs))
-                  | Some _ \<Rightarrow> DList_Set.fold op \<union> dxs {})"
-  "Union (RBT_set rbt) =
-  (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''Union RBT_set: corder = None'') (\<lambda>_. Union (RBT_set rbt))
-                     | Some _ \<Rightarrow> RBT_Set2.fold op \<union> rbt {})"
-by(auto simp add: DList_set_def Sup_member RBT_set_def RBT_Set2.fold_conv_fold_keys corder_set_def Sup_set_fold[symmetric] member_conv_keys ID_Some simp del: not_None_eq split: option.splits)
-
 lemma Inf_fin_code [code]:
   fixes rbt :: "'a :: {corder, lattice} set_rbt"
   and dxs :: "'b :: {ceq, lattice} set_dlist" shows
@@ -829,33 +831,74 @@ lemma Sup_fin_code [code]:
                                  else RBT_Set2.fold1 sup rbt)"
 by(simp_all add: Sup_fin.set_eq_fold DList_set_def DList_Set.Sup_fin_member RBT_Set2.Sup_fin_member RBT_set_def del: set.simps split: option.splits)
 
-lemma Inf_code [code]:
+lemma Inf_code:
   fixes xs :: "'a :: complete_lattice list"
   and dxs :: "'b :: {complete_lattice, ceq} set_dlist"
   and rbt :: "'c :: {complete_lattice, corder} set_rbt"
-  shows
-  "Inf (Set_Monad xs) = fold inf xs top"
+  shows Inf_Set_Monad: "Inf (Set_Monad xs) = fold inf xs top"
+  and Inf_DList_set:
   "Inf (DList_set dxs) =
   (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''Inf DList_set: ceq = None'') (\<lambda>_. Inf (DList_set dxs))
                   | Some _ \<Rightarrow> DList_Set.fold inf dxs top)"
+  and Inf_RBT_set:
   "Inf (RBT_set rbt) =
   (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''Inf RBT_set: corder = None'') (\<lambda>_. Inf (RBT_set rbt))
                   | Some _ \<Rightarrow> RBT_Set2.fold inf rbt top)"
 by(auto simp add: DList_set_def RBT_set_def Inf_set_fold Collect_member DList_Set.fold.rep_eq RBT_Set2.member_conv_keys RBT_Set2.keys.rep_eq RBT_Set2.fold_conv_fold_keys split: option.split)
 
-lemma Sup_code [code]:
+lemma Sup_code:
   fixes xs :: "'a :: complete_lattice list"
   and dxs :: "'b :: {complete_lattice, ceq} set_dlist"
   and rbt :: "'c :: {complete_lattice, corder} set_rbt"
-  shows
+  shows Sup_Set_Monad:
   "Sup (Set_Monad xs) = fold sup xs bot"
+  and Sup_DList_set:
   "Sup (DList_set dxs) =
   (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''Sup DList_set: ceq = None'') (\<lambda>_. Sup (DList_set dxs))
                   | Some _ \<Rightarrow> DList_Set.fold sup dxs bot)"
+  and Sup_RBT_set:
   "Sup (RBT_set rbt) =
   (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''Sup RBT_set: corder = None'') (\<lambda>_. Sup (RBT_set rbt))
                   | Some _ \<Rightarrow> RBT_Set2.fold sup rbt bot)"
 by(auto simp add: DList_set_def RBT_set_def Sup_set_fold Collect_member DList_Set.fold.rep_eq RBT_Set2.member_conv_keys RBT_Set2.keys.rep_eq RBT_Set2.fold_conv_fold_keys split: option.split)
+
+lemmas Inter_code [code] = 
+  Inf_Set_Monad[where ?'a = "_ :: type set"]
+  Inf_DList_set[where ?'b = "_ :: ceq set"]
+  Inf_RBT_set[where ?'c = "_ :: corder set"]
+
+lemmas Union_code [code] =
+  Sup_Set_Monad[where ?'a="_ :: type set"]
+  Sup_DList_set[where ?'b="_ :: ceq set"]
+  Sup_RBT_set[where ?'c="_ :: corder set"]
+
+lemmas Predicate_Inf_code [code] =
+  Inf_Set_Monad[where ?'a = "_ :: type Predicate.pred"]
+  Inf_DList_set[where ?'b = "_ :: ceq Predicate.pred"]
+  -- {* no @{class corder} instance for @{typ "'a Predicate.pred"} yet *}
+(*  Inf_RBT_set[where ?'c = "_ :: corder Predicate.pred"] *)
+
+lemmas Predicate_Sup_code [code] =
+  Sup_Set_Monad[where ?'a = "_ :: type Predicate.pred"]
+  Sup_DList_set[where ?'b = "_ :: ceq Predicate.pred"]
+  -- {* no @{class corder} instance for @{typ "'a Predicate.pred"} yet *}
+(*  Sup_RBT_set[where ?'c = "_ :: corder Predicate.pred"] *)
+
+lemmas Inf_fun_code [code] =
+  Inf_Set_Monad[where ?'a = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+  Inf_DList_set[where ?'b = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+  Inf_RBT_set[where ?'c = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+
+lemmas Sup_fun_code [code] =
+  Sup_Set_Monad[where ?'a = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+  Sup_DList_set[where ?'b = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+  Sup_RBT_set[where ?'c = "_ :: type \<Rightarrow> _ :: complete_lattice"]
+
+lemma INFI_code [code]: "INFI A f = Inf (f ` A)"
+by(rule INF_def)
+
+lemma SUPR_code [code]: "SUPR A f = Sup (f ` A)"
+by(rule SUP_def)
 
 lemma Min_code [code]:
   fixes xs :: "'a :: linorder list" 
@@ -960,6 +1003,7 @@ lemma cless_set_code [code]:
      if finite A \<and> finite B then ord.lexord (\<lambda>x y. lt y x) (csorted_list_of_set A) (csorted_list_of_set B)
      else Code.abort (STR ''cless_set: infinite set'') (\<lambda>_. cless_set A B))"
   (is "?fin_fin")
+  and cless_set_Complement2 [set_complement_code]:
   "cless_set A' (Complement B') \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_set Complement2: corder = None'') (\<lambda>_. cless_set A' (Complement B'))
               | Some (le, lt) \<Rightarrow>
@@ -968,6 +1012,7 @@ lemma cless_set_code [code]:
         proper_intrvl.set_less_aux_Compl lt cproper_interval None (csorted_list_of_set A') (csorted_list_of_set B')
      else Code.abort (STR ''cless_set Complement2: infinite set'') (\<lambda>_. cless_set A' (Complement B')))"
   (is "?fin_Compl_fin")
+  and cless_set_Complement1 [set_complement_code]:
   "cless_set (Complement A') B' \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_set Complement1: corder = None'') (\<lambda>_. cless_set (Complement A') B')
               | Some (le, lt) \<Rightarrow>
@@ -976,20 +1021,23 @@ lemma cless_set_code [code]:
         proper_intrvl.Compl_set_less_aux lt cproper_interval None (csorted_list_of_set A') (csorted_list_of_set B')
       else Code.abort (STR ''cless_set Complement1: infinite set'') (\<lambda>_. cless_set (Complement A') B'))"
   (is "?Compl_fin_fin")
+  and cless_set_Complement12 [set_complement_code]:
   "cless_set (Complement A) (Complement B) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cless_set Complement Complement: corder = None'') (\<lambda>_. cless_set (Complement A) (Complement B))
                      | Some _ \<Rightarrow> cless B A)" (is ?Compl_Compl)
-
+  and
   "cless_set (RBT_set rbt) (RBT_set rbt') \<longleftrightarrow> 
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cless_set RBT_set RBT_set: corder = None'') (\<lambda>_. cless_set (RBT_set rbt) (RBT_set rbt'))
              | Some (leq, lt) \<Rightarrow> ord.lexord_fusion (\<lambda>x y. lt y x) rbt_keys_generator rbt_keys_generator (RBT_Set2.init rbt) (RBT_Set2.init rbt'))"
     (is ?rbt_rbt)
+  and cless_set_rbt_Complement2 [set_complement_code]:
   "cless_set (RBT_set rbt1) (Complement (RBT_set rbt2)) \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_set RBT_set (Complement RBT_set): corder = None'') (\<lambda>_. cless_set (RBT_set rbt1) (Complement (RBT_set rbt2)))
              | Some (leq, lt) \<Rightarrow>
      finite (UNIV :: 'b set) \<longrightarrow>
      proper_intrvl.set_less_aux_Compl_fusion lt cproper_interval rbt_keys_generator rbt_keys_generator None (RBT_Set2.init rbt1) (RBT_Set2.init rbt2))"
     (is ?rbt_Compl)
+  and cless_set_rbt_Complement1 [set_complement_code]:
   "cless_set (Complement (RBT_set rbt1)) (RBT_set rbt2) \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_set (Complement RBT_set) RBT_set: corder = None'') (\<lambda>_. cless_set (Complement (RBT_set rbt1)) (RBT_set rbt2))
              | Some (leq, lt) \<Rightarrow>
@@ -1033,6 +1081,7 @@ lemma cless_eq_set_code [code]:
         ord.lexord_eq (\<lambda>x y. lt y x) (csorted_list_of_set A) (csorted_list_of_set B)
      else Code.abort (STR ''cless_eq_set: infinite set'') (\<lambda>_. cless_eq_set A B))"
   (is "?fin_fin")
+  and cless_eq_set_Complement2 [set_complement_code]:
   "cless_eq_set A' (Complement B') \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_eq_set Complement2: corder = None'') (\<lambda>_. cless_eq_set A' (Complement B'))
               | Some (le, lt) \<Rightarrow>
@@ -1041,6 +1090,7 @@ lemma cless_eq_set_code [code]:
         proper_intrvl.set_less_eq_aux_Compl lt cproper_interval None (csorted_list_of_set A') (csorted_list_of_set B')
      else Code.abort (STR ''cless_eq_set Complement2: infinite set'') (\<lambda>_. cless_eq_set A' (Complement B')))"
   (is "?fin_Compl_fin")
+  and cless_eq_set_Complement1 [set_complement_code]:
   "cless_eq_set (Complement A') B' \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_eq_set Complement1: corder = None'') (\<lambda>_. cless_eq_set (Complement A') B')
               | Some (le, lt) \<Rightarrow>
@@ -1049,6 +1099,7 @@ lemma cless_eq_set_code [code]:
       proper_intrvl.Compl_set_less_eq_aux lt cproper_interval None (csorted_list_of_set A') (csorted_list_of_set B')
     else Code.abort (STR ''cless_eq_set Complement1: infinite set'') (\<lambda>_. cless_eq_set (Complement A') B'))"
   (is "?Compl_fin_fin")
+  and cless_eq_set_Complement12 [set_complement_code]:
   "cless_eq_set (Complement A) (Complement B) \<longleftrightarrow> 
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cless_eq_set Complement Complement: corder = None'') (\<lambda>_. cless_eq (Complement A) (Complement B))
              | Some (lt, leq) \<Rightarrow> cless_eq_set B A)" 
@@ -1058,12 +1109,14 @@ lemma cless_eq_set_code [code]:
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cless_eq_set RBT_set RBT_set: corder = None'') (\<lambda>_. cless_eq_set (RBT_set rbt) (RBT_set rbt'))
              | Some (leq, lt) \<Rightarrow> ord.lexord_eq_fusion (\<lambda>x y. lt y x) rbt_keys_generator rbt_keys_generator (RBT_Set2.init rbt) (RBT_Set2.init rbt'))" 
     (is ?rbt_rbt)
+  and cless_eq_set_rbt_Complement2 [set_complement_code]:
   "cless_eq_set (RBT_set rbt1) (Complement (RBT_set rbt2)) \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_eq_set RBT_set (Complement RBT_set): corder = None'') (\<lambda>_. cless_eq_set (RBT_set rbt1) (Complement (RBT_set rbt2)))
              | Some (leq, lt) \<Rightarrow>
      finite (UNIV :: 'b set) \<longrightarrow>
      proper_intrvl.set_less_eq_aux_Compl_fusion lt cproper_interval rbt_keys_generator rbt_keys_generator None (RBT_Set2.init rbt1) (RBT_Set2.init rbt2))"
     (is ?rbt_Compl)
+  and cless_eq_set_rbt_Complement1 [set_complement_code]:
   "cless_eq_set (Complement (RBT_set rbt1)) (RBT_set rbt2) \<longleftrightarrow>
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''cless_eq_set (Complement RBT_set) RBT_set: corder = None'') (\<lambda>_. cless_eq_set (Complement (RBT_set rbt1)) (RBT_set rbt2))
              | Some (leq, lt) \<Rightarrow>
@@ -1104,16 +1157,19 @@ lemma cproper_interval_set_Some_Some_code [code]:
               | Some (le, lt) \<Rightarrow>
        finite (UNIV :: 'a set) \<and> proper_intrvl.proper_interval_set_aux lt cproper_interval (csorted_list_of_set A) (csorted_list_of_set B))"
   (is ?fin_fin)
+  and cproper_interval_set_Some_Some_Complement [set_complement_code]:
   "cproper_interval (Some A) (Some (Complement B)) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cproper_interval Complement2: corder = None'') (\<lambda>_. cproper_interval (Some A) (Some (Complement B)))
               | Some (le, lt) \<Rightarrow>
        finite (UNIV :: 'a set) \<and> proper_intrvl.proper_interval_set_Compl_aux lt cproper_interval None 0 (csorted_list_of_set A) (csorted_list_of_set B))"
   (is ?fin_Compl_fin)
+  and cproper_interval_set_Some_Complement_Some [set_complement_code]:
   "cproper_interval (Some (Complement A)) (Some B) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cproper_interval Complement1: corder = None'') (\<lambda>_. cproper_interval (Some (Complement A)) (Some B))
               | Some (le, lt) \<Rightarrow>
        finite (UNIV :: 'a set) \<and> proper_intrvl.proper_interval_Compl_set_aux lt cproper_interval None (csorted_list_of_set A) (csorted_list_of_set B))"
   (is ?Compl_fin_fin)
+  and cproper_interval_set_Some_Complement_Some_Complement [set_complement_code]:
   "cproper_interval (Some (Complement A)) (Some (Complement B)) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cproper_interval Complement Complement: corder = None'') (\<lambda>_. cproper_interval (Some (Complement A)) (Some (Complement B)))
              | Some _ \<Rightarrow> cproper_interval (Some B) (Some A))"
@@ -1124,11 +1180,13 @@ lemma cproper_interval_set_Some_Some_code [code]:
              | Some (leq, lt) \<Rightarrow>
      finite (UNIV :: 'a set) \<and> proper_intrvl.proper_interval_set_aux_fusion lt cproper_interval rbt_keys_generator rbt_keys_generator (RBT_Set2.init rbt1) (RBT_Set2.init rbt2))"
   (is ?rbt_rbt)
+  and cproper_interval_set_Some_rbt_Some_Complement [set_complement_code]:
   "cproper_interval (Some (RBT_set rbt1)) (Some (Complement (RBT_set rbt2))) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cproper_interval RBT_set (Complement RBT_set): corder = None'') (\<lambda>_. cproper_interval (Some (RBT_set rbt1)) (Some (Complement (RBT_set rbt2))))
              | Some (leq, lt) \<Rightarrow>
      finite (UNIV :: 'a set) \<and> proper_intrvl.proper_interval_set_Compl_aux_fusion lt cproper_interval rbt_keys_generator rbt_keys_generator None 0 (RBT_Set2.init rbt1) (RBT_Set2.init rbt2))"
   (is ?rbt_Compl_rbt)
+  and cproper_interval_set_Some_Complement_Some_rbt [set_complement_code]:
   "cproper_interval (Some (Complement (RBT_set rbt1))) (Some (RBT_set rbt2)) \<longleftrightarrow>
   (case ID CORDER('a) of None \<Rightarrow> Code.abort (STR ''cproper_interval (Complement RBT_set) RBT_set: corder = None'') (\<lambda>_. cproper_interval (Some (Complement (RBT_set rbt1))) (Some (RBT_set rbt2)))
              | Some (leq, lt) \<Rightarrow>
@@ -1242,8 +1300,11 @@ lemma subset_eq_code [folded subset_eq_def, code]:
   (case ID CEQ('c) of None \<Rightarrow> Code.abort (STR ''subset DList_set1: ceq = None'') (\<lambda>_. DList_set dxs \<subseteq> C)
                      | Some _ \<Rightarrow> DList_Set.dlist_all (\<lambda>x. x \<in> C) dxs)" (is ?dlist)
   "Set_Monad xs \<subseteq> C \<longleftrightarrow> list_all (\<lambda>x. x \<in> C) xs" (is ?Set_Monad)
+  and Collect_subset_eq_Complement [folded subset_eq_def, set_complement_code]:
   "Collect_set P \<subseteq> Complement A \<longleftrightarrow> A \<subseteq> {x. \<not> P x}" (is ?Collect_set_Compl)
+  and Complement_subset_eq_Complement [folded subset_eq_def, set_complement_code]:
   "Complement A1 \<subseteq> Complement A2 \<longleftrightarrow> A2 \<subseteq> A1" (is ?Compl)
+  and
   "RBT_set rbt1 \<subseteq> RBT_set rbt2 \<longleftrightarrow>
   (case ID CORDER('d) of None \<Rightarrow> Code.abort (STR ''subset RBT_set RBT_set: corder = None'') (\<lambda>_. RBT_set rbt1 \<subseteq> RBT_set rbt2)
                      | Some (le, lt) \<Rightarrow> 
@@ -1271,7 +1332,9 @@ by(simp add: set_eq_def)
 lemma set_eq_code [code]:
   fixes rbt1 rbt2 :: "'b :: {corder, ceq} set_rbt" shows
   "set_eq A B \<longleftrightarrow> A \<subseteq> B \<and> B \<subseteq> A"
+  and set_eq_Complement_Complement [set_complement_code]:
   "set_eq (Complement A) (Complement B) = set_eq A B"
+  and
   "set_eq (RBT_set rbt1) (RBT_set rbt2) = 
   (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''set_eq RBT_set RBT_set: corder = None'') (\<lambda>_. set_eq (RBT_set rbt1) (RBT_set rbt2))
                      | Some (le, lt) \<Rightarrow> 
@@ -1292,7 +1355,9 @@ lemma Set_image_code [code]:
   and rbt :: "'b :: corder set_rbt" shows
   "image f (Set_Monad xs) = Set_Monad (map f xs)"
   "image f (Collect_set A) = Code.abort (STR ''image Collect_set'') (\<lambda>_. image f (Collect_set A))"
+  and image_Complement_Complement [set_complement_code]:
   "image f (Complement (Complement B)) = image f B"
+  and
   "image g (DList_set dxs) = 
   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''image DList_set: ceq = None'') (\<lambda>_. image g (DList_set dxs))
                   | Some _ \<Rightarrow> DList_Set.fold (insert \<circ> g) dxs {})"
@@ -1400,14 +1465,14 @@ lemma product_code [code]:
    Set_Monad (fold (\<lambda>x. fold (\<lambda>y rest. (x, y) # rest) ys) xs [])"
   (is ?Set_Monad)
 
-  "Product_Type.product (DList_set dxs) B = 
-   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''product DList_set1: ceq = None'') (\<lambda>_. Product_Type.product (DList_set dxs) B)
-                   | Some _ \<Rightarrow>  DList_Set.fold (\<lambda>x rest. Pair x ` B \<union> rest) dxs {})" 
+  "Product_Type.product (DList_set dxs) B1 = 
+   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''product DList_set1: ceq = None'') (\<lambda>_. Product_Type.product (DList_set dxs) B1)
+                   | Some _ \<Rightarrow>  DList_Set.fold (\<lambda>x rest. Pair x ` B1 \<union> rest) dxs {})" 
   (is "?dlist1")
 
-  "Product_Type.product A (DList_set dys) = 
-   (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''product DList_set2: ceq = None'') (\<lambda>_. Product_Type.product A (DList_set dys))
-                   | Some _ \<Rightarrow> DList_Set.fold (\<lambda>y rest. (\<lambda>x. (x, y)) ` A \<union> rest) dys {})"
+  "Product_Type.product A1 (DList_set dys) = 
+   (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''product DList_set2: ceq = None'') (\<lambda>_. Product_Type.product A1 (DList_set dys))
+                   | Some _ \<Rightarrow> DList_Set.fold (\<lambda>y rest. (\<lambda>x. (x, y)) ` A1 \<union> rest) dys {})"
   (is "?dlist2")
 
   "Product_Type.product (DList_set dxs) (DList_set dys) = 
@@ -1415,6 +1480,16 @@ lemma product_code [code]:
                   | Some _ \<Rightarrow> 
      case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''product DList_set DList_set: ceq2 = None'') (\<lambda>_. Product_Type.product (DList_set dxs) (DList_set dys))
                     | Some _ \<Rightarrow> DList_set (DList_Set.product dxs dys))"
+
+  "Product_Type.product (RBT_set rbt1) B2 =
+  (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''product RBT_set: corder1 = None'') (\<lambda>_. Product_Type.product (RBT_set rbt1) B2)
+                     | Some _ \<Rightarrow> RBT_Set2.fold (\<lambda>x rest. Pair x ` B2 \<union> rest) rbt1 {})"
+  (is "?rbt1")
+
+  "Product_Type.product A2 (RBT_set rbt2) =
+  (case ID CORDER('d) of None \<Rightarrow> Code.abort (STR ''product RBT_set: corder2 = None'') (\<lambda>_. Product_Type.product A2 (RBT_set rbt2))
+                     | Some _ \<Rightarrow> RBT_Set2.fold (\<lambda>y rest. (\<lambda>x. (x, y)) ` A2 \<union> rest) rbt2 {})"
+  (is "?rbt2")
 
   "Product_Type.product (RBT_set rbt1) (RBT_set rbt2) =
   (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''product RBT_set RBT_set: corder1 = None'') (\<lambda>_. Product_Type.product (RBT_set rbt1) (RBT_set rbt2))
@@ -1429,16 +1504,28 @@ proof -
   show ?Set_Monad by(auto simp add: Product_Type.product_def)
 
   { fix xs :: "'a list"
-    have "fold (\<lambda>x. op \<union> (Pair x ` B)) xs {} = set xs \<times> B"
+    have "fold (\<lambda>x. op \<union> (Pair x ` B1)) xs {} = set xs \<times> B1"
       by(induct xs rule: rev_induct) auto }
-  thus ?dlist1
-    by(simp add: Product_Type.product_def DList_set_def DList_Set.fold.rep_eq DList_Set.Collect_member split: option.split)
+  thus ?dlist1 
+    by(simp add: Product_Type.product_def DList_set_def DList_Set.fold.rep_eq DList_Set.Collect_member split: option.split) 
 
   { fix ys :: "'b list"
-    have "fold (\<lambda>y. op \<union> ((\<lambda>x. (x, y)) ` A)) ys {} = A \<times> set ys"
+    have "fold (\<lambda>y. op \<union> ((\<lambda>x. (x, y)) ` A1)) ys {} = A1 \<times> set ys"
       by(induct ys rule: rev_induct) auto }
   thus ?dlist2
     by(simp add: Product_Type.product_def DList_set_def DList_Set.fold.rep_eq DList_Set.Collect_member split: option.split)
+
+  { fix xs :: "'c list"
+    have "fold (\<lambda>x. op \<union> (Pair x ` B2)) xs {} = set xs \<times> B2"
+      by(induct xs rule: rev_induct) auto }
+  thus ?rbt1
+    by(simp add: Product_Type.product_def RBT_set_def RBT_Set2.member_product RBT_Set2.member_conv_keys fold_conv_fold_keys split: option.split)
+
+  { fix ys :: "'d list"
+    have "fold (\<lambda>y. op \<union> ((\<lambda>x. (x, y)) ` A2)) ys {} = A2 \<times> set ys"
+      by(induct ys rule: rev_induct) auto }
+  thus ?rbt2
+    by(simp add: Product_Type.product_def RBT_set_def RBT_Set2.member_product RBT_Set2.member_conv_keys fold_conv_fold_keys split: option.split)
 qed(auto simp add: RBT_set_def DList_set_def Product_Type.product_def DList_Set.product_member RBT_Set2.member_product split: option.split)
 
 lemma Id_on_code [code]: 
@@ -1447,9 +1534,11 @@ lemma Id_on_code [code]:
   and P :: "'a \<Rightarrow> bool" 
   and rbt :: "'b :: corder set_rbt" shows
   "Id_on B = (\<lambda>x. (x, x)) ` B"
+  and Id_on_Complement [set_complement_code]:
   "Id_on (Complement A) =
   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''Id_on Complement: ceq = None'') (\<lambda>_. Id_on (Complement A))
                  | Some eq \<Rightarrow> Collect_set (\<lambda>(x, y). eq x y \<and> x \<notin> A))"
+  and
   "Id_on (Collect_set P) =
   (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''Id_on Collect_set: ceq = None'') (\<lambda>_. Id_on (Collect_set P))
                  | Some eq \<Rightarrow> Collect_set (\<lambda>(x, y). eq x y \<and> P x))"
@@ -1665,36 +1754,8 @@ by(auto intro: rev_image_eqI simp add: Let_def)
 
 lemma acc_code [code]:
   fixes A :: "('a :: {finite, card_UNIV} \<times> 'a) set" shows
-  "acc A = bacc A (of_phantom (card_UNIV :: 'a card_UNIV))"
+  "Wellfounded.acc A = bacc A (of_phantom (card_UNIV :: 'a card_UNIV))"
 by(simp add: card_UNIV acc_bacc_eq)
-
-lemma SUPR_code [code]:
-  fixes xs :: "'a :: complete_lattice list"
-  and dxs :: "'b :: {complete_lattice, ceq} set_dlist"
-  and rbt :: "'c :: {complete_lattice, corder} set_rbt"
-  shows
-  "SUPR (Set_Monad xs) f = fold (sup \<circ> f) xs bot"
-  "SUPR (DList_set dxs) g =
-  (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''SUPR DList_set: ceq = None'') (\<lambda>_. SUPR (DList_set dxs) g)
-                  | Some _ \<Rightarrow> DList_Set.fold (sup \<circ> g) dxs bot)"
-  "SUPR (RBT_set rbt) h =
-  (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''SUPR RBT_set: corder = None'') (\<lambda>_. SUPR (RBT_set rbt) h)
-                     | Some _ \<Rightarrow> RBT_Set2.fold (sup \<circ> h) rbt bot)"
-by(auto simp add: DList_set_def SUP_set_fold RBT_set_def Collect_member DList_Set.fold.rep_eq RBT_Set2.fold_conv_fold_keys member_conv_keys split: option.split)
-
-lemma INFI_code [code]:
-  fixes xs :: "'a :: complete_lattice list"
-  and dxs :: "'b :: {complete_lattice, ceq} set_dlist"
-  and rbt :: "'c :: {complete_lattice, corder} set_rbt"
-  shows
-  "INFI (Set_Monad xs) f = fold (inf \<circ> f) xs top"
-  "INFI (DList_set dxs) g =
-  (case ID CEQ('b) of None \<Rightarrow> Code.abort (STR ''INFI DList_set: ceq = None'') (\<lambda>_. INFI (DList_set dxs) g)
-                  | Some _ \<Rightarrow> DList_Set.fold (inf \<circ> g) dxs top)"
-  "INFI (RBT_set rbt) h =
-  (case ID CORDER('c) of None \<Rightarrow> Code.abort (STR ''INFI RBT_set: corder = None'') (\<lambda>_. INFI (RBT_set rbt) h)
-                     | Some _ \<Rightarrow> RBT_Set2.fold (inf \<circ> h) rbt top)"
-by(auto simp add: DList_set_def INF_set_fold RBT_set_def Collect_member DList_Set.fold.rep_eq RBT_Set2.fold_conv_fold_keys member_conv_keys split: option.split)
 
 lemma sorted_list_of_set_code [code]:
   fixes dxs :: "'a :: {linorder, ceq} set_dlist"
@@ -1742,6 +1803,58 @@ proof -
   show ?dlist ?rbt
     by(auto split: option.split simp add: RBT_set_def DList_set_def DList_Set.fold.rep_eq Collect_member map_project_conv_fold RBT_Set2.fold_conv_fold_keys member_conv_keys del: equalityI)
 qed(auto simp add: List.map_project_def List.map_filter_def intro: rev_image_eqI)
+
+lemma Bleast_code [code]:
+  "Bleast A P = 
+  (if finite A then case filter P (sorted_list_of_set A) of [] \<Rightarrow> abort_Bleast A P | x # xs \<Rightarrow> x 
+   else abort_Bleast A P)"
+proof(cases "finite A")
+  case True
+  hence *: "A = set (sorted_list_of_set A)" by(simp add: sorted_list_of_set)
+  show ?thesis using True
+    by(subst (1 3) *)(unfold Bleast_code, simp add: sorted_sort_id)
+qed(simp add: abort_Bleast_def Bleast_def)
+
+lemma can_select_code [code]:
+  fixes xs :: "'a :: ceq list" 
+  and dxs :: "'a :: ceq set_dlist" 
+  and rbt :: "'b :: corder set_rbt" shows
+  "can_select P (Set_Monad xs) =
+  (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''can_select Set_Monad: ceq = None'') (\<lambda>_. can_select P (Set_Monad xs))
+                 | Some eq \<Rightarrow> case filter P xs of Nil \<Rightarrow> False | x # xs \<Rightarrow> list_all (eq x) xs)"
+  (is ?Set_Monad)
+  "can_select Q (DList_set dxs) =
+  (case ID CEQ('a) of None \<Rightarrow> Code.abort (STR ''can_select DList_set: ceq = None'') (\<lambda>_. can_select Q (DList_set dxs))
+                  | Some _ \<Rightarrow> DList_Set.length (DList_Set.filter Q dxs) = 1)"
+  (is ?dlist)
+  "can_select R (RBT_set rbt) =
+  (case ID CORDER('b) of None \<Rightarrow> Code.abort (STR ''can_select RBT_set: corder = None'') (\<lambda>_. can_select R (RBT_set rbt))
+                 | Some _ \<Rightarrow> singleton_list_fusion (filter_generator R rbt_keys_generator) (RBT_Set2.init rbt))"
+  (is ?rbt)
+proof -
+  show ?Set_Monad
+    apply(auto split: option.split list.split dest!: ID_ceq[THEN equal.equal_eq] dest: filter_eq_ConsD simp add: can_select_def filter_empty_conv list_all_iff)
+    apply(drule filter_eq_ConsD, fastforce)
+    apply(drule filter_eq_ConsD, clarsimp, blast)
+    done
+  
+  show ?dlist
+    by(clarsimp simp add: can_select_def card_eq_length[symmetric] Set_member_code card_eq_Suc_0_ex1 simp del: card_eq_length split: option.split)
+  
+  note [simp del] = distinct_keys
+  show ?rbt
+    using distinct_keys[of rbt]
+    apply(auto simp add: can_select_def singleton_list_fusion_def unfoldr_filter_generator unfoldr_rbt_keys_generator Set_member_code member_conv_keys filter_empty_conv empty_filter_conv split: option.split list.split dest: filter_eq_ConsD)
+      apply(drule filter_eq_ConsD, fastforce)
+     apply(drule filter_eq_ConsD, fastforce simp add: empty_filter_conv)
+    apply(drule filter_eq_ConsD)
+    apply clarsimp
+    apply(drule Cons_eq_filterD)
+    apply clarify
+    apply(simp (no_asm_use))
+    apply blast
+    done
+qed
 
 lemma pred_of_set_code [code]:
   fixes dxs :: "'a :: ceq set_dlist" 
@@ -1797,7 +1910,17 @@ hide_const (open) insert_monad union_monad
 subsection {* Type class instantiations *}
 
 datatype set_impl = Set_IMPL
-declare set_impl.eq.simps [code del]
+declare
+  set_impl.eq.simps [code del]
+  set_impl.size [code del]
+  set_impl.recs [code del]
+  set_impl.cases [code del]
+
+lemma [code]: 
+  fixes x :: set_impl
+  shows "size x = 0"
+  and "set_impl_size x = 0"
+by(case_tac [!] x) simp_all
 
 definition set_Choose :: set_impl where [simp]: "set_Choose = Set_IMPL"
 definition set_Collect :: set_impl where [simp]: "set_Collect = Set_IMPL"
@@ -1919,6 +2042,40 @@ instantiation phantom :: (type, set_impl) set_impl begin
 definition "SET_IMPL(('a, 'b) phantom) = Phantom (('a, 'b) phantom) (of_phantom SET_IMPL('b))"
 instance ..
 end
+
+text {*
+  We enable automatic implementation selection for sets constructed by @{const set},
+  although they could be directly converted using @{const Set_Monad} in constant time.
+  However, then it is more likely that the parameters of binary operators have 
+  different implementations, which can lead to less efficient execution.
+
+  However, we test whether automatic selection picks @{const Set_Monad} anyway and
+  take a short-cut.
+*}
+
+definition set_aux :: "set_impl \<Rightarrow> 'a list \<Rightarrow> 'a set"
+where [simp, code del]: "set_aux _ = set"
+
+lemma set_aux_code [code]:
+  defines "conv \<equiv> foldl (\<lambda>s (x :: 'a). insert x s)"
+  shows
+  "set_aux impl = conv (set_empty impl)" (is "?thesis1")
+  "set_aux set_Choose = 
+   (case CORDER('a :: {corder, ceq}) of Some _  \<Rightarrow> conv (RBT_set RBT_Set2.empty)
+    | None \<Rightarrow> case CEQ('a) of None \<Rightarrow> Set_Monad
+              | Some _ \<Rightarrow> conv (DList_set DList_Set.empty))" (is "?thesis2")
+  "set_aux set_Monad = Set_Monad"
+proof -
+  have "conv {} = set"
+    by(rule ext)(induct_tac x rule: rev_induct, simp_all add: conv_def)
+  thus ?thesis1 ?thesis2
+    by(simp_all split: option.split)
+qed simp
+
+lemma set_code [code]:
+  fixes xs :: "'a :: set_impl list"
+  shows "set xs = set_aux (of_phantom (ID SET_IMPL('a))) xs"
+by(simp)
 
 subsection {* Pretty printing for sets *}
 
