@@ -105,14 +105,14 @@ by(auto simp add: cr_uint32_def)
 lemma numeral_uint32 [code_unfold]: "numeral n = Uint32 (numeral n)"
 by transfer simp
 
-lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint32_def)(simp add: Abs_uint32_inverse)
+lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (- numeral n) = - numeral n"
+by(simp only: uminus_uint32_def)(simp add: Abs_uint32_inverse)
 
 lemma uint32_neg_numeral_transfer [transfer_rule]:
-  "(fun_rel op = cr_uint32) neg_numeral neg_numeral"
+  "(fun_rel op = cr_uint32) (- numeral) (- numeral)"
 by(auto simp add: cr_uint32_def)
 
-lemma neg_numeral_uint32 [code_unfold]: "neg_numeral n = Uint32 (neg_numeral n)"
+lemma neg_numeral_uint32 [code_unfold]: "- numeral n = Uint32 (- numeral n)"
 by transfer(simp add: cr_uint32_def)
 
 lemma Abs_uint32_numeral [code_post]: "Abs_uint32 (numeral n) = numeral n"
@@ -277,12 +277,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint32} 
   ([code abstract] equations for @{typ uint32} may use @{term Rep_uint32} because
   these instances will be folded away.)
+
+  To convert @{typ "32 word"} values into @{typ uint32}, use @{term "Abs_uint32'"}.
 *}
 
 definition Rep_uint32' where [simp]: "Rep_uint32' = Rep_uint32"
 
+lemma Rep_uint32'_transfer [transfer_rule]:
+  "fun_rel cr_uint32 op = (\<lambda>x. x) Rep_uint32'"
+unfolding Rep_uint32'_def by(rule uint32.rep_transfer)
+
 lemma Rep_uint32'_code [code]: "Rep_uint32' x = (BITS n. x !! n)"
-unfolding Rep_uint32'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint32' :: "32 word \<Rightarrow> uint32" is "\<lambda>x :: 32 word. x" .
+
+lemma Abs_uint32'_code [code]:
+  "Abs_uint32' x = Uint32 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint32 \<Rightarrow> _)" ..
 
