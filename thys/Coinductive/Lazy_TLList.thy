@@ -2,7 +2,7 @@
     Author:      Andreas Lochbihler
 *)
 
-theory Lazy_TLList imports 
+theory Lazy_TLList imports
   TLList
   Lazy_LList
 begin
@@ -45,26 +45,32 @@ lemma equal_tllist_Lazy_tllist [code]:
      (case ys () of Inr b' \<Rightarrow> False | Inl (y, ys') \<Rightarrow> if x = y then equal_class.equal xs' ys' else False))"
 by(auto simp add: equal_tllist_def)
 
-lemma [code, code del]: "tllist_corec = tllist_corec" ..
+lemma [code, code del]: "thd = thd" "ttl = ttl" by rule+
 
-lemma tllist_corec_Lazy_tllist [code]:
-  "tllist_corec IS_TNIL TNIL THD endORmore TTL_end TTL_more b = Lazy_tllist
+declare
+  thd_def [code]
+  ttl_def [code]
+
+lemma [code, code del]: "corec_tllist = corec_tllist" ..
+
+lemma corec_tllist_Lazy_tllist [code]:
+  "corec_tllist IS_TNIL TNIL THD endORmore TTL_end TTL_more b = Lazy_tllist
   (\<lambda>_. if IS_TNIL b then Inr (TNIL b)
-       else Inl (THD b, if endORmore b then TTL_end b else tllist_corec IS_TNIL TNIL THD endORmore TTL_end TTL_more (TTL_more b)))"
+       else Inl (THD b, if endORmore b then TTL_end b else corec_tllist IS_TNIL TNIL THD endORmore TTL_end TTL_more (TTL_more b)))"
 by(rule tllist.expand) simp_all
 
-lemma [code, code del]: "tllist_unfold = tllist_unfold" ..
+lemma [code, code del]: "unfold_tllist = unfold_tllist" ..
 
-lemma tllist_unfold_Lazy_tllist [code]:
-  "tllist_unfold IS_TNIL TNIL THD TTL b = Lazy_tllist
+lemma unfold_tllist_Lazy_tllist [code]:
+  "unfold_tllist IS_TNIL TNIL THD TTL b = Lazy_tllist
   (\<lambda>_. if IS_TNIL b then Inr (TNIL b)
-       else Inl (THD b, tllist_unfold IS_TNIL TNIL THD TTL (TTL b)))"
+       else Inl (THD b, unfold_tllist IS_TNIL TNIL THD TTL (TTL b)))"
 by(rule tllist.expand) simp_all
 
-lemma [code, code del]: "tllist_case = tllist_case" ..
+lemma [code, code del]: "case_tllist = case_tllist" ..
 
-lemma tllist_case_Lazy_tllist [code]:
-  "tllist_case n c (Lazy_tllist xs) = 
+lemma case_tllist_Lazy_tllist [code]:
+  "case_tllist n c (Lazy_tllist xs) = 
   (case xs () of Inl (x, ys) \<Rightarrow> c x ys | Inr b \<Rightarrow> n b)"
 by simp
 
@@ -160,14 +166,14 @@ declare sum.splits [split del]
 text {* Simple ML test for laziness *}
 
 ML_val {*
-  val zeros = @{code tllist_unfold} (fn x => false) (fn x => 0) (fn x => 0) (fn x => x) ();
+  val zeros = @{code unfold_tllist} (K false) (K 0) (K 0) I ();
   val thd = @{code thd} zeros;
   val ttl = @{code ttl} zeros;
   val ttl' = @{code force} ttl;
-  
+
   val tdrop = @{code tdropn} (@{code Suc} @{code "0::nat"}) zeros;
-  
-  val tfilter = @{code tfilter} 1 (fn _ => false) zeros;
+
+  val tfilter = @{code tfilter} 1 (K false) zeros;
 *}
 
 hide_const (open) force

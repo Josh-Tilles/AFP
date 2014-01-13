@@ -100,16 +100,13 @@ lift_definition Uint16 :: "integer \<Rightarrow> uint16" is "word_of_int" .
 lemma Rep_uint16_numeral [simp]: "Rep_uint16 (numeral n) = numeral n"
 by(induction n)(simp_all add: one_uint16_def Abs_uint16_inverse numeral.simps plus_uint16_def)
 
-lemma Rep_uint16_neg_numeral [simp]: "Rep_uint16 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint16_def)(simp add: Abs_uint16_inverse)
+lemma Rep_uint16_neg_numeral [simp]: "Rep_uint16 (- numeral n) = - numeral n"
+by(simp only: uminus_uint16_def)(simp add: Abs_uint16_inverse)
 
 context begin interpretation lifting_syntax .
 
-lemma [transfer_rule]: "(op = ===> cr_uint16 ===> op =) (\<lambda>n m. cr_uint16 m n) op ="
-by(auto 4 3 simp add: cr_uint16_def Rep_uint16_inject)
-
 lemma uint16_neg_numeral_transfer [transfer_rule]:
-  "(op = ===> cr_uint16) neg_numeral neg_numeral"
+  "(op = ===> cr_uint16) (- numeral) (- numeral)"
 by(auto simp add: cr_uint16_def)
 
 lemma numeral_uint16_transfer [transfer_rule]:
@@ -121,7 +118,7 @@ end
 lemma numeral_uint16 [code_unfold]: "numeral n = Uint16 (numeral n)"
 by transfer simp
 
-lemma neg_numeral_uint16 [code_unfold]: "neg_numeral n = Uint16 (neg_numeral n)"
+lemma neg_numeral_uint16 [code_unfold]: "- numeral n = Uint16 (- numeral n)"
 by transfer(simp add: cr_uint16_def)
 
 lemma Abs_uint16_numeral [code_post]: "Abs_uint16 (numeral n) = numeral n"
@@ -210,12 +207,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint16} 
   ([code abstract] equations for @{typ uint16} may use @{term Rep_uint16} because
   these instances will be folded away.)
+
+  To convert @{typ "16 word"} values into @{typ uint16}, use @{term "Abs_uint16'"}.
 *}
 
 definition Rep_uint16' where [simp]: "Rep_uint16' = Rep_uint16"
 
+lemma Rep_uint16'_transfer [transfer_rule]:
+  "fun_rel cr_uint16 op = (\<lambda>x. x) Rep_uint16'"
+unfolding Rep_uint16'_def by(rule uint16.rep_transfer)
+
 lemma Rep_uint16'_code [code]: "Rep_uint16' x = (BITS n. x !! n)"
-unfolding Rep_uint16'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint16' :: "16 word \<Rightarrow> uint16" is "\<lambda>x :: 16 word. x" .
+
+lemma Abs_uint16'_code [code]:
+  "Abs_uint16' x = Uint16 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint16 \<Rightarrow> _)" ..
 
@@ -519,7 +528,7 @@ have test_uint16 by code_simp
 have test_uint16 by normalization
 end
 
-hide_const test_uint16
+hide_const (open) test_uint16
 hide_fact test_uint16_def
 no_notation sshiftr_uint16 (infixl ">>>" 55)
 

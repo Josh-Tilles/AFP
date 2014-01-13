@@ -4,7 +4,9 @@
 
 header {* More bit operations on integers *}
 
-theory Bits_Int imports
+theory More_Bits_Int
+imports
+  "~~/src/HOL/Word/Bits_Bit"
   "~~/src/HOL/Word/Bool_List_Representation"
 begin
 
@@ -26,7 +28,7 @@ by(auto simp add: numeral_eq_Suc)
 
 section {* Lemmas about bit operations on @{typ int} *}
 
-lemma twice_conv_BIT: "2 * x = x BIT 0"
+lemma twice_conv_BIT: "2 * x = x BIT False"
 by(rule bin_rl_eqI)(simp_all, simp_all add: bin_rest_def bin_last_def)
 
 lemma not_int_cmp_0 [simp]:
@@ -78,14 +80,14 @@ lemma int_and_ge0 [simp]: fixes x y :: int shows
 by (metis int_and_lt0 linorder_not_less)
 
 lemma int_and_1: fixes x :: int shows "x AND 1 = x mod 2"
-by(subst bitAND_int.simps)(simp add: Bit_def bin_last_def)
+by(subst bitAND_int.simps)(simp add: Bit_def bin_last_def zmod_minus1)
 
 lemma int_1_and: fixes x :: int shows "1 AND x = x mod 2"
 by(subst int_and_comm)(simp add: int_and_1)
 
 lemma int_or_lt0 [simp]: fixes x y :: int shows 
   "x OR y < 0 \<longleftrightarrow> x < 0 \<or> y < 0"
-by(simp add: int_or_def int_and_ge0)
+by(simp add: int_or_def)
 
 lemma int_xor_lt0 [simp]: fixes x y :: int shows
   "x XOR y < 0 \<longleftrightarrow> ((x < 0) \<noteq> (y < 0))"
@@ -96,7 +98,7 @@ lemma int_xor_ge0 [simp]: fixes x y :: int shows
 by (metis int_xor_lt0 linorder_not_le)
 
 lemma bin_last_conv_AND:
-  "bin_last i = (if i AND 1 = 0 then 0 else 1)"
+  "bin_last i \<longleftrightarrow> i AND 1 \<noteq> 0"
 proof -
   obtain x b where "i = x BIT b" by(cases i rule: bin_exhaust)
   hence "i AND 1 = 0 BIT b"
@@ -105,7 +107,7 @@ proof -
 qed
 
 lemma bitval_bin_last:
-  "bitval (bin_last i) = i AND 1"
+  "of_bool (bin_last i) = i AND 1"
 proof -
   obtain x b where "i = x BIT b" by(cases i rule: bin_exhaust)
   hence "i AND 1 = 0 BIT b"
@@ -114,10 +116,10 @@ proof -
 qed
 
 lemma bl_to_bin_BIT:
-  "bl_to_bin bs BIT b = bl_to_bin (bs @ [b = 1])"
+  "bl_to_bin bs BIT b = bl_to_bin (bs @ [b])"
 by(simp add: bl_to_bin_append)
 
-lemma bin_last_bl_to_bin: "bin_last (bl_to_bin bs) = (if bs = [] \<or> \<not> last bs then 0 else 1)"
+lemma bin_last_bl_to_bin: "bin_last (bl_to_bin bs) \<longleftrightarrow> bs \<noteq> [] \<and> last bs"
 by(cases "bs = []")(auto simp add: bl_to_bin_def last_bin_last'[where w=0])
 
 lemma bin_rest_bl_to_bin: "bin_rest (bl_to_bin bs) = bl_to_bin (butlast bs)"
@@ -132,7 +134,7 @@ lemma bin_sign_and:
   "bin_sign (i AND j) = - (bin_sign i * bin_sign j)"
 by(simp add: bin_sign_def)
 
-lemma minus_BIT_0: fixes x y :: int shows "x BIT b - y BIT 0 = (x - y) BIT b"
+lemma minus_BIT_0: fixes x y :: int shows "x BIT b - y BIT False = (x - y) BIT b"
 by(simp add: Bit_def)
 
 
@@ -142,7 +144,7 @@ by(simp add: Bit_def)
 primrec bin_mask :: "nat \<Rightarrow> int" 
 where
   "bin_mask 0 = 0"
-| "bin_mask (Suc n) = bin_mask n BIT 1"
+| "bin_mask (Suc n) = bin_mask n BIT True"
 
 lemma bin_mask_conv_pow2:
   "bin_mask n = 2 ^ n - 1"
@@ -161,7 +163,7 @@ next
 qed
 
 lemma bin_mask_numeral: 
-  "bin_mask (numeral n) = bin_mask (pred_numeral n) BIT 1"
+  "bin_mask (numeral n) = bin_mask (pred_numeral n) BIT True"
 by(simp add: numeral_eq_Suc)
 
 lemma bin_nth_mask [simp]: "bin_nth (bin_mask n) i \<longleftrightarrow> i < n"
@@ -175,16 +177,16 @@ by(induct n) simp_all
 
 section {* Symbolic bit operations on numerals and @{typ int}s *}
 
-lemma int_not_neg_numeral: "NOT (neg_numeral n) = (Num.sub n num.One :: int)"
+lemma int_not_neg_numeral: "NOT (- numeral n) = (Num.sub n num.One :: int)"
 by(simp add: int_not_def)
 
 lemma sub_inc_One: "Num.sub (Num.inc n) num.One = numeral n"
-by (metis add_diff_cancel diff_numeral_special(3) numeral_inc)
+by (metis add_diff_cancel diff_minus_eq_add diff_numeral_special(2) diff_numeral_special(6))
 
 lemma inc_BitM: "Num.inc (Num.BitM n) = num.Bit0 n"
 by(simp add: BitM_plus_one[symmetric] add_One)
 
-lemma int_neg_numeral_pOne_conv_not: "neg_numeral (n + num.One) = (NOT (numeral n) :: int)"
+lemma int_neg_numeral_pOne_conv_not: "- numeral (n + num.One) = (NOT (numeral n) :: int)"
 by(simp add: int_not_def)
 
 fun bitOR_num :: "num \<Rightarrow> num \<Rightarrow> num"
@@ -258,7 +260,7 @@ lemma int_numeral_bitXOR_num:
 by(induct m n rule: bitXOR_num.induct)(simp_all split: option.split)
 
 lemma int_or_not_bitORN_num:
-  "numeral n OR NOT (numeral m) = (neg_numeral (bitORN_num n m) :: int)"
+  "numeral n OR NOT (numeral m) = (- numeral (bitORN_num n m) :: int)"
 by(induct n m rule: bitORN_num.induct)(simp_all add: Num.add_One BitM_inc)
 
 lemma int_and_not_bitANDN_num:
@@ -270,21 +272,21 @@ lemma int_not_and_bitANDN_num:
 by(simp add: int_and_not_bitANDN_num[symmetric] int_and_comm)
 
 lemma Bit_code [code]:
-  "0 BIT b = bitval b"
-  "Int.Pos n BIT 0 = Int.Pos (num.Bit0 n)"
-  "Int.Pos n BIT 1 = Int.Pos (num.Bit1 n)"
-  "Int.Neg n BIT 0 = Int.Neg (num.Bit0 n)"
-  "Int.Neg n BIT 1 = Int.Neg (Num.BitM n)"
+  "0 BIT b = of_bool b"
+  "Int.Pos n BIT False = Int.Pos (num.Bit0 n)"
+  "Int.Pos n BIT True = Int.Pos (num.Bit1 n)"
+  "Int.Neg n BIT False = Int.Neg (num.Bit0 n)"
+  "Int.Neg n BIT True = Int.Neg (Num.BitM n)"
 by(cases b)(simp_all)
 
 lemma bin_last_code [code]: 
-  "bin_last 0 = 0"
-  "bin_last (Int.Pos num.One) = 1"
-  "bin_last (Int.Pos (num.Bit0 n)) = 0"
-  "bin_last (Int.Pos (num.Bit1 n)) = 1"
-  "bin_last (Int.Neg num.One) = 1"
-  "bin_last (Int.Neg (num.Bit0 n)) = 0"
-  "bin_last (Int.Neg (num.Bit1 n)) = 1"
+  "bin_last 0 \<longleftrightarrow> False"
+  "bin_last (Int.Pos num.One) \<longleftrightarrow> True"
+  "bin_last (Int.Pos (num.Bit0 n)) \<longleftrightarrow> False"
+  "bin_last (Int.Pos (num.Bit1 n)) \<longleftrightarrow> True"
+  "bin_last (Int.Neg num.One) \<longleftrightarrow> True"
+  "bin_last (Int.Neg (num.Bit0 n)) \<longleftrightarrow> False"
+  "bin_last (Int.Neg (num.Bit1 n)) \<longleftrightarrow> True"
 by(simp_all)
 
 lemma bin_nth_code [code]:
@@ -320,7 +322,7 @@ lemma int_and_code [code]: fixes i j :: int shows
   "Int.Neg (num.Bit0 n) AND Int.Pos m = Num.sub (bitORN_num (Num.BitM n) m) num.One"
   "Int.Neg (num.Bit1 n) AND Int.Pos m = Num.sub (bitORN_num (num.Bit0 n) m) num.One"
 apply(fold int_not_neg_numeral)
-apply(simp_all add: int_numeral_bitAND_num int_numeral_bitAND_num bbw_not_dist int_or_not_bitORN_num[symmetric] bbw_not_dist Num.add_One int_not_neg_numeral sub_inc_One inc_BitM cong: option.case_cong)
+apply(simp_all add: int_numeral_bitAND_num int_or_not_bitORN_num[symmetric] bbw_not_dist Num.add_One int_not_neg_numeral sub_inc_One inc_BitM cong: option.case_cong)
 apply(simp_all add: int_and_comm)
 apply(metis int_not_neg_numeral int_not_not)
 done
@@ -351,26 +353,7 @@ lemma int_xor_code [code]: fixes i j :: int shows
 by(fold int_not_neg_numeral)(simp_all add: int_numeral_bitXOR_num int_xor_not cong: option.case_cong)
 
 
-section {* Instantiation of bits and bitss *}
-
-instantiation int :: bitss begin
-definition [iff]: "i !! n \<longleftrightarrow> bin_nth i n"
-definition "lsb i = (i :: int) !! 0"
-definition "set_bit i n b = bin_sc n (if b then 1 else 0) i"
-definition
-  "set_bits f =
-  (if \<exists>n. \<forall>n'\<ge>n. \<not> f n' then 
-     let n = LEAST n. \<forall>n'\<ge>n. \<not> f n'
-     in bl_to_bin (rev (map f [0..<n]))
-   else if \<exists>n. \<forall>n'\<ge>n. f n' then
-     let n = LEAST n. \<forall>n'\<ge>n. f n'
-     in sbintrunc n (bl_to_bin (True # rev (map f [0..<n])))
-   else 0 :: int)"
-definition "shiftl x n = (x :: int) * 2 ^ n"
-definition "shiftr x n = (x :: int) div 2 ^ n"
-definition "msb x \<longleftrightarrow> (x :: int) < 0"
-instance ..
-end
+section {* More on bits and bitss operations *}
 
 inductive wf_set_bits_int :: "(nat \<Rightarrow> bool) \<Rightarrow> bool" 
   for f :: "nat \<Rightarrow> bool"
@@ -407,21 +390,22 @@ by(auto simp add: wf_set_bits_int_simps intro: le_SucI dest: Suc_le_D)
 
 
 lemma int_lsb_BIT [simp]: fixes x :: int shows
-  "lsb (x BIT b) = (b = 1)"
+  "lsb (x BIT b) \<longleftrightarrow> b"
 by(simp add: lsb_int_def)
 
-lemma bin_last_conv_lsb: "bin_last x = (if lsb x then 1 else 0)"
-by(clarsimp simp add: lsb_int_def)
+lemma bin_last_conv_lsb: "bin_last = lsb"
+by(clarsimp simp add: lsb_int_def fun_eq_iff)
 
 lemma int_lsb_numeral [simp]:
   "lsb (0 :: int) = False"
   "lsb (1 :: int) = True"
   "lsb (Numeral1 :: int) = True"
-  "lsb (-1 :: int) = True"
+  "lsb (- 1 :: int) = True"
+  "lsb (- Numeral1 :: int) = True"
   "lsb (numeral (num.Bit0 w) :: int) = False"
   "lsb (numeral (num.Bit1 w) :: int) = True"
-  "lsb (neg_numeral (num.Bit0 w) :: int) = False"
-  "lsb (neg_numeral (num.Bit1 w) :: int) = True"
+  "lsb (- numeral (num.Bit0 w) :: int) = False"
+  "lsb (- numeral (num.Bit1 w) :: int) = True"
 by(simp_all add: lsb_int_def)
 
 lemma int_lsb_code [code]:
@@ -435,7 +419,7 @@ lemma int_lsb_code [code]:
 by simp_all
 
 lemma int_set_bit_0 [simp]: fixes x :: int shows
-  "set_bit x 0 b = bin_rest x BIT (if b then 1 else 0)"
+  "set_bit x 0 b = bin_rest x BIT b"
 by(auto simp add: set_bit_int_def intro: bin_rl_eqI)
 
 lemma int_set_bit_Suc: fixes x :: int shows
@@ -443,7 +427,7 @@ lemma int_set_bit_Suc: fixes x :: int shows
 by(auto simp add: set_bit_int_def twice_conv_BIT intro: bin_rl_eqI)
 
 lemma bin_last_set_bit:
-  "bin_last (set_bit x n b) = (if n > 0 then bin_last x else if b then 1 else 0)"
+  "bin_last (set_bit x n b) = (if n > 0 then bin_last x else b)"
 by(cases n)(simp_all add: int_set_bit_Suc)
 
 lemma bin_rest_set_bit: 
@@ -456,12 +440,12 @@ by(simp add: set_bit_int_def)
 
 lemmas int_set_bit_numerals [simp] =
   int_set_bit_numeral[where x="numeral w'"] 
-  int_set_bit_numeral[where x="neg_numeral w'"]
+  int_set_bit_numeral[where x="- numeral w'"]
   int_set_bit_numeral[where x="Numeral1"]
   int_set_bit_numeral[where x="1"]
   int_set_bit_numeral[where x="0"]
   int_set_bit_Suc[where x="numeral w'"]
-  int_set_bit_Suc[where x="neg_numeral w'"]
+  int_set_bit_Suc[where x="- numeral w'"]
   int_set_bit_Suc[where x="Numeral1"]
   int_set_bit_Suc[where x="1"]
   int_set_bit_Suc[where x="0"]
@@ -469,17 +453,17 @@ lemmas int_set_bit_numerals [simp] =
 
 lemma int_shiftl_BIT: fixes x :: int
   shows int_shiftl0 [simp]: "x << 0 = x"
-  and int_shiftl_Suc [simp]: "x << Suc n = (x << n) BIT 0"
+  and int_shiftl_Suc [simp]: "x << Suc n = (x << n) BIT False"
 by(auto simp add: shiftl_int_def Bit_def)
 
 lemma int_0_shiftl [simp]: "0 << n = (0 :: int)"
 by(induct n) simp_all
 
-lemma bin_last_shiftl: "bin_last (x << n) = (if n > 0 then 0 else bin_last x)"
-by(cases n)(simp_all add: int_shiftl_Suc)
+lemma bin_last_shiftl: "bin_last (x << n) \<longleftrightarrow> n = 0 \<and> bin_last x"
+by(cases n)(simp_all)
 
 lemma bin_rest_shiftl: "bin_rest (x << n) = (if n > 0 then x << (n - 1) else bin_rest x)"
-by(cases n)(simp_all add: int_shiftl_Suc)
+by(cases n)(simp_all)
 
 lemma bin_nth_shiftl [simp]: "bin_nth (x << n) m \<longleftrightarrow> n \<le> m \<and> bin_nth x (m - n)"
 proof(induct n arbitrary: x m)
@@ -490,9 +474,13 @@ qed simp
 lemma int_shiftr_BIT [simp]: fixes x :: int
   shows int_shiftr0: "x >> 0 = x"
   and int_shiftr_Suc: "x BIT b >> Suc n = x >> n"
-by(case_tac [2] b)(simp_all add: shiftr_int_def Bit_def add_ac pos_zdiv_mult_2)
+proof -
+  show "x >> 0 = x" by (simp add: shiftr_int_def)
+  show "x BIT b >> Suc n = x >> n" by (cases b)
+   (simp_all add: shiftr_int_def Bit_def add_ac pos_zdiv_mult_2)
+qed
 
-lemma bin_last_shiftr: "bin_last (x >> n) = (if x !! n then 1 else 0)"
+lemma bin_last_shiftr: "bin_last (x >> n) \<longleftrightarrow> x !! n"
 proof(induct n arbitrary: x)
   case 0 thus ?case by simp
 next
@@ -528,7 +516,7 @@ qed
 
 lemma int_shiftl_numeral [simp]: 
   "(numeral w :: int) << numeral w' = numeral (num.Bit0 w) << pred_numeral w'"
-  "(neg_numeral w :: int) << numeral w' = neg_numeral (num.Bit0 w) << pred_numeral w'"
+  "(- numeral w :: int) << numeral w' = - numeral (num.Bit0 w) << pred_numeral w'"
 by(simp_all add: numeral_eq_Suc Bit_def shiftl_int_def)
   (metis add_One mult_inc semiring_norm(11) semiring_norm(13) semiring_norm(2) semiring_norm(6) semiring_norm(87))+
 
@@ -564,22 +552,27 @@ qed simp
 lemma int_shiftr_lt_0 [simp]: fixes i :: int shows "i >> n < 0 \<longleftrightarrow> i < 0"
 by (metis int_shiftr_ge_0 not_less)
 
+lemma uminus_Bit_eq:
+  "- k BIT b = (- k - of_bool b) BIT b"
+  by (cases b) (simp_all add: Bit_def)
+
 lemma int_shiftr_numeral [simp]:
   "(1 :: int) >> numeral w' = 0"
   "(numeral num.One :: int) >> numeral w' = 0"
   "(numeral (num.Bit0 w) :: int) >> numeral w' = numeral w >> pred_numeral w'"
   "(numeral (num.Bit1 w) :: int) >> numeral w' = numeral w >> pred_numeral w'"
-  "(neg_numeral (num.Bit0 w) :: int) >> numeral w' = neg_numeral w >> pred_numeral w'"
-  "(neg_numeral (num.Bit1 w) :: int) >> numeral w' = neg_numeral (Num.inc w) >> pred_numeral w'"
-by(simp_all only: numeral_One expand_BIT numeral_eq_Suc int_shiftr_Suc BIT_special_simps(2)[symmetric] int_0shiftr add_One)
+  "(- numeral (num.Bit0 w) :: int) >> numeral w' = - numeral w >> pred_numeral w'"
+  "(- numeral (num.Bit1 w) :: int) >> numeral w' = - numeral (Num.inc w) >> pred_numeral w'"
+  by (simp_all only: numeral_One expand_BIT numeral_eq_Suc int_shiftr_Suc BIT_special_simps(2)[symmetric] int_0shiftr add_One uminus_Bit_eq)
+    (simp_all add: add_One)
 
 lemma int_shiftr_numeral_Suc0 [simp]:
   "(1 :: int) >> Suc 0 = 0"
   "(numeral num.One :: int) >> Suc 0 = 0"
   "(numeral (num.Bit0 w) :: int) >> Suc 0 = numeral w"
   "(numeral (num.Bit1 w) :: int) >> Suc 0 = numeral w"
-  "(neg_numeral (num.Bit0 w) :: int) >> Suc 0 = neg_numeral w"
-  "(neg_numeral (num.Bit1 w) :: int) >> Suc 0 = neg_numeral (Num.inc w)"
+  "(- numeral (num.Bit0 w) :: int) >> Suc 0 = - numeral w"
+  "(- numeral (num.Bit1 w) :: int) >> Suc 0 = - numeral (Num.inc w)"
 by(simp_all only: One_nat_def[symmetric] numeral_One[symmetric] int_shiftr_numeral pred_numeral_simps int_shiftr0)
 
 lemma int_shiftr_code [code]: fixes i :: int shows
@@ -591,7 +584,8 @@ lemma int_shiftr_code [code]: fixes i :: int shows
   "Int.Neg num.One >> Suc n = -1"
   "Int.Neg (num.Bit0 m) >> Suc n = Int.Neg m >> n"
   "Int.Neg (num.Bit1 m) >> Suc n = Int.Neg (Num.inc m) >> n"
-by(simp_all only: int_shiftr_Suc BIT_special_simps(2)[symmetric] int_shiftr0 int_0shiftr numeral_One int_minus1_shiftr Int.Pos_def Int.Neg_def expand_BIT int_shiftr_Suc Num.add_One)
+  by (simp_all only: int_shiftr_Suc BIT_special_simps(2)[symmetric] int_shiftr0 int_0shiftr numeral_One int_minus1_shiftr Int.Pos_def Int.Neg_def expand_BIT int_shiftr_Suc Num.add_One uminus_Bit_eq)
+    (simp_all add: add_One)
 
 lemma bin_nth_minus_p2:
   assumes sign: "bin_sign x = 0"
@@ -611,18 +605,18 @@ next
   from `bin_sign x = 0` have "bin_sign x' = 0" by simp
   moreover from `x < 1 << n` have "x' < 1 << n'"
     by(cases b)(simp_all add: Bit_def shiftl_int_def)
-  moreover have "(2 * x' + bitval b - 2 * 2 ^ n') div 2 = x' + (- (2 ^ n') + bitval b div 2)"
+  moreover have "(2 * x' + of_bool b - 2 * 2 ^ n') div 2 = x' + (- (2 ^ n') + of_bool b div 2)"
     by(simp only: add_diff_eq[symmetric] add_commute div_mult_self2[OF zero_neq_numeral[symmetric]])
   ultimately show ?case using Suc.IH[of x' n'] Suc.prems
-    by(cases b)(simp_all add: Bit_def bin_rest_def shiftl_int_def, metis Bit_B0_2t Bit_div2 succ_BIT_simps(1))
+    by(cases b)(simp_all add: Bit_def bin_rest_def shiftl_int_def)
 qed
 
 lemma bin_clr_conv_NAND:
-  "bin_sc n 0 i = i AND NOT (1 << n)"
+  "bin_sc n False i = i AND NOT (1 << n)"
 by(induct n arbitrary: i)(auto intro: bin_rl_eqI)
 
 lemma bin_set_conv_OR:
-  "bin_sc n 1 i = i OR (1 << n)"
+  "bin_sc n True i = i OR (1 << n)"
 by(induct n arbitrary: i)(auto intro: bin_rl_eqI)
 
 lemma fixes i :: int 
@@ -639,7 +633,7 @@ by(auto simp add: set_bits_int_def)
 
 lemma int_set_bits_unfold_BIT:
   assumes "wf_set_bits_int f"
-  shows "set_bits f = set_bits (f \<circ> Suc) BIT (if f 0 then 1 else 0)"
+  shows "set_bits f = set_bits (f \<circ> Suc) BIT f 0"
 using assms
 proof cases
   case (zeros n)
@@ -682,7 +676,7 @@ next
 qed
 
 lemma bin_last_set_bits [simp]:
-  "wf_set_bits_int f \<Longrightarrow> bin_last (set_bits f) = (if f 0 then 1 else 0)"
+  "wf_set_bits_int f \<Longrightarrow> bin_last (set_bits f) = f 0"
 by(subst int_set_bits_unfold_BIT) simp_all
 
 lemma bin_rest_set_bits [simp]:
@@ -745,7 +739,7 @@ by(simp add: msb_int_def)
 
 lemma msb_numeral [simp]:
   "msb (numeral n :: int) = False"
-  "msb (neg_numeral n :: int) = True"
+  "msb (- numeral n :: int) = True"
 by(simp_all add: msb_int_def)
 
 section {* Bit list operations implemented by bitwise operations *}
@@ -759,7 +753,7 @@ lemma sbintrunc_code [code]:
    in if bin' !! n then bin' - (2 << n) else bin')"
 proof(induct n arbitrary: bin)
   case 0 thus ?case
-    by(clarsimp simp add: Let_def int_and_ac) (metis bitval_bin_last bitval_simps(1) bitval_simps(2) int_and_comm)
+    by (simp add: bitval_bin_last [symmetric])
 next
   case (Suc n)
   thus ?case by(cases bin rule: bin_exhaust)(simp add: Let_def minus_BIT_0)
@@ -783,9 +777,11 @@ lemma int_of_integer_symbolic_aux_code [code nbe]:
 by(simp_all add: int_of_integer_symbolic_def)
 
 code_identifier
-  code_module Bits_Int \<rightharpoonup>
+  code_module More_Bits_Int \<rightharpoonup>
   (SML) Bit_Int and (OCaml) Bit_Int and (Haskell) Bit_Int and (Scala) Bit_Int
-| code_module Bit_Representation \<rightharpoonup>
+| code_module Bits_Int \<rightharpoonup>
+  (SML) Bit_Int and (OCaml) Bit_Int and (Haskell) Bit_Int and (Scala) Bit_Int
+| code_module Bits \<rightharpoonup>
   (SML) Bit_Int and (OCaml) Bit_Int and (Haskell) Bit_Int and (Scala) Bit_Int
 
 end

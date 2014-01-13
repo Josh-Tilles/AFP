@@ -78,17 +78,14 @@ lift_definition sshiftr_uint32 :: "uint32 \<Rightarrow> nat \<Rightarrow> uint32
 lift_definition uint32_of_int :: "int \<Rightarrow> uint32" is "word_of_int" .
 
 lemma bitval_integer_transfer [transfer_rule]:
-  "(fun_rel op = pcr_integer) bitval bitval"
-by(auto simp add: bitval_def integer.pcr_cr_eq cr_integer_def split: bit.split)
+  "(fun_rel op = pcr_integer) of_bool of_bool"
+by(auto simp add: of_bool_def integer.pcr_cr_eq cr_integer_def split: bit.split)
 
 text {* Use pretty numerals from integer for pretty printing *}
 
 lift_definition Uint32 :: "integer \<Rightarrow> uint32" is "word_of_integer" .
 
 context begin interpretation lifting_syntax .
-
-lemma [transfer_rule]: "(op = ===> cr_uint32 ===> op =) (\<lambda>n m. cr_uint32 m n) op ="
-by(auto 4 3 simp add: cr_uint32_def Rep_uint32_inject)
 
 lemma Uint32_transfer_word_of_int [transfer_rule]: "(pcr_integer ===> cr_uint32) word_of_int Uint32"
 by(rule fun_relI)(simp add: cr_uint32_def integer.pcr_cr_eq cr_integer_def Uint32.rep_eq word_of_integer.rep_eq)
@@ -105,14 +102,14 @@ by(auto simp add: cr_uint32_def)
 lemma numeral_uint32 [code_unfold]: "numeral n = Uint32 (numeral n)"
 by transfer simp
 
-lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint32_def)(simp add: Abs_uint32_inverse)
+lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (- numeral n) = - numeral n"
+by(simp only: uminus_uint32_def)(simp add: Abs_uint32_inverse)
 
 lemma uint32_neg_numeral_transfer [transfer_rule]:
-  "(fun_rel op = cr_uint32) neg_numeral neg_numeral"
+  "(fun_rel op = cr_uint32) (- numeral) (- numeral)"
 by(auto simp add: cr_uint32_def)
 
-lemma neg_numeral_uint32 [code_unfold]: "neg_numeral n = Uint32 (neg_numeral n)"
+lemma neg_numeral_uint32 [code_unfold]: "- numeral n = Uint32 (- numeral n)"
 by transfer(simp add: cr_uint32_def)
 
 lemma Abs_uint32_numeral [code_post]: "Abs_uint32 (numeral n) = numeral n"
@@ -277,12 +274,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint32} 
   ([code abstract] equations for @{typ uint32} may use @{term Rep_uint32} because
   these instances will be folded away.)
+
+  To convert @{typ "32 word"} values into @{typ uint32}, use @{term "Abs_uint32'"}.
 *}
 
 definition Rep_uint32' where [simp]: "Rep_uint32' = Rep_uint32"
 
+lemma Rep_uint32'_transfer [transfer_rule]:
+  "fun_rel cr_uint32 op = (\<lambda>x. x) Rep_uint32'"
+unfolding Rep_uint32'_def by(rule uint32.rep_transfer)
+
 lemma Rep_uint32'_code [code]: "Rep_uint32' x = (BITS n. x !! n)"
-unfolding Rep_uint32'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint32' :: "32 word \<Rightarrow> uint32" is "\<lambda>x :: 32 word. x" .
+
+lemma Abs_uint32'_code [code]:
+  "Abs_uint32' x = Uint32 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint32 \<Rightarrow> _)" ..
 
@@ -402,11 +411,11 @@ where [code del]:
 
 definition div0_uint32 :: "uint32 \<Rightarrow> uint32"
 where [code del]: "div0_uint32 x = undefined (op div :: uint32 \<Rightarrow> _) x (0 :: uint32)"
-code_abort div0_uint32
+declare [[code abort: div0_uint32]]
 
 definition mod0_uint32 :: "uint32 \<Rightarrow> uint32"
 where [code del]: "mod0_uint32 x = undefined (op mod :: uint32 \<Rightarrow> _) x (0 :: uint32)"
-code_abort mod0_uint32
+declare [[code abort: mod0_uint32]]
 
 lemma uint32_divmod_code [code]:
   "uint32_divmod x y =

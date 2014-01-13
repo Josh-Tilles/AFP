@@ -17,8 +17,7 @@ session "FocusStreamsCaseStudies" (AFP) = "HOL" +
    Gateway_types
    Gateway
    Gateway_proof
- files
-   "document/intro.tex"
+ files "document/intro.tex"
    "document/macros.tex"
    "document/root.tex"
    "document/focus.sty"
@@ -28,3 +27,4 @@ session "FocusStreamsCaseStudies" (AFP) = "HOL" +
    "document/fig/gateway.jpg"
    "document/fig/gatewaySystem.jpg"
    "document/fig/gatewayTSTD.pdf"
+   "document/biblio2.bib"

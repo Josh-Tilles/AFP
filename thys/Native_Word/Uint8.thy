@@ -98,21 +98,18 @@ by(auto simp add: cr_uint8_def)
 lemma numeral_uint8 [code_unfold]: "numeral n = Uint8 (numeral n)"
 by transfer simp
 
-lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint8_def)(simp add: Abs_uint8_inverse)
+lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (- numeral n) = - numeral n"
+by(simp only: uminus_uint8_def)(simp add: Abs_uint8_inverse)
 
 context begin interpretation lifting_syntax .
 
-lemma [transfer_rule]: "(op = ===> cr_uint8 ===> op =) (\<lambda>n m. cr_uint8 m n) op ="
-by(auto 4 3 simp add: cr_uint8_def Rep_uint8_inject)
-
 lemma uint8_neg_numeral_transfer [transfer_rule]:
-  "(op = ===> cr_uint8) neg_numeral neg_numeral"
+  "(op = ===> cr_uint8) (- numeral) (- numeral)"
 by(auto simp add: cr_uint8_def)
 
 end
 
-lemma neg_numeral_uint8 [code_unfold]: "neg_numeral n = Uint8 (neg_numeral n)"
+lemma neg_numeral_uint8 [code_unfold]: "- numeral n = Uint8 (- numeral n)"
 by transfer(simp add: cr_uint8_def)
 
 lemma Abs_uint8_numeral [code_post]: "Abs_uint8 (numeral n) = numeral n"
@@ -213,12 +210,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint8} 
   ([code abstract] equations for @{typ uint8} may use @{term Rep_uint8} because
   these instances will be folded away.)
+
+  To convert @{typ "8 word"} values into @{typ uint8}, use @{term "Abs_uint8'"}.
 *}
 
 definition Rep_uint8' where [simp]: "Rep_uint8' = Rep_uint8"
 
+lemma Rep_uint8'_transfer [transfer_rule]:
+  "fun_rel cr_uint8 op = (\<lambda>x. x) Rep_uint8'"
+unfolding Rep_uint8'_def by(rule uint8.rep_transfer)
+
 lemma Rep_uint8'_code [code]: "Rep_uint8' x = (BITS n. x !! n)"
-unfolding Rep_uint8'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint8' :: "8 word \<Rightarrow> uint8" is "\<lambda>x :: 8 word. x" .
+
+lemma Abs_uint8'_code [code]:
+  "Abs_uint8' x = Uint8 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint8 \<Rightarrow> _)" ..
 
@@ -321,11 +330,11 @@ where
 
 definition div0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "div0_uint8 x = undefined (op div :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort div0_uint8
+declare [[code abort: div0_uint8]]
 
 definition mod0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "mod0_uint8 x = undefined (op mod :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort mod0_uint8
+declare [[code abort: mod0_uint8]]
 
 lemma uint8_divmod_code [code]:
   "uint8_divmod x y =

@@ -66,21 +66,14 @@ next
 qed auto
 
 lemma lang_eq_ext: "(lang r = lang s) =
-  (\<forall>w \<in> lists(atoms r \<union> atoms s). w \<in> lang r \<longleftrightarrow> w \<in> lang s)" (is "?L = ?R")
-proof
-  assume ?L thus ?R by auto
-next
-  assume R: ?R
-  show ?L
-  proof(rule set_eqI)
-    fix w show "w \<in> lang r \<longleftrightarrow> w \<in> lang s"
-    proof (cases "set w \<subseteq> atoms r \<union> atoms s")
-      case True thus ?thesis using R by auto
-    next
-      case False thus ?thesis using R using atoms_lang by blast
-    qed
-  qed
-qed
+  (\<forall>w \<in> lists(atoms r \<union> atoms s). w \<in> lang r \<longleftrightarrow> w \<in> lang s)"
+  by (auto simp: atoms_lang[unfolded subset_iff])
+
+lemma lang_eq_ext_Nil_fold_Deriv:
+  fixes r s
+  defines "\<BB> \<equiv> {(fold Deriv w (lang r), fold Deriv w (lang s))| w. w\<in>lists (atoms r \<union> atoms s)}"
+  shows "lang r = lang s \<longleftrightarrow> (\<forall>(K, L) \<in> \<BB>. [] \<in> K \<longleftrightarrow> [] \<in> L)"
+  unfolding lang_eq_ext \<BB>_def by (subst (1 2) in_fold_Deriv[of "[]", simplified, symmetric]) auto
 
 
 subsection {* Term ordering *}

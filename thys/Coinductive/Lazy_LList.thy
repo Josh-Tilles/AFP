@@ -3,7 +3,7 @@
 *)
 header {* Explicit laziness in the code generator *}
 
-theory Lazy_LList imports 
+theory Lazy_LList imports
   Coinductive_List
 begin
 
@@ -28,7 +28,7 @@ where [simp, code del]: "force xs = (case xs of LNil \<Rightarrow> None | LCons 
 
 code_datatype Lazy_llist
 
-declare option.splits [split] 
+declare option.splits [split]
 
 lemma Lazy_llist_inject [simp]:
   "Lazy_llist xs = Lazy_llist ys \<longleftrightarrow> xs = ys"
@@ -49,7 +49,8 @@ lemma LCons_Lazy_llist [code, code_unfold]: "LCons x xs = Lazy_llist (\<lambda>_
 by simp
 
 lemma lnull_lazy [code]: "lnull = Option.is_none \<circ> force"
-by(simp add: lnull_def Option.is_none_def fun_eq_iff split: llist.split)
+unfolding lnull_def
+by (rule ext) (simp add: Option.is_none_def split: llist.split)
 
 lemma [code, code del]:
   "equal_class.equal = (equal_class.equal :: 'a :: equal llist \<Rightarrow> _)" ..
@@ -62,27 +63,27 @@ lemma equal_llist_Lazy_llist [code]:
         | Some (y, ys') \<Rightarrow> if x = y then equal_class.equal xs' ys' else False))"
 by(auto simp add: equal_llist_def)
 
-lemma [code, code del]: "llist_corec = llist_corec" ..
+lemma [code, code del]: "corec_llist = corec_llist" ..
 
-lemma llist_corec_Lazy_llist [code]:
-  "llist_corec IS_LNIL LHD endORmore LTL_end LTL_more b =
+lemma corec_llist_Lazy_llist [code]:
+  "corec_llist IS_LNIL LHD endORmore LTL_end LTL_more b =
   Lazy_llist (\<lambda>_. if IS_LNIL b then None 
      else Some (LHD b,
        if endORmore b then LTL_end b
-       else llist_corec IS_LNIL LHD endORmore LTL_end LTL_more (LTL_more b)))"
-by(subst llist_corec_code) simp
+       else corec_llist IS_LNIL LHD endORmore LTL_end LTL_more (LTL_more b)))"
+by(subst corec_llist_code) simp
 
-lemma [code, code del]: "llist_unfold = llist_unfold" ..
+lemma [code, code del]: "unfold_llist = unfold_llist" ..
 
-lemma llist_unfold_Lazy_llist [code]:
-  "llist_unfold IS_LNIL LHD LTL b =
-  Lazy_llist (\<lambda>_. if IS_LNIL b then None else Some (LHD b, llist_unfold IS_LNIL LHD LTL (LTL b)))"
-by(subst llist_unfold_code) simp
+lemma unfold_llist_Lazy_llist [code]:
+  "unfold_llist IS_LNIL LHD LTL b =
+  Lazy_llist (\<lambda>_. if IS_LNIL b then None else Some (LHD b, unfold_llist IS_LNIL LHD LTL (LTL b)))"
+by(subst unfold_llist_code) simp
 
-lemma [code, code del]: "llist_case = llist_case" ..
+lemma [code, code del]: "case_llist = case_llist" ..
 
-lemma llist_case_Lazy_llist [code]:
-  "llist_case n c (Lazy_llist xs) = (case xs () of None \<Rightarrow> n | Some (x, ys) \<Rightarrow> c x ys)"
+lemma case_llist_Lazy_llist [code]:
+  "case_llist n c (Lazy_llist xs) = (case xs () of None \<Rightarrow> n | Some (x, ys) \<Rightarrow> c x ys)"
 by simp
 
 lemma [code, code del]: "lappend = lappend" ..
