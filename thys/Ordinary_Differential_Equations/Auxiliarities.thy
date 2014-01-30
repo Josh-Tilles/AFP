@@ -16,7 +16,7 @@ lemma fst_Basis[simp]: "i \<in> Basis \<Longrightarrow> (i, 0) \<in> Basis"
 lemma snd_Basis[simp]: "i \<in> Basis \<Longrightarrow> (0, i) \<in> Basis"
   by (simp add: Basis_prod_def)
 
-lemma fst_eq_Basis: 
+lemma fst_eq_Basis:
   fixes a :: "('a::euclidean_space) \<times> ('b::euclidean_space)"
   shows "fst a = (\<Sum>i\<in>Basis. (a \<bullet> (i, 0)) *\<^sub>R i)"
   by (cases a) (simp add: euclidean_representation)
@@ -51,77 +51,8 @@ lemma norm_nth_le:
 
 subsection {* Pairs *}
 
-subsubsection {* Ordering on Pairs *}
-
-lemma pair_le_iff[simp]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) \<le> (b1, b2) \<longleftrightarrow> a1 \<le> b1 \<and> a2 \<le> b2"
-  by (simp add: eucl_le[of "(a1, a2)"] eucl_le[of a1] eucl_le[of a2] Basis_prod_def ball_Un)
-
-lemma pair_le_intro[intro]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "a1 \<le> b1 \<Longrightarrow> a2 \<le> b2 \<Longrightarrow> (a1, a2) \<le> (b1, b2)" 
-  by simp
-
-lemma pair_le_elim1:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) \<le> (b1, b2) \<Longrightarrow> a1 \<le> b1"
-  by simp
-
-lemma pair_le_elim2:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) \<le> (b1, b2) \<Longrightarrow> a2 \<le> b2"
-  by simp
-
-lemma pair_le_elim[elim]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  assumes "(a1, a2) \<le> (b1, b2)"
-  shows "a1 \<le> b1" and "a2 \<le> b2"
-using assms
-by (auto elim: pair_le_elim1 pair_le_elim2)
-
-lemma pair_interval_ne_empty:
-  "{a1..a2} \<noteq> {} \<Longrightarrow> {b1..b2} \<noteq> {} \<Longrightarrow> {(a1, b1)..(a2, b2)} \<noteq> {}"
-  unfolding interval_ne_empty Basis_prod_def ball_Un by simp
-
-lemma pair_less_iff[simp]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) < (b1, b2) \<longleftrightarrow> a1 < b1 \<and> a2 < b2"
-  by (simp add: eucl_less[of "(a1, a2)"] eucl_less[of a1] eucl_less[of a2] Basis_prod_def ball_Un)
-
-lemma pair_less_intro[intro]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "a1 < b1 \<Longrightarrow> a2 < b2 \<Longrightarrow> (a1, a2) < (b1, b2)"
-  by simp
-
-lemma pair_less_elim1:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) < (b1, b2) \<Longrightarrow> a1 < b1"
-  by simp
-
-lemma pair_less_elim2:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  shows "(a1, a2) < (b1, b2) \<Longrightarrow> a2 < b2"
-  by simp
-
-lemma pair_less_elim[elim]:
-  fixes a1 b1::"'a::ordered_euclidean_space"
-  fixes a2 b2::"'b::ordered_euclidean_space"
-  assumes "(a1, a2) < (b1, b2)"
-  shows "a1 < b1" and "a2 < b2"
-using assms
-by (auto elim: pair_less_elim1 pair_less_elim2)
-
-lemma pair_interval_iff[simp]: "{(a1, a2)..(b1, b2)} = {a1..b1}\<times>{a2..b2}" by auto
+lemma pair_interval_iff[simp]: "{(a1, a2)..(b1, b2)} = {a1..b1}\<times>{a2..b2}"
+  by auto
 
 subsection {* Derivatives *}
 
@@ -361,18 +292,31 @@ lemmas integrable_continuous[intro, simp]
 
 subsection {* Sup *}
 
+lemma bdd_above_cmult:
+  "0 \<le> (a :: 'a :: ordered_semiring) \<Longrightarrow> bdd_above S \<Longrightarrow> bdd_above ((\<lambda>x. a * x) ` S)"
+  by (metis bdd_above_def bdd_aboveI2 mult_left_mono)
+
 lemma Sup_real_mult:
   fixes a::real
-  assumes "0 < a"
-  assumes "S \<noteq> {}" "(\<And>x. x \<in> S \<Longrightarrow> 0 \<le> x \<and> x \<le> z)"
+  assumes "0 \<le> a"
+  assumes "S \<noteq> {}" "bdd_above S"
   shows "a * Sup S = Sup ((\<lambda>x. a * x) ` S)"
-using assms
-proof (intro antisym)
-  have "Sup S \<le> Sup (op * a ` S) / a" using assms
-    by (intro cSup_least mult_imp_le_div_pos cSup_upper[where z = "a * z"]) auto
-  thus "a * Sup S \<le> Sup (op * a ` S)"
-    by (simp add: ac_simps pos_le_divide_eq[OF assms(1)])
-qed (auto intro!: mult_mono cSup_least intro: cSup_upper)
+proof cases
+  assume "a = 0" with `S \<noteq> {}` show ?thesis
+    by (simp add: SUP_def[symmetric] cSUP_const)
+next
+  assume "a \<noteq> 0"
+  with `0 \<le> a` have "0 < a"
+    by simp
+  show ?thesis
+  proof (intro antisym)
+    have "Sup S \<le> Sup (op * a ` S) / a" using assms
+      by (intro cSup_least mult_imp_le_div_pos cSup_upper)
+         (auto simp: bdd_above_cmult assms `0 < a` less_imp_le)
+    thus "a * Sup S \<le> Sup (op * a ` S)"
+      by (simp add: ac_simps pos_le_divide_eq[OF `0<a`])
+  qed (insert assms `0 < a`, auto intro!: cSup_least cSup_upper)
+qed
 
 subsection {* Banach on type class *}
 
@@ -381,7 +325,7 @@ lemma banach_fix_type:
   assumes c:"0 \<le> c" "c < 1"
       and lipschitz:"\<forall>x. \<forall>y. dist (f x) (f y) \<le> c * dist x y"
   shows "\<exists>!x. (f x = x)"
-  using assms banach_fix[OF complete_univ UNIV_not_empty assms(1,2) subset_UNIV, of f]
+  using assms banach_fix[OF complete_UNIV UNIV_not_empty assms(1,2) subset_UNIV, of f]
   by auto
 
 end

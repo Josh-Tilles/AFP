@@ -8,6 +8,8 @@ theory Lightweight_Java_Proof
 imports Lightweight_Java_Equivalence "~~/src/HOL/Library/Infinite_Set"
 begin
 
+hide_const (open) List_Prefix.prefix
+
 lemmas wf_intros = wf_object_wf_varstate_wf_heap_wf_config_wf_stmt_wf_meth_wf_class_common_wf_class_wf_program.intros [simplified]
 lemmas wf_induct = wf_object_wf_varstate_wf_heap_wf_config_wf_stmt_wf_meth_wf_class_common_wf_class_wf_program.induct [simplified]
 lemmas wf_config_normalI = wf_object_wf_varstate_wf_heap_wf_config_wf_stmt_wf_meth_wf_class_common_wf_class_wf_program.wf_allI [simplified]
@@ -1265,7 +1267,7 @@ done
 lemma fresh_oid:
   "wf_heap P H \<Longrightarrow> (\<exists>oid. oid \<notin> dom H)"
 apply(erule wf_heapE) apply(clarsimp)
-apply(cut_tac nat_infinite) apply(frule_tac A = "dom H" in ex_new_if_finite)
+apply(cut_tac infinite_UNIV_nat) apply(frule_tac A = "dom H" in ex_new_if_finite)
 apply(assumption) apply(simp)
 done
 
