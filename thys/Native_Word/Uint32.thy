@@ -77,18 +77,24 @@ lift_definition sshiftr_uint32 :: "uint32 \<Rightarrow> nat \<Rightarrow> uint32
 
 lift_definition uint32_of_int :: "int \<Rightarrow> uint32" is "word_of_int" .
 
+definition uint32_of_nat :: "nat \<Rightarrow> uint32"
+where "uint32_of_nat = uint32_of_int \<circ> int"
+
+lift_definition int_of_uint32 :: "uint32 \<Rightarrow> int" is "uint" .
+lift_definition nat_of_uint32 :: "uint32 \<Rightarrow> nat" is "unat" .
+
+definition integer_of_uint32 :: "uint32 \<Rightarrow> integer"
+where "integer_of_uint32 = integer_of_int o int_of_uint32"
+
 lemma bitval_integer_transfer [transfer_rule]:
-  "(fun_rel op = pcr_integer) bitval bitval"
-by(auto simp add: bitval_def integer.pcr_cr_eq cr_integer_def split: bit.split)
+  "(fun_rel op = pcr_integer) of_bool of_bool"
+by(auto simp add: of_bool_def integer.pcr_cr_eq cr_integer_def split: bit.split)
 
 text {* Use pretty numerals from integer for pretty printing *}
 
 lift_definition Uint32 :: "integer \<Rightarrow> uint32" is "word_of_integer" .
 
 context begin interpretation lifting_syntax .
-
-lemma [transfer_rule]: "(op = ===> cr_uint32 ===> op =) (\<lambda>n m. cr_uint32 m n) op ="
-by(auto 4 3 simp add: cr_uint32_def Rep_uint32_inject)
 
 lemma Uint32_transfer_word_of_int [transfer_rule]: "(pcr_integer ===> cr_uint32) word_of_int Uint32"
 by(rule fun_relI)(simp add: cr_uint32_def integer.pcr_cr_eq cr_integer_def Uint32.rep_eq word_of_integer.rep_eq)
@@ -105,14 +111,14 @@ by(auto simp add: cr_uint32_def)
 lemma numeral_uint32 [code_unfold]: "numeral n = Uint32 (numeral n)"
 by transfer simp
 
-lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint32_def)(simp add: Abs_uint32_inverse)
+lemma Rep_uint32_neg_numeral [simp]: "Rep_uint32 (- numeral n) = - numeral n"
+by(simp only: uminus_uint32_def)(simp add: Abs_uint32_inverse)
 
 lemma uint32_neg_numeral_transfer [transfer_rule]:
-  "(fun_rel op = cr_uint32) neg_numeral neg_numeral"
+  "(fun_rel op = cr_uint32) (- numeral) (- numeral)"
 by(auto simp add: cr_uint32_def)
 
-lemma neg_numeral_uint32 [code_unfold]: "neg_numeral n = Uint32 (neg_numeral n)"
+lemma neg_numeral_uint32 [code_unfold]: "- numeral n = Uint32 (- numeral n)"
 by transfer(simp add: cr_uint32_def)
 
 lemma Abs_uint32_numeral [code_post]: "Abs_uint32 (numeral n) = numeral n"
@@ -210,7 +216,7 @@ let test_bit x n =
   Int32.compare 
     (Int32.logand x (Int32.shift_left Int32.one (Big_int.int_of_big_int n)))
     Int32.zero
-  != 0;;
+  <> 0;;
 
 end;; (*struct Uint32*)*}
 code_reserved OCaml Uint32
@@ -244,7 +250,6 @@ def test_bit(x: Int, n: BigInt) : Boolean =
 } /* object Uint32 */*}
 code_reserved Scala Uint32
 
-
 text {*
   OCaml's conversion from Big\_int to int32 demands that the value fits int a signed 32-bit integer.
   The following justifies the implementation.
@@ -277,12 +282,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint32} 
   ([code abstract] equations for @{typ uint32} may use @{term Rep_uint32} because
   these instances will be folded away.)
+
+  To convert @{typ "32 word"} values into @{typ uint32}, use @{term "Abs_uint32'"}.
 *}
 
 definition Rep_uint32' where [simp]: "Rep_uint32' = Rep_uint32"
 
+lemma Rep_uint32'_transfer [transfer_rule]:
+  "fun_rel cr_uint32 op = (\<lambda>x. x) Rep_uint32'"
+unfolding Rep_uint32'_def by(rule uint32.rep_transfer)
+
 lemma Rep_uint32'_code [code]: "Rep_uint32' x = (BITS n. x !! n)"
-unfolding Rep_uint32'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint32' :: "32 word \<Rightarrow> uint32" is "\<lambda>x :: 32 word. x" .
+
+lemma Abs_uint32'_code [code]:
+  "Abs_uint32' x = Uint32 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint32 \<Rightarrow> _)" ..
 
@@ -340,7 +357,7 @@ code_printing
 | constant "HOL.equal :: uint32 \<Rightarrow> _ \<Rightarrow> bool" \<rightharpoonup>
   (SML) "!((_ : Word32.word) = _)" and
   (Haskell) infix 4 "==" and
-  (OCaml) "(Int32.compare _ _ == 0)" and
+  (OCaml) "(Int32.compare _ _ = 0)" and
   (Scala) infixl 5 "=="
 | class_instance uint32 :: equal \<rightharpoonup>
   (Haskell) -
@@ -402,11 +419,11 @@ where [code del]:
 
 definition div0_uint32 :: "uint32 \<Rightarrow> uint32"
 where [code del]: "div0_uint32 x = undefined (op div :: uint32 \<Rightarrow> _) x (0 :: uint32)"
-code_abort div0_uint32
+declare [[code abort: div0_uint32]]
 
 definition mod0_uint32 :: "uint32 \<Rightarrow> uint32"
 where [code del]: "mod0_uint32 x = undefined (op mod :: uint32 \<Rightarrow> _) x (0 :: uint32)"
-code_abort mod0_uint32
+declare [[code abort: mod0_uint32]]
 
 lemma uint32_divmod_code [code]:
   "uint32_divmod x y =
@@ -576,8 +593,41 @@ by transfer(simp add: msb_nth)
 lemma msb_uint32_code [code]: "msb x \<longleftrightarrow> uint32_test_bit x 31"
 by(simp add: uint32_test_bit_def uint32_msb_test_bit)
 
-lemma uint32_of_int_code [code]: "uint32_of_int i = (BITS n. i !! n)"
-by transfer(simp add: word_of_int_conv_set_bits test_bit_int_def[abs_def])
+lemma uint32_of_int_code [code]: "uint32_of_int i = Uint32 (integer_of_int i)"
+by transfer simp
+
+lemma int_of_uint32_code [code]:
+  "int_of_uint32 x = int_of_integer (integer_of_uint32 x)"
+by(simp add: integer_of_uint32_def)
+
+lemma nat_of_uint32_code [code]:
+  "nat_of_uint32 x = nat_of_integer (integer_of_uint32 x)"
+unfolding integer_of_uint32_def by transfer (simp add: unat_def)
+
+definition integer_of_uint32_signed :: "uint32 \<Rightarrow> integer"
+where
+  "integer_of_uint32_signed n = (if n !! 31 then undefined integer_of_uint32 n else integer_of_uint32 n)"
+
+lemma integer_of_uint32_signed_code [code]:
+  "integer_of_uint32_signed n =
+  (if n !! 31 then undefined integer_of_uint32 n else integer_of_int (uint (Rep_uint32' n)))"
+unfolding integer_of_uint32_signed_def integer_of_uint32_def
+including undefined_transfer by transfer simp
+
+lemma integer_of_uint32_code [code]:
+  "integer_of_uint32 n =
+  (if n !! 31 then integer_of_uint32_signed (n AND 0x7FFFFFFF) OR 0x80000000 else integer_of_uint32_signed n)"
+unfolding integer_of_uint32_def integer_of_uint32_signed_def o_def
+including undefined_transfer
+by transfer(auto simp add: word_ao_nth uint_and_mask_or_full mask_numeral mask_Suc_0 intro!: uint_and_mask_or_full[symmetric])
+
+code_printing
+  constant "integer_of_uint32" \<rightharpoonup>
+  (SML) "Word32.toInt _ : IntInf.int" and
+  (Haskell) "Prelude.toInteger"
+| constant "integer_of_uint32_signed" \<rightharpoonup>
+  (OCaml) "Big'_int.big'_int'_of'_int32" and
+  (Scala) "BigInt"
 
 section {* Tests *}
 
@@ -626,7 +676,10 @@ definition test_uint32 where
    , True, False, False, True
    , True, False, False
    , True, False, True, False
-   ])"
+   ]) \<and>
+  ([integer_of_uint32 0, integer_of_uint32 0x7FFFFFFF, integer_of_uint32 0x80000000, integer_of_uint32 0xAAAAAAAA]
+  =
+   [0, 0x7FFFFFFF, 0x80000000, 0xAAAAAAAA])"
 
 export_code test_uint32 checking SML Haskell? OCaml? Scala
 

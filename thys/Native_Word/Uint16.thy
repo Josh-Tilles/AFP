@@ -93,6 +93,15 @@ lift_definition sshiftr_uint16 :: "uint16 \<Rightarrow> nat \<Rightarrow> uint16
 
 lift_definition uint16_of_int :: "int \<Rightarrow> uint16" is "word_of_int" .
 
+definition uint16_of_nat :: "nat \<Rightarrow> uint16"
+where "uint16_of_nat = uint16_of_int \<circ> int"
+
+lift_definition int_of_uint16 :: "uint16 \<Rightarrow> int" is "uint" .
+lift_definition nat_of_uint16 :: "uint16 \<Rightarrow> nat" is "unat" .
+
+definition integer_of_uint16 :: "uint16 \<Rightarrow> integer"
+where "integer_of_uint16 = integer_of_int o int_of_uint16"
+
 text {* Use pretty numerals from integer for pretty printing *}
 
 lift_definition Uint16 :: "integer \<Rightarrow> uint16" is "word_of_int" .
@@ -100,16 +109,13 @@ lift_definition Uint16 :: "integer \<Rightarrow> uint16" is "word_of_int" .
 lemma Rep_uint16_numeral [simp]: "Rep_uint16 (numeral n) = numeral n"
 by(induction n)(simp_all add: one_uint16_def Abs_uint16_inverse numeral.simps plus_uint16_def)
 
-lemma Rep_uint16_neg_numeral [simp]: "Rep_uint16 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint16_def)(simp add: Abs_uint16_inverse)
+lemma Rep_uint16_neg_numeral [simp]: "Rep_uint16 (- numeral n) = - numeral n"
+by(simp only: uminus_uint16_def)(simp add: Abs_uint16_inverse)
 
 context begin interpretation lifting_syntax .
 
-lemma [transfer_rule]: "(op = ===> cr_uint16 ===> op =) (\<lambda>n m. cr_uint16 m n) op ="
-by(auto 4 3 simp add: cr_uint16_def Rep_uint16_inject)
-
 lemma uint16_neg_numeral_transfer [transfer_rule]:
-  "(op = ===> cr_uint16) neg_numeral neg_numeral"
+  "(op = ===> cr_uint16) (- numeral) (- numeral)"
 by(auto simp add: cr_uint16_def)
 
 lemma numeral_uint16_transfer [transfer_rule]:
@@ -121,7 +127,7 @@ end
 lemma numeral_uint16 [code_unfold]: "numeral n = Uint16 (numeral n)"
 by transfer simp
 
-lemma neg_numeral_uint16 [code_unfold]: "neg_numeral n = Uint16 (neg_numeral n)"
+lemma neg_numeral_uint16 [code_unfold]: "- numeral n = Uint16 (- numeral n)"
 by transfer(simp add: cr_uint16_def)
 
 lemma Abs_uint16_numeral [code_post]: "Abs_uint16 (numeral n) = numeral n"
@@ -210,12 +216,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint16} 
   ([code abstract] equations for @{typ uint16} may use @{term Rep_uint16} because
   these instances will be folded away.)
+
+  To convert @{typ "16 word"} values into @{typ uint16}, use @{term "Abs_uint16'"}.
 *}
 
 definition Rep_uint16' where [simp]: "Rep_uint16' = Rep_uint16"
 
+lemma Rep_uint16'_transfer [transfer_rule]:
+  "fun_rel cr_uint16 op = (\<lambda>x. x) Rep_uint16'"
+unfolding Rep_uint16'_def by(rule uint16.rep_transfer)
+
 lemma Rep_uint16'_code [code]: "Rep_uint16' x = (BITS n. x !! n)"
-unfolding Rep_uint16'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint16' :: "16 word \<Rightarrow> uint16" is "\<lambda>x :: 16 word. x" .
+
+lemma Abs_uint16'_code [code]:
+  "Abs_uint16' x = Uint16 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint16 \<Rightarrow> _)" ..
 
@@ -458,8 +476,26 @@ by transfer(simp add: msb_nth)
 lemma msb_uint16_code [code]: "msb x \<longleftrightarrow> uint16_test_bit x 15"
 by(simp add: uint16_test_bit_def uint16_msb_test_bit)
 
-lemma uint16_of_int_code [code]: "uint16_of_int i = (BITS n. i !! n)"
-by transfer(simp add: word_of_int_conv_set_bits test_bit_int_def[abs_def])
+lemma uint16_of_int_code [code]: "uint16_of_int i = Uint16 (integer_of_int i)"
+by transfer simp
+
+lemma int_of_uint16_code [code]:
+  "int_of_uint16 x = int_of_integer (integer_of_uint16 x)"
+by(simp add: integer_of_uint16_def)
+
+lemma nat_of_uint16_code [code]:
+  "nat_of_uint16 x = nat_of_integer (integer_of_uint16 x)"
+unfolding integer_of_uint16_def by transfer (simp add: unat_def)
+
+lemma integer_of_uint16_code [code]:
+  "integer_of_uint16 n = integer_of_int (uint (Rep_uint16' n))"
+unfolding integer_of_uint16_def by transfer auto
+
+code_printing
+  constant "integer_of_uint16" \<rightharpoonup>
+  (SML_word) "Word16.toInt _ : IntInf.int" and
+  (Haskell) "Prelude.toInteger" and
+  (Scala) "BigInt"
 
 section {* Tests *}
 
@@ -508,8 +544,10 @@ definition test_uint16 where
    , True, False, False, True
    , True, False, False
    , True, False, True, False
-   ]
-  )"
+   ]) \<and>
+  ([integer_of_uint16 0, integer_of_uint16 0x7FFF, integer_of_uint16 0x8000, integer_of_uint16 0xAAAA]
+  =
+   [0, 0x7FFF, 0x8000, 0xAAAA])"
 
 export_code test_uint16 checking Haskell? Scala
 export_code test_uint16 in SML_word
@@ -519,7 +557,7 @@ have test_uint16 by code_simp
 have test_uint16 by normalization
 end
 
-hide_const test_uint16
+hide_const (open) test_uint16
 hide_fact test_uint16_def
 no_notation sshiftr_uint16 (infixl ">>>" 55)
 

@@ -81,7 +81,7 @@ struct
                      NONE => Seq.empty
                    | SOME n => 
                        let val n' = (if ty = @{typ nat} then "" else "%_. ") ^ Int.toString (HOLogic.dest_nat n)
-                       in  Seq.single (read_instantiate ctxt [(idxname, n')] thm)
+                       in  Seq.single (Rule_Insts.read_instantiate ctxt [(idxname, n')] [] thm)
                        end
                   end
         | _ => Seq.single thm
@@ -173,11 +173,11 @@ struct
       end
 
     fun sturm_tac ctxt keep_goal i =
-        prune_params_tac
-        THEN TRY (Object_Logic.full_atomize_tac i)
+        prune_params_tac ctxt
+        THEN TRY (Object_Logic.full_atomize_tac ctxt i)
         THEN TRY (EqSubst.eqsubst_tac ctxt [1] @{thms sturm_imp_conv} i)
         THEN TRY (convert_meta_spec_tac ctxt i)
-        THEN TRY (Object_Logic.full_atomize_tac i)
+        THEN TRY (Object_Logic.full_atomize_tac ctxt i)
         THEN sturm_preprocess_tac ctxt i
         THEN sturm_main_tac ctxt keep_goal i
 
