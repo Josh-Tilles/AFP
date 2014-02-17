@@ -3,7 +3,7 @@
 
 theory Set_Linorder 
 imports
-  Auxiliary
+  Containers_Auxiliary
   Lexicographic_Order
   Extend_Partial_Order
   "~~/src/HOL/Library/Cardinality"
@@ -343,7 +343,7 @@ by(auto simp add: sorted_Cons intro: Min_eqI)
 
 lemma set_less_aux_code:
   "\<lbrakk> sorted xs; distinct xs; sorted ys; distinct ys \<rbrakk>
-  \<Longrightarrow> set xs \<sqsubset>' set ys \<longleftrightarrow> ord.lexord op > xs ys"
+  \<Longrightarrow> set xs \<sqsubset>' set ys \<longleftrightarrow> ord.lexordp op > xs ys"
 apply(induct xs ys rule: splice.induct)
 apply(simp_all add: empty_set_less_aux_finite_iff sorted_Cons_Min set_less_aux_rec neq_Nil_conv)
 apply(auto simp add: sorted_Cons cong: conj_cong)
@@ -351,12 +351,12 @@ done
 
 lemma set_less_eq_aux_code:
   assumes "sorted xs" "distinct xs" "sorted ys" "distinct ys"
-  shows "set xs \<sqsubseteq>' set ys \<longleftrightarrow> ord.lexord_eq op > xs ys"
+  shows "set xs \<sqsubseteq>' set ys \<longleftrightarrow> ord.lexordp_eq op > xs ys"
 proof -
   have dual: "class.linorder op \<ge> op >"
     by(rule linorder.dual_linorder) unfold_locales
   from assms show ?thesis
-    by(auto simp add: set_less_eq_aux_def finite_complement_partition linorder.lexord_eq_conv_lexord[OF dual] set_less_aux_code intro: sorted_distinct_set_unique)
+    by(auto simp add: set_less_eq_aux_def finite_complement_partition linorder.lexordp_eq_conv_lexord[OF dual] set_less_aux_code intro: sorted_distinct_set_unique)
 qed
 
 end
@@ -671,7 +671,7 @@ theorem assumes fin: "finite (UNIV :: 'a set)"
 proof -
   note fin' [simp] = finite_subset[OF subset_UNIV fin]
 
-  def above \<equiv> "option_case UNIV (Collect \<circ> less)"
+  def above \<equiv> "case_option UNIV (Collect \<circ> less)"
   have above_simps [simp]: "above None = UNIV" "\<And>x. above (Some x) = {y. x < y}"
     and above_upclosed: "\<And>x y ao. \<lbrakk> x \<in> above ao; x < y \<rbrakk> \<Longrightarrow> y \<in> above ao"
     and proper_interval_Some2: "\<And>x ao. proper_interval ao (Some x) \<longleftrightarrow> (\<exists>z\<in>above ao. z < x)"
@@ -1221,7 +1221,7 @@ lemma proper_interval_set_Compl_aux:
 proof -
   note [simp] = finite_subset[OF subset_UNIV fin]
 
-  def above \<equiv> "option_case UNIV (Collect \<circ> less)"
+  def above \<equiv> "case_option UNIV (Collect \<circ> less)"
   have above_simps [simp]: "above None = UNIV" "\<And>x. above (Some x) = {y. x < y}"
     and above_upclosed: "\<And>x y ao. \<lbrakk> x \<in> above ao; x < y \<rbrakk> \<Longrightarrow> y \<in> above ao"
     and proper_interval_Some2: "\<And>x ao. proper_interval ao (Some x) \<longleftrightarrow> (\<exists>z\<in>above ao. z < x)"
@@ -1832,7 +1832,7 @@ lemma proper_interval_Compl_set_aux:
 proof -
   note [simp] = finite_subset[OF subset_UNIV fin]
 
-  def above \<equiv> "option_case UNIV (Collect \<circ> less)"
+  def above \<equiv> "case_option UNIV (Collect \<circ> less)"
   have above_simps [simp]: "above None = UNIV" "\<And>x. above (Some x) = {y. x < y}"
     and above_upclosed: "\<And>x y ao. \<lbrakk> x \<in> above ao; x < y \<rbrakk> \<Longrightarrow> y \<in> above ao"
     and proper_interval_Some2: "\<And>x ao. proper_interval ao (Some x) \<longleftrightarrow> (\<exists>z\<in>above ao. z < x)"

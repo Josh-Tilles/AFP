@@ -215,7 +215,7 @@ proof -
 qed
 
 lemma sqrt_sgn[simp]: "sqrt (of_int (sgn a)) = of_int (sgn a)"
-  by (cases "a \<ge> 0", cases "a = 0", auto, metis minus_one real_sqrt_minus real_sqrt_one)
+  by (cases "a \<ge> 0", cases "a = 0", auto simp: real_sqrt_minus)
 
 lemma mau_sqrt_main: "mau_coeff r = 0 \<Longrightarrow> sqrt (real_of_u r) = real_of_u (mau_sqrt r)"
 proof (transfer)
@@ -354,5 +354,6 @@ value "\<lfloor>324 * sqrt 7 + 0.001\<rfloor>"
 value "101.1 * (sqrt 18 + 6 * sqrt 0.5) = 324 * sqrt 7 + 0.001"
 value "101.1 * (sqrt 18 + 6 * sqrt 0.5) > 324 * sqrt 7 + 0.001"
 value "show_real (101.1 * (sqrt 18 + 6 * sqrt 0.5))"
+value "(sqrt 0.1 \<in> \<rat>, sqrt -0.09 \<in> \<rat>)"
 
 end

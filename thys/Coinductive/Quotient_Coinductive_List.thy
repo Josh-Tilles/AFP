@@ -27,7 +27,7 @@ lemma id_preserve [quot_preserve]:
   shows "(Rep ---> Abs) id = id"
   using Quotient3_abs_rep [OF assms] by (simp add: fun_eq_iff)
 
-enriched_type lmap: lmap
+functor lmap: lmap
    by (simp_all add: fun_eq_iff id_def llist.map_comp)
 
 declare lmap_id [id_simps]
@@ -42,10 +42,10 @@ lemma llist_equivp [quot_equiv]:
   "equivp R \<Longrightarrow> equivp (llist_all2 R)"
   by (simp add: equivp_reflp_symp_transp reflp_llist_all2 symp_llist_all2 transp_llist_all2)
 
-lemma llist_unfold_preserve [quot_preserve]:
+lemma unfold_llist_preserve [quot_preserve]:
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
-  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) llist_unfold = llist_unfold"
+  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) unfold_llist = unfold_llist"
   (is "?lhs = ?rhs")
 proof(intro ext)
   fix IS_LNIL LHD LTL a
@@ -125,7 +125,7 @@ by(simp_all add: fun_eq_iff llist.map_comp o_def)
 lemma lmap_respect [quot_respect]:
   shows "((R1 ===> R2) ===> (llist_all2 R1) ===> llist_all2 R2) lmap lmap"
   and   "((R1 ===> op =) ===> (llist_all2 R1) ===> op =) lmap lmap"
-by(fact lmap_transfer)(simp add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2 Transfer.fun_rel_def)
+by(fact lmap_transfer)(simp add: llist_all2_conv_all_lnth lmap_eq_lmap_conv_llist_all2 fun_rel_def)
 
 lemmas llist_all2_respect [quot_respect] = llist_all2_transfer
 
@@ -140,11 +140,11 @@ lemma llist_all2_preserve2 [quot_preserve]:
   shows "(llist_all2 ((Rep ---> Rep ---> id) R) l m) = (l = m)"
   by (simp add: map_fun_def [abs_def] Quotient3_rel_rep [OF assms] llist_all2_eq comp_def)
 
-lemma llist_corec_preserve [quot_preserve]:
+lemma corec_llist_preserve [quot_preserve]:
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
   shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> id) ---> 
-          (Abs1 ---> lmap Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) llist_corec = llist_corec"
+          (Abs1 ---> lmap Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> lmap Abs2) corec_llist = corec_llist"
   (is "?lhs = ?rhs")
 proof(intro ext)
   fix IS_LNIL LHD endORmore LTL_end LTL_more b

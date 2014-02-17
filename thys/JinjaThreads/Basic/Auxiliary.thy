@@ -16,7 +16,6 @@ imports
   "~~/src/HOL/Library/Predicate_Compile_Alternative_Defs"
   "~~/src/HOL/Library/Code_Char"
   "~~/src/HOL/Library/Monad_Syntax"
-  "~~/src/HOL/Library/Wfrec"
   "~~/src/HOL/Library/Infinite_Set"
 begin
 
@@ -106,12 +105,12 @@ lemma map_of_SomeI:
   "\<lbrakk> distinct_fst kxs; (k,x) \<in> set kxs \<rbrakk> \<Longrightarrow> map_of kxs k = Some x"
 (*<*)by (induct kxs) (auto simp:fun_upd_apply)(*>*)
 
-lemma option_rel_Some1:
-  "option_rel R (Some x) y \<longleftrightarrow> (\<exists>y'. y = Some y' \<and> R x y')"
+lemma rel_option_Some1:
+  "rel_option R (Some x) y \<longleftrightarrow> (\<exists>y'. y = Some y' \<and> R x y')"
 by(cases y) simp_all
 
-lemma option_rel_Some2:
-  "option_rel R x (Some y) \<longleftrightarrow> (\<exists>x'. x = Some x' \<and> R x' y)"
+lemma rel_option_Some2:
+  "rel_option R x (Some y) \<longleftrightarrow> (\<exists>x'. x = Some x' \<and> R x' y)"
 by(cases x) simp_all
 
 subsection {* Using @{term list_all2} for relations *}
@@ -283,7 +282,7 @@ done
 
 lemma take_eq_take_le_eq:
   "\<lbrakk> take n xs = take n ys; m \<le> n \<rbrakk> \<Longrightarrow> take m xs = take m ys"
-by(metis min_max.le_iff_inf take_take)
+by(metis min.absorb_iff1 take_take)
 
 lemma take_list_update_beyond:
   "n \<le> m \<Longrightarrow> take n (xs[m := x]) = take n xs"
@@ -324,7 +323,7 @@ lemma dropWhile_eq_ConsD:
 by(induct xs)(auto split: split_if_asm)
 
 lemma dropWhile_eq_hd_conv: "dropWhile P xs = hd xs # rest \<longleftrightarrow> xs \<noteq> [] \<and> rest = tl xs \<and> \<not> P (hd xs)"
-by (metis append_Nil append_is_Nil_conv dropWhile_eq_Cons_conv hd.simps neq_Nil_conv takeWhile_dropWhile_id takeWhile_eq_Nil_conv tl.simps(2))
+by (metis append_Nil append_is_Nil_conv dropWhile_eq_Cons_conv list.sel(1) neq_Nil_conv takeWhile_dropWhile_id takeWhile_eq_Nil_conv list.sel(3))
 
 lemma dropWhile_eq_same_conv: "dropWhile P xs = xs \<longleftrightarrow> (xs = [] \<or> \<not> P (hd xs))"
 by (metis dropWhile.simps(1) eq_Nil_appendI hd_dropWhile takeWhile_dropWhile_id takeWhile_eq_Nil_conv)
@@ -403,7 +402,7 @@ lemma disjCE:
   obtains P | "Q" "\<not> P"
 using assms by blast
 
-lemma option_case_conv_if:
+lemma case_option_conv_if:
   "(case v of None \<Rightarrow> f | Some x \<Rightarrow> g x) = (if \<exists>a. v = Some a then g (the v) else f)"
 by(simp)
 
@@ -578,8 +577,7 @@ lemma if_else_if_else_eq_if_else [simp]:
   "(if b then x else if b then y else z) = (if b then x else z)"
 by(simp)
 
-
-lemma prod_rec_split [simp]: "prod_rec = split"
+lemma rec_prod_split [simp]: "old.rec_prod = split"
 by(simp add: fun_eq_iff)
 
 lemma inj_Pair_snd [simp]: "inj (Pair x)"

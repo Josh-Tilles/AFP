@@ -171,7 +171,7 @@ fun in_context ctxt (f, pre_qs, pre_gs, pre_args, pre_rhs) F =
     val rhs = inst pre_rhs
 
     val cqs = map (cterm_of thy) qs
-    val ags = map (Thm.assume o cterm_of thy) gs
+    val (ags, ctxt') = fold_map Thm.assume_hyps (map (cterm_of thy) gs) ctxt
 
     val import = fold Thm.forall_elim cqs
       #> fold Thm.elim_implies ags
@@ -179,7 +179,7 @@ fun in_context ctxt (f, pre_qs, pre_gs, pre_args, pre_rhs) F =
     val export = fold_rev (Thm.implies_intr o cprop_of) ags
       #> fold_rev forall_intr_rename (oqnames ~~ cqs)
   in
-    F ctxt (f, qs, gs, args, rhs) import export
+    F ctxt' (f, qs, gs, args, rhs) import export
   end
 
 fun recover_mutual_psimp all_orig_fdefs parts ctxt (fname, _, _, args, rhs)
@@ -188,23 +188,25 @@ fun recover_mutual_psimp all_orig_fdefs parts ctxt (fname, _, _, args, rhs)
     val (MutualPart {f=SOME f, ...}) = get_part fname parts
  
     val psimp = import sum_psimp_eq
-    val (simp, restore_cond) =
+    val ((simp, restore_cond), ctxt') =
       case cprems_of psimp of
-        [] => (psimp, I)
-      | [cond] => (Thm.implies_elim psimp (Thm.assume cond), Thm.implies_intr cond)
+        [] => ((psimp, I), ctxt)
+      | [cond] =>
+          let val (asm, ctxt') = Thm.assume_hyps cond ctxt
+          in ((Thm.implies_elim psimp asm, Thm.implies_intr cond), ctxt') end
       | _ => raise General.Fail "Too many conditions"
   in
-    Goal.prove ctxt [] []
+    Goal.prove ctxt' [] []
       (HOLogic.Trueprop $ HOLogic.mk_eq (list_comb (f, args), rhs))
-      (fn _ => (Local_Defs.unfold_tac ctxt all_orig_fdefs)
-         THEN EqSubst.eqsubst_tac ctxt [0] [simp] 1
-         THEN (simp_tac ctxt) 1)
+      (fn _ => (Local_Defs.unfold_tac ctxt' all_orig_fdefs)
+         THEN EqSubst.eqsubst_tac ctxt' [0] [simp] 1
+         THEN (simp_tac ctxt') 1)
     |> restore_cond
     |> export
   end
 
-val inl_perm = @{lemma "x = Inl y ==> Sum_Type.Projl (permute p x) = permute p (Sum_Type.Projl x)" by simp}
-val inr_perm = @{lemma "x = Inr y ==> Sum_Type.Projr (permute p x) = permute p (Sum_Type.Projr x)" by simp}
+val inl_perm = @{lemma "x = Inl y ==> projl (permute p x) = permute p (projl x)" by simp}
+val inr_perm = @{lemma "x = Inr y ==> projr (permute p x) = permute p (projr x)" by simp}
 
 fun recover_mutual_eqvt eqvt_thm all_orig_fdefs parts ctxt (fname, _, _, args, _)
   import (export : thm -> thm) sum_psimp_eq =
@@ -212,30 +214,31 @@ fun recover_mutual_eqvt eqvt_thm all_orig_fdefs parts ctxt (fname, _, _, args, _
     val (MutualPart {f=SOME f, ...}) = get_part fname parts
     
     val psimp = import sum_psimp_eq
-    val (cond, simp, restore_cond) =
+    val ((cond, simp, restore_cond), ctxt') =
       case cprems_of psimp of
-        [] => ([], psimp, I)
-      | [cond] => ([Thm.assume cond], Thm.implies_elim psimp (Thm.assume cond), Thm.implies_intr cond)
+        [] => (([], psimp, I), ctxt)
+      | [cond] =>
+          let val (asm, ctxt') = Thm.assume_hyps cond ctxt
+          in (([asm], Thm.implies_elim psimp asm, Thm.implies_intr cond), ctxt') end
       | _ => raise General.Fail "Too many conditions"
 
-    val ([p], ctxt') = ctxt
+    val ([p], ctxt'') = ctxt'
       |> fold Variable.declare_term args  
-      |> Variable.variant_fixes ["p"] 		   
+      |> Variable.variant_fixes ["p"]
     val p = Free (p, @{typ perm})
 
     val simpset =
-      put_simpset HOL_basic_ss ctxt' addsimps 
-      @{thms permute_sum.simps[symmetric] Pair_eqvt[symmetric]} @
-      @{thms Projr.simps Projl.simps} @
+      put_simpset HOL_basic_ss ctxt'' addsimps 
+      @{thms permute_sum.simps[symmetric] Pair_eqvt[symmetric] sum.sel} @
       [(cond MRS eqvt_thm) RS @{thm sym}] @ 
       [inl_perm, inr_perm, simp] 
     val goal_lhs = mk_perm p (list_comb (f, args))
     val goal_rhs = list_comb (f, map (mk_perm p) args)
   in
-    Goal.prove ctxt' [] [] (HOLogic.Trueprop $ HOLogic.mk_eq (goal_lhs, goal_rhs))
-      (fn _ => (Local_Defs.unfold_tac ctxt all_orig_fdefs)
+    Goal.prove ctxt'' [] [] (HOLogic.Trueprop $ HOLogic.mk_eq (goal_lhs, goal_rhs))
+      (fn _ => Local_Defs.unfold_tac ctxt'' all_orig_fdefs
          THEN (asm_full_simp_tac simpset 1))
-    |> singleton (Proof_Context.export ctxt' ctxt)
+    |> singleton (Proof_Context.export ctxt'' ctxt)
     |> restore_cond
     |> export
   end
@@ -335,12 +338,12 @@ fun prove_eqvt ctxt fs argTss eqvts_thms induct_thms =
         [thm] => thm
           |> Drule.gen_all 
           |> Thm.permute_prems 0 1
-          |> (fn thm => atomize_rule (length (prems_of thm) - 1) thm)
+          |> (fn thm => atomize_rule ctxt' (length (prems_of thm) - 1) thm)
       | thms => thms
           |> map Drule.gen_all 
           |> map (Rule_Cases.add_consumes 1)
           |> snd o Rule_Cases.strict_mutual_rule ctxt'
-          |> atomize_concl
+          |> atomize_concl ctxt'
 
     fun tac thm = rtac (Drule.gen_all thm) THEN_ALL_NEW atac
   in
@@ -428,7 +431,7 @@ fun prepare_nominal_function_mutual config defname fixes eqss lthy =
         Syntax.check_term lthy'' (mk_comp_dummy inj_fun fun_var)
       end
 
-    val sum_case_exp = map mk_cases parts
+    val case_sum_exp = map mk_cases parts
       |> SumTree.mk_sumcases RST 
    
     val (G_name, G_type) = dest_Free G 
@@ -437,7 +440,7 @@ fun prepare_nominal_function_mutual config defname fixes eqss lthy =
     val GIntros_aux = GIntro_thms
       |> map prop_of
       |> map (Term.subst_free subst)
-      |> map (subst_all sum_case_exp)
+      |> map (subst_all case_sum_exp)
 
     val ((G_aux, GIntro_aux_thms, _, G_aux_induct), lthy''') = 
       Nominal_Function_Core.inductive_def ((Binding.name G_name_aux, G_type), NoSyn) GIntros_aux lthy''
@@ -470,7 +473,7 @@ fun prepare_nominal_function_mutual config defname fixes eqss lthy =
     val goal_iff2 = Logic.mk_implies (G_prem, G_aux_prem)
       |> all x |> all y
 
-    val simp_thms = @{thms Projl.simps Projr.simps sum.inject sum.cases sum.distinct o_apply}
+    val simp_thms = @{thms sum.sel sum.inject sum.cases sum.distinct o_apply}
     val simpset0 = put_simpset HOL_basic_ss lthy''' addsimps simp_thms
     val simpset1 = put_simpset HOL_ss lthy''' addsimps simp_thms
 

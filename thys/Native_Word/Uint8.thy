@@ -84,6 +84,15 @@ lift_definition sshiftr_uint8 :: "uint8 \<Rightarrow> nat \<Rightarrow> uint8" (
 
 lift_definition uint8_of_int :: "int \<Rightarrow> uint8" is "word_of_int" .
 
+definition uint8_of_nat :: "nat \<Rightarrow> uint8"
+where "uint8_of_nat = uint8_of_int \<circ> int"
+
+lift_definition int_of_uint8 :: "uint8 \<Rightarrow> int" is "uint" .
+lift_definition nat_of_uint8 :: "uint8 \<Rightarrow> nat" is "unat" .
+
+definition integer_of_uint8 :: "uint8 \<Rightarrow> integer"
+where "integer_of_uint8 = integer_of_int o int_of_uint8"
+
 text {* Use pretty numerals from integer for pretty printing *}
 
 lift_definition Uint8 :: "integer \<Rightarrow> uint8" is "word_of_int" .
@@ -98,21 +107,18 @@ by(auto simp add: cr_uint8_def)
 lemma numeral_uint8 [code_unfold]: "numeral n = Uint8 (numeral n)"
 by transfer simp
 
-lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint8_def)(simp add: Abs_uint8_inverse)
+lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (- numeral n) = - numeral n"
+by(simp only: uminus_uint8_def)(simp add: Abs_uint8_inverse)
 
 context begin interpretation lifting_syntax .
 
-lemma [transfer_rule]: "(op = ===> cr_uint8 ===> op =) (\<lambda>n m. cr_uint8 m n) op ="
-by(auto 4 3 simp add: cr_uint8_def Rep_uint8_inject)
-
 lemma uint8_neg_numeral_transfer [transfer_rule]:
-  "(op = ===> cr_uint8) neg_numeral neg_numeral"
+  "(op = ===> cr_uint8) (- numeral) (- numeral)"
 by(auto simp add: cr_uint8_def)
 
 end
 
-lemma neg_numeral_uint8 [code_unfold]: "neg_numeral n = Uint8 (neg_numeral n)"
+lemma neg_numeral_uint8 [code_unfold]: "- numeral n = Uint8 (- numeral n)"
 by transfer(simp add: cr_uint8_def)
 
 lemma Abs_uint8_numeral [code_post]: "Abs_uint8 (numeral n) = numeral n"
@@ -213,12 +219,24 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint8} 
   ([code abstract] equations for @{typ uint8} may use @{term Rep_uint8} because
   these instances will be folded away.)
+
+  To convert @{typ "8 word"} values into @{typ uint8}, use @{term "Abs_uint8'"}.
 *}
 
 definition Rep_uint8' where [simp]: "Rep_uint8' = Rep_uint8"
 
+lemma Rep_uint8'_transfer [transfer_rule]:
+  "fun_rel cr_uint8 op = (\<lambda>x. x) Rep_uint8'"
+unfolding Rep_uint8'_def by(rule uint8.rep_transfer)
+
 lemma Rep_uint8'_code [code]: "Rep_uint8' x = (BITS n. x !! n)"
-unfolding Rep_uint8'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint8' :: "8 word \<Rightarrow> uint8" is "\<lambda>x :: 8 word. x" .
+
+lemma Abs_uint8'_code [code]:
+  "Abs_uint8' x = Uint8 (integer_of_int (uint x))"
+by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint8 \<Rightarrow> _)" ..
 
@@ -321,11 +339,11 @@ where
 
 definition div0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "div0_uint8 x = undefined (op div :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort div0_uint8
+declare [[code abort: div0_uint8]]
 
 definition mod0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "mod0_uint8 x = undefined (op mod :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort mod0_uint8
+declare [[code abort: mod0_uint8]]
 
 lemma uint8_divmod_code [code]:
   "uint8_divmod x y =
@@ -492,8 +510,40 @@ by transfer(simp add: msb_nth)
 lemma msb_uint16_code [code]: "msb x \<longleftrightarrow> uint8_test_bit x 7"
 by(simp add: uint8_test_bit_def uint8_msb_test_bit)
 
-lemma uint8_of_int_code [code]: "uint8_of_int i = (BITS n. i !! n)"
-by transfer(simp add: word_of_int_conv_set_bits test_bit_int_def[abs_def])
+lemma uint8_of_int_code [code]: "uint8_of_int i = Uint8 (integer_of_int i)"
+by transfer simp
+
+lemma int_of_uint8_code [code]:
+  "int_of_uint8 x = int_of_integer (integer_of_uint8 x)"
+by(simp add: integer_of_uint8_def)
+
+lemma nat_of_uint8_code [code]:
+  "nat_of_uint8 x = nat_of_integer (integer_of_uint8 x)"
+unfolding integer_of_uint8_def by transfer (simp add: unat_def)
+
+definition integer_of_uint8_signed :: "uint8 \<Rightarrow> integer"
+where
+  "integer_of_uint8_signed n = (if n !! 7 then undefined integer_of_uint8 n else integer_of_uint8 n)"
+
+lemma integer_of_uint8_signed_code [code]:
+  "integer_of_uint8_signed n =
+  (if n !! 7 then undefined integer_of_uint8 n else integer_of_int (uint (Rep_uint8' n)))"
+unfolding integer_of_uint8_signed_def integer_of_uint8_def
+including undefined_transfer by transfer simp
+
+lemma integer_of_uint8_code [code]:
+  "integer_of_uint8 n =
+  (if n !! 7 then integer_of_uint8_signed (n AND 0x7F) OR 0x80 else integer_of_uint8_signed n)"
+unfolding integer_of_uint8_def integer_of_uint8_signed_def o_def
+including undefined_transfer
+by transfer(auto simp add: word_ao_nth uint_and_mask_or_full mask_numeral mask_Suc_0 intro!: uint_and_mask_or_full[symmetric])
+
+code_printing
+  constant "integer_of_uint8" \<rightharpoonup>
+  (SML) "Word8.toInt _ : IntInf.int" and
+  (Haskell) "Prelude.toInteger"
+| constant "integer_of_uint8_signed" \<rightharpoonup>
+  (Scala) "BigInt"
 
 section {* Tests *}
 
@@ -542,10 +592,13 @@ definition test_uint8 where
    , True, False, False, True
    , True, False, False
    , True, False, True, False
-   ]
-  )"
+   ]) \<and>
+  ([integer_of_uint8 0, integer_of_uint8 0x7F, integer_of_uint8 0x80, integer_of_uint8 0xAA]
+  =
+   [0, 0x7F, 0x80, 0xAA])"
 
 export_code test_uint8 checking SML Haskell? Scala
+
 notepad begin
 have test_uint8 by eval
 have test_uint8 by code_simp

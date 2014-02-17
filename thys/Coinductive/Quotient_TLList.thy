@@ -20,31 +20,31 @@ by(simp add: fun_eq_iff tllist.map_id)
 
 declare tllist_all2_eq[id_simps]
 
-lemma sum_case_preserve [quot_preserve]:
+lemma case_sum_preserve [quot_preserve]:
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
   and q3: "Quotient3 R3 Abs3 Rep3"
-  shows "((Abs1 ---> Rep2) ---> (Abs3 ---> Rep2) ---> sum_map Rep1 Rep3 ---> Abs2) sum_case = sum_case"
+  shows "((Abs1 ---> Rep2) ---> (Abs3 ---> Rep2) ---> sum_map Rep1 Rep3 ---> Abs2) case_sum = case_sum"
 using Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2] Quotient3_abs_rep[OF q3]
 by(simp add: fun_eq_iff split: sum.split)
 
-lemma sum_case_preserve2 [quot_preserve]:
+lemma case_sum_preserve2 [quot_preserve]:
   assumes q: "Quotient3 R Abs Rep"
-  shows "((id ---> Rep) ---> (id ---> Rep) ---> id ---> Abs) sum_case = sum_case"
+  shows "((id ---> Rep) ---> (id ---> Rep) ---> id ---> Abs) case_sum = case_sum"
 using Quotient3_abs_rep[OF q]
 by(auto intro!: ext split: sum.split)
 
-lemma prod_case_preserve [quot_preserve]:
+lemma case_prod_preserve [quot_preserve]:
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
   and q3: "Quotient3 R3 Abs3 Rep3"
-  shows "((Abs1 ---> Abs2 ---> Rep3) ---> map_pair Rep1 Rep2 ---> Abs3) prod_case = prod_case"
+  shows "((Abs1 ---> Abs2 ---> Rep3) ---> map_pair Rep1 Rep2 ---> Abs3) case_prod = case_prod"
 using Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2] Quotient3_abs_rep[OF q3]
 by(simp add: fun_eq_iff split: prod.split)
 
-lemma prod_case_preserve2 [quot_preserve]:
+lemma case_prod_preserve2 [quot_preserve]:
   assumes q: "Quotient3 R Abs Rep"
-  shows "((id ---> id ---> Rep) ---> id ---> Abs) prod_case = prod_case"
+  shows "((id ---> id ---> Rep) ---> id ---> Abs) case_prod = case_prod"
 using Quotient3_abs_rep[OF q]
 by(auto intro!: ext)
 
@@ -54,7 +54,7 @@ lemma id_preserve [quot_preserve]:
 using Quotient3_abs_rep[OF assms]
 by(auto intro: ext)
 
-enriched_type tmap: tmap
+functor tmap: tmap
    by(simp_all add: fun_eq_iff tmap_id_id tllist.map_comp)
 
 lemma symp_tllist_all2: "\<lbrakk> symp R; symp S \<rbrakk> \<Longrightarrow> symp (tllist_all2 R S)"
@@ -225,11 +225,11 @@ lemma tllist_all2_preserve2 [quot_preserve]:
   by (simp add: fun_eq_iff map_fun_def comp_def Quotient3_rel_rep[OF q1] Quotient3_rel_rep[OF q2]
     tllist_all2_eq)
 
-lemma tllist_corec_preserve [quot_preserve]: 
+lemma corec_tllist_preserve [quot_preserve]: 
   assumes q1: "Quotient3 R1 Abs1 Rep1"
   and q2: "Quotient3 R2 Abs2 Rep2"
   and q3: "Quotient3 R3 Abs3 Rep3"
-  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> Rep3) ---> (Abs1 ---> id) ---> (Abs1 ---> tmap Rep3 Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> tmap Abs3 Abs2) tllist_corec = tllist_corec"
+  shows "((Abs1 ---> id) ---> (Abs1 ---> Rep2) ---> (Abs1 ---> Rep3) ---> (Abs1 ---> id) ---> (Abs1 ---> tmap Rep3 Rep2) ---> (Abs1 ---> Rep1) ---> Rep1 ---> tmap Abs3 Abs2) corec_tllist = corec_tllist"
   (is "?lhs = ?rhs")
 proof(intro ext)
   fix IS_TNIL TNIL THD endORmore TTL_end TTL_more b

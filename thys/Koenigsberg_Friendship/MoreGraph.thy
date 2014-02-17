@@ -1397,7 +1397,7 @@ qed
 lemma odd_card: 
   assumes "finite A" "odd(card A)"
   shows "\<exists>x. x\<in>A" 
-by (metis all_not_in_conv assms(2) card_empty even_zero_nat) 
+by (metis all_not_in_conv assms(2) card_empty even_zero) 
 
 lemma (in valid_unMultigraph) extend_distinct_path: 
   assumes "finite E"  "is_trail v' ps v" 
@@ -1709,7 +1709,7 @@ proof -
           moreover have "xs = takeWhile (\<lambda>x. x \<noteq> (v, w, v') \<and> x \<noteq> (v', w, v)) (tl nvs)" 
             using `x # xs = takeWhile (\<lambda>x. x \<noteq> (v, w, v') \<and> x \<noteq> (v', w, v)) nvs` 
             by (metis (lifting, no_types) append_Cons list.distinct(1) takeWhile.simps(2) 
-                takeWhile_dropWhile_id tl.simps(2))
+                takeWhile_dropWhile_id list.sel(3))
           ultimately have "valid_graph.is_path (del_unEdge v w v' G) x3 xs n'" 
             using Cons by auto
           moreover have "x\<noteq>(v,w,v') \<and> x\<noteq>(v',w,v)" 

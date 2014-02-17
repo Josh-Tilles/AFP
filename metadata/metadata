@@ -1332,6 +1332,17 @@ topic = Mathematics/Algebra
 date = 2013-01-16
 abstract = In this article we present a proof of the result known in Linear Algebra as the ``rank nullity Theorem'', which states that, given any linear form f from a finite dimensional vector space V to a vector space W, then the dimension of V is equal to the dimension of the kernel of f (which is a subspace of V) and the dimension of the range of f (which is a subspace of W). The proof presented here is based on the one given by Sheldon Axler in his book <i>Linear Algebra Done Right</i>. It makes use of the HOL-Multivariate-Analysis session of Isabelle, and of several of its results and definitions. As a corollary of the previous theorem, and taking advantage of the relationship between linear forms and matrices, we prove that, for every matrix A (which has associated a linear form between finite dimensional vector spaces), the sum of its null space and its column space (which is equal to the range of the linear form) is equal to the number of columns of A.
 
+[Affine_Arithmetic]
+title = Affine Arithmetic
+author = Fabian Immler <http://home.in.tum.de/~immler/>
+date = 2014-02-07
+topic = Mathematics/Analysis
+abstract =
+ We give a formalization of affine forms as abstract representations of zonotopes.
+ We provide affine operations as well as overapproximations of some non-affine operations like multiplication and division.
+ Expressions involving those operations can automatically be turned into (executable) functions approximating the original
+ expression in affine arithmetic.
+
 [Cauchy]
 title = Cauchy's Mean Theorem and the Cauchy-Schwarz Inequality
 author = Benjamin Porter
@@ -1353,6 +1364,9 @@ author = Fabian Immler <http://home.in.tum.de/~immler>, Johannes Hölzl <http://
 topic = Mathematics/Analysis
 date = 2012-04-26
 abstract = We formalize initial value problems (IVPs) of ODEs and prove the existence of a unique solution, i.e. the Picard-Lindelöf theorem. We introduce general one-step methods for numerical approximation of the solution and provide an analysis regarding the local and global error of one-step methods. We give an executable specification of the Euler method to approximate the solution of IVPs and prove an explicit bound for the global error. We use arbitrary-precision floating-point numbers and also handle rounding errors when we truncate the numbers for efficiency reasons.
+extra-history =
+  Change history:
+  [2014-02-13]: added an implementation of the Euler method based on affine arithmetic
 
 [Polynomials]
 title = Executable Multivariate Polynomials
@@ -1420,6 +1434,7 @@ abstract = This is a formalization of Markov models in Isabelle/HOL. It
   As application of these models we formalize probabilistic model
   checking of pCTL formulas, analysis of IPv4 address allocation in
   ZeroConf and an analysis of the anonymity of the Crowds protocol.
+  <a href="http://arxiv.org/abs/1212.3870">See here for the corresponding paper.</a>
 
 [Fermat3_4]
 title = Fermat's Last Theorem for Exponents 3 and 4 and the Parametrisation of Pythagorean Triples
@@ -1666,6 +1681,11 @@ author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>
 date = 2013-09-17
 topic = Computer Science/Data Structures
 abstract = This entry makes machine words and machine arithmetic available for code generation from Isabelle/HOL.  It provides a common abstraction that hides the differences between the different target languages.  The code generator maps these operations to the APIs of the target languages.  Apart from that, we extend the available bit operations on types int and integer, and map them to the operations in the target languages.
+extra-history =
+  Change history:
+  [2013-11-06]:
+        added conversion function between native words and characters
+        (revision fd23d9a7fe3a)
 
 [HereditarilyFinite]
 title = The Hereditarily Finite Sets

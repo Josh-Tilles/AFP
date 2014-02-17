@@ -275,7 +275,7 @@ by(auto simp add: member_lookup fun_eq_iff lookup_meet[OF ID_corder_neq_None] sp
 
 lemma member_inter_list [simp]:
   "member (inter_list (t :: 'a set_rbt) xs) = (\<lambda>x. member t x \<and> x \<in> set xs)"
-by transfer(auto simp add: ID_corder_neq_None fun_eq_iff linorder.rbt_lookup_fold_rbt_insert[OF set_linorder] ord.Empty_is_rbt map_of_map_Pair_key ord.rbt_lookup.simps option_rel_def split: split_if_asm option.split_asm)
+by transfer(auto simp add: ID_corder_neq_None fun_eq_iff linorder.rbt_lookup_fold_rbt_insert[OF set_linorder] ord.Empty_is_rbt map_of_map_Pair_key ord.rbt_lookup.simps rel_option_iff split: split_if_asm option.split_asm)
 
 lemma member_filter [simp]:
   "member (filter P (t :: 'a set_rbt)) = (\<lambda>x. member t x \<and> P x)"
@@ -314,7 +314,7 @@ end
 end
 
 lemma sorted_RBT_Set_keys: 
-  "Option.map fst (ID CORDER('a :: corder)) = Some le 
+  "map_option fst (ID CORDER('a :: corder)) = Some le 
   \<Longrightarrow> linorder.sorted le (RBT_Set2.keys rbt)"
 by transfer(auto simp add: RBT_Set2.keys.rep_eq RBT_Impl.keys_def linorder.rbt_sorted_entries[OF ID_corder] ord.is_rbt_rbt_sorted)
 
