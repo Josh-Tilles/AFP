@@ -7,7 +7,6 @@ header {* Coinductive natural numbers *}
 
 theory Coinductive_Nat imports
   "~~/src/HOL/Library/Extended_Nat"
-  "~~/src/HOL/BNF/BNF"
 begin
 
 lemmas eSuc_plus = iadd_Suc
@@ -75,33 +74,35 @@ qed
 
 locale co begin
 
-wrap_free_constructors ["0::enat", eSuc] enat_case [=] [[], [epred]] [[epred: "0::enat"]]
+free_constructors (no_code) case_enat for
+    =: "0::enat" (defaults epred: "0::enat")
+  | eSuc epred
   apply (erule enat_coexhaust, assumption)
  apply (rule eSuc_inject)
 by (rule zero_ne_eSuc)
 
 end
 
-lemma enat_cocase_0 [simp]: "co.enat_case z s 0 = z"
+lemma enat_cocase_0 [simp]: "co.case_enat z s 0 = z"
 by (rule co.enat.case(1))
 
-lemma enat_cocase_eSuc [simp]: "co.enat_case z s (eSuc n) = s n"
+lemma enat_cocase_eSuc [simp]: "co.case_enat z s (eSuc n) = s n"
 by (rule co.enat.case(2))
 
 lemma neq_zero_conv_eSuc: "n \<noteq> 0 \<longleftrightarrow> (\<exists>n'. n = eSuc n')"
 by(cases n rule: enat_coexhaust) simp_all
 
 lemma enat_cocase_cert:
-  assumes "CASE \<equiv> co.enat_case c d"
+  assumes "CASE \<equiv> co.case_enat c d"
   shows "(CASE 0 \<equiv> c) &&& (CASE (eSuc n) \<equiv> d n)"
   using assms by simp_all
 
 lemma enat_cosplit_asm:
-  "P (co.enat_case c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = eSuc m \<and> \<not> P (d m))))"
+  "P (co.case_enat c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = eSuc m \<and> \<not> P (d m))))"
 by (rule co.enat.split_asm)
 
 lemma enat_cosplit:
-  "P (co.enat_case c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = eSuc m \<longrightarrow> P (d m)))"
+  "P (co.case_enat c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = eSuc m \<longrightarrow> P (d m)))"
 by (rule co.enat.split)
 
 abbreviation epred :: "enat => enat" where "epred \<equiv> co.epred"
@@ -114,10 +115,10 @@ by(cases n rule: co.enat.exhaust)(simp_all)
 
 subsection {* Corecursion for @{typ enat} *}
 
-lemma enat_case_numeral [simp]: "enat_case f i (numeral v) = (let n = numeral v in f n)"
+lemma case_enat_numeral [simp]: "case_enat f i (numeral v) = (let n = numeral v in f n)"
 by(simp add: numeral_eq_enat)
 
-lemma enat_case_0 [simp]: "enat_case f i 0 = f 0"
+lemma case_enat_0 [simp]: "case_enat f i 0 = f 0"
 by(simp add: zero_enat_def)
 
 lemma [simp]:
@@ -154,11 +155,11 @@ lemma [simp]:
 by(simp_all add: numeral_eq_eSuc)
 
 lemma enat_cocase_numeral [simp]:
-  "co.enat_case a f (numeral v) = (let pv = epred_numeral v in f pv)"
+  "co.case_enat a f (numeral v) = (let pv = epred_numeral v in f pv)"
 by(simp add: numeral_eq_eSuc)
 
 lemma enat_cocase_add_eq_if [simp]:
-  "co.enat_case a f ((numeral v) + n) = (let pv = epred_numeral v in f (pv + n))"
+  "co.case_enat a f ((numeral v) + n) = (let pv = epred_numeral v in f (pv + n))"
 by(simp add: numeral_eq_eSuc iadd_Suc)
 
 
@@ -224,7 +225,7 @@ proof(cases "\<exists>n. stop ((next ^^ n) a)")
     finally show ?thesis using False n n'
       by(auto simp add: eSuc_enat[symmetric] funpow_swap1 enat_unfold_def)
   qed
-qed(auto simp add: enat_unfold_def funpow_swap1 elim: allE[where x=0] allE[where x="Suc n", standard])
+qed(auto simp add: enat_unfold_def funpow_swap1 elim: allE[where x=0] allE[where x="Suc n" for n])
 
 lemma enat_unfold_stop [simp]: "stop a \<Longrightarrow> enat_unfold stop next a = 0"
 by(simp add: enat_unfold)

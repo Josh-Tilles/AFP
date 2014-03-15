@@ -53,7 +53,7 @@ quotient_type
   by (rule perm_eq_equivp)
 
 definition perm_add_raw where
-  "perm_add_raw p q = map (map_pair id (perm_apply p)) q @ [a\<leftarrow>p. fst a \<notin> fst ` set q]"
+  "perm_add_raw p q = map (map_prod id (perm_apply p)) q @ [a\<leftarrow>p. fst a \<notin> fst ` set q]"
 
 lemma perm_apply_del[simp]:
   "e \<noteq> b \<Longrightarrow> perm_apply [a\<leftarrow>l. fst a \<noteq> b] e = perm_apply l e"
@@ -146,7 +146,7 @@ lemma valid_perm_lookup_fst_eq_snd:
 lemma valid_perm_add_minus: "valid_perm a \<Longrightarrow> perm_apply (map swap_pair a) (perm_apply a e) = e"
   apply (auto simp add: filter_map_swap_pair filter_eq_nil filter_rev_eq_nil perm_apply_def split: list.split)
   apply (metis filter_eq_nil(2) neq_Nil_conv valid_perm_def)
-  apply (metis hd.simps hd_in_set image_eqI list.simps(2) member_project project_set snd_conv)
+  apply (metis list.sel(1) hd_in_set image_eqI list.simps(2) member_project project_set snd_conv)
   apply (frule filter_fst_eq(1))
   apply (frule filter_fst_eq(2))
   apply (auto simp add: swap_pair_def)
@@ -162,9 +162,9 @@ lemma uminus_perm_raw_rsp[simp]:
   "perm_eq x y \<Longrightarrow> perm_eq (map swap_pair x) (map swap_pair y)"
   by (auto simp add: fun_eq_iff perm_apply_minus[symmetric] perm_eq_def)
 
-lemma fst_snd_map_pair[simp]:
-  "fst ` map_pair f g ` set l = f ` fst ` set l"
-  "snd ` map_pair f g ` set l = g ` snd ` set l"
+lemma fst_snd_map_prod[simp]:
+  "fst ` map_prod f g ` set l = f ` fst ` set l"
+  "snd ` map_prod f g ` set l = g ` snd ` set l"
   by (induct l) auto
 
 lemma fst_diff[simp]:

@@ -180,172 +180,64 @@ end;
 
 
 structure HPY_new : sig
-  type 'a equal
-  val equal : 'a equal -> 'a -> 'a -> bool
-  val eq : 'a equal -> 'a -> 'a -> bool
-  datatype nat = Nat of IntInf.int
-  datatype num = One | Bit0 of num | Bit1 of num
-  val map : ('a -> 'b) -> 'a list -> 'b list
-  val fold : ('a -> 'b -> 'b) -> 'a list -> 'b -> 'b
-  type 'a ord
-  val less_eq : 'a ord -> 'a -> 'a -> bool
-  val less : 'a ord -> 'a -> 'a -> bool
+  type nat
   val integer_of_nat : nat -> IntInf.int
-  val less_eq_nat : nat -> nat -> bool
-  val less_nat : nat -> nat -> bool
-  val ord_nat : nat ord
-  val one_nat : nat
-  val foldli : 'a list -> ('b -> bool) -> ('a -> 'b -> 'b) -> 'b -> 'b
-  val equal_nata : nat -> nat -> bool
-  val equal_nat : nat equal
-  val plus_nat : nat -> nat -> nat
-  val ord_integer : IntInf.int ord
-  val max : 'a ord -> 'a -> 'a -> 'a
-  val minus_nat : nat -> nat -> nat
-  val times_nat : nat -> nat -> nat
-  datatype 'a dres = DSUCCEEDi | DFAILi | DRETURN of 'a
-  val equal_list : 'a equal -> 'a list -> 'a list -> bool
-  datatype 'a blue_witness = NO_CYC | Reach of 'a * 'a list * 'a * 'a list |
-    Circ of 'a * 'a list * 'a list
-  val dbind : 'a dres -> ('a -> 'b dres) -> 'b dres
-  val array_set :
-    'a FArray.IsabelleMapping.ArrayType ->
-      nat -> 'a -> 'a FArray.IsabelleMapping.ArrayType
-  val iam_empty : unit -> ('a option) FArray.IsabelleMapping.ArrayType
-  val the_res : 'a dres -> 'a
-  val equal_blue_witness :
-    'a equal -> 'a blue_witness -> 'a blue_witness -> bool
-  val map2set_insert : ('a -> unit -> 'b -> 'c) -> 'a -> 'b -> 'c
+  type 'a dres
+  type 'a blue_witness
   val nat_of_integer : IntInf.int -> nat
-  val iam_increment : nat -> nat -> nat
-  val array_set_oo :
-    (unit -> 'a FArray.IsabelleMapping.ArrayType) ->
-      'a FArray.IsabelleMapping.ArrayType ->
-        nat -> 'a -> 'a FArray.IsabelleMapping.ArrayType
-  val array_length : 'a FArray.IsabelleMapping.ArrayType -> nat
-  val array_grow :
-    'a FArray.IsabelleMapping.ArrayType ->
-      nat -> 'a -> 'a FArray.IsabelleMapping.ArrayType
-  val iam_update :
-    nat ->
-      'a -> ('a option) FArray.IsabelleMapping.ArrayType ->
-              ('a option) FArray.IsabelleMapping.ArrayType
-  val array_get_oo : 'a -> 'a FArray.IsabelleMapping.ArrayType -> nat -> 'a
-  val iam_alpha :
-    ('a option) FArray.IsabelleMapping.ArrayType -> nat -> 'a option
-  val iam_lookup :
-    nat -> ('a option) FArray.IsabelleMapping.ArrayType -> 'a option
-  val iam_delete :
-    nat ->
-      ('a option) FArray.IsabelleMapping.ArrayType ->
-        ('a option) FArray.IsabelleMapping.ArrayType
-  val prep_wit_blue : 'a equal -> 'a -> 'a blue_witness -> 'a blue_witness
-  val init_wit_blue : 'a equal -> 'a -> ('a list * 'a) option -> 'a blue_witness
-  val map2set_memb : ('a -> 'b -> 'c option) -> 'a -> 'b -> bool
-  val is_None : 'a option -> bool
-  val red_init_witness : 'a -> 'a -> ('a list * 'a) option
-  val prep_wit_red : 'a -> ('a list * 'a) option -> ('a list * 'a) option
-  val red_dfs_impl_0 :
-    (unit option) FArray.IsabelleMapping.ArrayType ->
-      (nat -> nat list) ->
-        (unit option) FArray.IsabelleMapping.ArrayType * nat ->
-          ((unit option) FArray.IsabelleMapping.ArrayType *
-            (nat list * nat) option)
-            dres
-  val red_dfs_impl :
-    nat ->
-      (unit option) FArray.IsabelleMapping.ArrayType ->
-        (unit option) FArray.IsabelleMapping.ArrayType ->
-          (nat -> nat list) ->
-            (unit option) FArray.IsabelleMapping.ArrayType *
-              (nat list * nat) option
-  val ndfs_impl_0 :
-    (nat -> nat list) ->
-      (unit option) FArray.IsabelleMapping.ArrayType ->
-        (unit option) FArray.IsabelleMapping.ArrayType *
-          ((unit option) FArray.IsabelleMapping.ArrayType *
-            ((unit option) FArray.IsabelleMapping.ArrayType * nat)) ->
-          ((unit option) FArray.IsabelleMapping.ArrayType *
-            ((unit option) FArray.IsabelleMapping.ArrayType *
-              ((unit option) FArray.IsabelleMapping.ArrayType *
-                nat blue_witness)))
-            dres
-  val extract_res : 'a blue_witness -> ('a * ('a list * 'a list)) option
   val ndfs_impl :
     (nat -> nat list) ->
       (unit option) FArray.IsabelleMapping.ArrayType ->
         nat -> (nat * (nat list * nat list)) option
-  val glist_member : ('a -> 'a -> bool) -> 'a -> 'a list -> bool
-  val glist_insert : ('a -> 'a -> bool) -> 'a -> 'a list -> 'a list
-  val acc_of_list_impl :
-    nat list -> (unit option) FArray.IsabelleMapping.ArrayType
-  val succ_of_list_impl : (nat * nat) list -> nat -> nat list
   val acc_of_list_impl_int :
     IntInf.int list -> (unit option) FArray.IsabelleMapping.ArrayType
   val succ_of_list_impl_int : (IntInf.int * IntInf.int) list -> nat -> nat list
 end = struct
 
+datatype nat = Nat of IntInf.int;
+
+fun integer_of_nat (Nat x) = x;
+
+fun equal_nata m n = (((integer_of_nat m) : IntInf.int) = (integer_of_nat n));
+
 type 'a equal = {equal : 'a -> 'a -> bool};
 val equal = #equal : 'a equal -> 'a -> 'a -> bool;
 
-fun eq A_ a b = equal A_ a b;
+val equal_nat = {equal = equal_nata} : nat equal;
 
-datatype nat = Nat of IntInf.int;
-
-datatype num = One | Bit0 of num | Bit1 of num;
-
-fun map f [] = []
-  | map f (x :: xs) = f x :: map f xs;
-
-fun fold f (x :: xs) s = fold f xs (f x s)
-  | fold f [] s = s;
+fun less_eq_nat m n = IntInf.<= (integer_of_nat m, integer_of_nat n);
 
 type 'a ord = {less_eq : 'a -> 'a -> bool, less : 'a -> 'a -> bool};
 val less_eq = #less_eq : 'a ord -> 'a -> 'a -> bool;
 val less = #less : 'a ord -> 'a -> 'a -> bool;
 
-fun integer_of_nat (Nat x) = x;
-
-fun less_eq_nat m n = IntInf.<= (integer_of_nat m, integer_of_nat n);
-
 fun less_nat m n = IntInf.< (integer_of_nat m, integer_of_nat n);
 
 val ord_nat = {less_eq = less_eq_nat, less = less_nat} : nat ord;
-
-val one_nat : nat = Nat (1 : IntInf.int);
-
-fun foldli [] c f sigma = sigma
-  | foldli (x :: xs) c f sigma =
-    (if c sigma then foldli xs c f (f x sigma) else sigma);
-
-fun equal_nata m n = (((integer_of_nat m) : IntInf.int) = (integer_of_nat n));
-
-val equal_nat = {equal = equal_nata} : nat equal;
-
-fun plus_nat m n = Nat (IntInf.+ (integer_of_nat m, integer_of_nat n));
 
 val ord_integer =
   {less_eq = (fn a => fn b => IntInf.<= (a, b)),
     less = (fn a => fn b => IntInf.< (a, b))}
   : IntInf.int ord;
 
-fun max A_ a b = (if less_eq A_ a b then b else a);
-
-fun minus_nat m n =
-  Nat (max ord_integer 0 (IntInf.- (integer_of_nat m, integer_of_nat n)));
-
-fun times_nat m n = Nat (IntInf.* (integer_of_nat m, integer_of_nat n));
+datatype num = One | Bit0 of num | Bit1 of num;
 
 datatype 'a dres = DSUCCEEDi | DFAILi | DRETURN of 'a;
 
-fun equal_list A_ (a :: lista) [] = false
-  | equal_list A_ [] (a :: lista) = false
-  | equal_list A_ (aa :: listaa) (a :: lista) =
-    eq A_ aa a andalso equal_list A_ listaa lista
-  | equal_list A_ [] [] = true;
-
 datatype 'a blue_witness = NO_CYC | Reach of 'a * 'a list * 'a * 'a list |
   Circ of 'a * 'a list * 'a list;
+
+fun eq A_ a b = equal A_ a b;
+
+fun fold f (x :: xs) s = fold f xs (f x s)
+  | fold f [] s = s;
+
+fun foldli [] c f sigma = sigma
+  | foldli (x :: xs) c f sigma =
+    (if c sigma then foldli xs c f (f x sigma) else sigma);
+
+fun map fi [] = []
+  | map fi (x21a :: x22) = fi x21a :: map fi x22;
 
 fun dbind DFAILi f = DFAILi
   | dbind DSUCCEEDi f = DSUCCEEDi
@@ -357,14 +249,20 @@ fun iam_empty x = (fn _ => FArray.IsabelleMapping.array_of_list []) x;
 
 fun the_res (DRETURN x) = x;
 
-fun equal_blue_witness A_ (Circ (v, list1a, list2a))
-  (Reach (v1, list1, v2, list2)) = false
-  | equal_blue_witness A_ (Reach (v1, list1a, v2, list2a))
-    (Circ (v, list1, list2)) = false
-  | equal_blue_witness A_ (Circ (v, list1, list2)) NO_CYC = false
+fun equal_list A_ [] (x21 :: x22) = false
+  | equal_list A_ (x21 :: x22) [] = false
+  | equal_list A_ (x21 :: x22) (y21 :: y22) =
+    eq A_ x21 y21 andalso equal_list A_ x22 y22
+  | equal_list A_ [] [] = true;
+
+fun equal_blue_witness A_ (Reach (v1, list1a, v2, list2a))
+  (Circ (v, list1, list2)) = false
+  | equal_blue_witness A_ (Circ (v, list1a, list2a))
+    (Reach (v1, list1, v2, list2)) = false
   | equal_blue_witness A_ NO_CYC (Circ (v, list1, list2)) = false
-  | equal_blue_witness A_ (Reach (v1, list1, v2, list2)) NO_CYC = false
+  | equal_blue_witness A_ (Circ (v, list1, list2)) NO_CYC = false
   | equal_blue_witness A_ NO_CYC (Reach (v1, list1, v2, list2)) = false
+  | equal_blue_witness A_ (Reach (v1, list1, v2, list2)) NO_CYC = false
   | equal_blue_witness A_ (Circ (va, list1a, list2a)) (Circ (v, list1, list2)) =
     eq A_ va v andalso
       (equal_list A_ list1a list1 andalso equal_list A_ list2a list2)
@@ -377,7 +275,18 @@ fun equal_blue_witness A_ (Circ (v, list1a, list2a))
 
 fun map2set_insert i k s = i k () s;
 
+fun times_nat m n = Nat (IntInf.* (integer_of_nat m, integer_of_nat n));
+
+fun max A_ a b = (if less_eq A_ a b then b else a);
+
+fun minus_nat m n =
+  Nat (max ord_integer 0 (IntInf.- (integer_of_nat m, integer_of_nat n)));
+
 fun nat_of_integer k = Nat (max ord_integer 0 k);
+
+fun plus_nat m n = Nat (IntInf.+ (integer_of_nat m, integer_of_nat n));
+
+val one_nat : nat = Nat (1 : IntInf.int);
 
 fun iam_increment l idx =
   max ord_nat (minus_nat (plus_nat idx one_nat) l)

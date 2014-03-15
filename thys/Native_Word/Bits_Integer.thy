@@ -5,7 +5,7 @@
 header {* Bit operations for target language integers *}
 
 theory Bits_Integer imports
-  Bits_Int
+  More_Bits_Int
 begin
 
 lemmas [transfer_rule] =
@@ -22,9 +22,13 @@ bundle undefined_transfer = undefined_transfer[transfer_rule]
 
 section {* More lemmas about @{typ integer}s *}
 
+context
+includes integer.lifting
+begin
+
 lemma bitval_integer_transfer [transfer_rule]:
-  "(fun_rel op = pcr_integer) bitval bitval"
-by(auto simp add: bitval_def integer.pcr_cr_eq cr_integer_def split: bit.split)
+  "(rel_fun op = pcr_integer) of_bool of_bool"
+by(auto simp add: of_bool_def integer.pcr_cr_eq cr_integer_def split: bit.split)
 
 lemma integer_of_nat_less_0_conv [simp]: "\<not> integer_of_nat n < 0"
 by(transfer) simp
@@ -33,7 +37,7 @@ lemma int_of_integer_pow: "int_of_integer (x ^ n) = int_of_integer x ^ n"
 by(induct n) simp_all
 
 lemma pow_integer_transfer [transfer_rule]:
-  "(fun_rel pcr_integer (fun_rel op = pcr_integer)) op ^ op ^"
+  "(rel_fun pcr_integer (rel_fun op = pcr_integer)) op ^ op ^"
 by(auto 4 3 simp add: integer.pcr_cr_eq cr_integer_def int_of_integer_pow)
 
 lemma sub1_lt_0_iff [simp]: "Code_Numeral.sub n num.One < 0 \<longleftrightarrow> False"
@@ -57,10 +61,14 @@ section {* Bit operations on @{typ integer} *}
 text {* Bit operations on @{typ integer} are the same as on @{typ int} *}
 
 lift_definition bin_rest_integer :: "integer \<Rightarrow> integer" is bin_rest .
-lift_definition bin_last_integer :: "integer \<Rightarrow> bit" is bin_last .
-lift_definition Bit_integer :: "integer \<Rightarrow> bit \<Rightarrow> integer" is Bit .
+lift_definition bin_last_integer :: "integer \<Rightarrow> bool" is bin_last .
+lift_definition Bit_integer :: "integer \<Rightarrow> bool \<Rightarrow> integer" is Bit .
+
+end
 
 instantiation integer :: bitss begin
+context includes integer.lifting begin
+
 lift_definition bitAND_integer :: "integer \<Rightarrow> integer \<Rightarrow> integer" is "bitAND" .
 lift_definition bitOR_integer :: "integer \<Rightarrow> integer \<Rightarrow> integer" is "bitOR" .
 lift_definition bitXOR_integer :: "integer \<Rightarrow> integer \<Rightarrow> integer" is "bitXOR" .
@@ -75,6 +83,7 @@ lift_definition shiftr_integer :: "integer \<Rightarrow> nat \<Rightarrow> integ
 
 lift_definition msb_integer :: "integer \<Rightarrow> bool" is msb .
 instance ..
+end
 end
 
 abbreviation (input) wf_set_bits_integer
@@ -292,32 +301,38 @@ code_printing
   (Haskell) "Data'_Bits.complement" and
   (Scala) "_.unary'_~"
 
-lemma bitNOT_integer_code [code]:
-  fixes i :: integer shows
-  "NOT i = - i - 1"
-by transfer(simp add: int_not_def)
-
 code_printing constant bin_rest_integer \<rightharpoonup>
   (SML) "IntInf.div ((_), 2)" and
   (Haskell) "Data'_Bits.shiftr1" and
   (Scala) "_ >> 1" and
   (OCaml) "Big'_int.shift'_right'_big'_int _ 1"
 
+context
+includes integer.lifting
+begin
+
+lemma bitNOT_integer_code [code]:
+  fixes i :: integer shows
+  "NOT i = - i - 1"
+by transfer(simp add: int_not_def)
+
 lemma bin_rest_integer_code [code nbe]:
   "bin_rest_integer i = i div 2"
 by transfer(simp add: bin_rest_def)
 
 lemma bin_last_integer_code [code]:
-  "bin_last_integer i = (if i AND 1 = 0 then 0 else 1)"
+  "bin_last_integer i \<longleftrightarrow> i AND 1 \<noteq> 0"
 by transfer(rule bin_last_conv_AND)
 
 lemma bin_last_integer_nbe [code nbe]:
-  "bin_last_integer i = (if i mod 2 = 0 then 0 else 1)"
+  "bin_last_integer i \<longleftrightarrow> i mod 2 \<noteq> 0"
 by transfer(simp add: bin_last_def)
 
 lemma bitval_bin_last_integer [code_unfold]:
-  "bitval (bin_last_integer i) = i AND 1"
+  "of_bool (bin_last_integer i) = i AND 1"
 by transfer(rule bitval_bin_last)
+
+end
 
 definition integer_test_bit :: "integer \<Rightarrow> integer \<Rightarrow> bool"
 where [code del]: "integer_test_bit x n = (if n < 0 then undefined x n else x !! nat_of_integer n)"
@@ -354,6 +369,10 @@ code_printing constant integer_test_bit \<rightharpoonup>
   (OCaml) "Bits'_Integer.test'_bit" and
   (Scala) "Bits'_Integer.testBit"
 
+context
+includes integer.lifting
+begin
+
 lemma lsb_integer_code [code]:
   fixes x :: integer shows
   "lsb x = x !! 0"
@@ -370,6 +389,8 @@ lemma set_bit_integer_conv_masks:
   fixes x :: integer shows
   "set_bit x i b = (if b then x OR (1 << i) else x AND NOT (1 << i))"
 by transfer(simp add: int_set_bit_conv_ops)
+
+end
 
 code_printing constant integer_set_bit \<rightharpoonup>
   (SML) "Bits'_Integer.set'_bit" and
@@ -399,6 +420,10 @@ lemma shiftl_integer_code [code]:
   "x << n = integer_shiftl x (integer_of_nat n)"
 by(auto simp add: integer_shiftl_def)
 
+context
+includes integer.lifting
+begin
+
 lemma shiftl_integer_conv_mult_pow2:
   fixes x :: integer shows
   "x << n = x * 2 ^ n"
@@ -412,6 +437,8 @@ lemma integer_shiftl_code [code]:
 by(simp_all add: integer_shiftl_def shiftl_integer_def)
   (transfer, simp, metis ab_semigroup_mult_class.mult_ac(1) comm_semiring_1_class.normalizing_semiring_rules(7) int_shiftl_numeral(1) mult_numeral_1 shiftl_int_def)
 
+end
+
 code_printing constant integer_shiftl \<rightharpoonup>
   (SML) "Bits'_Integer.shiftl" and
   (Haskell) "Data'_Bits.shiftlUnbounded" and
@@ -422,7 +449,7 @@ definition integer_shiftr :: "integer \<Rightarrow> integer \<Rightarrow> intege
 where [code del]: "integer_shiftr x n = (if n < 0 then undefined x n else x >> nat_of_integer n)"
 
 lemma shiftr_integer_conv_div_pow2: 
-  fixes x :: integer shows
+  includes integer.lifting fixes x :: integer shows
   "x >> n = x div 2 ^ n"
 by transfer(simp add: shiftr_int_def)
 
@@ -453,9 +480,13 @@ lemma integer_shiftr_code [code]:
    integer_shiftr (Code_Numeral.Neg (Num.inc n')) (Code_Numeral.sub n num.One)"
 by(simp_all add: integer_shiftr_def shiftr_integer_def)
 
+context
+includes integer.lifting
+begin
+
 lemma Bit_integer_code [code]:
-  "Bit_integer i 0 = i << 1"
-  "Bit_integer i 1 = (i << 1) + 1"
+  "Bit_integer i False = i << 1"
+  "Bit_integer i True = (i << 1) + 1"
 by(transfer, simp add: Bit_def shiftl_int_def)+
 
 lemma msb_integer_code [code]:
@@ -483,10 +514,16 @@ lift_definition and_pinteger :: "integer \<Rightarrow> integer \<Rightarrow> int
 lift_definition or_pinteger :: "integer \<Rightarrow> integer \<Rightarrow> integer" is or_pint .
 lift_definition xor_pinteger :: "integer \<Rightarrow> integer \<Rightarrow> integer" is xor_pint .
 
+end
+
 code_printing
   constant and_pinteger \<rightharpoonup> (OCaml) "Big'_int.and'_big'_int"
 | constant or_pinteger  \<rightharpoonup> (OCaml) "Big'_int.or'_big'_int"
 | constant xor_pinteger \<rightharpoonup> (OCaml) "Big'_int.xor'_big'_int"
+
+context
+includes integer.lifting natural.lifting
+begin
 
 lemma and_pinteger_unfold: 
   "and_pinteger i j = (if i < 0 \<or> j < 0 then undefined i j else i AND j)"
@@ -566,9 +603,15 @@ lift_definition or_pninteger :: "integer \<Rightarrow> integer \<Rightarrow> int
 lift_definition log2_integer :: "integer \<Rightarrow> natural" is log2 .
 lift_definition bin_mask_integer :: "natural \<Rightarrow> integer" is bin_mask .
 
+end
+
 code_printing 
   constant and_pninteger \<rightharpoonup> (OCaml) "Bits'_Integer.and'_pninteger"
 | constant or_pninteger  \<rightharpoonup> (OCaml) "Bits'_Integer.or'_pninteger"
+
+context
+includes integer.lifting natural.lifting
+begin
 
 lemma and_pninteger_unfold:
   "and_pninteger i j = (if i \<ge> 0 \<and> j < 0 then i AND j else undefined i j)"
@@ -630,7 +673,7 @@ lemma bitAND_integer_unfold:
   "x AND y =
    (if x = 0 then 0
     else if x = -1 then y
-    else Bit_integer (bin_rest_integer x AND bin_rest_integer y) (bin_last_integer x AND bin_last_integer y))"
+    else Bit_integer (bin_rest_integer x AND bin_rest_integer y) (bin_last_integer x \<and> bin_last_integer y))"
 by transfer(rule bitAND_int.simps)
 
 lemma log2_simps [simp]:
@@ -747,6 +790,8 @@ lemma or_pinteger: -- {* justification for OCaml implementation of @{term or_pni
   "\<lbrakk>  x \<ge> 0; y < 0; k \<ge> log2_integer x; k \<ge> log2_integer (- y) \<rbrakk>
   \<Longrightarrow> or_pninteger x y = - (and_pinteger (xor_pinteger (bin_mask_integer k) x) (- y - 1)) - 1"
 by(transfer)(rule or_pnint)
+
+end
 
 hide_const (open)
   log2 and_pint and_pnint or_pint or_pnint xor_pint

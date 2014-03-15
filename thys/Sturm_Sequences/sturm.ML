@@ -1,14 +1,14 @@
 
 signature STURM =
 sig
-  val sturm_conv : theory -> conv
+  val sturm_conv : Proof.context -> conv
   val sturm_tac :  Proof.context -> bool -> int -> tactic
 end;
 
 structure Sturm : STURM =
 struct
 
-  fun sturm_conv thy = Code_Runtime.dynamic_holds_conv thy
+  fun sturm_conv ctxt = Code_Runtime.dynamic_holds_conv ctxt (* FIXME prefer static converson? *)
 (*    [@{const_name count_roots_between}, @{const_name count_roots},
      @{const_name count_roots_above},@{const_name count_roots_below},
      @{const_name Trueprop}, @{const_name Rat.of_int}, 
@@ -72,16 +72,15 @@ struct
                                     (Const ("Pure.term", _) $ _) $ prop => prop
                                  | _ => prop
         val (lhs,rhs) = prop |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
-        val thy = Proof_Context.theory_of ctxt
         val vars = Term.add_vars rhs []
     in case vars of
           [v] => let val (idxname,ty) = v
-                      val n = Code_Evaluation.dynamic_value thy lhs
+                      val n = Code_Evaluation.dynamic_value ctxt lhs  (* FIXME prefer static converson? *)
                   in case n of
                      NONE => Seq.empty
                    | SOME n => 
                        let val n' = (if ty = @{typ nat} then "" else "%_. ") ^ Int.toString (HOLogic.dest_nat n)
-                       in  Seq.single (read_instantiate ctxt [(idxname, n')] thm)
+                       in  Seq.single (Rule_Insts.read_instantiate ctxt [(idxname, n')] [] thm)
                        end
                   end
         | _ => Seq.single thm
@@ -140,8 +139,7 @@ struct
     end;
 
   fun sturm_main_tac ctxt keep_goal i thm =
-    let val thy = Proof_Context.theory_of ctxt
-        val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
+    let val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
         val prop = case prop of Const ("prop", _) $ prop => prop
                                | _  => prop
         val prop = case prop of Const ("Pure.conjunction", _) $ 
@@ -154,7 +152,7 @@ struct
                   => sturm_card_eq_tac
               | _ => sturm_prop_tac;
     in  ((tac ctxt i
-         THEN CONVERSION (sturm_conv thy) i
+         THEN CONVERSION (sturm_conv ctxt) i
          THEN rtac @{thm TrueI} i
         ) ORELSE (if keep_goal then all_tac else no_tac)) thm
     end;
@@ -173,11 +171,11 @@ struct
       end
 
     fun sturm_tac ctxt keep_goal i =
-        prune_params_tac
-        THEN TRY (Object_Logic.full_atomize_tac i)
+        prune_params_tac ctxt
+        THEN TRY (Object_Logic.full_atomize_tac ctxt i)
         THEN TRY (EqSubst.eqsubst_tac ctxt [1] @{thms sturm_imp_conv} i)
         THEN TRY (convert_meta_spec_tac ctxt i)
-        THEN TRY (Object_Logic.full_atomize_tac i)
+        THEN TRY (Object_Logic.full_atomize_tac ctxt i)
         THEN sturm_preprocess_tac ctxt i
         THEN sturm_main_tac ctxt keep_goal i
 

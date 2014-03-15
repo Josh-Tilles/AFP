@@ -56,14 +56,11 @@ qed
 subsection {* Basic Definitions and Facts *}
 
 definition almost_full_on :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "almost_full_on P A \<equiv> \<forall>f. (\<forall>i. f i \<in> A) \<longrightarrow> good P f"
+  "almost_full_on P A \<longleftrightarrow> (\<forall>f \<in> SEQ A. good P f)"
 
 lemma (in mbs) mbs':
   assumes "\<not> almost_full_on P A"
-  shows "\<exists>g.
-    bad P g \<and>
-    (\<forall>n. min_at P g n) \<and>
-    (\<forall>i. g i \<in> A)"
+  shows "\<exists>m \<in> BAD P. \<forall>g. (m, g) \<in> gseq \<longrightarrow> good P g"
   using assms and mbs
   unfolding almost_full_on_def by blast
 
@@ -71,7 +68,7 @@ lemma almost_full_onD:
   fixes f :: "nat \<Rightarrow> 'a" and A :: "'a set"
   assumes "almost_full_on P A" and "\<And>i. f i \<in> A"
   obtains i j where "i < j" and "P (f i) (f j)"
-  using assms unfolding almost_full_on_def good_def by blast
+  using assms unfolding almost_full_on_def by blast
 
 lemma almost_full_onI [Pure.intro]:
   "(\<And>f. \<forall>i. f i \<in> A \<Longrightarrow> good P f) \<Longrightarrow> almost_full_on P A"
@@ -163,7 +160,7 @@ proof
   presume *: "\<And>i::nat. f i \<in> A"
   let ?f = "\<lambda>i. h (f i)"
   from * and subset have "\<And>i. h (f i) \<in> B" by auto
-  with `almost_full_on Q B` [unfolded almost_full_on_def, THEN spec, of ?f]
+  with `almost_full_on Q B` [unfolded almost_full_on_def, THEN bspec, of ?f]
     show "good ?P f" unfolding good_def by blast
 qed simp
 
@@ -225,7 +222,7 @@ proof (rule ccontr)
   assume "\<not> almost_full_on P\<^sup>=\<^sup>= A"
   then obtain f :: "nat \<Rightarrow> 'a" where *: "\<And>i. f i \<in> A"
     and "\<forall>i j. i < j \<longrightarrow> \<not> P\<^sup>=\<^sup>= (f i) (f j)"
-    unfolding almost_full_on_def good_def by blast
+    unfolding almost_full_on_def by (auto dest: badE)
   with `total_on P A` have "\<forall>i j. i < j \<longrightarrow> P (f j) (f i)"
     unfolding total_on_def by blast
   then have "\<And>i. P (f (Suc i)) (f i)" by auto
@@ -391,7 +388,7 @@ proof
       ultimately have "infinite ?J" unfolding ** [symmetric] by (rule Diff_infinite_finite)
       then have "\<forall>i. \<exists>j>i. j \<in> ?J" by (simp add: infinite_nat_iff_unbounded)
       then interpret infinitely_many1 "\<lambda>i. i \<in> ?J" by (unfold_locales) assumption
-      let ?f = "\<lambda>i. Sum_Type.Projr (f (enum i))"
+      let ?f = "\<lambda>i. projr (f (enum i))"
       have ***: "\<forall>i. \<exists>x\<in>B. f (enum i) = Inr x" using enum_P by auto
       have B: "\<forall>i. ?f i \<in> B"
       proof
@@ -421,7 +418,7 @@ proof
       assume "infinite ?I"
       then have "\<forall>i. \<exists>j>i. j \<in> ?I" by (simp add: infinite_nat_iff_unbounded)
       then interpret infinitely_many1 "\<lambda>i. i \<in> ?I" by (unfold_locales) assumption
-      let ?f = "\<lambda>i. Sum_Type.Projl (f (enum i))"
+      let ?f = "\<lambda>i. projl (f (enum i))"
       have ***: "\<forall>i. \<exists>x\<in>A. f (enum i) = Inl x" using enum_P by auto
       have A: "\<forall>i. ?f i \<in> A"
       proof
@@ -488,49 +485,31 @@ lemma trans_subseq:
   fixes f :: "'a seq"
     and P (infix "\<le>\<^sub>1" 50)
     and Q (infix "\<le>\<^sub>2" 50)
-  assumes *: "\<forall>i j. i < j \<longrightarrow> f i \<le>\<^sub>1 f j \<or> f i \<le>\<^sub>2 f j"
+  assumes "\<forall>i j. i < j \<longrightarrow> f i \<le>\<^sub>1 f j \<or> f i \<le>\<^sub>2 f j"
   shows "\<exists>\<phi>::nat seq. (\<forall>i j. i < j \<longrightarrow> \<phi> i < \<phi> j) \<and>
     ((\<forall>i j. i < j \<longrightarrow> f (\<phi> i) \<le>\<^sub>1 f (\<phi> j)) \<or>
      (\<forall>i j. i < j \<longrightarrow> f (\<phi> i) \<le>\<^sub>2 f (\<phi> j)))"
 proof -
-  def h \<equiv> "\<lambda>I. if (\<exists>i j. i \<in> I \<and> j \<in> I \<and> i < j \<and> f i \<le>\<^sub>1 f j) then 0 else Suc 0"
-  have inf: "infinite (UNIV::nat set)" by blast
-  have "\<forall>i\<in>UNIV. \<forall>j\<in>UNIV. i \<noteq> j \<longrightarrow> h {i, j} < 2" by (auto simp: h_def)
-  from Ramsey2 [OF inf this] obtain I :: "nat set" and c
-    where "infinite I" and "c < 2" and **: "\<forall>i\<in>I. \<forall>j\<in>I. i \<noteq> j \<longrightarrow> h {i, j} = c" by blast
-  from `infinite I` have "\<forall>i. \<exists>j>i. j \<in> I" by (simp add: infinite_nat_iff_unbounded)
-  then interpret infinitely_many1 "\<lambda>i. i \<in> I" by (unfold_locales) assumption
-  def [simp]: \<phi> \<equiv> "enum"
-  let ?f = "f \<circ> \<phi>"
-  from `c < 2` have "c = 0 \<or> c = 1" by arith
-  then show ?thesis
-  proof
-    assume [simp]: "c = 0"
-    have "\<forall>i j. i < j \<longrightarrow> ?f i \<le>\<^sub>1 ?f j"
-    proof (intro allI impI)
-      fix i j :: nat
-      assume "i < j"
-      with enum_less have "\<phi> i < \<phi> j" by auto
-      moreover have "\<phi> i \<in> I" and "\<phi> j \<in> I" using enum_P by auto
-      ultimately have "h {\<phi> i, \<phi> j} = 0" using ** by auto
-      with `\<phi> i < \<phi> j` show "?f i \<le>\<^sub>1 ?f j"
-        by (auto simp: h_def) (metis Suc_neq_Zero order_less_not_sym)
-    qed
-    then show ?thesis using enum_less by auto
-  next
-    assume [simp]: "c = 1"
-    have "\<forall>i j. i < j \<longrightarrow> ?f i \<le>\<^sub>2 ?f j"
-    proof (intro allI impI)
-      fix i j :: nat
-      assume "i < j"
-      with enum_less have "\<phi> i < \<phi> j" by auto
-      moreover have "\<phi> i \<in> I" and "\<phi> j \<in> I" using enum_P by auto
-      ultimately have "h {\<phi> i, \<phi> j} = 1" using ** by auto
-      with `\<phi> i < \<phi> j` show "?f i \<le>\<^sub>2 ?f j"
-        using * by (auto simp: h_def) (metis Suc_n_not_n)
-    qed
-    then show ?thesis using enum_less by auto
-  qed
+  def h \<equiv> "\<lambda>I. if (\<exists>i j. I = {i, j} \<and> i < j \<and> f i \<le>\<^sub>1 f j) then 0 else Suc 0"
+  have "infinite (UNIV :: nat set)"
+    and "\<forall>i\<in>UNIV. \<forall>j\<in>UNIV. i \<noteq> j \<longrightarrow> h {i, j} < 2" by (auto simp: h_def)
+  from Ramsey2 [OF this] obtain I :: "nat set" and c
+    where "infinite I" and "c < 2" and *: "\<forall>i\<in>I. \<forall>j\<in>I. i \<noteq> j \<longrightarrow> h {i, j} = c" by blast
+  then interpret infinitely_many1 "\<lambda>i. i \<in> I"
+    by (unfold_locales) (simp add: infinite_nat_iff_unbounded)
+  def \<phi> \<equiv> enum
+
+  have less: "\<forall>i j. i < j \<longrightarrow> \<phi> i < \<phi> j" using enum_less by (simp add: \<phi>_def)
+  then have h: "\<And>i j. i < j \<Longrightarrow> h {\<phi> i, \<phi> j} = c" using enum_P and * by (force simp add: \<phi>_def)
+  { assume "c = 0"
+    then have "\<forall>i j. i < j \<longrightarrow> f (\<phi> i) \<le>\<^sub>1 f (\<phi> j)"
+      using h and less by (auto simp: h_def doubleton_eq_iff) (metis Suc_neq_Zero order_less_not_sym) }
+  moreover
+  { assume "c = 1"
+    then have "\<forall>i j. i < j \<longrightarrow> f (\<phi> i) \<le>\<^sub>2 f (\<phi> j)"
+      using h and less and assms by (auto simp: h_def) (metis n_not_Suc_n) }
+  moreover have "c = 0 \<or> c = 1" using `c < 2` by force
+  ultimately show ?thesis using less by blast
 qed
 
 lemma almost_full_on_Sigma:
@@ -547,7 +526,7 @@ proof (rule ccontr)
     by (metis SigmaE fst_conv, metis SigmaE snd_conv)
   from bad have "\<forall>i j. i < j \<longrightarrow> \<not> ?P (f i) (f j)" by (auto simp: good_def)
   then have "\<forall>i j. i < j \<longrightarrow> ?W (f i) (f j) \<or> ?B (f i) (f j)"
-    unfolding prod_le_def by (metis (lifting, mono_tags) prod_case_beta)
+    unfolding prod_le_def by (metis (lifting, mono_tags) case_prod_beta)
   from trans_subseq [of ?W _ ?B, OF this]
     obtain g :: "nat seq" where mono: "\<forall>i j. i < j \<longrightarrow> g i < g j"
       and or: "(\<forall>i j. i < j \<longrightarrow> ?W (f (g i)) (f (g j))) \<or>
@@ -699,14 +678,15 @@ proof (rule ccontr)
   note refl = reflp_on_list_hembeq [of P A]
 
   assume "\<not> ?thesis"
-  then obtain f where "\<forall>i. f i \<in> lists A" and "bad ?P f"
+  then obtain f where "f \<in> list_mbs.BAD ?P"
     unfolding almost_full_on_def by blast
-  from list_mbs.mbs [OF this] obtain m where bad: "bad ?P m"
-    and mb: "\<And>n. mbs.min_at suffix ?A ?P m n"
-    and in_lists: "\<And>i. m i \<in> ?A" by blast
+  from list_mbs.mbs [OF this] obtain m
+    where bad: "m \<in> list_mbs.BAD ?P"
+    and min: "\<forall>g. (m, g) \<in> list_mbs.gseq \<longrightarrow> good ?P g" ..
   then have non_empty: "\<And>i. m i \<noteq> []" using bad_imp_not_Nil by auto
   moreover obtain h t where [simp]: "\<And>i. h i = hd (m i)" "\<And>i. t i = tl (m i)" by force
   ultimately have [simp]: "\<And>i. hd (m i) # tl (m i) = m i" by auto
+  from bad and min have in_lists: "\<And>i. m i \<in> ?A" and "bad ?P m" by auto
 
   {
     assume "\<exists>\<phi>::nat seq. (\<forall>i. \<phi> i \<ge> \<phi> 0) \<and> bad ?P (t \<circ> \<phi>)"
@@ -739,12 +719,14 @@ proof (rule ccontr)
       } ultimately show False by arith
     qed
     have "\<forall>i. c i \<in> lists A"
-      using in_lists and non_empty
-      by (simp add: c_def) (metis suffix_lists suffix_tl)
+      using bad and min and non_empty
+      by (auto simp: c_def) (metis in_lists_conv_set suffix_lists suffix_tl)
     moreover have "\<forall>i<?n. c i = m i" by auto
     moreover have "suffix (c ?n) (m ?n)" using non_empty by auto
     ultimately have "good ?P c"
-      using mb [of ?n, unfolded list_mbs.min_at_def, rule_format, of c] by blast
+      using bad and min
+      apply (auto simp: list_mbs.gseq_iff)
+      by (metis `\<And>i. t i = tl (m i)` c_def diff_self_eq_0 less_not_refl)
     with `bad ?P c` have False by blast
   }
   then have no_special_bad_seq: "\<not> (\<exists>\<phi>. (\<forall>i. \<phi> i \<ge> \<phi> 0) \<and> bad ?P (t \<circ> \<phi>))" by blast

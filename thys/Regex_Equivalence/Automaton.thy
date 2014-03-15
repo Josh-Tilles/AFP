@@ -4,7 +4,7 @@ header "Regular Expressions Equivalence Framework"
 
 (*<*)
 theory Automaton
-imports "../Regular-Sets/Regular_Exp" Rtrancl_While
+imports "../Regular-Sets/Regular_Exp" "~~/src/HOL/Library/While_Combinator"
 begin
 (*>*)
 

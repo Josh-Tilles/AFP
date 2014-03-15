@@ -1571,7 +1571,6 @@ proof -
                 dest!: brc_inv_imp_WssQ) [2]
     prefer 6
     apply (simp add: brc_\<alpha>_def)
-    apply blast
     apply (case_tac \<Sigma>)
     apply (auto 
       simp add: brc_invar_def brc_invar_add_def brc_inner_step_def 
@@ -1929,7 +1928,6 @@ proof -
             brec_invar_inner_def) [1]
     prefer 6
     apply (simp add: brec_\<alpha>_def)
-    apply blast
     apply (case_tac \<Sigma>)
     apply (auto 
       simp add: brec_invar_add_def brec_inner_step_def Let_def hm_correct 
@@ -2397,7 +2395,6 @@ export_code
   (*ls_size hs_size rs_size*)
   in SML 
   module_name Ta
-  file -
 
 
 export_code 
@@ -2414,7 +2411,6 @@ export_code
   (*ls_size hs_size rs_size*)
   in Haskell 
   module_name Ta
-  file -
   (string_classes)
 
 export_code 
@@ -2431,7 +2427,6 @@ export_code
   (*ls_size hs_size rs_size*)
   in OCaml 
   module_name Ta
-  file -
 
 (* If this statement fails with an error from ML, this indicates a problem 
   with the code-generator. The most frequent problem in this context is, that

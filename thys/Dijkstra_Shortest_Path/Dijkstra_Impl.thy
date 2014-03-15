@@ -29,7 +29,7 @@ locale dijkstraC =
   and mr_ops :: "('V, (('V,'W) path \<times> 'W), 'mr,'more_mr) map_ops_scheme"
   and qw_ops :: "('V ,'W infty,'qw,'more_qw) uprio_ops_scheme" 
 begin
-  definition "\<alpha>sc == map_pair qw.\<alpha> mr.\<alpha>"
+  definition "\<alpha>sc == map_prod qw.\<alpha> mr.\<alpha>"
   definition "dinvarC_add == \<lambda>(wl,res). qw.invar wl \<and> mr.invar res"
 
   definition cdinit :: "'G \<Rightarrow> 'V \<Rightarrow> ('qw\<times>'mr) nres" where
@@ -229,15 +229,15 @@ setup Locale_Code.close_block
 definition "hrf_dijkstra \<equiv> hrf.idijkstra"
 lemmas hrf_dijkstra_correct = hrf.idijkstra_correct[folded hrf_dijkstra_def]
 
-export_code hrf_dijkstra in SML file -
-export_code hrf_dijkstra in OCaml file -
-export_code hrf_dijkstra in Haskell file -
-export_code hrf_dijkstra in Scala file -
+export_code hrf_dijkstra in SML
+export_code hrf_dijkstra in OCaml
+export_code hrf_dijkstra in Haskell
+export_code hrf_dijkstra in Scala
 
 definition hrfn_dijkstra :: "(nat,nat) hlg \<Rightarrow> _" 
   where "hrfn_dijkstra \<equiv> hrf_dijkstra"
 
-export_code hrfn_dijkstra in SML file -
+export_code hrfn_dijkstra in SML
 
 lemmas hrfn_dijkstra_correct = 
   hrf_dijkstra_correct[where ?'a = nat and ?'b = nat, folded hrfn_dijkstra_def]

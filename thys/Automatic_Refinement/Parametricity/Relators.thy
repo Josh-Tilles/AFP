@@ -405,10 +405,9 @@ ML {*
       natural_relator_from_term (t as Const (name,T)) = let
         fun err msg = raise TERM (msg,[t])
   
-        open HOLogic
         val (argTs,bodyT) = strip_type T
-        val (conTs,absTs) = argTs |> map (dest_setT #> dest_prodT) |> split_list
-        val (bconT,babsT) = bodyT |> dest_setT |> dest_prodT
+        val (conTs,absTs) = argTs |> map (HOLogic.dest_setT #> HOLogic.dest_prodT) |> split_list
+        val (bconT,babsT) = bodyT |> HOLogic.dest_setT |> HOLogic.dest_prodT
         val (Tcon,bconTs) = dest_Type bconT
         val (Tcon',babsTs) = dest_Type babsT
   
@@ -441,7 +440,7 @@ ML {*
         declare_natural_relator (natural_relator_from_term t) context
         handle 
           TERM (msg,_) => warn msg
-        | _ => warn ""
+        | exn => if Exn.is_interrupt exn then reraise exn else warn ""
       end
     in
       val natural_relator_attr = Scan.repeat1 Args.term >> (fn ts => 

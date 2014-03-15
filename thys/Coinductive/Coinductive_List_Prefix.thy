@@ -60,8 +60,8 @@ instantiation llist :: (type) semilattice_inf begin
 
 definition [code del]:
   "inf xs ys = 
-   llist_unfold (\<lambda>(xs, ys). xs \<noteq> LNil \<longrightarrow> ys \<noteq> LNil \<longrightarrow> lhd xs \<noteq> lhd ys)
-     (lhd \<circ> snd) (map_pair ltl ltl) (xs, ys)"
+   unfold_llist (\<lambda>(xs, ys). xs \<noteq> LNil \<longrightarrow> ys \<noteq> LNil \<longrightarrow> lhd xs \<noteq> lhd ys)
+     (lhd \<circ> snd) (map_prod ltl ltl) (xs, ys)"
 
 lemma llist_inf_simps [simp, code, nitpick_simp]:
   "inf LNil xs = LNil"
@@ -97,7 +97,7 @@ qed
 
 end
 
-lemma llength_inf [simp]: "llength (xs \<sqinter> ys) = llcp xs ys"
+lemma llength_inf [simp]: "llength (inf xs ys) = llcp xs ys"
 by(coinduction arbitrary: xs ys rule: enat_coinduct)(auto simp add: llcp_eq_0_iff epred_llength epred_llcp)
 
 end

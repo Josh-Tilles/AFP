@@ -52,7 +52,7 @@ sig
   val supp_rel_ty: typ -> typ
   val supp_rel_const: typ -> term
   val mk_supp_rel_ty: typ -> term -> term -> term
-  val mk_supp_rel: term -> term -> term		       
+  val mk_supp_rel: term -> term -> term
 
   val supports_const: typ -> term
   val mk_supports_ty: typ -> term -> term -> term
@@ -99,9 +99,9 @@ sig
   val transform_prem2: Proof.context -> string list -> thm -> thm
 
   (* transformation into the object logic *)
-  val atomize: thm -> thm
-  val atomize_rule: int -> thm -> thm 
-  val atomize_concl: thm -> thm
+  val atomize: Proof.context -> thm -> thm
+  val atomize_rule: Proof.context -> int -> thm -> thm 
+  val atomize_concl: Proof.context -> thm -> thm
 
   (* applies a tactic to a formula composed of conjunctions *)
   val conj_tac: (int -> tactic) -> int -> tactic
@@ -359,7 +359,7 @@ fun pat_completeness_simp simps ctxt =
 val size_ss =
   simpset_of (put_simpset HOL_ss @{context}
    addsimprocs [@{simproc natless_cancel_numerals}]
-   addsimps @{thms in_measure wf_measure sum.cases add_Suc_right add.right_neutral 
+   addsimps @{thms in_measure wf_measure sum.case add_Suc_right add.right_neutral 
      zero_less_Suc prod.size(1) mult_Suc_right})
 
 val natT = @{typ nat}
@@ -374,7 +374,7 @@ fun prod_size_const T1 T2 =
   end
 
 fun snd_const T1 T2 =
-  Const ("Product_Type.snd", HOLogic.mk_prodT (T1, T2) --> T2) 
+  Const (@{const_name Product_Type.snd}, HOLogic.mk_prodT (T1, T2) --> T2) 
 
 
 fun mk_measure_trm f ctxt T = 
@@ -390,7 +390,7 @@ fun prove_termination_ind ctxt =
     fun mk_size_measure T =
       case T of    
         (Type (@{type_name Sum_Type.sum}, [T1, T2])) =>
-           SumTree.mk_sumcase T1 T2 natT (mk_size_measure T1) (mk_size_measure T2)
+           Sum_Tree.mk_sumcase T1 T2 natT (mk_size_measure T1) (mk_size_measure T2)
       | (Type (@{type_name Product_Type.prod}, [T1, T2])) =>
            HOLogic.mk_comp (mk_size_measure T2, snd_const T1 T2)
       | _ => HOLogic.size_const T
@@ -406,7 +406,7 @@ let
   fun mk_size_measure T =
     case T of    
       (Type (@{type_name Sum_Type.sum}, [T1, T2])) =>
-         SumTree.mk_sumcase T1 T2 natT (mk_size_measure T1) (mk_size_measure T2)
+         Sum_Tree.mk_sumcase T1 T2 natT (mk_size_measure T1) (mk_size_measure T2)
     | (Type (@{type_name Product_Type.prod}, [T1, T2])) =>
          prod_size_const T1 T2 $ (mk_size_measure T1) $ (mk_size_measure T2)
     | _ => HOLogic.size_const T
@@ -492,10 +492,10 @@ fun transform_prem2 ctxt names thm =
 
 
 (* transforms a theorem into one of the object logic *)
-val atomize = Conv.fconv_rule Object_Logic.atomize o forall_intr_vars;
-fun atomize_rule i thm =
-  Conv.fconv_rule (Conv.concl_conv i Object_Logic.atomize) thm
-fun atomize_concl thm = atomize_rule (length (prems_of thm)) thm
+fun atomize ctxt = Conv.fconv_rule (Object_Logic.atomize ctxt) o forall_intr_vars;
+fun atomize_rule ctxt i thm =
+  Conv.fconv_rule (Conv.concl_conv i (Object_Logic.atomize ctxt)) thm
+fun atomize_concl ctxt thm = atomize_rule ctxt (length (prems_of thm)) thm
 
 
 (* applies a tactic to a formula composed of conjunctions *)

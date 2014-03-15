@@ -15,6 +15,7 @@ type_synonym format = "nat \<times> nat"
 type_synonym representation = "nat \<times> nat \<times> nat" 
 
 subsection {*Derived parameters for floating point formats*}
+
 fun expwidth :: "format \<Rightarrow> nat" where
 "expwidth (ew, fw) = ew" 
 
@@ -24,16 +25,14 @@ fun fracwidth :: "format \<Rightarrow> nat" where
 definition wordlength :: "format \<Rightarrow> nat" where
 "wordlength x = (expwidth(x) + fracwidth(x) + 1)"
 
-
 definition emax :: "format \<Rightarrow> nat" where
 "emax x =  2^(expwidth x) - 1"
-
 
 definition bias :: "format \<Rightarrow> nat" where
 "bias x = 2^(expwidth x - 1) - 1 "
 
-
 subsection {*Predicates for the four IEEE formats*}
+
 definition is_single :: "format \<Rightarrow> bool" where
 "is_single x = ((expwidth x = 8) \<and> (wordlength x = 32))"
 
@@ -57,29 +56,24 @@ fun fraction :: "representation \<Rightarrow> nat" where
 "fraction (s, e, f) = f"
 
 subsection{*Partition of numbers into disjoint classes*}
+
 definition is_nan :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_nan x a = ((exponent a = emax x) \<and> \<not>(fraction a = 0))"
-
 
 definition is_infinity :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_infinity x a = ((exponent a = emax x) \<and> (fraction a = 0))"
 
-
 definition is_normal :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_normal x a = ((0 < exponent a) \<and> (exponent a < emax x))"
-
 
 definition is_denormal :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_denormal x a = ((exponent a = 0) \<and> \<not>(fraction a = 0))"
 
-
 definition is_zero :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_zero x a = ((exponent a = 0) \<and> (fraction a = 0))"
 
-
 definition is_valid :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_valid x a = (sign a < 2 \<and> (exponent a < 2^(expwidth x) \<and> (fraction a < 2^(fracwidth x))))"
-
 
 definition is_finite :: "format \<Rightarrow> representation \<Rightarrow> bool" where
 "is_finite x a = ((is_valid x a) \<and> ((is_normal x a) \<or> (is_denormal x a) \<or> (is_zero x a)))"
@@ -90,12 +84,8 @@ subsection{*Special values*}
 definition plus_infinity :: "format \<Rightarrow> representation" where
 "plus_infinity x = (0, emax x, 0)"
 
-declare plus_infinity_def [simp]
-
 definition minus_infinity :: "format \<Rightarrow> representation" where
 "minus_infinity x = (1, emax x, 0)"
-
-declare minus_infinity_def [simp]
 
 definition plus_zero :: "format \<Rightarrow> representation" where
 "plus_zero x = (0, 0, 0)"
@@ -110,12 +100,8 @@ declare minus_zero_def [simp]
 definition topfloat :: "format \<Rightarrow> representation" where
 "topfloat x = (0, (emax x - 1), 2^(fracwidth x) - 1)"
 
-declare topfloat_def [simp]
-
 definition bottomfloat :: "format \<Rightarrow> representation" where
 "bottomfloat x = (1, (emax x - 1), 2^(fracwidth x) - 1)" 
-
-declare bottomfloat_def [simp]
 
 subsection{*Negation operation on floating point values*}
 
@@ -140,19 +126,13 @@ definition largest :: "format \<Rightarrow> real" where
 "largest x = (2^(emax x - 1) / 2^bias x) * (2 - 1/(2^fracwidth x))"
 
 
-declare largest_def [simp]
-
 (*threshold, used for checking overflow *)
 definition threshold :: "format \<Rightarrow> real" where
 "threshold x = (2^(emax x - 1) / 2^bias x) * (2 - 1/(2^(Suc(fracwidth x))))"
 
-declare threshold_def [simp]
-
 (*ulp*)
 definition ulp :: "format \<Rightarrow> representation \<Rightarrow> real" where
 "ulp x a = valof x (0, exponent a, 1) - valof x (0, exponent a, 0)"
-
-declare ulp_def [simp]
 
 (*Enumerated type for rounding modes*)
 datatype roundmode = To_nearest | float_To_zero | To_pinfinity | To_ninfinity
@@ -172,7 +152,6 @@ where
 
 subsection{*Rounding*}
 fun round :: "format \<Rightarrow> roundmode \<Rightarrow> real \<Rightarrow> representation" where
-
  "round x To_nearest y = 
            (if y \<le> -(threshold x) 
             then minus_infinity x 
@@ -180,14 +159,14 @@ fun round :: "format \<Rightarrow> roundmode \<Rightarrow> real \<Rightarrow> re
             then plus_infinity x 
             else (closest (valof x) (\<lambda>a. even (fraction a)) {a. is_finite x a} y) )"
 
-|"round x float_To_zero y = 
+| "round x float_To_zero y = 
            (if y < -(largest x) 
             then (bottomfloat x)
             else if y > largest x
             then (topfloat x)
             else (closest (valof x) (\<lambda>a. True) {a. (is_finite x a) \<and> abs(valof x a) \<le> abs y} y))"
 
-|"round x To_pinfinity y =
+| "round x To_pinfinity y =
            (if y < -(largest x)
             then (bottomfloat x)
             else if y > largest x
@@ -376,37 +355,24 @@ section{*Specify float to be double  precision and round to even*}
 definition float_format :: "format" where
 "float_format = (11, 52)"
 
-declare float_format_def [simp]
-
 (*Define the float type*)
 typedef float = "{a. is_valid float_format a}"
-apply (rule_tac x = "(0::nat, 0, 0)" in exI)
-by (simp add: is_valid_def) 
+by (rule_tac x = "(0::nat, 0, 0)" in exI) (simp add: is_valid_def) 
 
 definition Val :: "float \<Rightarrow> real" where
 "Val a = valof (float_format) (Rep_float a)"
 
-declare Val_def [simp]
-
 definition Float :: "real \<Rightarrow> float" where
 "Float x = Abs_float (round float_format To_nearest x)"
-
-declare Float_def [simp]
 
 definition Sign :: "float \<Rightarrow> nat" where
 "Sign a = sign (Rep_float a)"
 
-declare Sign_def [simp]
-
 definition Exponent :: "float \<Rightarrow> nat" where
 "Exponent a = exponent (Rep_float a)"
 
-declare Exponent_def [simp]
-
 definition Fraction :: "float \<Rightarrow> nat" where
 "Fraction a = fraction (Rep_float a)"
-
-declare Fraction_def [simp]
 
 definition Ulp :: "float \<Rightarrow> real" where
 "Ulp a = ulp float_format (Rep_float a)"
@@ -415,32 +381,20 @@ definition Ulp :: "float \<Rightarrow> real" where
 definition Isnan :: "float \<Rightarrow> bool" where
 "Isnan a = is_nan float_format (Rep_float a)"
 
-declare Isnan_def [simp]
-
 definition Infinity :: "float \<Rightarrow> bool" where
 "Infinity a = is_infinity float_format (Rep_float a)"
-
-declare Infinity_def [simp]
 
 definition Isnormal :: "float \<Rightarrow> bool" where
 "Isnormal a = is_normal float_format (Rep_float a)"
 
-declare Isnormal_def [simp]
-
 definition Isdenormal :: "float \<Rightarrow> bool" where
 "Isdenormal a = is_denormal float_format (Rep_float a)"
-
-declare Isdenormal_def [simp]
 
 definition Iszero :: "float \<Rightarrow> bool" where
 "Iszero a = is_zero float_format (Rep_float a)"
 
-declare Iszero_def [simp]
-
 definition Finite :: "float \<Rightarrow> bool" where
 "Finite a = (Isnormal a \<or> Isdenormal a \<or> Iszero a)"
-
-declare Finite_def [simp]
 
 definition Isintegral :: "float \<Rightarrow> bool" where
 "Isintegral a = is_integral float_format (Rep_float a)"
@@ -455,8 +409,6 @@ definition Bottomfloat :: "float" where
 definition Plus_zero :: "float" where
 "Plus_zero = Abs_float (plus_zero float_format)"
 
-declare Plus_zero_def [simp]
-
 definition Minus_zero :: "float" where
 "Minus_zero = Abs_float (minus_zero float_format)"
 
@@ -469,7 +421,7 @@ definition Plus_infinity :: "float" where
 instantiation float :: plus begin
 
 definition plus_float :: "float \<Rightarrow> float \<Rightarrow> float" where
-" a + b = Abs_float (fadd float_format To_nearest (Rep_float a)  (Rep_float b))"
+"a + b = Abs_float (fadd float_format To_nearest (Rep_float a) (Rep_float b))"
 
 instance ..
 end
@@ -536,8 +488,11 @@ definition float_eq :: "float \<Rightarrow> float \<Rightarrow> bool"  (infixl "
 definition float_neg :: "float \<Rightarrow> float" where
 "float_neg a = Abs_float (fneg float_format To_nearest (Rep_float a))"
 
-
 definition float_abs :: "float \<Rightarrow> float" where
 "float_abs a = (if sign (Rep_float a) = 0 then a else float_neg a)"
+
+(***************"1 + Epsilon" property**************)
+definition normalizes :: "real \<Rightarrow> bool" where
+"normalizes x = (1/ (2::real)^(bias float_format - 1) \<le> \<bar>x\<bar> \<and> \<bar>x\<bar> < threshold float_format)"
 
 end

@@ -943,9 +943,9 @@ defer
 apply(simp add:fun_eq_iff split:nat.split)
 apply(simp add:lift_is_subst_ml subst_ml_comp)
 apply(rule arg_cong[where f = kernel])
-apply(subgoal_tac "(nat_case 0 (\<lambda>k. Suc (\<sigma> k)) \<circ> Suc) = Suc o \<sigma>")
+apply(subgoal_tac "(case_nat 0 (\<lambda>k. Suc (\<sigma> k)) \<circ> Suc) = Suc o \<sigma>")
 prefer 2 apply(simp add:fun_eq_iff split:nat.split)
-apply(subgoal_tac "(subst_ml (nat_case 0 (\<lambda>k. Suc (\<sigma> k))) \<circ>
+apply(subgoal_tac "(subst_ml (case_nat 0 (\<lambda>k. Suc (\<sigma> k))) \<circ>
                (\<lambda>n. if n = 0 then V\<^sub>U 0 [] else V\<^sub>M\<^sub>L (n - 1)))
              = (\<lambda>n. if n = 0 then V\<^sub>U 0 [] else V\<^sub>M\<^sub>L (n - 1))")
 apply simp
@@ -2013,8 +2013,6 @@ apply rule
  apply(rule_tac x=j in exI)
  apply simp
  apply(case_tac "i=j")
-  apply simp
-  apply(rule_tac x=nm' in exI)
   apply(erule_tac x=rs' in meta_allE)
   apply(erule_tac x=nm' in meta_allE)
   apply (clarsimp simp: all_set_conv_all_nth)
@@ -2053,7 +2051,6 @@ apply metis
 apply clarify
 apply simp
 apply rule
-apply metis
 apply (metis rtrancl_trans)
 done
 
@@ -2080,7 +2077,7 @@ proof(induct ps os arbitrary: ts ts' rule: no_match.induct)
   show ?case
     apply(subst no_match.simps)
     apply(rule_tac x=i in exI)
-    using 1 a b
+    using 1(2-5) a b
     apply clarsimp
     apply(rule 1(1)[of i nm' _ nm' "map dterm rs" rs])
     apply simp_all

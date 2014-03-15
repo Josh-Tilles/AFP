@@ -91,14 +91,14 @@ datatype clause_info = ClauseInfo of
 (* Theory dependencies. *)
 val acc_induct_rule = @{thm accp_induct_rule}
 
-val ex1_implies_ex = @{thm FunDef.fundef_ex1_existence}
-val ex1_implies_un = @{thm FunDef.fundef_ex1_uniqueness}
-val ex1_implies_iff = @{thm FunDef.fundef_ex1_iff}
+val ex1_implies_ex = @{thm Fun_Def.fundef_ex1_existence}
+val ex1_implies_un = @{thm Fun_Def.fundef_ex1_uniqueness}
+val ex1_implies_iff = @{thm Fun_Def.fundef_ex1_iff}
 
 val acc_downward = @{thm accp_downward}
 val accI = @{thm accp.accI}
 val case_split = @{thm HOL.case_split}
-val fundef_default_value = @{thm FunDef.fundef_default_value}
+val fundef_default_value = @{thm Fun_Def.fundef_default_value}
 val not_acc_down = @{thm not_accp_down}
 
 
@@ -485,7 +485,8 @@ fun mk_uniqueness_case thy globals G f ihyp ih_intro G_cases compat_store clause
     val rhsC = Pattern.rewrite_term thy [(fvar, f)] [] rhs
 
     val ih_intro_case =
-      full_simplify (Simplifier.global_context thy HOL_basic_ss addsimps [case_hyp]) ih_intro
+      full_simplify (put_simpset HOL_basic_ss (Proof_Context.init_global thy) addsimps [case_hyp])
+        ih_intro
 
     fun prep_RC (RCInfo {llRI, RIvs, CCas, ...}) = 
         (llRI RS ih_intro_case)
@@ -519,7 +520,8 @@ fun mk_uniqueness_case thy globals G f ihyp ih_intro G_cases compat_store clause
       ex1I |> instantiate' [SOME (ctyp_of thy ranT)] [SOME P2, SOME (cterm_of thy rhsC)]
       |> curry (op COMP) existence
       |> curry (op COMP) uniqueness
-      |> simplify (Simplifier.global_context thy HOL_basic_ss addsimps [case_hyp RS sym])
+      |> simplify
+          (put_simpset HOL_basic_ss (Proof_Context.init_global thy) addsimps [case_hyp RS sym])
       |> Thm.implies_intr (cprop_of case_hyp)
       |> fold_rev (Thm.implies_intr o cprop_of) ags
       |> fold_rev Thm.forall_intr cqs
@@ -655,7 +657,7 @@ fun define_graph Gname fvar domT ranT clauses RCss lthy =
 fun define_function fdefname (fname, mixfix) domT ranT G default lthy =
   let
     val f_def =
-      Abs ("x", domT, Const (@{const_name FunDef.THE_default}, ranT --> (ranT --> boolT) --> ranT) 
+      Abs ("x", domT, Const (@{const_name Fun_Def.THE_default}, ranT --> (ranT --> boolT) --> ranT) 
         $ (default $ Bound 0) $ Abs ("y", ranT, G $ Bound 1 $ Bound 0))
       |> Syntax.check_term lthy
   in
@@ -734,7 +736,7 @@ fun mk_psimps thy globals R clauses valthms f_iff graph_is_function =
         |> Thm.forall_intr (cterm_of thy z)
         |> (fn it => it COMP valthm)
         |> Thm.implies_intr lhs_acc
-        |> asm_simplify (Simplifier.global_context thy HOL_basic_ss addsimps [f_iff])
+        |> asm_simplify (put_simpset HOL_basic_ss (Proof_Context.init_global thy) addsimps [f_iff])
         |> fold_rev (Thm.implies_intr o cprop_of) ags
         |> fold_rev forall_intr_rename (map fst oqs ~~ cqs)
       end
@@ -879,8 +881,8 @@ fun mk_domain_intro ctxt (Globals {domT, ...}) R R_cases clause =
 (** Termination rule **)
 
 val wf_induct_rule = @{thm Wellfounded.wfP_induct_rule}
-val wf_in_rel = @{thm FunDef.wf_in_rel}
-val in_rel_def = @{thm FunDef.in_rel_def}
+val wf_in_rel = @{thm Fun_Def.wf_in_rel}
+val in_rel_def = @{thm Fun_Def.in_rel_def}
 
 fun mk_nest_term_case thy globals R' ihyp clause =
   let
@@ -889,7 +891,8 @@ fun mk_nest_term_case thy globals R' ihyp clause =
       qglr=(oqs, _, _, _), ...} = clause
 
     val ih_case =
-      full_simplify (Simplifier.global_context thy HOL_basic_ss addsimps [case_hyp]) ihyp
+      full_simplify (put_simpset HOL_basic_ss (Proof_Context.init_global thy) addsimps [case_hyp])
+        ihyp
 
     fun step (fixes, assumes) (_ $ arg) u (sub,(hyps,thms)) =
       let
@@ -940,7 +943,7 @@ fun mk_nest_term_rule thy globals R R_cases clauses =
     val R' = Free ("R", fastype_of R)
 
     val Rrel = Free ("R", HOLogic.mk_setT (HOLogic.mk_prodT (domT, domT)))
-    val inrel_R = Const (@{const_name FunDef.in_rel},
+    val inrel_R = Const (@{const_name Fun_Def.in_rel},
       HOLogic.mk_setT (HOLogic.mk_prodT (domT, domT)) --> fastype_of R) $ Rrel
 
     val wfR' = HOLogic.mk_Trueprop (Const (@{const_name Wellfounded.wfP},
@@ -979,7 +982,7 @@ fun mk_nest_term_rule thy globals R R_cases clauses =
     |> Thm.forall_intr (cterm_of thy R')
     |> Thm.forall_elim (cterm_of thy (inrel_R))
     |> curry op RS wf_in_rel
-    |> full_simplify (Simplifier.global_context thy HOL_basic_ss addsimps [in_rel_def])
+    |> full_simplify (put_simpset HOL_basic_ss (Proof_Context.init_global thy) addsimps [in_rel_def])
     |> Thm.forall_intr (cterm_of thy Rrel)
   end
 

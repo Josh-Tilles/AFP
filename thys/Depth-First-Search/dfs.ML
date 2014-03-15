@@ -3,15 +3,14 @@ structure Product_Type : sig
   val snd : 'a * 'b -> 'b
 end = struct
 
-fun fst (a, b) = a;
+fun fst (x1, x2) = x1;
 
-fun snd (a, b) = b;
+fun snd (x1, x2) = x2;
 
 end; (*struct Product_Type*)
 
 structure Arith : sig
-  datatype num = One | Bit0 of num | Bit1 of num
-  datatype int = Zero_int | Pos of num | Neg of num
+  type int
 end = struct
 
 datatype num = One | Bit0 of num | Bit1 of num;
@@ -43,17 +42,14 @@ fun member A_ [] y = false
 end; (*struct List*)
 
 structure DFS : sig
-  datatype node = Node of Arith.int
-  val equal_nodea : node -> node -> bool
-  val equal_node : node HOL.equal
-  val nexts : (node * node) list -> node -> node list
+  type node
   val dfs : (node * node) list -> node list -> node list -> node list
   val dfs2 : (node * node) list -> node list -> node list -> node list
 end = struct
 
 datatype node = Node of Arith.int;
 
-fun equal_nodea _ _ = raise Fail "equal_node";
+fun equal_nodea _ _ = raise Fail "DFS.equal_node_inst.equal_node";
 
 val equal_node = {equal = equal_nodea} : node HOL.equal;
 
