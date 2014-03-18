@@ -109,8 +109,8 @@ next
   from tx assms have "0 \<le> norm (f (t, x t))" by simp
   have x_diff: "\<And>s. s \<in> ?T \<Longrightarrow> x differentiable at s within ?T"
     by (rule differentiableI, rule x'[simplified has_vector_derivative_def])
-  have f': "\<And>t x. t \<in> ?T \<Longrightarrow> x \<in> X \<Longrightarrow> FDERIV f (t, x) : (?T \<times> X) :> f' (t, x)"
-    using T by (intro FDERIV_subset[OF f']) auto
+  have f': "\<And>t x. t \<in> ?T \<Longrightarrow> x \<in> X \<Longrightarrow> (f has_derivative f' (t, x)) (at (t, x) within (?T \<times> X))"
+    using T by (intro has_derivative_subset[OF f']) auto
   let ?p = "(\<lambda>t. f' (t, x t) (1, f (t, x t)))"
   def diff \<equiv> "\<lambda>n::nat. if n = 0 then x else if n = 1 then \<lambda>t. f (t, x t) else ?p"
   have diff_0[simp]: "diff 0 = x" by (simp add: diff_def)
@@ -119,15 +119,15 @@ next
     assume mta: "m < 2" "t \<le> ta" "ta \<le> t + h"
     have image_subset: "(\<lambda>xa. (xa, x xa)) ` {t..u} \<subseteq> {t..u} \<times> X"
       using assms by auto
-    note FDERIV_in_compose[where f="(\<lambda>xa. (xa, x xa))" and g = f, FDERIV_intros]
-    note FDERIV_subset[OF _ image_subset, FDERIV_intros]
-    note f'[FDERIV_intros]
-    note x'[simplified has_vector_derivative_def, FDERIV_intros]
+    note has_derivative_in_compose[where f="(\<lambda>xa. (xa, x xa))" and g = f, has_derivative_intros]
+    note has_derivative_subset[OF _ image_subset, has_derivative_intros]
+    note f'[has_derivative_intros]
+    note x'[simplified has_vector_derivative_def, has_derivative_intros]
     have [simp]: "\<And>c x'. c *\<^sub>R f' (ta, x ta) x' = f' (ta, x ta) (c *\<^sub>R x')"
       using mta ht assms by (auto intro!: f' linear_cmul[symmetric] derivative_is_linear)
     have "((\<lambda>t. f (t, x t)) has_vector_derivative f' (ta, x ta) (1, f (ta, x ta))) (at ta within {t..u})"
       unfolding has_vector_derivative_def
-      using assms ht mta by (auto intro!: FDERIV_eq_intros)
+      using assms ht mta by (auto intro!: has_derivative_eq_intros)
     hence "(diff m has_vector_derivative diff (Suc m) ta) (at ta within {t..t + h})"
       using mta ht
       by (auto simp: diff_def intro!: has_vector_derivative_within_subset[OF _ subset] x')
@@ -141,9 +141,9 @@ next
     (h\<^sup>2 / 2) *\<^sub>R (\<Sum>i\<in>Basis. ((?p (tt i)) \<bullet> i) *\<^sub>R i)" (is "?d = _")
     by (auto simp: discrete_evolution_def euler_increment)
   also have "\<dots> \<in> op *\<^sub>R (h\<^sup>2 / 2) ` F'"
-    apply (rule image_eqI[OF refl mem_interval_componentwiseI[OF f'_ivl_bounded(1)]])
+    apply (rule image_eqI[OF refl mem_box_componentwiseI[OF f'_ivl_bounded(1)]])
     using T tt ht
-    apply (force simp: interval Pi_iff intro: f_set_bounded x image_eqI[OF refl f'_ivl_bounded(3)])
+    apply (force simp: Pi_iff intro: f_set_bounded x image_eqI[OF refl f'_ivl_bounded(3)])
     done
   finally show ?thesis .
 qed
@@ -187,12 +187,12 @@ proof
   proof (rule lipschitzI)
     fix x y
     let ?I = "T \<times> X"
-    have "convex ?I" by (intro convex convex_Times convex_interval)
-    moreover have "\<forall>x\<in>?I. FDERIV f x : ?I :> f' x" "\<forall>x\<in>?I. onorm (f' x) \<le> B'"
+    have "convex ?I" by (intro convex convex_Times)
+    moreover have "\<forall>x\<in>?I. (f has_derivative f' x) (at x within ?I)" "\<forall>x\<in>?I. onorm (f' x) \<le> B'"
       using f' f'_bounded
-      by (auto simp add: interval intro!: onorm_norm1 f'_bounded derivative_is_linear)
+      by (auto simp add: intro!: onorm_norm1 f'_bounded derivative_is_linear)
     moreover assume "x \<in> X" "y \<in> X"
-    with `t \<in> T` have "(t, x) \<in> ?I" "(t, y) \<in> ?I" by (simp_all add: interval)
+    with `t \<in> T` have "(t, x) \<in> ?I" "(t, y) \<in> ?I" by simp_all
     ultimately have "norm (f (t, x) - f (t, y)) \<le> B' * norm ((t, x) - (t, y))"
       by (rule differentiable_bound)
     thus "dist (f (t, x)) (f (t, y)) \<le> B' * dist x y"
@@ -212,7 +212,7 @@ proof
   show "bounded (X \<times> cball 0 B)" using X_bounded by (auto intro!: bounded_Times)
   show "is_interval {-(B' * (B + 1)) *\<^sub>R One.. (B' * (B + 1)) *\<^sub>R One::'a}"
     "bounded {-(B' * (B + 1)) *\<^sub>R One.. (B' * (B + 1)) *\<^sub>R One::'a}"
-    by (auto intro!: is_interval_interval bounded_closed_interval)
+    by (auto intro!: is_interval_closed_interval bounded_closed_interval)
   fix t x assume "t \<in> T" "x \<in> X"
   thus "(x, f (t, x)) \<in> X \<times> cball 0 B"
     by (auto simp: dist_norm f_bounded)
