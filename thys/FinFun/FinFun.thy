@@ -28,7 +28,7 @@ text {*
 definition "code_abort" :: "(unit \<Rightarrow> 'a) \<Rightarrow> 'a"
 where [simp, code del]: "code_abort f = f ()"
 
-code_abort "code_abort"
+declare [[code abort: "code_abort"]]
 
 hide_const (open) "code_abort"
 
@@ -428,7 +428,7 @@ next
 qed
 
 lift_definition finfun_default :: "'a \<Rightarrow>\<^sub>f 'b \<Rightarrow> 'b"
-is "finfun_default_aux" ..
+is "finfun_default_aux" .
 
 lemma finite_finfun_default: "finite {a. Rep_finfun f a \<noteq> finfun_default f}"
 by transfer (erule finite_finfun_default_aux)

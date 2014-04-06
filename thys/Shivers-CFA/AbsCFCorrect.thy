@@ -43,7 +43,7 @@ adhoc_overloading
   abs abs_cnt
 
 definition abs_benv :: "benv \<Rightarrow> 'c::contour_a \<abenv>"
-  where "abs_benv \<beta> = Option.map abs_cnt \<circ> \<beta>"
+  where "abs_benv \<beta> = map_option abs_cnt \<circ> \<beta>"
 
 adhoc_overloading
   abs abs_benv
@@ -231,7 +231,7 @@ lemma lemma7:
   shows "|\<A> f \<beta> ve| \<lessapprox> \<aA> f |\<beta>| ve_a"
 proof(cases f)
 case (R _ v)
-  from assms have assm': "\<And>v b. option_case {} abs_d (ve (v,b)) \<lessapprox> ve_a (v,|b| )"
+  from assms have assm': "\<And>v b. case_option {} abs_d (ve (v,b)) \<lessapprox> ve_a (v,|b| )"
     by (auto simp add:d_approx_def abs_venv_def venv_approx_def smap_less_def elim!:allE)
   show ?thesis
     proof(cases "\<beta> (binder v)")

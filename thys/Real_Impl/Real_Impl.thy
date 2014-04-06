@@ -25,7 +25,7 @@ header {* A representation of real numbers via triples *}
 
 theory Real_Impl
 imports 
-  Real_Impl_Auxiliary 
+  "../Sqrt_Babylonian/Sqrt_Babylonian"
 begin
 
 text {* We represent real numbers of the form $p + q \cdot \sqrt{b}$ for $p,q \in \rats$, $n \in \nats$
@@ -81,7 +81,7 @@ lemma real_code_unfold_dels:
   "0 \<equiv> (of_rat 0 :: real)"
   "1 \<equiv> (of_rat 1 :: real)"
   "numeral k \<equiv> (of_rat (numeral k) :: real)"
-  "neg_numeral k \<equiv> (of_rat (neg_numeral k) :: real)"
+  "- numeral k \<equiv> (of_rat (- numeral k) :: real)"
   by simp_all
 
 lemma real_standard_impls:
@@ -99,19 +99,19 @@ typedef mini_alg =
 setup_lifting type_definition_mini_alg
 
 lift_definition real_of :: "mini_alg \<Rightarrow> real" is
-  "\<lambda> (p,q,b). of_rat p + of_rat q * sqrt (of_nat b)" by auto 
+  "\<lambda> (p,q,b). of_rat p + of_rat q * sqrt (of_nat b)" . 
 
 lift_definition ma_of_rat :: "rat \<Rightarrow> mini_alg" is "\<lambda> x. (x,0,0)" by auto
 
-lift_definition ma_rat :: "mini_alg \<Rightarrow> rat" is fst ..
-lift_definition ma_base :: "mini_alg \<Rightarrow> nat" is "snd o snd" ..
-lift_definition ma_coeff :: "mini_alg \<Rightarrow> rat" is "fst o snd" ..
+lift_definition ma_rat :: "mini_alg \<Rightarrow> rat" is fst .
+lift_definition ma_base :: "mini_alg \<Rightarrow> nat" is "snd o snd" .
+lift_definition ma_coeff :: "mini_alg \<Rightarrow> rat" is "fst o snd" .
 
 lift_definition ma_uminus :: "mini_alg \<Rightarrow> mini_alg" is
   "\<lambda> (p1,q1,b1). (- p1, - q1, b1)" by auto
 
 lift_definition ma_compatible :: "mini_alg \<Rightarrow> mini_alg \<Rightarrow> bool" is
-  "\<lambda> (p1,q1,b1) (p2,q2,b2). q1 = 0 \<or> q2 = 0 \<or> b1 = b2" by auto
+  "\<lambda> (p1,q1,b1) (p2,q2,b2). q1 = 0 \<or> q2 = 0 \<or> b1 = b2" .
 
 definition ma_normalize :: "rat \<times> rat \<times> nat \<Rightarrow> rat \<times> rat \<times> nat" where
   "ma_normalize x \<equiv> case x of (a,b,c) \<Rightarrow> if b = 0 then (a,0,0) else (a,b,c)"
@@ -136,7 +136,7 @@ lift_definition ma_inverse :: "mini_alg \<Rightarrow> mini_alg" is
 lift_definition ma_floor :: "mini_alg \<Rightarrow> int" is 
   "\<lambda> (p,q,b). case (quotient_of p,quotient_of q) of ((z1,n1),(z2,n2)) \<Rightarrow>
     let z2n1 = z2 * n1; z1n2 = z1 * n2; n12 = n1 * n2; prod = z2n1 * z2n1 * int b in
-    (z1n2 + (if z2n1 \<ge> 0 then sqrt_int_floor_pos prod else - sqrt_int_ceiling_pos prod)) div n12" by simp
+    (z1n2 + (if z2n1 \<ge> 0 then sqrt_int_floor_pos prod else - sqrt_int_ceiling_pos prod)) div n12" .
 
 lift_definition ma_sqrt :: "mini_alg \<Rightarrow> mini_alg" is
    "\<lambda> (p,q,b). let (a,b) = quotient_of p; aa = abs (a * b) in 
@@ -170,14 +170,14 @@ qed
 
 lift_definition ma_equal :: "mini_alg \<Rightarrow> mini_alg \<Rightarrow> bool" is
    "\<lambda> (p1,q1,b1) (p2,q2,b2). 
-   p1 = p2 \<and> q1 = q2 \<and> (q1 = 0 \<or> b1 = b2)" by auto
+   p1 = p2 \<and> q1 = q2 \<and> (q1 = 0 \<or> b1 = b2)" .
 
 lift_definition ma_ge_0 :: "mini_alg \<Rightarrow> bool" is
   "\<lambda> (p,q,b). let bqq = of_nat b * q * q; pp = p * p in 
-  0 \<le> p \<and> bqq \<le> pp \<or> 0 \<le> q \<and> pp \<le> bqq" by auto
+  0 \<le> p \<and> bqq \<le> pp \<or> 0 \<le> q \<and> pp \<le> bqq" .
      
 lift_definition ma_is_rat :: "mini_alg \<Rightarrow> bool" is
-  "\<lambda> (p,q,b). q = 0" by auto
+  "\<lambda> (p,q,b). q = 0" .
 
 definition ge_0 :: "real \<Rightarrow> bool" where [code del]: "ge_0 x = (x \<ge> 0)"
 
@@ -235,7 +235,7 @@ proof (transfer, unfold Let_def, clarsimp)
     from sqrt_irrat[OF b', of p'] b_def p_def q_def False have nnull: "p + q * sqrt b \<noteq> 0" by auto
     have "?thesis \<longleftrightarrow> (p + q * sqrt b) * inverse (p + q * sqrt b) =
       (p + q * sqrt b) * ((p - q * sqrt b) * inverse (p * p - b * (q * q)))" 
-      unfolding real_mult_left_cancel[OF nnull] by auto
+      unfolding mult_left_cancel[OF nnull] by auto
     also have "(p + q * sqrt b) * inverse (p + q * sqrt b) = 1" using nnull by auto
     also have "(p + q * sqrt b) * ((p - q * sqrt b) * inverse (p * p - b * (q * q)))
       = (p * p - b * (q * q)) * inverse (p * p - b * (q * q))"
@@ -330,7 +330,7 @@ lemma ma_plus:
   "(real_of r1 + real_of r2) = (if ma_compatible r1 r2
     then real_of (ma_plus r1 r2) else     
     Code.abort (STR ''different base'') (\<lambda> _. real_of r1 + real_of r2))"
-  by (transfer, auto split: prod.split simp: field_simps of_rat_add)
+  by transfer (auto split: prod.split simp: field_simps of_rat_add)
     
 lemma ma_times:
   "(real_of r1 * real_of r2) = (if ma_compatible r1 r2
@@ -505,5 +505,14 @@ declare real_code_dels[code, code del]
 declare real_code_unfold_dels[code_unfold del]
 declare real_standard_impls[code]
 declare ma_code_eqns[code]
+
+text {* Some tests with small numbers. To work on larger number, one should
+  additionally import the theories for efficient calculation on numbers *}
+
+value "\<lfloor>101.1 * (3 * sqrt 2 + 6 * sqrt 0.5)\<rfloor>"
+value "\<lfloor>606.2 * sqrt 2 + 0.001\<rfloor>"
+value "101.1 * (3 * sqrt 2 + 6 * sqrt 0.5) = 606.2 * sqrt 2 + 0.001"
+value "101.1 * (3 * sqrt 2 + 6 * sqrt 0.5) > 606.2 * sqrt 2 + 0.001"
+value "(sqrt 0.1 \<in> \<rat>, sqrt -0.09 \<in> \<rat>)"
 
 end

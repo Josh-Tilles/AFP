@@ -235,18 +235,18 @@ lemma add_leaves_binop_subset:
    (\<Union>x\<in>set (add_leaves b xs). \<Union>y\<in>set (add_leaves b' ys). {f x y})"
   apply (induct f b b' arbitrary: xs ys rule: bdd_binop.induct)
   apply auto
-  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> List.insert y ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> List.insert y ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
-  apply (drule_tac ys="[f x y. x \<leftarrow> List.insert x xs, y \<leftarrow> add_leaves l ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> List.insert x xs, y \<leftarrow> add_leaves l ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
-  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l\<^sub>1 xs, y \<leftarrow> add_leaves l\<^sub>2 ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> add_leaves l\<^sub>1 xs, y \<leftarrow> add_leaves l\<^sub>2 ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
@@ -3107,7 +3107,7 @@ next
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. \<Union>i\<in>set_of_bv (nfa_steps N q (insertll v (butlast bs) xs)). set_of_bv (bdd_lookup (fst N ! i) (insertl v (last bs) x)))"
     by (simp add: UN_UN_lenset)
   also from N2 B have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_trans N (nfa_steps N q (insertll v (butlast bs) xs)) (insertl v (last bs) x)))" (is "?L = ?R")
-    by (simp add: subsetbdd_set_of_bv[folded nfa_trans_def] cong: strong_UN_cong)
+    by (simp add: subsetbdd_set_of_bv[folded nfa_trans_def])
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs) xs @ [insertl v (last bs) x])))"
     by simp
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs @ [last bs]) (xs @ [x]))))" by (auto simp: insertll_append)
@@ -3720,10 +3720,9 @@ definition
           else length js) n []) js @ [Leaf (length js)],
         map (\<lambda>j. j = 0) js @ [False]))"
 
-primrec nat_of_bool :: "bool \<Rightarrow> nat"
+abbreviation (input) nat_of_bool :: "bool \<Rightarrow> nat"
 where
-  "nat_of_bool False = 0"
-| "nat_of_bool True = 1"
+  "nat_of_bool \<equiv> of_bool"
 
 lemma nat_of_bool_bound: "nat_of_bool b < 2"
   by (cases b) simp_all

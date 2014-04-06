@@ -165,7 +165,8 @@ proof (cases "poly p a = 0 \<and> p \<noteq> 0")
     hence "card {x. x \<ge> a \<and> poly p x = 0} = card {x. x > a \<and> poly p x = 0}"
     proof (cases rule: disjE)
       assume "p = 0"
-      have "\<not>finite {a<..<a+1}" using real_infinite_interval by simp
+      have "\<not>finite {a<..<a+1}"
+        by (metis infinite_Ioo less_add_one) 
       moreover have "{a<..<a+1} \<subseteq> {x. x \<ge> a \<and> poly p x = 0}"
                     "{a<..<a+1} \<subseteq> {x. x > a \<and> poly p x = 0}" 
           using `p = 0` by auto
@@ -200,7 +201,8 @@ proof (cases "poly p a = 0 \<and> p \<noteq> 0")
     hence "card {x. x < a \<and> poly p x = 0} = card {x. x \<le> a \<and> poly p x = 0}"
     proof (cases rule: disjE)
       assume "p = 0"
-      have "\<not>finite {a - 1<..<a}" using real_infinite_interval by simp
+      have "\<not>finite {a - 1<..<a}" 
+        by (metis infinite_Ioo diff_add_cancel less_add_one) 
       moreover have "{a - 1<..<a} \<subseteq> {x. x \<le> a \<and> poly p x = 0}"
                     "{a - 1<..<a} \<subseteq> {x. x < a \<and> poly p x = 0}" 
           using `p = 0` by auto
@@ -233,7 +235,7 @@ lemma poly_no_roots_less_leq:
   "(\<forall>x. a < x \<and> x \<le> b \<longrightarrow> poly p x \<noteq> 0) \<longleftrightarrow>
    ((a \<ge> b \<or> (p \<noteq> 0 \<and> count_roots_between p a b = 0)))"
   by (auto simp: count_roots_between_correct card_eq_0_iff not_le 
-           intro: poly_roots_finite)
+           dest: poly_roots_finite)
 
 lemma poly_pos_between_less_leq:
   "(\<forall>x. a < x \<and> x \<le> b \<longrightarrow> poly p x > 0) \<longleftrightarrow>
@@ -250,7 +252,7 @@ apply (force simp add: count_roots_between_correct card_eq_0_iff)
 apply (elim conjE disjE, simp, intro allI)
 apply (rename_tac x, case_tac "x = a")
 apply (auto simp add: count_roots_between_correct card_eq_0_iff
-            intro: poly_roots_finite)
+            dest: poly_roots_finite)
 done
 
 lemma poly_pos_between_leq_leq:
@@ -289,7 +291,7 @@ next
         by (subst poly_card_roots_less_less, auto simp: count_roots_between_def)
     thus ?case using goal2
         by (cases "p = 0", simp, subst (asm) card_eq_0_iff, 
-            auto intro: poly_roots_finite)
+            auto dest: poly_roots_finite)
 qed
 
 lemma poly_pos_between_less_less:

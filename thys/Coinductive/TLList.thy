@@ -3,7 +3,7 @@
     Maintainer:  Andreas Lochbihler
 *)
 
-header {* Terminated coinductive lists *}
+header {* Terminated coinductive lists and their operations *}
 
 theory TLList imports
   Coinductive_List
@@ -21,7 +21,7 @@ lemma split_fst: "R (fst p) = (\<forall>x y. p = (x, y) \<longrightarrow> R x)"
 by(cases p) simp
 
 lemma split_fst_asm: "R (fst p) \<longleftrightarrow> (\<not> (\<exists>x y. p = (x, y) \<and> \<not> R x))"
-by(cases p)(simp)
+by(cases p) simp
 
 subsection {* Type definition *}
 
@@ -37,7 +37,7 @@ overloading
 begin
 
 partial_function (tailrec) terminal0 
-where "terminal0 xs = (if is_TNil xs then tllist_case id undefined xs else terminal0 (ttl xs))"
+where "terminal0 xs = (if is_TNil xs then case_tllist id undefined xs else terminal0 (ttl xs))"
 
 end
 
@@ -55,116 +55,74 @@ by simp
 
 declare tllist.sel(2) [simp del]
 
+primcorec unfold_tllist :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> ('a \<Rightarrow> 'c) \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> ('c, 'b) tllist" where
+  "p a \<Longrightarrow> unfold_tllist p g1 g21 g22 a = TNil (g1 a)" |
+  "_ \<Longrightarrow> unfold_tllist p g1 g21 g22 a =
+     TCons (g21 a) (unfold_tllist p g1 g21 g22 (g22 a))"
+
 declare
-  tllist.unfold(1) [simp]
+  unfold_tllist.ctr(1) [simp]
   tllist.corec(1) [simp]
-
-lemma tllist_case_cert:
-  assumes "CASE \<equiv> tllist_case c d"
-  shows "(CASE (TNil b) \<equiv> c b) &&& (CASE (TCons M N) \<equiv> d M N)"
-  using assms by simp_all
-
-code_datatype TNil TCons
-
-setup {*
-  Code.add_case @{thm tllist_case_cert}
-*}
 
 subsection {* Code generator setup *}
 
-instantiation tllist :: (equal,equal) equal begin
-
-definition equal_tllist :: "('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist \<Rightarrow> bool"
-where [code del]: "equal_tllist xs ys \<longleftrightarrow> xs = ys"
-instance proof qed(simp add: equal_tllist_def)
-end
-
-lemma equal_tllist_code [code]:
-  "equal_class.equal (TNil b) (TNil b') \<longleftrightarrow> b = b'"
-  "equal_class.equal (TNil b) (TCons y ys) \<longleftrightarrow> False"
-  "equal_class.equal (TCons x xs) (TNil b') \<longleftrightarrow> False"
-  "equal_class.equal (TCons x xs) (TCons y ys) \<longleftrightarrow> (if x = y then equal_class.equal xs ys else False)"
-by(simp_all add: equal_tllist_def)
-
 text {* Setup for quickcheck *}
 
-notation fcomp (infixl "o>" 60)
-notation scomp (infixl "o\<rightarrow>" 60)
+quickcheck_generator tllist constructors: "TNil :: _ \<Rightarrow> ('a, 'b) tllist", "TCons :: _ \<Rightarrow> _ \<Rightarrow> ('a, 'b) tllist"
 
-definition (in term_syntax) valtermify_TNil ::
-  "'b :: typerep \<times> (unit \<Rightarrow> Code_Evaluation.term)
-   \<Rightarrow> ('a :: typerep, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)" 
+instantiation tllist :: (narrowing, narrowing) narrowing begin
+
+context includes integer.lifting begin
+
+function narrowing_tllist
 where
-  "valtermify_TNil b = Code_Evaluation.valtermify TNil {\<cdot>} b"
-
-definition (in term_syntax) valtermify_TCons ::
-  "'a :: typerep \<times> (unit \<Rightarrow> Code_Evaluation.term) \<Rightarrow> ('a, 'b :: typerep) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term) \<Rightarrow> ('a, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)" where
-  "valtermify_TCons x xs = Code_Evaluation.valtermify TCons {\<cdot>} x {\<cdot>} xs"
-
-instantiation tllist :: (random, random) random begin
-
-primrec random_aux_tllist :: 
-  "natural \<Rightarrow> natural \<Rightarrow> Random.seed \<Rightarrow> (('a, 'b) tllist \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
-where
-  "random_aux_tllist 0 j = 
-   Quickcheck_Random.collapse (Random.select_weight 
-     [(1, Quickcheck_Random.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
-| "random_aux_tllist (Code_Numeral.Suc i) j =
-   Quickcheck_Random.collapse (Random.select_weight
-     [(Code_Numeral.Suc i, Quickcheck_Random.random j o\<rightarrow> (\<lambda>x. random_aux_tllist i j o\<rightarrow> (\<lambda>xs. Pair (valtermify_TCons x xs)))),
-      (1, Quickcheck_Random.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
-
-definition "Quickcheck_Random.random i = random_aux_tllist i i"
+  "narrowing_tllist n = Quickcheck_Narrowing.sum
+    (Quickcheck_Narrowing.apply (Quickcheck_Narrowing.cons TNil) narrowing)
+    (Quickcheck_Narrowing.apply (Quickcheck_Narrowing.apply (Quickcheck_Narrowing.cons TCons) narrowing) narrowing_tllist)
+    n"
+by pat_completeness auto
+termination by (relation "measure nat_of_integer") (simp_all, transfer, simp)
 
 instance ..
-
+end
 end
 
-lemma random_aux_tllist_code [code]:
-  "random_aux_tllist i j = Quickcheck_Random.collapse (Random.select_weight
-     [(i, Quickcheck_Random.random j o\<rightarrow> (\<lambda>x. random_aux_tllist (i - 1) j o\<rightarrow> (\<lambda>xs. Pair (valtermify_TCons x xs)))),
-      (1, Quickcheck_Random.random j o\<rightarrow> (\<lambda>b. Pair (valtermify_TNil b)))])"
-  apply (cases i rule: natural.exhaust)
-  apply (simp_all only: random_aux_tllist.simps natural_zero_minus_one Suc_natural_minus_one)
-  apply (subst select_weight_cons_zero) apply (simp only:)
-  done
+declare [[code drop: "partial_term_of :: (_, _) tllist itself => _"]]
 
-no_notation fcomp (infixl "o>" 60)
-no_notation scomp (infixl "o\<rightarrow>" 60)
+lemma partial_term_of_tllist_code [code]:
+  fixes tytok :: "('a :: partial_term_of, 'b :: partial_term_of) tllist itself" shows
+  "partial_term_of tytok (Quickcheck_Narrowing.Narrowing_variable p tt) \<equiv>
+   Code_Evaluation.Free (STR ''_'') (Typerep.typerep TYPE(('a, 'b) tllist))"
+  "partial_term_of tytok (Quickcheck_Narrowing.Narrowing_constructor 0 [b]) \<equiv>
+   Code_Evaluation.App
+     (Code_Evaluation.Const (STR ''TLList.tllist.TNil'') (Typerep.typerep TYPE('b \<Rightarrow> ('a, 'b) tllist)))
+     (partial_term_of TYPE('b) b)"
+  "partial_term_of tytok (Quickcheck_Narrowing.Narrowing_constructor 1 [head, tail]) \<equiv>
+   Code_Evaluation.App
+     (Code_Evaluation.App
+        (Code_Evaluation.Const
+           (STR ''TLList.tllist.TCons'')
+           (Typerep.typerep TYPE('a \<Rightarrow> ('a, 'b) tllist \<Rightarrow> ('a, 'b) tllist)))
+        (partial_term_of TYPE('a) head))
+     (partial_term_of TYPE(('a, 'b) tllist) tail)"
+by-(rule partial_term_of_anything)+
 
-instantiation tllist :: (full_exhaustive, full_exhaustive) full_exhaustive begin
+text {* Test quickcheck setup *}
 
-fun full_exhaustive_tllist 
-  ::"(('a, 'b) tllist \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option) \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
-where
-  "full_exhaustive_tllist f i =
-   (let A = Typerep.typerep TYPE('a);
-        B = Typerep.typerep TYPE('b);
-        Tllist = \<lambda>A B. Typerep.Typerep (STR ''TLList.tllist'') [A, B];
-        fun = \<lambda>A B. Typerep.Typerep (STR ''fun'') [A, B]
-    in
-      if 0 < i then 
-        case Quickcheck_Exhaustive.full_exhaustive (\<lambda>(b, bt). f (TNil b, \<lambda>_. Code_Evaluation.App 
-          (Code_Evaluation.Const (STR ''TLList.TNil'') (fun B (Tllist A B)))
-          (bt ()))) (i - 1)
-        of None \<Rightarrow> 
-            Quickcheck_Exhaustive.full_exhaustive (\<lambda>(x, xt). full_exhaustive_tllist (\<lambda>(xs, xst). 
-              f (TCons x xs, \<lambda>_. Code_Evaluation.App (Code_Evaluation.App 
-                   (Code_Evaluation.Const (STR ''TLList.TCons'') (fun A (fun (Tllist A B) (Tllist A B))))
-                   (xt ())) (xst ())))
-              (i - 1)) (i - 1)
-        | Some ts \<Rightarrow> Some ts
-      else None)"
+lemma "xs = TNil x"
+quickcheck[random, expect=counterexample]
+quickcheck[exhaustive, expect=counterexample]
+oops
 
-instance ..
-
-end
+lemma "TCons x xs = TCons x xs"
+quickcheck[narrowing, expect=no_counterexample]
+oops
 
 text {* More lemmas about generated constants *}
 
-lemma ttl_tllist_unfold:
-  "ttl (tllist_unfold IS_TNIL TNIL THD TTL a) = 
-  (if IS_TNIL a then TNil (TNIL a) else tllist_unfold IS_TNIL TNIL THD TTL (TTL a))"
+lemma ttl_unfold_tllist:
+  "ttl (unfold_tllist IS_TNIL TNIL THD TTL a) = 
+  (if IS_TNIL a then TNil (TNIL a) else unfold_tllist IS_TNIL TNIL THD TTL (TTL a))"
 by(simp)
 
 lemma is_TNil_ttl [simp]: "is_TNil xs \<Longrightarrow> is_TNil (ttl xs)"
@@ -173,18 +131,13 @@ by(cases xs) simp_all
 lemma terminal_ttl [simp]: "terminal (ttl xs) = terminal xs"
 by(cases xs) simp_all
 
-lemma tllist_unfold: 
-  "tllist_unfold IS_TNIL TNIL THD TTL a =
-  (if IS_TNIL a then TNil (TNIL a) else TCons (THD a) (tllist_unfold IS_TNIL TNIL THD TTL (TTL a)))"
-by(auto intro: tllist.expand)
+lemma unfold_tllist_eq_TNil [simp]:
+  "unfold_tllist IS_TNIL TNIL THD TTL a = TNil b \<longleftrightarrow> IS_TNIL a \<and> b = TNIL a"
+by(auto simp add: unfold_tllist.code)
 
-lemma tllist_unfold_eq_TNil [simp]:
-  "tllist_unfold IS_TNIL TNIL THD TTL a = TNil b \<longleftrightarrow> IS_TNIL a \<and> b = TNIL a"
-by(auto simp add: tllist_unfold)
-
-lemma TNil_eq_tllist_unfold [simp]:
-  "TNil b = tllist_unfold IS_TNIL TNIL THD TTL a \<longleftrightarrow> IS_TNIL a \<and> b = TNIL a"
-by(auto simp add: tllist_unfold)
+lemma TNil_eq_unfold_tllist [simp]:
+  "TNil b = unfold_tllist IS_TNIL TNIL THD TTL a \<longleftrightarrow> IS_TNIL a \<and> b = TNIL a"
+by(auto simp add: unfold_tllist.code)
 
 lemma is_TNil_tmap [simp]: "is_TNil (tmap f g xs) \<longleftrightarrow> is_TNil xs"
 by(cases xs) simp_all
@@ -215,10 +168,10 @@ by(cases xs) auto
 lemma in_tset_ttlD: "x \<in> tset (ttl xs) \<Longrightarrow> x \<in> tset xs"
 using tset_ttl[of xs] by auto
 
-lemma tllist_case_def':
-"tllist_case tnil tcons xs = (case tllist_dtor xs of Inl z \<Rightarrow> tnil z | Inr (y, ys) \<Rightarrow> tcons y ys)"
+lemma case_tllist_def':
+"case_tllist tnil tcons xs = (case dtor_tllist xs of Inl z \<Rightarrow> tnil z | Inr (y, ys) \<Rightarrow> tcons y ys)"
 apply (case_tac xs)
-by auto (auto simp add: TNil_def TCons_def tllist.dtor_ctor)
+by auto (auto simp add: TNil_def TCons_def tllist.dtor_ctor BNF_Comp.id_bnf_comp_def)
 
 theorem tllist_set_induct[consumes 1, case_names find step]:
   assumes "x \<in> tset xs" and "\<And>xs. \<not> is_TNil xs \<Longrightarrow> P (thd xs) xs"
@@ -228,67 +181,83 @@ proof -
   have "\<forall>x\<in>tset xs. P x xs"
     apply(rule tllist.dtor_set1_induct)
     using assms
-    apply(auto simp add: thd_def ttl_def pre_tllist_set2_def pre_tllist_set3_def pre_tllist_set1_def fsts_def snds_def tllist_case_def' collect_def sum_set_simps sum.set_map split: sum.splits)
+    apply(auto simp add: thd_def ttl_def set2_pre_tllist_def set3_pre_tllist_def set1_pre_tllist_def fsts_def snds_def case_tllist_def' collect_def sum_set_simps sum.set_map split: sum.splits)
+     apply(rename_tac b h t)
      apply(erule_tac x="b" in meta_allE)
      apply(erule meta_impE)
       apply(case_tac b)
-       apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
+       apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
       apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
      apply(case_tac b)
-     apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps)[2]
+     apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)[2]
+    apply(rename_tac b xa h t)
     apply(rotate_tac -2)
     apply(erule_tac x="b" in meta_allE)
     apply(erule_tac x="xa" in meta_allE)
     apply(erule meta_impE)
      apply(case_tac b)
-      apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
+      apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
      apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
     apply(case_tac b)
-    apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps)
+    apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
     done
   with `x \<in> tset xs` show ?thesis by blast
 qed
 
-theorem tllist_set2_induct[consumes 1, case_names find step]:
-  assumes "x \<in> tllist_set2 xs" and "\<And>xs. is_TNil xs \<Longrightarrow> P (terminal xs) xs"
-  and "\<And>xs y. \<lbrakk>\<not> is_TNil xs; y \<in> tllist_set2 (ttl xs); P y (ttl xs)\<rbrakk> \<Longrightarrow> P y xs"
+theorem set2_tllist_induct[consumes 1, case_names find step]:
+  assumes "x \<in> set2_tllist xs" and "\<And>xs. is_TNil xs \<Longrightarrow> P (terminal xs) xs"
+  and "\<And>xs y. \<lbrakk>\<not> is_TNil xs; y \<in> set2_tllist (ttl xs); P y (ttl xs)\<rbrakk> \<Longrightarrow> P y xs"
   shows "P x xs"
 proof -
-  have "\<forall>x\<in>tllist_set2 xs. P x xs"
+  have "\<forall>x\<in>set2_tllist xs. P x xs"
     apply(rule tllist.dtor_set2_induct)
     using assms
-    apply(auto simp add: is_TNil_def thd_def ttl_def terminal_def pre_tllist_set2_def pre_tllist_set3_def pre_tllist_set1_def fsts_def snds_def tllist_case_def' collect_def sum_set_simps sum.set_map split: sum.splits)
+    apply(auto simp add: is_TNil_def thd_def ttl_def terminal_def set2_pre_tllist_def
+      set3_pre_tllist_def set1_pre_tllist_def fsts_def snds_def case_tllist_def' collect_def
+      sum_set_simps sum.set_map split: sum.splits)
+     apply(rename_tac b y)
      apply(case_tac b)
-      apply(simp add: TNil_def tllist.dtor_ctor sum_set_simps)
+      apply(simp add: TNil_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
       apply(erule_tac x="b" in meta_allE)
       apply(erule meta_impE)
        apply fastforce
-      apply(simp add: tllist.dtor_ctor)
-     apply(simp add: TCons_def tllist.dtor_ctor sum_set_simps)
+      apply(simp add: tllist.dtor_ctor BNF_Comp.id_bnf_comp_def)
+     apply(simp add: TCons_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
+     apply(rename_tac b xa h t)
     apply(rotate_tac -2)
     apply(erule_tac x="b" in meta_allE)
     apply(erule_tac x="xa" in meta_allE)
     apply(erule meta_impE)
      apply(case_tac b)
-      apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
-     apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps)
+      apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
+     apply(clarsimp simp add: TNil_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
     apply(case_tac b)
-    apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps)
+    apply(simp_all add: TNil_def TCons_def tllist.dtor_ctor sum_set_simps BNF_Comp.id_bnf_comp_def)
     done
-  with `x \<in> tllist_set2 xs` show ?thesis by blast
+  with `x \<in> set2_tllist xs` show ?thesis by blast
 qed
 
 
 subsection {* Connection with @{typ "'a llist"} *}
 
-definition tllist_of_llist :: "'b \<Rightarrow> 'a llist \<Rightarrow> ('a, 'b) tllist"
-where "tllist_of_llist b = tllist_unfold lnull (\<lambda>_. b) lhd ltl"
+context fixes b :: 'b begin
+primcorec tllist_of_llist :: "'a llist \<Rightarrow> ('a, 'b) tllist" where
+  "tllist_of_llist xs = (case xs of LNil \<Rightarrow> TNil b | LCons x xs' \<Rightarrow> TCons x (tllist_of_llist xs'))"
+end
 
-definition llist_of_tllist :: "('a, 'b) tllist \<Rightarrow> 'a llist"
-where "llist_of_tllist = llist_unfold is_TNil thd ttl"
+primcorec llist_of_tllist :: "('a, 'b) tllist \<Rightarrow> 'a llist"
+where "llist_of_tllist xs = (case xs of TNil _ \<Rightarrow> LNil | TCons x xs' \<Rightarrow> LCons x (llist_of_tllist xs'))"
 
-lemma is_TNil_tllist_of_llist [simp]: "is_TNil (tllist_of_llist b xs) \<longleftrightarrow> lnull xs"
-by(simp add: tllist_of_llist_def)
+simps_of_case tllist_of_llist_simps [simp, code, nitpick_simp]: tllist_of_llist.code
+
+lemmas tllist_of_llist_LNil = tllist_of_llist_simps(1)
+  and tllist_of_llist_LCons = tllist_of_llist_simps(2)
+
+lemma terminal_tllist_of_llist_lnull [simp]:
+  "lnull xs \<Longrightarrow> terminal (tllist_of_llist b xs) = b"
+unfolding lnull_def by simp
+
+declare tllist_of_llist.sel(1)[simp del]
 
 lemma lhd_LNil: "lhd LNil = undefined"
 by(simp add: lhd_def)
@@ -297,29 +266,28 @@ lemma thd_TNil: "thd (TNil b) = undefined"
 by(simp add: thd_def)
 
 lemma thd_tllist_of_llist [simp]: "thd (tllist_of_llist b xs) = lhd xs"
-by(cases xs)(simp_all add: tllist_of_llist_def thd_TNil lhd_LNil)
+by(cases xs)(simp_all add: thd_TNil lhd_LNil)
 
 lemma ttl_tllist_of_llist [simp]: "ttl (tllist_of_llist b xs) = tllist_of_llist b (ltl xs)"
-by(simp add: tllist_of_llist_def ttl_tllist_unfold)
-
-lemma lnull_llist_of_tllist [simp]:
-  "lnull (llist_of_tllist xs) \<longleftrightarrow> is_TNil xs"
-by(simp add: llist_of_tllist_def)
+by(cases xs) simp_all
 
 lemma llist_of_tllist_eq_LNil:
   "llist_of_tllist xs = LNil \<longleftrightarrow> is_TNil xs"
-using lnull_llist_of_tllist unfolding lnull_def .
+using llist_of_tllist.disc_iff(1) unfolding lnull_def .
 
-lemma terminal_tllist_of_llist_lnull [simp]:
-  "lnull xs \<Longrightarrow> terminal (tllist_of_llist b xs) = b"
-by(simp add: tllist_of_llist_def)
+simps_of_case llist_of_tllist_simps [simp, code, nitpick_simp]: llist_of_tllist.code
+
+lemmas llist_of_tllist_TNil = llist_of_tllist_simps(1)
+  and llist_of_tllist_TCons = llist_of_tllist_simps(2)
+
+declare llist_of_tllist.sel [simp del]
 
 lemma lhd_llist_of_tllist [simp]: "\<not> is_TNil xs \<Longrightarrow> lhd (llist_of_tllist xs) = thd xs"
-by(simp add: llist_of_tllist_def)
+by(cases xs) simp_all
 
 lemma ltl_llist_of_tllist [simp]:
   "ltl (llist_of_tllist xs) = llist_of_tllist (ttl xs)"
-by(simp add: llist_of_tllist_def ltl_llist_unfold)
+by(cases xs) simp_all
 
 lemma tllist_of_llist_cong [cong]:
   assumes "xs = xs'" "lfinite xs' \<Longrightarrow> b = b'"
@@ -334,21 +302,11 @@ lemma llist_of_tllist_inverse [simp]:
   "tllist_of_llist (terminal b) (llist_of_tllist b) = b"
 by(coinduction arbitrary: b) simp_all
 
-lemma tllist_of_llist_LNil [simp, code, nitpick_simp]: "tllist_of_llist b LNil = TNil b"
-by(simp add: tllist_of_llist_def)
-
-lemma tllist_of_llist_LCons [simp, code, nitpick_simp]:
-  "tllist_of_llist b (LCons x xs) = TCons x (tllist_of_llist b xs)"
-by(rule tllist.expand) auto
-
 lemma tllist_of_llist_eq [simp]: "tllist_of_llist b' xs = TNil b \<longleftrightarrow> b = b' \<and> xs = LNil"
-unfolding tllist_of_llist_def
-by(auto simp add: tllist_of_llist_def)
+by(cases xs) auto
 
 lemma TNil_eq_tllist_of_llist [simp]: "TNil b = tllist_of_llist b' xs \<longleftrightarrow> b = b' \<and> xs = LNil"
-unfolding tllist_of_llist_def
-by(auto simp add: tllist_of_llist_def)
-
+by(cases xs) auto
 
 lemma tllist_of_llist_inject [simp]:
   "tllist_of_llist b xs = tllist_of_llist c ys \<longleftrightarrow> xs = ys \<and> (lfinite ys \<longrightarrow> b = c)"
@@ -365,18 +323,9 @@ next
     unfolding `xs = ys` by(induct) simp_all
 qed
 
-lemma llist_of_tllist_TNil [simp, code, nitpick_simp]:
-  "llist_of_tllist (TNil b) = LNil"
-by simp
-
-lemma llist_of_tllist_TCons [simp, code, nitpick_simp]:
-  "llist_of_tllist (TCons x xs) = LCons x (llist_of_tllist xs)"
-by(rule llist.expand) auto
-
 lemma tllist_of_llist_inverse [simp]:
   "llist_of_tllist (tllist_of_llist b xs) = xs"
 by(coinduction arbitrary: xs) auto
-
 
 definition cr_tllist :: "('a llist \<times> 'b) \<Rightarrow> ('a, 'b) tllist \<Rightarrow> bool"
   where "cr_tllist \<equiv> (\<lambda>(xs, b) ys. tllist_of_llist b xs = ys)"
@@ -397,19 +346,19 @@ interpretation lifting_syntax .
 
 lemma TNil_transfer [transfer_rule]:
   "(B ===> pcr_tllist A B) (Pair LNil) TNil"
-by(auto simp add: pcr_tllist_def cr_tllist_def intro!: fun_relI relcomppI)
+by(auto simp add: pcr_tllist_def cr_tllist_def intro!: rel_funI relcomppI)
 
 lemma TCons_transfer [transfer_rule]:
   "(A ===> pcr_tllist A B ===> pcr_tllist A B) (apfst \<circ> LCons) TCons"
-by(auto 4 3 intro!: fun_relI relcomppI simp add: pcr_tllist_def prod_rel_def llist_all2_LCons1 cr_tllist_def)
+by(auto 4 3 intro!: rel_funI relcomppI simp add: pcr_tllist_def rel_prod_def llist_all2_LCons1 cr_tllist_def)
 
 lemma tmap_tllist_of_llist:
   "tmap f g (tllist_of_llist b xs) = tllist_of_llist (g b) (lmap f xs)"
 by(coinduction arbitrary: xs)(auto simp add: tmap_is_TNil)
 
 lemma tmap_transfer [transfer_rule]:
-  "(op = ===> op = ===> pcr_tllist op = op = ===> pcr_tllist op = op =) (map_pair \<circ> lmap) tmap"
-by(auto intro!: fun_relI simp add: cr_tllist_def tllist.pcr_cr_eq tmap_tllist_of_llist)
+  "(op = ===> op = ===> pcr_tllist op = op = ===> pcr_tllist op = op =) (map_prod \<circ> lmap) tmap"
+by(auto intro!: rel_funI simp add: cr_tllist_def tllist.pcr_cr_eq tmap_tllist_of_llist)
 
 lemma lset_llist_of_tllist [simp]:
   "lset (llist_of_tllist xs) = tset xs" (is "?lhs = ?rhs")
@@ -450,7 +399,7 @@ by(auto simp add: cr_tllist_def tllist.pcr_cr_eq)
 
 lemma ttl_transfer [transfer_rule]:
   "(pcr_tllist A B ===> pcr_tllist A B) (apfst ltl) ttl"
-by(auto simp add: pcr_tllist_def cr_tllist_def prod_rel_def intro!: fun_relI relcomppI intro: llist_all2_ltlI)
+by(auto simp add: pcr_tllist_def cr_tllist_def rel_prod_def intro!: rel_funI relcomppI intro: llist_all2_ltlI)
 
 lemma llist_of_tllist_transfer [transfer_rule]:
   "(pcr_tllist op = B ===> op =) fst llist_of_tllist"
@@ -464,29 +413,29 @@ lemma terminal_tllist_of_llist_lfinite [simp]:
   "lfinite xs \<Longrightarrow> terminal (tllist_of_llist b xs) = b"
 by(induct rule: lfinite.induct) simp_all
 
-lemma tllist_set2_tllist_of_llist [simp]:
-  "tllist_set2 (tllist_of_llist b xs) = (if lfinite xs then {b} else {})"
+lemma set2_tllist_tllist_of_llist [simp]:
+  "set2_tllist (tllist_of_llist b xs) = (if lfinite xs then {b} else {})"
 proof(cases "lfinite xs")
   case True
   thus ?thesis by(induct) auto
 next
   case False
   { fix x
-    assume "x \<in> tllist_set2 (tllist_of_llist b xs)"
+    assume "x \<in> set2_tllist (tllist_of_llist b xs)"
     hence False using False
-      by(induct "tllist_of_llist b xs" arbitrary: xs rule: tllist_set2_induct) fastforce+ }
+      by(induct "tllist_of_llist b xs" arbitrary: xs rule: set2_tllist_induct) fastforce+ }
   thus ?thesis using False by auto
 qed
 
-lemma tllist_set2_transfer [transfer_rule]:
-  "(pcr_tllist A B ===> set_rel B) (\<lambda>(xs, b). if lfinite xs then {b} else {}) tllist_set2"
-by(auto 4 4 simp add: pcr_tllist_def cr_tllist_def dest: llist_all2_lfiniteD intro: set_relI)
+lemma set2_tllist_transfer [transfer_rule]:
+  "(pcr_tllist A B ===> rel_set B) (\<lambda>(xs, b). if lfinite xs then {b} else {}) set2_tllist"
+by(auto 4 4 simp add: pcr_tllist_def cr_tllist_def dest: llist_all2_lfiniteD intro: rel_setI)
 
 lemma tllist_all2_transfer [transfer_rule]:
   "(op = ===> op = ===> pcr_tllist op = op = ===> pcr_tllist op = op = ===> op =)
      (\<lambda>P Q (xs, b) (ys, b'). llist_all2 P xs ys \<and> (lfinite xs \<longrightarrow> Q b b')) tllist_all2"
 unfolding tllist.pcr_cr_eq
-apply(rule fun_relI)+
+apply(rule rel_funI)+
 apply(clarsimp simp add: cr_tllist_def llist_all2_def tllist_all2_def)
 apply(safe elim!: GrpE)
    apply simp_all
@@ -563,7 +512,7 @@ by(simp add: terminal_tinfinite)
 
 lemma terminal_transfer [transfer_rule]:
   "(pcr_tllist A op = ===> op =) (\<lambda>(xs, b). if lfinite xs then b else undefined) terminal"
-by(auto simp add: cr_tllist_def pcr_tllist_def terminal_tllist_of_llist intro!: fun_relI dest: llist_all2_lfiniteD)
+by(auto simp add: cr_tllist_def pcr_tllist_def terminal_tllist_of_llist intro!: rel_funI dest: llist_all2_lfiniteD)
 
 lemma terminal_tmap [simp]: "tfinite xs \<Longrightarrow> terminal (tmap f g xs) = g (terminal xs)"
 by(induct rule: tfinite_induct) simp_all
@@ -582,13 +531,37 @@ by(cases xs) auto
 
 subsection {* Appending two terminated lazy lists @{term "tappend" } *}
 
-lemma tappend_TNil [simp, code, nitpick_simp]: 
+lemma tappend_TNil [simp, code, nitpick_simp]:
   "tappend (TNil b) f = f b"
 by transfer auto
 
 lemma tappend_TCons [simp, code, nitpick_simp]:
   "tappend (TCons a tr) f = TCons a (tappend tr f)"
-by transfer(auto simp add: apfst_def map_pair_def split: prod.splits)
+by transfer(auto simp add: apfst_def map_prod_def split: prod.splits)
+
+lemma tappend_TNil2 [simp]:
+  "tappend xs TNil = xs"
+by transfer auto
+
+lemma tappend_assoc: "tappend (tappend xs f) g = tappend xs (\<lambda>b. tappend (f b) g)"
+by transfer(auto simp add: split_beta lappend_assoc)
+
+lemma terminal_tappend:
+  "terminal (tappend xs f) = (if tfinite xs then terminal (f (terminal xs)) else terminal xs)"
+by transfer(auto simp add: split_beta)
+
+lemma tfinite_tappend: "tfinite (tappend xs f) \<longleftrightarrow> tfinite xs \<and> tfinite (f (terminal xs))"
+by transfer auto
+
+lift_definition tcast :: "('a, 'b) tllist \<Rightarrow> ('a, 'c) tllist"
+is "\<lambda>(xs, a). (xs, undefined)" by clarsimp
+
+lemma tappend_inf: "\<not> tfinite xs \<Longrightarrow> tappend xs f = tcast xs"
+by(transfer)(auto simp add: apfst_def map_prod_def split_beta lappend_inf)
+
+text {* @{term tappend} is the monadic bind on @{typ "('a, 'b) tllist"} *}
+
+lemmas tllist_monad = tappend_TNil tappend_TNil2 tappend_assoc
 
 subsection {* Appending a terminated lazy list to a lazy list @{term "lappendt"} *}
 
@@ -754,13 +727,6 @@ lemma tllist_all2D_llist_all2_llist_of_tllist:
   "tllist_all2 P Q xs ys \<Longrightarrow> llist_all2 P (llist_of_tllist xs) (llist_of_tllist ys)"
 by(transfer) auto
 
-lemma tllist_all2_code [code]:
-  "tllist_all2 P Q (TNil b) (TNil b') \<longleftrightarrow> Q b b'"
-  "tllist_all2 P Q (TNil b) (TCons y ys) \<longleftrightarrow> False"
-  "tllist_all2 P Q (TCons x xs) (TNil b') \<longleftrightarrow> False"
-  "tllist_all2 P Q (TCons x xs) (TCons y ys) \<longleftrightarrow> P x y \<and> tllist_all2 P Q xs ys"
-by(simp_all add: tllist_all2_TNil1 tllist_all2_TNil2)
-
 lemma tllist_all2_is_TNilD:
   "tllist_all2 P Q xs ys \<Longrightarrow> is_TNil xs \<longleftrightarrow> is_TNil ys"
 by(cases xs)(auto simp add: tllist_all2_TNil1 tllist_all2_TCons1)
@@ -820,7 +786,7 @@ lemma tllist_all2_tappendI:
      \<Longrightarrow> tllist_all2 P R (xs' (terminal xs)) (ys' (terminal ys)) \<rbrakk>
   \<Longrightarrow> tllist_all2 P R (tappend xs xs') (tappend ys ys')"
 apply transfer
-apply(auto 4 3 simp add: apfst_def map_pair_def lappend_inf split: prod.split_asm dest: llist_all2_lfiniteD intro: llist_all2_lappendI)
+apply(auto 4 3 simp add: apfst_def map_prod_def lappend_inf split: prod.split_asm dest: llist_all2_lfiniteD intro: llist_all2_lappendI)
 apply(frule llist_all2_lfiniteD, simp add: lappend_inf)
 done
 
@@ -1108,120 +1074,133 @@ context
 begin
 interpretation lifting_syntax .
 
-lemma pre_tllist_set1_transfer [transfer_rule]:
-  "(sum_rel A (prod_rel B C) ===> set_rel B) pre_tllist_set1 pre_tllist_set1"
-by(auto simp add: Transfer.fun_rel_def pre_tllist_set1_def set_rel_def collect_def sum_set_defs sum_rel_def fsts_def split: sum.split_asm)
+lemma set1_pre_tllist_transfer [transfer_rule]:
+  "(rel_pre_tllist A B C ===> rel_set A) set1_pre_tllist set1_pre_tllist"
+by(auto simp add: rel_pre_tllist_def vimage2p_def rel_fun_def set1_pre_tllist_def rel_set_def collect_def sum_set_defs rel_sum_def fsts_def split: sum.split_asm)
 
-lemma pre_tllist_set2_transfer [transfer_rule]:
-  "(sum_rel A (prod_rel B C) ===> set_rel A) pre_tllist_set2 pre_tllist_set2"
-by(auto simp add: Transfer.fun_rel_def pre_tllist_set2_def set_rel_def collect_def sum_set_defs snds_def sum_rel_def split: sum.split_asm)
+lemma set2_pre_tllist_transfer [transfer_rule]:
+  "(rel_pre_tllist A B C ===> rel_set B) set2_pre_tllist set2_pre_tllist"
+by(auto simp add: rel_pre_tllist_def vimage2p_def rel_fun_def set2_pre_tllist_def rel_set_def collect_def sum_set_defs snds_def rel_sum_def split: sum.split_asm)
 
-lemma pre_tllist_set3_transfer [transfer_rule]:
-  "(sum_rel A (prod_rel B C) ===> set_rel C) pre_tllist_set3 pre_tllist_set3"
-by(auto simp add: Transfer.fun_rel_def pre_tllist_set3_def set_rel_def collect_def sum_set_defs snds_def sum_rel_def split: sum.split_asm)
+lemma set3_pre_tllist_transfer [transfer_rule]:
+  "(rel_pre_tllist A B C ===> rel_set C) set3_pre_tllist set3_pre_tllist"
+by(auto simp add: rel_pre_tllist_def vimage2p_def rel_fun_def set3_pre_tllist_def rel_set_def collect_def sum_set_defs snds_def rel_sum_def split: sum.split_asm)
 
-lemma tllist_dtor_transfer [transfer_rule]:
-  "(tllist_all2 A B ===> sum_rel B (prod_rel A (tllist_all2 A B))) tllist_dtor tllist_dtor"
-apply(rule fun_relI)
+lemma dtor_tllist_transfer [transfer_rule]:
+  "(tllist_all2 A B ===> rel_pre_tllist A B (tllist_all2 A B)) dtor_tllist dtor_tllist"
+apply(rule rel_funI)
 apply(erule tllist_all2_cases)
-apply(auto simp add: sum_rel_def TNil_def TCons_def tllist.dtor_ctor split: sum.split)
+apply(auto simp add: rel_pre_tllist_def vimage2p_def BNF_Comp.id_bnf_comp_def rel_sum_def TNil_def TCons_def tllist.dtor_ctor split: sum.split)
 done
 
 lemma TNil_transfer2 [transfer_rule]: "(B ===> tllist_all2 A B) TNil TNil"
 by auto
+declare TNil_transfer [transfer_rule]
 
 lemma TCons_transfer2 [transfer_rule]:
   "(A ===> tllist_all2 A B ===> tllist_all2 A B) TCons TCons"
-unfolding Transfer.fun_rel_def by simp
+unfolding rel_fun_def by simp
+declare TCons_transfer [transfer_rule]
 
-lemma tllist_case_transfer [transfer_rule]:
+lemma case_tllist_transfer [transfer_rule]:
   "((B ===> C) ===> (A ===> tllist_all2 A B ===> C) ===> tllist_all2 A B ===> C)
-    tllist_case tllist_case"
-unfolding Transfer.fun_rel_def
+    case_tllist case_tllist"
+unfolding rel_fun_def
 by (simp add: tllist_all2_TNil1 tllist_all2_TNil2 split: tllist.split)
 
-lemma tllist_unfold_transfer [transfer_rule]:
-  "((A ===> op =) ===> (A ===> B) ===> (A ===> C) ===> (A ===> A) ===> A ===> tllist_all2 C B) tllist_unfold tllist_unfold"
-proof(rule fun_relI)+
+lemma unfold_tllist_transfer [transfer_rule]:
+  "((A ===> op =) ===> (A ===> B) ===> (A ===> C) ===> (A ===> A) ===> A ===> tllist_all2 C B) unfold_tllist unfold_tllist"
+proof(rule rel_funI)+
   fix IS_TNIL1 :: "'a \<Rightarrow> bool" and IS_TNIL2
     TERMINAL1 TERMINAL2 THD1 THD2 TTL1 TTL2 x y
   assume rel: "(A ===> op =) IS_TNIL1 IS_TNIL2" "(A ===> B) TERMINAL1 TERMINAL2"
     "(A ===> C) THD1 THD2" "(A ===> A) TTL1 TTL2"
     and "A x y"
-  show "tllist_all2 C B (tllist_unfold IS_TNIL1 TERMINAL1 THD1 TTL1 x) (tllist_unfold IS_TNIL2 TERMINAL2 THD2 TTL2 y)"
+  show "tllist_all2 C B (unfold_tllist IS_TNIL1 TERMINAL1 THD1 TTL1 x) (unfold_tllist IS_TNIL2 TERMINAL2 THD2 TTL2 y)"
     using `A x y`
     apply(coinduction arbitrary: x y)
-    using rel by(auto 4 4 elim: fun_relE)
+    using rel by(auto 4 4 elim: rel_funE)
 qed
 
-lemma llist_corec_transfer [transfer_rule]:
-  "((A ===> op =) ===> (A ===> B) ===> (A ===> C) ===> (A ===> op =) ===> (A ===> tllist_all2 C B) ===> (A ===> A) ===> A ===> tllist_all2 C B) tllist_corec tllist_corec"
-proof(rule fun_relI)+
+lemma corec_tllist_transfer [transfer_rule]:
+  "((A ===> op =) ===> (A ===> B) ===> (A ===> C) ===> (A ===> op =) ===> (A ===> tllist_all2 C B) ===> (A ===> A) ===> A ===> tllist_all2 C B) corec_tllist corec_tllist"
+proof(rule rel_funI)+
   fix IS_TNIL1 MORE1 :: "'a \<Rightarrow> bool" and IS_TNIL2
     TERMINAL1 TERMINAL2 THD1 THD2 MORE2 STOP1 STOP2 TTL1 TTL2 x y
   assume rel: "(A ===> op =) IS_TNIL1 IS_TNIL2" "(A ===> B) TERMINAL1 TERMINAL2"
     "(A ===> C) THD1 THD2" "(A ===> op =) MORE1 MORE2"
     "(A ===> tllist_all2 C B) STOP1 STOP2" "(A ===> A) TTL1 TTL2"
     and "A x y"
-  show "tllist_all2 C B (tllist_corec IS_TNIL1 TERMINAL1 THD1 MORE1 STOP1 TTL1 x) (tllist_corec IS_TNIL2 TERMINAL2 THD2 MORE2 STOP2 TTL2 y)"
+  show "tllist_all2 C B (corec_tllist IS_TNIL1 TERMINAL1 THD1 MORE1 STOP1 TTL1 x) (corec_tllist IS_TNIL2 TERMINAL2 THD2 MORE2 STOP2 TTL2 y)"
     using `A x y`
     apply(coinduction arbitrary: x y)
-    using rel by(auto 4 4 elim: fun_relE)
+    using rel by(auto 4 4 elim: rel_funE)
 qed
 
 lemma ttl_transfer2 [transfer_rule]:
   "(tllist_all2 A B ===> tllist_all2 A B) ttl ttl"
   unfolding ttl_def[abs_def] by transfer_prover
+declare ttl_transfer [transfer_rule]
 
 lemma tset_transfer2 [transfer_rule]:
-  "(tllist_all2 A B ===> set_rel A) tset tset"
-by (intro fun_relI set_relI) (auto simp only: in_tset_conv_tnth tllist_all2_conv_all_tnth Bex_def)
+  "(tllist_all2 A B ===> rel_set A) tset tset"
+by (intro rel_funI rel_setI) (auto simp only: in_tset_conv_tnth tllist_all2_conv_all_tnth Bex_def)
 
 lemma tmap_transfer2 [transfer_rule]:
   "((A ===> B) ===> (C ===> D) ===> tllist_all2 A C ===> tllist_all2 B D) tmap tmap"
-by(auto simp add: Transfer.fun_rel_def tllist_all2_tmap1 tllist_all2_tmap2 elim: tllist_all2_mono)
+by(auto simp add: rel_fun_def tllist_all2_tmap1 tllist_all2_tmap2 elim: tllist_all2_mono)
+declare tmap_transfer [transfer_rule]
 
 lemma is_TNil_transfer2 [transfer_rule]:
   "(tllist_all2 A B ===> op =) is_TNil is_TNil"
 by(auto dest: tllist_all2_is_TNilD)
+declare is_TNil_transfer [transfer_rule]
 
 lemma tappend_transfer [transfer_rule]:
   "(tllist_all2 A B ===> (B ===> tllist_all2 A C) ===> tllist_all2 A C) tappend tappend"
-by(auto intro: tllist_all2_tappendI elim: fun_relE)
+by(auto intro: tllist_all2_tappendI elim: rel_funE)
+declare tappend.transfer [transfer_rule]
 
 lemma lappendt_transfer [transfer_rule]:
   "(llist_all2 A ===> tllist_all2 A B ===> tllist_all2 A B) lappendt lappendt"
-unfolding Transfer.fun_rel_def
+unfolding rel_fun_def
 by transfer(auto intro: llist_all2_lappendI)
+declare lappendt.transfer [transfer_rule]
 
 lemma llist_of_tllist_transfer2 [transfer_rule]:
   "(tllist_all2 A B ===> llist_all2 A) llist_of_tllist llist_of_tllist"
 by(auto intro: llist_all2_tllist_of_llistI)
+declare llist_of_tllist_transfer [transfer_rule]
 
 lemma tllist_of_llist_transfer2 [transfer_rule]:
   "(B ===> llist_all2 A ===> tllist_all2 A B) tllist_of_llist tllist_of_llist"
-by(auto intro!: fun_relI)
+by(auto intro!: rel_funI)
+declare tllist_of_llist_transfer [transfer_rule]
 
 lemma tlength_transfer [transfer_rule]:
   "(tllist_all2 A B ===> op =) tlength tlength"
 by(auto dest: tllist_all2_tlengthD)
+declare tlength.transfer [transfer_rule]
 
 lemma tdropn_transfer [transfer_rule]:
   "(op = ===> tllist_all2 A B ===> tllist_all2 A B) tdropn tdropn"
-unfolding Transfer.fun_rel_def
+unfolding rel_fun_def
 by transfer(auto intro: llist_all2_ldropnI)
+declare tdropn.transfer [transfer_rule]
 
 lemma tfilter_transfer [transfer_rule]:
   "(B ===> (A ===> op =) ===> tllist_all2 A B ===> tllist_all2 A B) tfilter tfilter"
-unfolding Transfer.fun_rel_def
+unfolding rel_fun_def
 by transfer(auto intro: llist_all2_lfilterI dest: llist_all2_lfiniteD)
+declare tfilter.transfer [transfer_rule]
 
 lemma tconcat_transfer [transfer_rule]:
   "(B ===> tllist_all2 (llist_all2 A) B ===> tllist_all2 A B) tconcat tconcat"
-unfolding Transfer.fun_rel_def
+unfolding rel_fun_def
 by transfer(auto intro: llist_all2_lconcatI dest: llist_all2_lfiniteD)
+declare tconcat.transfer [transfer_rule]
 
-lemma tllist_all2_rsp: 
+lemma tllist_all2_rsp:
   assumes R1: "\<forall>x y. R1 x y \<longrightarrow> (\<forall>a b. R1 a b \<longrightarrow> S x a = T y b)"
   and R2: "\<forall>x y. R2 x y \<longrightarrow> (\<forall>a b. R2 a b \<longrightarrow> S' x a = T' y b)"
   and xsys: "tllist_all2 R1 R2 xs ys"
@@ -1248,7 +1227,8 @@ qed
 lemma tllist_all2_transfer2 [transfer_rule]:
   "((R1 ===> R1 ===> op =) ===> (R2 ===> R2 ===> op =) ===>
     tllist_all2 R1 R2 ===> tllist_all2 R1 R2 ===> op =) tllist_all2 tllist_all2"
-by (simp add: tllist_all2_rsp fun_rel_def)
+by (simp add: tllist_all2_rsp rel_fun_def)
+declare tllist_all2_transfer [transfer_rule]
 
 end
 
