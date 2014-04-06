@@ -70,7 +70,7 @@ lemma tail_value_helper:
   assumes "distinct p"
   assumes "p \<noteq> []"
   shows "p = [hd p]"
-  by (metis assms distinct.simps(2) hd.simps neq_Nil_conv last_ConsR last_in_set)
+  by (metis assms distinct.simps(2) list.sel(1) neq_Nil_conv last_ConsR last_in_set)
 
 lemma (in basic_sp) dist_le_cost:
   fixes v :: 'a
@@ -205,7 +205,7 @@ proof -
           using witness_path[OF \<mu>r] unfolding apath_def 
           by blast
         then have pe: "awalk s (p @ [e]) v" 
-          using e_assms(1,2) by (auto simp: awalk_simps awlast_of_awalk)
+          using e_assms(1,2) by (auto simp: awalk_simps)
         hence muc:"\<mu> c s v \<le> \<mu> c s (tail G e) + ereal (c e)" 
         using \<mu>s min_cost_le_walk_cost[OF pe] by simp 
         thus  "dist v \<ge> \<mu> c s v"  using dmuc by simp

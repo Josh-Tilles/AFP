@@ -9,7 +9,7 @@ hide_const (open) Fixrec.mplus
 class plusU = tycon +
   fixes plusU :: "udom\<cdot>'a \<rightarrow> udom\<cdot>'a \<rightarrow> udom\<cdot>'a::tycon"
 
-class functor_plus = plusU + functor +
+class functor_plus = plusU + "functor" +
   assumes fmapU_plusU [coerce_simp]:
     "fmapU\<cdot>f\<cdot>(plusU\<cdot>a\<cdot>b) = plusU\<cdot>(fmapU\<cdot>f\<cdot>a)\<cdot>(fmapU\<cdot>f\<cdot>b)"
   assumes plusU_assoc:
@@ -43,9 +43,9 @@ by (simp add: coerce_simp plusU_assoc)
 abbreviation mplus :: "'a\<cdot>'m::monad_plus \<rightarrow> 'a\<cdot>'m \<rightarrow> 'a\<cdot>'m"
   where "mplus \<equiv> fplus"
 
-lemmas mplus_def = fplus_def [where 'f="'m::monad_plus", standard]
-lemmas fmap_mplus = fmap_fplus [where 'f="'m::monad_plus", standard]
-lemmas mplus_assoc = fplus_assoc [where 'f="'m::monad_plus", standard]
+lemmas mplus_def = fplus_def [where 'f="'m::monad_plus" for f]
+lemmas fmap_mplus = fmap_fplus [where 'f="'m::monad_plus" for f]
+lemmas mplus_assoc = fplus_assoc [where 'f="'m::monad_plus" for f]
 
 lemma bind_mplus:
   fixes a b :: "'a\<cdot>'m::monad_plus"

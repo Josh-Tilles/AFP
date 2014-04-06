@@ -144,7 +144,7 @@ section {* GHC Version of Mergesort *}
 
 text {*
 In the following we show that the mergesort implementation
-used in GHC (see \url{http://haskell.org/ghc/docs/7.0-latest/html/libraries/base-4.3.1.0/src/Data-List.html#sort})
+used in GHC (see @{url "http://haskell.org/ghc/docs/7.0-latest/html/libraries/base-4.3.1.0/src/Data-List.html#sort"})
 is a correct and stable sorting algorithm. Furthermore, experimental
 data suggests that generated code for this implementation is much more
 efficient than for the implementation provided by @{theory Multiset}.
@@ -335,7 +335,7 @@ lemma sorted_merge_induct[consumes 1, case_names Nil IH]:
       \<Longrightarrow> P xs (y#ys)"
   shows "P xs ys"
   using assms(2-) assms(1)
-  by (induction_schema) (case_tac ys, simp_all, force, lexicographic_order)
+  by (induction_schema) (case_tac ys, simp_all, lexicographic_order)
  
 lemma filter_by_key_dropWhile[simp]:
   assumes "sorted (map key xs)"

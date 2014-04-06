@@ -117,7 +117,11 @@ text {*
   \begin{itemize}
   \item @{class ceq} (\S\ref{subsection:ceq}), @{class corder} (\S\ref{subsection:corder}), and @{class set_impl} (\S\ref{subsection:set_impl}) for @{typ "'a set"} in general
   \item @{class cenum} (\S\ref{subsection:cenum}) for set comprehensions @{term "{x. P x}"},
-  \item @{class card_UNIV}, @{class cproper_interval} for @{typ "'a set set"} and any deeper nesting of sets (\S\ref{subsection:card_UNIV}), and
+  \item @{class card_UNIV}, @{class cproper_interval} for @{typ "'a set set"} and any deeper nesting of sets (\S\ref{subsection:card_UNIV}),%
+   \footnote{%
+     These type classes are only required for set complements (see \S\ref{subsection:well:sortedness}).
+   }
+    and
   \item @{class equal},%
     \footnote{%
       We deviate here from the strict separation of type classes, because it does not make sense to store types in a map on which we do not have equality, because the most basic operation @{term "Mapping.lookup"} inherently requires equality.
@@ -161,7 +165,8 @@ text {*
   First, the simple case of a type constructor @{text simple_tycon} without parameters that already is an instance of @{class equal}:
 *}
 typedecl simple_tycon
-arities simple_tycon :: equal
+axiomatization where simple_tycon_equal: "OFCLASS(simple_tycon, equal_class)"
+instance simple_tycon :: equal by (rule simple_tycon_equal)
 
 instantiation simple_tycon :: ceq begin
 definition "CEQ(simple_tycon) = Some op ="
@@ -171,7 +176,7 @@ end
 text {*
   For polymorphic types, this is a bit more involved, as the next example with @{typ "'a expr'"} illustrates (note that we could have delegated all this to @{text derive}). 
   First, we need an operation that implements equality tests with respect to a given equality operation on the polymorphic type.
-  For data types, we can use the relator which the transfer package (method @{text transfer}) requires and the BNF package from @{file "~~/src/HOL/BNF/BNF.thy"} generates automatically.
+  For data types, we can use the relator which the transfer package (method @{text transfer}) requires and the BNF package generates automatically.
   As we have used the old datatype package for @{typ "'a expr'"}, we must define it manually:
 *}
 
@@ -238,7 +243,8 @@ derive (linorder) corder expr
 text {*
   In general, the pattern for type constructors without parameters looks as follows:
 *}
-arities simple_tycon :: linorder
+axiomatization where simple_tycon_linorder: "OFCLASS(simple_tycon, linorder_class)"
+instance simple_tycon :: linorder by (rule simple_tycon_linorder)
 
 instantiation simple_tycon :: corder begin
 definition "CORDER(simple_tycon) = Some (op \<le>, op <)"
@@ -491,6 +497,7 @@ text {*
   Then, @{term "- {b. b = True}"} becomes @{value "- {b. b = True}"}, but this applies to all complement invocations.
   For example, @{term [source] "UNIV :: bool set"} becomes @{value "UNIV :: bool set"}.
 *}
+(*<*)declare Set_uminus_cenum[code del] Set_uminus_code[code](*>*)
 
 subsection {* Nested sets *}
 text_raw {* \label{subsection:finite_UNIV} \label{subsection:card_UNIV} \label{subsection:cproper_interval} *}
@@ -762,14 +769,14 @@ lift_definition empty :: "('k :: cbl, 'v) trie"
   by(simp add: trie_keys_empty)
 
 lift_definition lookup :: "('k :: cbl, 'v) trie \<Rightarrow> 'k \<Rightarrow> 'v option"
-  is "\<lambda>t. trie_lookup t \<circ> to_bl" ..
+  is "\<lambda>t. trie_lookup t \<circ> to_bl" .
 
 lift_definition update :: "'k \<Rightarrow> 'v \<Rightarrow> ('k :: cbl, 'v) trie \<Rightarrow> ('k, 'v) trie"
   is "trie_update \<circ> to_bl"
   by(auto simp add: trie_keys_dom_lookup trie_lookup_update)
 
 lift_definition keys :: "('k :: cbl, 'v) trie \<Rightarrow> 'k set"
-  is "\<lambda>t. from_bl ` trie_keys t" ..
+  is "\<lambda>t. from_bl ` trie_keys t" .
 
 text {*
   And now we go for the properties.
@@ -987,6 +994,7 @@ text {*
 *}
 
 subsection {* Wellsortedness errors *}
+text_raw {* \label{subsection:well:sortedness} *}
 
 text {*
   LC uses its own hierarchy of type classes which is distinct from Isabelle/HOL's.
@@ -1023,7 +1031,22 @@ text {*
       \\
     \end{tabular}
   \end{center}
+
+  The type classes @{class card_UNIV} and @{class cproper_interval} are only required to implement the operations on set complements.
+  If your code does not need complements, you can manually delete the code equations involving @{const "Complement"}, the theorem list @{thm [source] set_complement_code} collects them.
+  It is also recommended that you remove the pseudo-constructor @{const Complement} from the code generator.
+  Note that some set operations like @{term "A - B"} and @{const UNIV} have no code equations any more.
 *}
+declare set_complement_code[code del]
+code_datatype Collect_set DList_set RBT_set Set_Monad
+(*<*)
+datatype minimal_sorts = Minimal_Sorts bool
+derive (eq) ceq minimal_sorts
+derive (no) corder minimal_sorts
+derive (monad) set_impl minimal_sorts
+derive (no) cenum minimal_sorts
+value [code] "{Minimal_Sorts True} \<union> {} \<inter> Minimal_Sorts ` {True, False}"
+(*>*)
 
 subsection {* Exception raised at run-time *}
 text_raw {* \label{subsection:set_impl_unsupported_operation} *}

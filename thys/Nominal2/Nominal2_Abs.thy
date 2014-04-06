@@ -479,14 +479,14 @@ lemma [quot_respect]:
   shows "(op= ===> op= ===> alpha_abs_set) Pair Pair"
   and   "(op= ===> op= ===> alpha_abs_res) Pair Pair"
   and   "(op= ===> op= ===> alpha_abs_lst) Pair Pair"
-  unfolding fun_rel_def
+  unfolding rel_fun_def
   by (auto intro: alphas_abs_refl)
 
 lemma [quot_respect]:
   shows "(op= ===> alpha_abs_set ===> alpha_abs_set) permute permute"
   and   "(op= ===> alpha_abs_res ===> alpha_abs_res) permute permute"
   and   "(op= ===> alpha_abs_lst ===> alpha_abs_lst) permute permute"
-  unfolding fun_rel_def
+  unfolding rel_fun_def
   by (auto intro: alphas_abs_eqvt simp only: Pair_eqvt)
 
 lemma Abs_eq_iff:
@@ -1045,18 +1045,18 @@ where
 definition 
   prod_alpha :: "('a \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> ('b \<Rightarrow> 'b \<Rightarrow> bool) \<Rightarrow> ('a \<times> 'b \<Rightarrow> 'a \<times> 'b \<Rightarrow> bool)"
 where
- "prod_alpha = prod_rel"
+ "prod_alpha = rel_prod"
 
 lemma [quot_respect]:
-  shows "((R1 ===> op =) ===> (R2 ===> op =) ===> prod_rel R1 R2 ===> op =) prod_fv prod_fv"
-  unfolding fun_rel_def
-  unfolding prod_rel_def
+  shows "((R1 ===> op =) ===> (R2 ===> op =) ===> rel_prod R1 R2 ===> op =) prod_fv prod_fv"
+  unfolding rel_fun_def
+  unfolding rel_prod_def
   by auto
 
 lemma [quot_preserve]:
   assumes q1: "Quotient3 R1 abs1 rep1"
   and     q2: "Quotient3 R2 abs2 rep2"
-  shows "((abs1 ---> id) ---> (abs2 ---> id) ---> map_pair rep1 rep2 ---> id) prod_fv = prod_fv"
+  shows "((abs1 ---> id) ---> (abs2 ---> id) ---> map_prod rep1 rep2 ---> id) prod_fv = prod_fv"
   by (simp add: fun_eq_iff Quotient3_abs_rep[OF q1] Quotient3_abs_rep[OF q2])
 
 lemma [mono]: 
@@ -1067,7 +1067,7 @@ lemma [mono]:
 lemma [eqvt]: 
   shows "p \<bullet> prod_alpha A B x y = prod_alpha (p \<bullet> A) (p \<bullet> B) (p \<bullet> x) (p \<bullet> y)"
   unfolding prod_alpha_def
-  unfolding prod_rel_def
+  unfolding rel_prod_def
   by (perm_simp) (rule refl)
 
 lemma [eqvt]: 

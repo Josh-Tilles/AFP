@@ -22,8 +22,8 @@ sig
   val eqvt_rule: Proof.context -> eqvt_config -> thm -> thm
   val eqvt_tac: Proof.context -> eqvt_config -> int -> tactic
 
-  val perm_simp_meth: thm list * string list -> Proof.context -> Method.method
-  val perm_strict_simp_meth: thm list * string list -> Proof.context -> Method.method
+  val perm_simp_meth: thm list * string list -> Proof.context -> Proof.method
+  val perm_strict_simp_meth: thm list * string list -> Proof.context -> Proof.method
   val args_parser: (thm list * string list) context_parser
 
   val trace_eqvt: bool Config.T
@@ -219,9 +219,9 @@ val add_thms_parser = Scan.optional (Scan.lift (Args.add -- Args.colon) |--
    Scan.repeat (unless_more_args Attrib.multi_thm) >> flat) [];
 
 val exclude_consts_parser = Scan.optional (Scan.lift ((Args.$$$ "exclude") -- Args.colon) |-- 
-  (Scan.repeat (Args.const true))) []
+  (Scan.repeat (Args.const {proper = true, strict = true}))) []
 
-val args_parser =  add_thms_parser -- exclude_consts_parser 
+val args_parser = add_thms_parser -- exclude_consts_parser 
 
 fun perm_simp_meth (thms, consts) ctxt =
   SIMPLE_METHOD (HEADGOAL (eqvt_tac ctxt (eqvt_relaxed_config addpres thms addexcls consts)))
