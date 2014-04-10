@@ -17,9 +17,9 @@ lemma max_mono:
   assumes mf: "mono f"
   shows       "max (f x) (f y) \<le> f (max x y)"
 proof -
-  from mf and le_maxI1 [of x y]
+  from mf and max.cobounded1 [of x y]
   have fx: "f x \<le> f (max x y)" by (rule monoD)
-  from mf and le_maxI2 [of y x]
+  from mf and max.cobounded2 [of y x]
   have fy: "f y \<le> f (max x y)" by (rule monoD)
   from fx and fy
   show "max (f x) (f y) \<le> f (max x y)" by auto
@@ -738,7 +738,7 @@ proof (unfold bv_add_def,rule length_nat_to_bv_upper_limit)
     by arith
   also have "... \<le>
       max (2 ^ length w1 - 1) (2 ^ length w2 - 1) + max (2 ^ length w1 - 1) (2 ^ length w2 - 1)"
-    by (rule add_mono,safe intro!: le_maxI1 le_maxI2)
+    by (rule add_mono,safe intro!: max.cobounded1 max.cobounded2)
   also have "... = 2 * max (2 ^ length w1 - 1) (2 ^ length w2 - 1)" by simp
   also have "... \<le> 2 ^ Suc (max (length w1) (length w2)) - 2"
   proof (cases "length w1 \<le> length w2")
@@ -1593,7 +1593,7 @@ proof (cases "bv_to_int w2 = 0")
     have "length (norm_signed w1) \<le> length w1"
       by (rule norm_signed_length)
     also have "... \<le> max (length w1) (length w2)"
-      by (rule le_maxI1)
+      by (rule max.cobounded1)
     also have "... \<le> Suc (max (length w1) (length w2))"
       by arith
     finally show "length (norm_signed w1) \<le> Suc (max (length w1) (length w2))" .
@@ -2215,7 +2215,7 @@ lemmas [simp] = length_nat_non0
 primrec fast_bv_to_nat_helper :: "[bit list, num] => num" where
     fast_bv_to_nat_Nil: "fast_bv_to_nat_helper [] k = k"
   | fast_bv_to_nat_Cons: "fast_bv_to_nat_helper (b#bs) k =
-      fast_bv_to_nat_helper bs ((bit_case Num.Bit0 Num.Bit1 b) k)"
+      fast_bv_to_nat_helper bs ((case_bit Num.Bit0 Num.Bit1 b) k)"
 
 declare fast_bv_to_nat_helper.simps [code del]
 
@@ -2246,26 +2246,26 @@ declare fast_bv_to_nat_Cons [simp del]
 declare fast_bv_to_nat_Cons0 [simp]
 declare fast_bv_to_nat_Cons1 [simp]
 
-simproc_setup bv_to_nat ("Word.bv_to_nat (x # xs)") = {*
+simproc_setup bv_to_nat ("bv_to_nat (x # xs)") = {*
   fn _ => fn ctxt => fn ct =>
     let
       val thy = Proof_Context.theory_of ctxt
-      fun is_const_bool (Const(@{const_name "True"},_)) = true
-        | is_const_bool (Const(@{const_name "False"},_)) = true
+      fun is_const_bool (Const(@{const_name True},_)) = true
+        | is_const_bool (Const(@{const_name False},_)) = true
         | is_const_bool _ = false
-      fun is_const_bit (Const("Word.bit.Zero",_)) = true
-        | is_const_bit (Const("Word.bit.One",_)) = true
+      fun is_const_bit (Const(@{const_name Zero},_)) = true
+        | is_const_bit (Const(@{const_name One},_)) = true
         | is_const_bit _ = false
-      fun vec_is_usable (Const("List.list.Nil",_)) = true
-        | vec_is_usable (Const("List.list.Cons",_) $ b $ bs) =
+      fun vec_is_usable (Const(@{const_name Nil},_)) = true
+        | vec_is_usable (Const(@{const_name Cons},_) $ b $ bs) =
             vec_is_usable bs andalso is_const_bit b
         | vec_is_usable _ = false
-      val fast2_th = @{thm "Word.fast_bv_to_nat_def"};
-      fun proc (Const("Word.bv_to_nat",_) $ (Const("List.list.Cons",_) $ Const("Word.bit.One",_) $ t)) =
+      fun proc (Const(@{const_name bv_to_nat},_) $
+        (Const(@{const_name Cons},_) $ Const(@{const_name One},_) $ t)) =
             if vec_is_usable t then
               SOME (Drule.cterm_instantiate
-                [(cterm_of thy (Var(("bs",0),Type("List.list",[Type("Word.bit",[])]))),
-                  cterm_of thy t)] fast2_th)
+                [(cterm_of thy (Var(("bs",0),Type(@{type_name list},[Type(@{type_name bit},[])]))),
+                  cterm_of thy t)] @{thm fast_bv_to_nat_def})
             else NONE
         | proc _ = NONE
     in proc (term_of ct) end

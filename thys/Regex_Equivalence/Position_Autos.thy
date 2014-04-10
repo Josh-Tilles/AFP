@@ -6,7 +6,7 @@ header {* Framework Instantiations using Marked Regular Expressions *}
 theory Position_Autos
 imports
   Automaton
-  "~~/src/HOL/ex/Interpretation_with_Defs"
+  "~~/src/Tools/Permanent_Interpretation"
 begin
 (*>*)
 
@@ -146,12 +146,12 @@ by (induction r) auto
 lemma final_read_Lm: "final(read a r) \<longleftrightarrow> [a] \<in> Lm r"
 by (induction r) (auto simp: nullable_iff concI_if_Nil2 singleton_in_conc split: if_splits)
 
-interpretation before: rexp_DFA init_b delta_b final_b L_b
-  defines before_closure is "rexp_DA.closure delta_b final_b"
-  and     check_eqv_b is "rexp_DA.check_eqv init_b delta_b final_b"
-  and     reachable_b is "rexp_DA.reachable init_b delta_b"
-  and     automaton_b is "rexp_DA.automaton init_b delta_b"
-  and     match_b is "rexp_DA.match init_b delta_b final_b"
+permanent_interpretation before: rexp_DFA init_b delta_b final_b L_b
+  defining before_closure = "rexp_DA.closure delta_b (final_b ::  (bool \<times> 'a) rexp \<times> bool \<Rightarrow> bool)"
+    and check_eqv_b = "rexp_DA.check_eqv init_b delta_b (final_b ::  (bool \<times> 'a) rexp \<times> bool \<Rightarrow> bool)"
+    and reachable_b = "rexp_DA.reachable (init_b :: 'a rexp \<Rightarrow> (bool \<times> 'a) rexp \<times> bool) delta_b"
+    and automaton_b = "rexp_DA.automaton (init_b :: 'a rexp \<Rightarrow> (bool \<times> 'a) rexp \<times> bool) delta_b"
+    and match_b = "rexp_DA.match (init_b :: 'a rexp \<Rightarrow> (bool \<times> 'a) rexp \<times> bool) delta_b final_b"
 proof
   case goal1 show "L_b (init_b r) = lang r"
     by(auto simp add: init_b_def Lm_follow Lm_empty map_map_rexp nullable_iff)
@@ -201,12 +201,12 @@ by (cases ys) auto
 lemma tl_eq_Cons_iff[simp]: "tl ys = x # xs \<longleftrightarrow> (\<exists>y. ys = y # x # xs)"
 by (cases ys) auto
 
-interpretation after: rexp_DFA init_a delta_a final_a L_a
-  defines after_closure is "rexp_DA.closure delta_a final_a"
-  and     check_eqv_a is "rexp_DA.check_eqv init_a delta_a final_a"
-  and     reachable_a is "rexp_DA.reachable init_a delta_a"
-  and     automaton_a is "rexp_DA.automaton init_a delta_a"
-  and     match_a is "rexp_DA.match init_a delta_a final_a"
+permanent_interpretation after: rexp_DFA init_a delta_a final_a L_a
+  defining after_closure = "rexp_DA.closure delta_a (final_a ::  bool \<times> (bool \<times> 'a) rexp \<Rightarrow> bool)"
+    and check_eqv_a = "rexp_DA.check_eqv init_a delta_a (final_a ::  bool \<times> (bool \<times> 'a) rexp \<Rightarrow> bool)"
+    and reachable_a = "rexp_DA.reachable (init_a :: 'a rexp \<Rightarrow> bool \<times> (bool \<times> 'a) rexp) delta_a"
+    and automaton_a = "rexp_DA.automaton (init_a :: 'a rexp \<Rightarrow> bool \<times> (bool \<times> 'a) rexp) delta_a"
+    and match_a = "rexp_DA.match (init_a :: 'a rexp \<Rightarrow> bool \<times> (bool \<times> 'a) rexp) delta_a final_a"
 proof
   case goal1 show "L_a (init_a r) = lang r"
     by (auto simp: init_a_def nonfinal_empty_mrexp Lm_follow Lm_empty map_map_rexp nullable_iff)
@@ -222,12 +222,30 @@ next
     by (intro subsetI, elim CollectE exE) (simp only: fold_delta_a_init_a_mrexps)
   then show "finite {fold delta_a w (init_a s) |w. True}" by (rule finite_subset) simp
 qed
-  
 
-lemma conjecture:
-  "card(reachable_b [True,False] r) \<le> card(reachable_a [True,False] r)"
-(*quickcheck[size=6,timeout=120]*)
-oops
+text {*
+The ``before'' atomaton is a quotient of the ``after'' automaton.
+
+The proof below follows an informal proof given by Helmut Seidl in personal communication. 
+*}
+
+fun hom_ab where
+  "hom_ab (b, r) = (follow b r, final_a (b, r))"
+
+lemma hom_delta: "hom_ab (delta_a x br) = delta_b x (hom_ab br)"
+by(cases br) (auto simp add: Let_def)
+
+lemma hom_deltas: "hom_ab (fold delta_a w br) = fold delta_b w (hom_ab br)"
+  by (induct w arbitrary: br) (auto simp add: hom_delta)
+
+lemma hom_init: "hom_ab (init_a r) = init_b r"
+  unfolding init_a_def init_b_def hom_ab.simps by (simp add: nonfinal_empty_mrexp)
+  
+lemma reachable_ab: "reachable_b as r = hom_ab ` reachable_a as r"
+  unfolding after.reachable before.reachable by (force simp: hom_init hom_deltas)
+
+theorem card_reachable_ab: "card (reachable_b as r) \<le> card (reachable_a as r)"
+  unfolding reachable_ab using after.finite_reachable by (rule card_image_le)
 
 text{* The implementation by Fischer et al.: *}
 
