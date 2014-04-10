@@ -640,7 +640,8 @@ extra-history =
 
 [Collections]
 title = Collections Framework
-author = Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>, Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>, Thomas Tuerk <>
+author = Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>
+contributors = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>, Thomas Tuerk <>
 date = 2009-11-25
 topic = Computer Science/Data Structures
 abstract = This development provides an efficient, extensible, machine checked collections framework. The library adopts the concepts of interface, implementation and generic algorithm from object-oriented programming and implements them in Isabelle/HOL. The framework features the use of data refinement techniques to refine an abstract specification (using high-level concepts like sets) to a more concrete implementation (using collection datastructures, like red-black-trees). The code-generator of Isabelle/HOL can be used to generate efficient code.
@@ -762,6 +763,7 @@ abstract = We provide a wrapper around the partial-function command that support
 title = Coinductive
 topic = Computer Science/Functional Programming
 author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>
+contributors = Johannes Hölzl <mailto:hoelzl@in.tum.de>
 date = 2010-02-12
 abstract = This article collects formalisations of general-purpose coinductive data types and sets. Currently, it contains coinductive natural numbers, coinductive lists, i.e. lazy lists or streams, infinite streams, coinductive terminated lists, coinductive resumptions, a library of operations on coinductive lists, and a version of König's lemma as an application for coinductive lists.<br>The initial theory was contributed by Paulson and Wenzel. Extensions and other coinductive formalisations of general interest are welcome.
 extra-history =
@@ -1729,7 +1731,8 @@ abstract = This development provides a formal model of IEEE-754 floating-point a
 
 [Native_Word]
 title = Native Word
-author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>, Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>
+author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>
+contributors = Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>
 date = 2013-09-17
 topic = Computer Science/Data Structures
 abstract = This entry makes machine words and machine arithmetic available for code generation from Isabelle/HOL.  It provides a common abstraction that hides the differences between the different target languages.  The code generator maps these operations to the APIs of the target languages.  Apart from that, we extend the available bit operations on types int and integer, and map them to the operations in the target languages.
@@ -1739,7 +1742,7 @@ extra-history =
         added conversion function between native words and characters
         (revision fd23d9a7fe3a)
   [2014-03-31]:
-        added words of default size in the target language
+        added words of default size in the target language (by Peter Lammich)
         (revision 25caf5065833)
 
 [HereditarilyFinite]
