@@ -15,7 +15,7 @@ session "Category3" (AFP) = HOL +
 
 (* The top-level theories of the submission: *)
   theories
-    Submission
+    Category
     
 (* Dependencies on non-Isabelle files: *)
   files
