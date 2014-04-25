@@ -28,7 +28,7 @@ locale ExtCategory =
 locale Category = ExtCategory +
   assumes Cdom: "f \<in> mor \<Longrightarrow> dom f \<in> obj"
       and Ccod: "f \<in> mor \<Longrightarrow> cod f \<in> obj"
-      and Cidm [dest]: "X \<in> obj \<Longrightarrow> (id X) maps X to X"
+      and Cidm (*[dest]*): "X \<in> obj \<Longrightarrow> (id X) maps X to X"
       and Cidl: "f \<in> mor \<Longrightarrow> id (dom f) ;; f = f"
       and Cidr: "f \<in> mor \<Longrightarrow> f ;; id (cod f) = f"
       and Cassoc: "\<lbrakk>f \<approx>> g; g \<approx>> h\<rbrakk> \<Longrightarrow> (f ;; g) ;; h = f ;; (g ;; h)"
@@ -96,26 +96,26 @@ lemma MakeCat:
 sorry
 
 
-lemma MapsToE [elim]:
+lemma MapsToE (*[elim]*):
   assumes "f maps\<^bsub>C\<^esub> X to Y"
     and "\<lbrakk>f \<in> mor\<^bsub>C\<^esub>; dom\<^bsub>C\<^esub> f = X; cod\<^bsub>C\<^esub> f = Y\<rbrakk> \<Longrightarrow> R"
   shows "R"
 sorry
 
-lemma MapsToI [intro]:
+lemma MapsToI (*[intro]*):
   assumes "f \<in> mor\<^bsub>C\<^esub>"
     and "dom\<^bsub>C\<^esub> f = X"
     and "cod\<^bsub>C\<^esub> f = Y"
   shows "f maps\<^bsub>C\<^esub> X to Y"
 sorry
 
-lemma CompDefinedE [elim]:
+lemma CompDefinedE (*[elim]*):
   assumes "f \<approx>>\<^bsub>C\<^esub> g"
       and "\<lbrakk>f \<in> mor\<^bsub>C\<^esub> ; g \<in> mor\<^bsub>C\<^esub> ; cod\<^bsub>C\<^esub> f = dom\<^bsub>C\<^esub> g\<rbrakk> \<Longrightarrow> R"
   shows "R"
 sorry
 
-lemma CompDefinedI [intro]:
+lemma CompDefinedI (*[intro]*):
   assumes "f \<in> mor\<^bsub>C\<^esub>"
     and "g \<in> mor\<^bsub>C\<^esub>"
     and "cod\<^bsub>C\<^esub> f = dom\<^bsub>C\<^esub> g"
@@ -215,7 +215,7 @@ lemma (in Category) Inverse_relI:
   shows "cinv f g"
 sorry
 
-lemma (in Category) Inverse_relE [elim]:
+lemma (in Category) Inverse_relE (*[elim]*):
   assumes "cinv f g"
       and "\<lbrakk>f \<approx>> g; f ;; g = id (dom f); g ;; f = id (cod f)\<rbrakk> \<Longrightarrow> P"
   shows "P"
@@ -323,7 +323,7 @@ definition
       Comp = (\<lambda>f g. () )
   \<rparr>"
 
-lemma [simp]: "Category UnitCategory"
+lemma (*[simp]:*) "Category UnitCategory"
 sorry
 
 
