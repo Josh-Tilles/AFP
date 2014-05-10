@@ -1,0 +1,17 @@
+theory SectionsAndRetractions
+imports Category
+begin
+
+context Category
+begin
+  definition has_sections ("_ has a section" 60) where
+    "f has a section \<longleftrightarrow> (\<exists>s. s;;f = id (cod f))"
+  definition has_retractions ("_ has a retraction" 60) where
+    "f has a retraction \<longleftrightarrow> (\<exists>r. f;;r = id (dom f))"
+  
+  lemma
+    assumes "f has a section" and "f has a retraction"
+    shows "ciso f"
+  lemma LeftRightInvUniq:
+    shows False
+  oops
