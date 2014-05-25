@@ -58,7 +58,7 @@ proof-
   hence "|Uv| =o |U2|" by(rule ordIso_symmetric)
   then obtain g where g: "bij_betw g Uv U2" unfolding card_of_ordIso[symmetric] by blast
   show ?thesis apply(rule exI[of _ "fst o g"]) unfolding tpOfV_pred_def apply safe
-  unfolding vimage_comp apply(drule finite_vimageD)
+  unfolding vimage_comp [symmetric] apply (drule finite_vimageD)
   using g unfolding bij_betw_def Uv_def U2_def by (auto simp: infinite_fst_vimage)
 qed
 
@@ -91,7 +91,7 @@ unfolding UN_Un_distrib[symmetric] by blast
 lemma tpart1_Int_tpart2[simp]:
 assumes "tinfinite V" shows "tpart1 V \<inter> tpart2 V = {}"
 using assms part1_Int_part2 unfolding tinfinite_def tpart1_def tpart2_def
-unfolding Int_UN_distrib2 apply auto apply (case_tac "i = j", auto)
+unfolding Int_UN_distrib2 apply auto apply (case_tac "xa = xb", auto)
 using part1_su part2_su by blast (* fixme: clean proof *)
 
 lemma tpart1_su:

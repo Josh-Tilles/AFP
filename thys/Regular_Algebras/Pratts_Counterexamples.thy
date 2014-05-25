@@ -206,7 +206,7 @@ begin
       apply (cases x, case_tac[!] y, case_tac[!] z, simp_all add: plus_pratt2_def times_pratt2_def)
       apply (rename_tac[!] n, case_tac[!] n, auto)
       apply (metis not0_implies_Suc pratt2_max.simps(10) pratt2_max.simps(8) pratt2_plus.simps(14) pratt2_plus.simps(7))
-      apply (metis max_0L max_0R min_max.sup_left_idem nat.exhaust pratt2_max.simps(11) 
+      apply (metis max_0L max_0R max.left_idem nat.exhaust pratt2_max.simps(11) 
                    pratt2_max.simps(13) pratt2_plus.simps(14) pratt2_plus.simps(7))
     done
     show "1 * x = x"

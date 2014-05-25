@@ -131,9 +131,7 @@ apply (cases "is_exn \<sigma>")
 apply (simp add: run.simps)
 apply (cases "execute f (the_state \<sigma>)")
 apply (simp add: run.simps bind_def)
-apply (auto simp add: bind_def run.simps)
-apply (cases \<sigma>)
-by auto
+by (auto simp add: bind_def run.simps)
 
 lemma runE'[run_elims]:
   assumes "run (f >> g) \<sigma> \<sigma>'' res"
@@ -170,7 +168,7 @@ lemma run_if[run_elims]:
   using assms
   by (auto split: split_if_asm)
   
-lemma run_option_case[run_elims]:
+lemma run_case_option[run_elims]:
   assumes "run (case x of None \<Rightarrow> n | Some y \<Rightarrow> s y) \<sigma> \<sigma>' r"
           "\<not>is_exn \<sigma>"
   obtains "x = None" "run n \<sigma> \<sigma>' r"

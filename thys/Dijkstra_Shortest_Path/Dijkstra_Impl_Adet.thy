@@ -54,8 +54,8 @@ lemmas [autoref_rel_intf] = REL_INTFI[of infty_rel i_infty]
 lemma autoref_infty[param,autoref_rules]:
   "(Infty,Infty)\<in>\<langle>R\<rangle>infty_rel"
   "(Num,Num)\<in>R\<rightarrow>\<langle>R\<rangle>infty_rel"
-  "(infty_case,infty_case)\<in>Rr\<rightarrow>(R\<rightarrow>Rr)\<rightarrow>\<langle>R\<rangle>infty_rel\<rightarrow>Rr"
-  "(infty_rec,infty_rec)\<in>Rr\<rightarrow>(R\<rightarrow>Rr)\<rightarrow>\<langle>R\<rangle>infty_rel\<rightarrow>Rr"
+  "(case_infty,case_infty)\<in>Rr\<rightarrow>(R\<rightarrow>Rr)\<rightarrow>\<langle>R\<rangle>infty_rel\<rightarrow>Rr"
+  "(rec_infty,rec_infty)\<in>Rr\<rightarrow>(R\<rightarrow>Rr)\<rightarrow>\<langle>R\<rangle>infty_rel\<rightarrow>Rr"
   unfolding infty_rel_def
   by (auto dest: fun_relD)
   
@@ -391,15 +391,15 @@ setup Locale_Code.close_block
 definition "hrf_dijkstra \<equiv> hrf.cdijkstra"
 lemmas hrf_dijkstra_correct = hrf.cdijkstra_correct[folded hrf_dijkstra_def]
 
-export_code hrf_dijkstra in SML file -
-export_code hrf_dijkstra in OCaml file -
-export_code hrf_dijkstra in Haskell file -
-export_code hrf_dijkstra in Scala file -
+export_code hrf_dijkstra in SML
+export_code hrf_dijkstra in OCaml
+export_code hrf_dijkstra in Haskell
+export_code hrf_dijkstra in Scala
 
 definition hrfn_dijkstra :: "(nat,nat) hlg \<Rightarrow> _" 
   where "hrfn_dijkstra \<equiv> hrf_dijkstra"
 
-export_code hrfn_dijkstra in SML file -
+export_code hrfn_dijkstra in SML
 
 lemmas hrfn_dijkstra_correct = 
   hrf_dijkstra_correct[where ?'a = nat and ?'b = nat, folded hrfn_dijkstra_def]

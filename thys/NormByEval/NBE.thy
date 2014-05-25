@@ -648,7 +648,7 @@ lemma termination_no_match_ML:
    \<Longrightarrow> listsum (map size vs) < listsum (map size ps)"
 apply(subgoal_tac "C\<^sub>U nm vs : set ps")
  apply(drule listsum_map_remove1[of _ _ size])
- apply (simp add:list_size_conv_listsum)
+ apply (simp add:size_list_conv_listsum)
 apply (metis in_set_conv_nth length_rev set_rev)
 done
 
@@ -943,9 +943,9 @@ defer
 apply(simp add:fun_eq_iff split:nat.split)
 apply(simp add:lift_is_subst_ml subst_ml_comp)
 apply(rule arg_cong[where f = kernel])
-apply(subgoal_tac "(nat_case 0 (\<lambda>k. Suc (\<sigma> k)) \<circ> Suc) = Suc o \<sigma>")
+apply(subgoal_tac "(case_nat 0 (\<lambda>k. Suc (\<sigma> k)) \<circ> Suc) = Suc o \<sigma>")
 prefer 2 apply(simp add:fun_eq_iff split:nat.split)
-apply(subgoal_tac "(subst_ml (nat_case 0 (\<lambda>k. Suc (\<sigma> k))) \<circ>
+apply(subgoal_tac "(subst_ml (case_nat 0 (\<lambda>k. Suc (\<sigma> k))) \<circ>
                (\<lambda>n. if n = 0 then V\<^sub>U 0 [] else V\<^sub>M\<^sub>L (n - 1)))
              = (\<lambda>n. if n = 0 then V\<^sub>U 0 [] else V\<^sub>M\<^sub>L (n - 1))")
 apply simp
@@ -1374,7 +1374,7 @@ fun size_tm :: "tm \<Rightarrow> nat" where
 "size_tm (At s t) = size_tm s + size_tm t + 1" |
 "size_tm _ = 0"
 
-lemma size_tm_foldl_At: "size_tm(t \<bullet>\<bullet> ts) = size_tm t + list_size size_tm ts"
+lemma size_tm_foldl_At: "size_tm(t \<bullet>\<bullet> ts) = size_tm t + size_list size_tm ts"
 by (induct ts arbitrary:t) auto
 
 lemma termination_no_match:
@@ -1382,7 +1382,7 @@ lemma termination_no_match:
    \<Longrightarrow> listsum (map size_tm ts) < listsum (map size_tm ss)"
 apply(subgoal_tac "C nm \<bullet>\<bullet> ts : set ss")
  apply(drule listsum_map_remove1[of _ _ size_tm])
-apply(simp add:size_tm_foldl_At list_size_conv_listsum)
+apply(simp add:size_tm_foldl_At size_list_conv_listsum)
 apply (metis in_set_conv_nth)
 done
 
@@ -2013,8 +2013,6 @@ apply rule
  apply(rule_tac x=j in exI)
  apply simp
  apply(case_tac "i=j")
-  apply simp
-  apply(rule_tac x=nm' in exI)
   apply(erule_tac x=rs' in meta_allE)
   apply(erule_tac x=nm' in meta_allE)
   apply (clarsimp simp: all_set_conv_all_nth)
@@ -2053,7 +2051,6 @@ apply metis
 apply clarify
 apply simp
 apply rule
-apply metis
 apply (metis rtrancl_trans)
 done
 
@@ -2080,7 +2077,7 @@ proof(induct ps os arbitrary: ts ts' rule: no_match.induct)
   show ?case
     apply(subst no_match.simps)
     apply(rule_tac x=i in exI)
-    using 1 a b
+    using 1(2-5) a b
     apply clarsimp
     apply(rule 1(1)[of i nm' _ nm' "map dterm rs" rs])
     apply simp_all

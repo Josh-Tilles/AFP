@@ -6,8 +6,6 @@ keywords "concrete_definition" :: thy_decl
   and "uses"
 begin
 
-ML_val Goal.prove_internal
-
 text {*
   This theory provides a tool for extracting definitions from terms, and
   for generating code equations for recursion combinators.
@@ -164,7 +162,7 @@ fun extract_recursion_eqs exs basename orig_def_thm lthy = let
   (* Obtain new def_thm *)
   val def_unfold_ss = 
     put_simpset HOL_basic_ss lthy addsimps (orig_def_thm::def_thms)
-  val new_def_thm = Goal.prove_internal 
+  val new_def_thm = Goal.prove_internal lthy
     [] (Logic.mk_equals (lhs,rhs') |> cert) (K (simp_tac def_unfold_ss 1))
 
   (* Obtain new theorem by folding with defs of generated constants *)
@@ -277,8 +275,7 @@ let
   val def_term = Logic.mk_equals (lhs_term,f_term) 
     |> fold Logic.all param_terms;
 
-  val attribs = map (Attrib.intern_src (Proof_Context.theory_of lthy)) 
-    attribs_raw;
+  val attribs = map (Attrib.check_src lthy) attribs_raw;
 
   val ((_,(_,def_thm)),lthy) = Specification.definition 
     (SOME (fun_name,NONE,Mixfix.NoSyn),((Binding.empty,attribs),def_term)) lthy;
@@ -333,7 +330,7 @@ end;
 setup {*
   let
     fun parse_cpat cxt = let 
-      val (t,(context,tks)) = Scan.lift Args.name_source cxt 
+      val (t,(context,tks)) = Scan.lift Args.name_inner_syntax cxt 
       val thy = Context.theory_of context
       val ctxt = Context.proof_of context
       val t = Proof_Context.read_term_pattern ctxt t
@@ -364,9 +361,9 @@ ML {* Outer_Syntax.local_theory
   "Define function from refinement theorem" 
   (Parse.binding 
     -- Parse_Spec.opt_attribs
-    -- Scan.optional (Parse.$$$ "for" |-- Scan.repeat1 Args.var) []
-    --| Parse.$$$ "uses" -- Parse_Spec.xthm
-    -- Scan.optional (Parse.$$$ "is" |-- Scan.repeat1 Args.name_source) []
+    -- Scan.optional (@{keyword "for"} |-- Scan.repeat1 Args.var) []
+    --| @{keyword "uses"} -- Parse_Spec.xthm
+    -- Scan.optional (@{keyword "is"} |-- Scan.repeat1 Args.name_inner_syntax) []
   >> (fn ((((name,attribs),params),raw_thm),pats) => fn lthy => let
     val thm = 
       case Attrib.eval_thms lthy [raw_thm] of

@@ -76,7 +76,7 @@ lemma msort_distinct_sorted[simp]:
 lemma msort_set[simp]:
   "set (msort xs) = set xs"
   by (induct xs rule: msort.induct)
-     (simp_all, metis List.set.simps(2) append_take_drop_id set_append) (* thankyou sledgehammer! *)
+     (simp_all, metis List.set_simps(2) append_take_drop_id set_append) (* thankyou sledgehammer! *)
 
 lemma msort_remdups[simp]:
   "remdups (msort xs) = msort xs"
@@ -399,7 +399,7 @@ proof (cases dxs)
   with dxs show "P dxs" by simp
 qed
 
-lemma odlist_case [case_names empty insert, cases type: odlist]:
+lemma odlist_cases [case_names empty insert, cases type: odlist]:
   assumes empty: "dxs = empty \<Longrightarrow> P"
   assumes insert: "\<And>x xs. \<lbrakk> dxs = fromList (x # xs); distinct (x # xs); sorted (x # xs) \<rbrakk>
                             \<Longrightarrow> P"

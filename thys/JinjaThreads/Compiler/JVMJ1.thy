@@ -4,11 +4,18 @@
 
 header {* \isaheader{Correctness of Stage 2: From JVM to intermediate language} *}
 
-theory JVMJ1 imports 
+theory JVMJ1 imports
   J1JVMBisim
 begin
 
 declare split_paired_Ex[simp del]
+
+lemma rec_option_is_case_option: "rec_option = case_option"
+apply (rule ext)+
+apply (rename_tac y)
+apply (case_tac y)
+apply auto
+done
 
 context J1_JVM_heap_base begin
 
@@ -358,7 +365,7 @@ lemma conf_xcp_conf_xcp':
 by(cases xcp) auto
 
 lemma conf_xcp'_compP [simp]: "conf_xcp' (compP f P) = conf_xcp' P"
-by(simp add: fun_eq_iff conf_xcp'_def option_case_def[symmetric])
+by(clarsimp simp add: fun_eq_iff conf_xcp'_def rec_option_is_case_option)
 
 end
 
@@ -940,7 +947,7 @@ next
     next
       case False
       with exec xcp stk obtain U el A len I where [simp]: "v = Addr A" and hA: "typeof_addr h A = \<lfloor>Array_type U len\<rfloor>"
-        and [simp]: "v2 = Intg I" by(auto simp add: exec_move_def exec_meth_instr is_Ref_def conf_def split: split_if_asm) blast+
+        and [simp]: "v2 = Intg I" by(auto simp add: exec_move_def exec_meth_instr is_Ref_def conf_def split: split_if_asm)
       show ?thesis
       proof(cases "0 <=s I \<and> sint I < int len")
         case True

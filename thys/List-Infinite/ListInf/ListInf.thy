@@ -271,8 +271,8 @@ lemma range_ConsD: "y \<in> range ([x] \<frown> f) \<Longrightarrow> y = x \<or>
 by simp
 
 thm List.set_map
-lemma range_o[simp]: "range (f \<circ> g) = f ` range g"
-by (rule image_compose)
+lemma range_o [simp]: "range (f \<circ> g) = f ` range g"
+by (simp add: image_comp)
 
 thm List.in_set_conv_decomp
 lemma in_range_conv_decomp: "
@@ -616,7 +616,7 @@ corollary i_drop_Suc: "f \<Up> Suc 0 \<Up> n = f \<Up> Suc n"
 by simp
 
 lemma i_take_commute: "s \<Down> a \<down> b = s \<Down> b \<down> a"
-by (simp add: min_ac)
+by (simp add: ac_simps)
 lemma i_drop_commute: "s \<Up> a \<Up> b = s \<Up> b \<Up> a"
 by (simp add: add_commute[of a])
 

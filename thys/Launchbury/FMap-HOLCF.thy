@@ -60,13 +60,7 @@ lemma fmap_lub_raw_dom[simp]: "dom (fmap_lub_raw S) = dom (S 0)"
   by (auto simp add: fmap_lub_raw_def dom_def)  
 
 lift_definition fmap_lub :: "(nat \<Rightarrow> ('key f\<rightharpoonup> 'value::po)) \<Rightarrow> 'key f\<rightharpoonup> 'value" is "fmap_lub_raw"
-  unfolding Lifting.invariant_def
-  apply auto
-  apply (erule  meta_allE[of _ 0])
-  apply auto[1]
-  apply (subgoal_tac "fun1 = fun2")
-  apply auto
-  done
+by auto
 
 lemma fmap_below_dom:
   "a \<sqsubseteq> b \<Longrightarrow> fdom a = fdom b"
@@ -135,7 +129,7 @@ next
       by (auto simp add: fmap_lub.rep_eq lookup.rep_eq fmap_lub_raw_def fdom.rep_eq)        
 
     hence lub_at_x: "range ?S2 <<| (fmap_lub S f! x)"
-      by (metis c2 the.simps thelubE)
+      by (metis c2 option.sel thelubE)
     
     assume "x \<in> fdom u"
     have "range ?S2 <| (u f! x)"
@@ -558,7 +552,7 @@ lemma fmap_expand_belowI:
   apply (metis assms(1) fdom_fmap_expand finite_fdom)
   apply (case_tac "x \<in> fdom \<rho>")
   apply (metis assms(1) assms(2) finite_fdom lookup_fmap_expand1)
-  apply (metis assms(1) finite_fdom lookup_fmap_expand2 minimal the.simps)
+  apply (metis assms(1) finite_fdom lookup_fmap_expand2 minimal option.sel)
   done
 
 lemma fmap_expand_fmap_restr_below:
@@ -594,7 +588,7 @@ case True[simp]
   show ?thesis
   proof (rule fmap_contI)
   case goal1 thus ?case by (simp add: fmap_below_dom)
-  case goal2 thus ?case by (metis True below_fmap_def fdom_fmap_expand lookup_fmap_expand1 lookup_fmap_expand2 minimal the.simps)
+  case goal2 thus ?case by (metis True below_fmap_def fdom_fmap_expand lookup_fmap_expand1 lookup_fmap_expand2 minimal option.sel)
   next
   case (goal3 Y x)[simp]
     hence [simp]:"x \<in> S" by simp
@@ -1126,7 +1120,7 @@ proof (rule is_join_and_compatible)
   have "(m1 \<squnion> m2) \<sqsubseteq> (m1 \<squnion> m2)(x f\<mapsto> a)"
     by (rule join_below[OF `compatible m1 m2`])
   thus " m1 \<squnion> m2 f! x \<sqsubseteq> a"
-    by (metis (full_types) fmap_belowE the.simps the_lookup_fmap_upd)
+    by (metis (full_types) fmap_belowE option.sel the_lookup_fmap_upd)
 qed
 
 lemma the_lookup_join[simp]: 
