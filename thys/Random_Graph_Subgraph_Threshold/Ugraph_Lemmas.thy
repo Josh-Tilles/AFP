@@ -4,7 +4,7 @@ theory Ugraph_Lemmas
 imports
   Prob_Lemmas
   "../Girth_Chromatic/Girth_Chromatic"
-  Big_Operators
+  Lattices_Big
 begin
 
 text{* The complete graph is a graph where all possible edges are present. It is wellformed by
@@ -223,7 +223,7 @@ by simp
 
 lemma map_ugraph_trans: "map_ugraph (g \<circ> f) = (map_ugraph g) \<circ> (map_ugraph f)"
 unfolding fun_eq_iff
-by auto (metis imageI image_compose)+
+by auto (metis imageI image_comp)+
 
 lemma map_ugraph_wellformed:
   assumes "uwellformed G" and "inj_on f (uverts G)"
@@ -455,11 +455,11 @@ definition density :: "ugraph \<Rightarrow> real" where
 text{* The maximum density of a graph is the density of its densest nonempty subgraph. *}
 
 definition max_density :: "ugraph \<Rightarrow> real" where
-"max_density G = Big_Operators.Max (density ` nonempty_subgraphs G)"
+"max_density G = Lattices_Big.Max (density ` nonempty_subgraphs G)"
 
 text{* We prove some obvious results about the maximum density, such as that there is a subgraph
 which has the maximum density and that the (maximum) density is preserved by isomorphisms. The
-proofs are a bit complicated by the fact that most facts about @{term Big_Operators.Max} require
+proofs are a bit complicated by the fact that most facts about @{term Lattices_Big.Max} require
 non-emptiness of the target set, but we need that anyway to get a value out of it. *}
 
 lemma subgraph_has_max_density:
@@ -497,7 +497,7 @@ proof -
   have "0 < card (uverts G)" "0 < card (uedges G)"
     using assms unfolding finite_graph_def nonempty_graph_def by auto
   hence "0 < density G"
-    unfolding density_def by (simp add: divide_pos_pos)
+    unfolding density_def by simp
   also have "density G \<le> max_density G"
     using assms by (simp add: max_density_is_max subgraph_refl)
   finally show ?thesis

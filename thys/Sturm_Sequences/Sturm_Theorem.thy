@@ -538,7 +538,7 @@ proof-
     from goal1 have "poly q x \<noteq> 0" and q_sgn: "sgn (poly q x) = 
               (if x < x\<^sub>0 then -sgn (poly p x) else sgn (poly p x))"
         by (auto simp add: sgn_real_def elim: linorder_neqE_linordered_idom
-                 dest: mult_pos_pos mult_neg_neg zero_less_mult_pos 
+                 dest: mult_neg_neg zero_less_mult_pos 
                  zero_less_mult_pos' split: split_if_asm)
      from sign_changes_distrib[OF `poly q x \<noteq> 0`, of "[p]" ps']
         have "sign_changes ps x = sign_changes [p,q] x + sign_changes (q#ps') x"
@@ -570,7 +570,7 @@ proof (clarify)
   fix x assume "x > a" "x \<le> b"
   with assms have "\<forall>x'. x \<le> x' \<and> x' \<le> b \<longrightarrow> 
                        eventually (\<lambda>\<xi>. f \<xi> = f x') (at x')" by auto
-  from natfun_eq_in_ivl[OF `x \<le> b` this] show "f x = f b" .
+  from fun_eq_in_ivl[OF `x \<le> b` this] show "f x = f b" .
 qed
 
 text {*
@@ -597,7 +597,7 @@ proof-
                  cases "poly p a = 0")
             case False
               with no_roots show "sign_changes ps a = sign_changes ps b"
-                  by (force intro: natfun_eq_in_ivl `a \<le> b` 
+                  by (force intro: fun_eq_in_ivl `a \<le> b` 
                                    p_nonzero_imp_sign_changes_const)
           next
             case True
@@ -1072,7 +1072,7 @@ proof-
       by (metis poly_diff poly_mult)
   with q_0 have r_x: "poly ?r x = -poly ?p x" by simp
   moreover have sqr_pos: "\<And>x::real. x \<noteq> 0 \<Longrightarrow> x * x > 0" apply (case_tac "x \<ge> 0")
-      by (simp_all add: mult_pos_pos mult_neg_neg)
+      by (simp_all add: mult_neg_neg)
   from sturm_adjacent_root_not_squarefree[of i p] assms r_x
       have "poly ?p x * poly ?p x > 0" by (force intro: sqr_pos)
   ultimately show "poly ?r x * poly ?p x < 0" by simp
@@ -1283,7 +1283,7 @@ proof-
   from sturm_squarefree'_adjacent_roots[OF `p \<noteq> 0`] i_in_range q_0
       have "poly ?p x \<noteq> 0" by force
   moreover have sqr_pos: "\<And>x::real. x \<noteq> 0 \<Longrightarrow> x * x > 0" apply (case_tac "x \<ge> 0")
-      by (simp_all add: mult_pos_pos mult_neg_neg)
+      by (simp_all add: mult_neg_neg)
   ultimately show ?thesis using r_x by simp
 qed
 
@@ -1358,10 +1358,10 @@ proof
           "\<And>a (b::real). b \<noteq> 0 \<Longrightarrow> a < 0 \<Longrightarrow> a / (b * b) < 0"
           "\<And>a (b::real). b \<noteq> 0 \<Longrightarrow> a > 0 \<Longrightarrow> a / (b * b) > 0"
           by ((case_tac "b > 0", 
-              auto simp: mult_pos_pos mult_neg_neg field_simps) [])+
+              auto simp: mult_neg_neg field_simps) [])+
     case (goal1 x)
       hence  [simp]: "poly d x * poly d x > 0" 
-           by (cases "poly d x > 0", auto simp: mult_pos_pos mult_neg_neg)
+           by (cases "poly d x > 0", auto simp: mult_neg_neg)
       from poly_div_gcd_squarefree_aux(2)[OF `pderiv p \<noteq> 0`]
           have "poly (p div d) x = 0 \<longleftrightarrow> poly p x = 0" by (simp add: d_def)
       moreover have "d dvd p" "d dvd pderiv p" unfolding d_def by simp_all
@@ -1515,7 +1515,7 @@ proof (cases "p \<noteq> 0 \<and> a \<le> b")
       case True
         with False have [simp]: "p = 0" by simp
         have subset: "{a<..<b} \<subseteq> {x. a < x \<and> x \<le> b \<and> poly p x = 0}" by auto
-        from real_infinite_interval[OF True] have "\<not>finite {a<..<b}" .
+        from infinite_Ioo[OF True] have "\<not>finite {a<..<b}" .
         hence "\<not>finite {x. a < x \<and> x \<le> b \<and> poly p x = 0}"
             using finite_subset[OF subset] by blast
         thus ?thesis by simp
@@ -1550,7 +1550,7 @@ lemma count_roots_correct:
   shows "count_roots p = card {x. poly p x = 0}" (is "_ = card ?S")
 proof (cases "p = 0")
   case True
-    with real_infinite_interval[of 0 1] finite_subset[of "{0<..<1}" ?S]
+    with infinite_Ioo[of 0 1] finite_subset[of "{0<..<1}" ?S]
         have "\<not>finite {x. poly p x = 0}" by force
     thus ?thesis by (simp add: count_roots_def True)
 next
@@ -1576,7 +1576,7 @@ lemma count_roots_above_correct:
          (is "_ = card ?S")
 proof (cases "p = 0")
   case True
-    with real_infinite_interval[of a "a+1"] finite_subset[of "{a<..<a+1}" ?S]
+    with infinite_Ioo[of a "a+1"] finite_subset[of "{a<..<a+1}" ?S]
         have "\<not>finite {x. x > a \<and> poly p x = 0}" by force
     thus ?thesis by (simp add: count_roots_above_def True)
 next
@@ -1603,7 +1603,7 @@ lemma count_roots_below_correct:
          (is "_ = card ?S")
 proof (cases "p = 0")
   case True
-    with real_infinite_interval[of "a - 1" a] 
+    with infinite_Ioo[of "a - 1" a] 
          finite_subset[of "{a - 1<..<a}" ?S]
         have "\<not>finite {x. x \<le> a \<and> poly p x = 0}" by force
     thus ?thesis by (simp add: count_roots_below_def True)

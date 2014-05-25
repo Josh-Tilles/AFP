@@ -201,7 +201,7 @@ holds for the limit of a chain, given that it holds for all elements.
 lemma similar'_base_adm: "adm (\<lambda> x. similar'_base (fst x) (snd x))"
 proof (rule admI)
   case (goal1 Y)
-  from goal1 have "Y = (\<lambda> _ . \<bottom>)" by (metis PairE fst_eqD inst_prod_pcpo prod_case_beta similar'_base.simps snd_eqD)
+  from goal1 have "Y = (\<lambda> _ . \<bottom>)" by (metis PairE fst_eqD inst_prod_pcpo case_prod_beta similar'_base.simps snd_eqD)
   thus ?case by auto
 qed  
 
@@ -246,7 +246,7 @@ proof (rule admI)
       have "\<And>i. s (Y' i\<cdot>x) (Y'' i\<cdot>y\<cdot>C\<^sup>\<infinity>)" by auto
       hence "split s (\<Squnion> i. ((Y' i)\<cdot>x, (Y'' i)\<cdot>y\<cdot>C\<^sup>\<infinity>))"
         apply -
-        apply (rule admD[OF adm_prod_case[where P = "\<lambda>_ . s", OF assms]])
+        apply (rule admD[OF adm_case_prod[where P = "\<lambda>_ . s", OF assms]])
         apply (simp add:  `chain Y'`  `chain Y''`)
         apply simp
         done
@@ -361,7 +361,7 @@ proof
       proof(rule similarI)
         fix n
         have "adm (\<lambda>(b, a). \<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(f\<cdot>b) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>(g\<cdot>a\<cdot>C\<^sup>\<infinity>))"
-          by (intro adm_prod_case similar'_admI cont2cont)
+          by (intro adm_case_prod similar'_admI cont2cont)
         thus "\<psi>\<^sup>D\<^bsub>n\<^esub>\<cdot>(f\<cdot>a) \<triangleleft>\<triangleright>\<^bsub>n\<^esub> \<psi>\<^sup>A\<^bsub>n\<^esub>\<cdot>(g\<cdot>b\<cdot>C\<^sup>\<infinity>)"
         proof (induct a b rule: Value_CValue_take_induct[consumes 1])
           txt {* This take induction is required to avoid the wrong equation shown above. *}

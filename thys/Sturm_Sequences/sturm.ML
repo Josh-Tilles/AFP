@@ -1,14 +1,14 @@
 
 signature STURM =
 sig
-  val sturm_conv : theory -> conv
+  val sturm_conv : Proof.context -> conv
   val sturm_tac :  Proof.context -> bool -> int -> tactic
 end;
 
 structure Sturm : STURM =
 struct
 
-  fun sturm_conv thy = Code_Runtime.dynamic_holds_conv thy
+  fun sturm_conv ctxt = Code_Runtime.dynamic_holds_conv ctxt (* FIXME prefer static converson? *)
 (*    [@{const_name count_roots_between}, @{const_name count_roots},
      @{const_name count_roots_above},@{const_name count_roots_below},
      @{const_name Trueprop}, @{const_name Rat.of_int}, 
@@ -21,7 +21,7 @@ struct
           @{thms sturm_id_PR_prio0}]
   val sturm_PR_tag_intro_thmss = [@{thms PR_TAG_intro_prio2}, @{thms PR_TAG_intro_prio1}, @{thms PR_TAG_intro_prio0}]
 
-  fun extract_PR_tags (t as (Const ("Sturm_Method.PR_TAG", _) $ _)) acc = t :: acc
+  fun extract_PR_tags (t as (Const (@{const_name PR_TAG}, _) $ _)) acc = t :: acc
     | extract_PR_tags (s $ t) acc = extract_PR_tags s (extract_PR_tags t acc)
     | extract_PR_tags (Abs (_,_,t)) acc = extract_PR_tags t acc
     | extract_PR_tags _ acc = acc
@@ -50,8 +50,8 @@ struct
     let val thy = Proof_Context.theory_of ctxt
         fun matches thm =
           case concl_of thm of
-            Const ("HOL.Trueprop", _) $ (Const ("HOL.eq", _) $ 
-                (Const ("Finite_Set.card", _) $ s') $ _)
+            Const (@{const_name Trueprop}, _) $ (Const (@{const_name HOL.eq}, _) $ 
+                (Const (@{const_name Finite_Set.card}, _) $ s') $ _)
               => Pattern.matches thy (s',s)
           | _ => 
               let val _ = Output.urgent_message ("Warning: invalid theorem in " ^
@@ -66,22 +66,21 @@ struct
 
   fun sturm_card_eq_instantiate_tac ctxt _ thm =
     let val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
-        val prop = case prop of Const ("prop", _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.prop}, _) $ prop => prop
                                 | _ => prop
-        val prop = case prop of Const ("Pure.conjunction", _) $ 
-                                    (Const ("Pure.term", _) $ _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.conjunction}, _) $ 
+                                    (Const (@{const_name Pure.term}, _) $ _) $ prop => prop
                                  | _ => prop
         val (lhs,rhs) = prop |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
-        val thy = Proof_Context.theory_of ctxt
         val vars = Term.add_vars rhs []
     in case vars of
           [v] => let val (idxname,ty) = v
-                      val n = Code_Evaluation.dynamic_value thy lhs
+                      val n = Code_Evaluation.dynamic_value ctxt lhs  (* FIXME prefer static converson? *)
                   in case n of
                      NONE => Seq.empty
                    | SOME n => 
                        let val n' = (if ty = @{typ nat} then "" else "%_. ") ^ Int.toString (HOLogic.dest_nat n)
-                       in  Seq.single (read_instantiate ctxt [(idxname, n')] thm)
+                       in  Seq.single (Rule_Insts.read_instantiate ctxt [(idxname, n')] [] thm)
                        end
                   end
         | _ => Seq.single thm
@@ -90,15 +89,15 @@ struct
 
   fun sturm_card_eq_tac ctxt i thm =
     let val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
-        val prop = case prop of Const ("prop", _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.prop}, _) $ prop => prop
                                 | _ => prop
-        val prop = case prop of Const ("Pure.conjunction", _) $ 
-                                    (Const ("Pure.term", _) $ _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.conjunction}, _) $ 
+                                    (Const (@{const_name Pure.term}, _) $ _) $ prop => prop
                                  | _ => prop
         val s = case prop of
-                        Const ("HOL.Trueprop", _) $
-                        (Const ("HOL.eq", _) $ 
-                          (Const ("Finite_Set.card", _) $ s) $ _)
+                        Const (@{const_name Trueprop}, _) $
+                        (Const (@{const_name HOL.eq}, _) $ 
+                          (Const (@{const_name Finite_Set.card}, _) $ s) $ _)
                         => s;
         val thm' = find_sturm_card_eq_thm ctxt s
     in  case thm' of
@@ -111,7 +110,7 @@ struct
     let val thy = Proof_Context.theory_of ctxt
         fun matches thm =
           case concl_of thm of
-            Const ("HOL.Trueprop", _) $ (Const ("HOL.eq", _) $ prop' $ _)
+            Const (@{const_name Trueprop}, _) $ (Const (@{const_name HOL.eq}, _) $ prop' $ _)
               => Pattern.matches thy (prop',prop)
           | _ => 
               let val _ = Output.urgent_message ("Warning: invalid theorem in " ^
@@ -126,12 +125,12 @@ struct
 
   fun sturm_prop_tac ctxt i thm =
     let val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
-        val prop = case prop of Const ("prop", _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.prop}, _) $ prop => prop
                                  | _ => prop
-        val prop = case prop of Const ("Pure.conjunction", _) $ 
-                                    (Const ("Pure.term", _) $ _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.conjunction}, _) $ 
+                                    (Const (@{const_name Pure.term}, _) $ _) $ prop => prop
                                  | _ => prop
-        val prop = case prop of Const ("HOL.Trueprop", _) $ prop => prop
+        val prop = case prop of Const (@{const_name Trueprop}, _) $ prop => prop
                                  | _ => prop
         val thm' = find_sturm_prop_thm ctxt prop
     in  case thm' of
@@ -140,21 +139,20 @@ struct
     end;
 
   fun sturm_main_tac ctxt keep_goal i thm =
-    let val thy = Proof_Context.theory_of ctxt
-        val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
-        val prop = case prop of Const ("prop", _) $ prop => prop
+    let val prop = case prems_of thm of p :: _ => p | _ => concl_of thm
+        val prop = case prop of Const (@{const_name Pure.prop}, _) $ prop => prop
                                | _  => prop
-        val prop = case prop of Const ("Pure.conjunction", _) $ 
-                                    (Const ("Pure.term", _) $ _) $ prop => prop
+        val prop = case prop of Const (@{const_name Pure.conjunction}, _) $ 
+                                    (Const (@{const_name Pure.term}, _) $ _) $ prop => prop
                                  | _ => prop
         val tac = case prop of
-                Const ("HOL.Trueprop", _) $
-                  (Const ("HOL.eq", _) $ 
-                    (Const ("Finite_Set.card", _) $ _) $ _) 
+                Const (@{const_name Trueprop}, _) $
+                  (Const (@{const_name HOL.eq}, _) $ 
+                    (Const (@{const_name Finite_Set.card}, _) $ _) $ _) 
                   => sturm_card_eq_tac
               | _ => sturm_prop_tac;
     in  ((tac ctxt i
-         THEN CONVERSION (sturm_conv thy) i
+         THEN CONVERSION (sturm_conv ctxt) i
          THEN rtac @{thm TrueI} i
         ) ORELSE (if keep_goal then all_tac else no_tac)) thm
     end;
@@ -172,13 +170,13 @@ struct
          | _ => Seq.empty
       end
 
-    fun sturm_tac ctxt keep_goal i =
-        prune_params_tac
-        THEN TRY (Object_Logic.full_atomize_tac i)
-        THEN TRY (EqSubst.eqsubst_tac ctxt [1] @{thms sturm_imp_conv} i)
-        THEN TRY (convert_meta_spec_tac ctxt i)
-        THEN TRY (Object_Logic.full_atomize_tac i)
-        THEN sturm_preprocess_tac ctxt i
-        THEN sturm_main_tac ctxt keep_goal i
+    fun sturm_tac ctxt keep_goal = SELECT_GOAL
+       (prune_params_tac ctxt
+        THEN TRY (Object_Logic.full_atomize_tac ctxt 1)
+        THEN TRY (EqSubst.eqsubst_tac ctxt [1] @{thms sturm_imp_conv} 1)
+        THEN TRY (convert_meta_spec_tac ctxt 1)
+        THEN TRY (Object_Logic.full_atomize_tac ctxt 1)
+        THEN sturm_preprocess_tac ctxt 1
+        THEN sturm_main_tac ctxt keep_goal 1)
 
 end;

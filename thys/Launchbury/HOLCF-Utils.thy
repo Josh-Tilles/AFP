@@ -23,7 +23,7 @@ proof (rule admI)
   case (goal1 Y)
     show ?case
     apply (rule pointwiseI)
-    apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p x, snd p x)", standard, OF _ assms, simplified] `chain Y`])
+    apply (rule admD[OF adm_subst[where t = "\<lambda>p . (fst p x, snd p x)" for x, OF _ assms, simplified] `chain Y`])
     using goal1(2) unfolding pointwise_def by auto
 qed
 

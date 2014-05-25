@@ -42,9 +42,6 @@ lemma ground_fresh[simp]:
 unfolding ground_aux_def ground_fm_aux_def fresh_def
 by simp_all
 
-lemma ground_eval_tm_forget: "ground t \<Longrightarrow> \<lbrakk>t\<rbrakk>e = \<lbrakk>t\<rbrakk>e'"
-  by (induct t rule: tm.induct) auto
-
 
 section{*Sigma Formulas*}
 
@@ -79,7 +76,7 @@ lemma ss_fm_imp_Sigma_fm [intro]: "ss_fm A \<Longrightarrow> Sigma_fm A"
   by (metis Iff_refl Sigma_fm_def order_refl)
 
 lemma Sigma_fm_Fls [iff]: "Sigma_fm Fls"
-  by (rule Sigma_fm_Iff [of _ "Ex i (Var i IN Var i)"])  (auto intro: ss_fm_imp_Sigma_fm)
+  by (rule Sigma_fm_Iff [of _ "Ex i (Var i IN Var i)"]) auto
 
 subsection{* Closure properties for Sigma-formulas *}
 
@@ -468,13 +465,13 @@ lemma ex_eval_fm_iff_exists_tm':
 by (auto simp: eval_subst_fm) (metis obtain_const_tm)
 
 text{*A ground term defines a finite set of ground terms, its elements.*}
-nominal_primrec elts :: "tm \<Rightarrow> tm set" where
+nominal_function elts :: "tm \<Rightarrow> tm set" where
    "elts Zero       = {}"
  | "elts (Var k)    = {}"
  | "elts (Eats t u) = insert u (elts t)"
 by (auto simp: eqvt_def elts_graph_aux_def) (metis tm.exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma eval_fm_All2_Eats:
@@ -487,7 +484,7 @@ lemma eval_fm_All2_Iff_elts:
   "ground t \<Longrightarrow> eval_fm e (All2 i t A) \<longleftrightarrow> (\<forall>u \<in> elts t. eval_fm e (A(i::=u)))"
 apply (induct t rule: tm.induct)
 apply auto [2]
-apply (simp add: eval_fm_All2_Eats del: eval_fm.simps eval_fm_All2)
+apply (simp add: eval_fm_All2_Eats del: eval_fm.simps)
 done
 
 lemma prove_elts_imp_prove_All2:
@@ -514,7 +511,7 @@ subsection{*The base cases: ground atomic formulas *}
 
 lemma ground_prove:
    "\<lbrakk>size t + size u < n; ground t; ground u\<rbrakk>
-    \<Longrightarrow> (\<lbrakk>t\<rbrakk>e \<le> \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t SUBS u) \<and> (\<lbrakk>t\<rbrakk>e ⋿ \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t IN u)"
+    \<Longrightarrow> (\<lbrakk>t\<rbrakk>e \<le> \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t SUBS u) \<and> (\<lbrakk>t\<rbrakk>e \<^bold>\<in> \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t IN u)"
 proof (induction n arbitrary: t u rule: less_induct)
   case (less n t u)
   show ?case
@@ -527,7 +524,7 @@ proof (induction n arbitrary: t u rule: less_induct)
            \<Longrightarrow> {} \<turnstile> t EQ u"
         by (metis Equality_I less.IH nat_add_commute order_refl)
     }
-    thus "\<lbrakk>t\<rbrakk>e ⋿ \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t IN u" using less.prems
+    thus "\<lbrakk>t\<rbrakk>e \<^bold>\<in> \<lbrakk>u\<rbrakk>e \<longrightarrow> {} \<turnstile> t IN u" using less.prems
       by (cases u rule: tm.exhaust) (auto simp: Mem_Eats_I1 Mem_Eats_I2 less.IH)
   qed
 qed
@@ -535,7 +532,7 @@ qed
 lemma 
   assumes "ground t" "ground u"
     shows ground_prove_SUBS: "\<lbrakk>t\<rbrakk>e \<le> \<lbrakk>u\<rbrakk>e \<Longrightarrow> {} \<turnstile> t SUBS u"
-      and ground_prove_IN:   "\<lbrakk>t\<rbrakk>e ⋿ \<lbrakk>u\<rbrakk>e \<Longrightarrow> {} \<turnstile> t IN u"
+      and ground_prove_IN:   "\<lbrakk>t\<rbrakk>e \<^bold>\<in> \<lbrakk>u\<rbrakk>e \<Longrightarrow> {} \<turnstile> t IN u"
       and ground_prove_EQ:   "\<lbrakk>t\<rbrakk>e = \<lbrakk>u\<rbrakk>e \<Longrightarrow> {} \<turnstile> t EQ u"
   by (metis Equality_I assms ground_prove [OF lessI] order_refl)+
 

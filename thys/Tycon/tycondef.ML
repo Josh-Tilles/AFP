@@ -141,7 +141,7 @@ fun add_fixdefs
         case lhs of
           Const (@{const_name Rep_cfun}, _) $ f $ (x as Free _) =>
             mk_eqn (f, big_lambda x rhs)
-        | f $ Const (@{const_name TYPE}, T) =>
+        | f $ Const (@{const_name Pure.type}, T) =>
             mk_eqn (f, Abs ("t", T, rhs))
         | Const _ => Logic.mk_equals (lhs, rhs)
         | _ => raise TERM ("lhs not of correct form", [lhs, rhs])
@@ -155,10 +155,10 @@ fun add_fixdefs
     (* prove applied version of definitions *)
     fun prove_proj (lhs, rhs) =
       let
-        val tac = rewrite_goals_tac fixdef_thms THEN
-          simp_tac (Simplifier.global_context thy beta_ss) 1
+        fun tac ctxt = rewrite_goals_tac ctxt fixdef_thms THEN
+          simp_tac (put_simpset beta_ss ctxt) 1
         val goal = Logic.mk_equals (lhs, rhs)
-      in Goal.prove_global thy [] [] goal (K tac) end
+      in Goal.prove_global thy [] [] goal (tac o #context) end
     val proj_thms = map prove_proj projs
 
     (* mk_tuple lhss == fixpoint *)
@@ -322,7 +322,7 @@ fun define_map_functions
       in
         Goal.prove_global thy [] assms goal (fn {prems, context = ctxt, ...} =>
          EVERY
-          [rewrite_goals_tac map_apply_thms,
+          [rewrite_goals_tac ctxt map_apply_thms,
            rtac (map_cont_thm RS @{thm cont_fix_ind}) 1,
            REPEAT (resolve_tac adm_rules 1),
            simp_tac (put_simpset HOL_basic_ss ctxt addsimps bottom_rules) 1,
@@ -394,7 +394,7 @@ fun domain_isomorphism
         fun arity (vs, tbind, _, _, _) =
           (Sign.full_name thy tbind, map snd vs, @{sort "tycon"})
       in
-        fold Axclass.axiomatize_arity (map arity doms) tmp_thy
+        fold Axclass.arity_axiomatization (map arity doms) tmp_thy
       end
 
     (* check bifiniteness of right-hand sides *)
@@ -526,11 +526,11 @@ fun domain_isomorphism
       let
         val goal = mk_eqs (mk_DEFL lhsT, mk_DEFL rhsT)
         val DEFL_simps = Global_Theory.get_thms thy "domain_defl_simps"
-        val tac =
-          rewrite_goals_tac (map mk_meta_eq DEFL_simps @ tc_defs)
+        fun tac ctxt =
+          rewrite_goals_tac ctxt (map mk_meta_eq DEFL_simps @ tc_defs)
           THEN TRY (resolve_tac defl_unfold_thms 1)
       in
-        Goal.prove_global thy [] [] goal (K tac)
+        Goal.prove_global thy [] [] goal (tac o #context)
       end
     val DEFL_eq_thms = map mk_DEFL_eq_thm dom_eqns
 
@@ -639,7 +639,7 @@ fun domain_isomorphism
       in
         Goal.prove_global thy [] assms goal (fn {prems, context = ctxt, ...} =>
          EVERY
-          [rewrite_goals_tac (defl_apply_thms @ map_apply_thms),
+          [rewrite_goals_tac ctxt (defl_apply_thms @ map_apply_thms),
            rtac (@{thm cont_parallel_fix_ind}
              OF [defl_cont_thm, map_cont_thm]) 1,
            REPEAT (resolve_tac adm_rules 1),
@@ -774,7 +774,7 @@ fun domain_isomorphism
         val fmap_def = singleton (Proof_Context.export lthy ctxt_thy) fmap_ldef
         fun tacf ctxt = EVERY
           [Class.default_intro_tac ctxt [],
-           rewrite_goals_tac (fmap_def :: tc_defs),
+           rewrite_goals_tac ctxt (fmap_def :: tc_defs),
            resolve_tac isodefl_thms 1,
            REPEAT (resolve_tac @{thms isodefl_ID_DEFL isodefl_LIFTDEFL isodefl_cast} 1)]
         val thy = lthy
@@ -800,7 +800,7 @@ type info =
 fun add_arity ((b, sorts, mx), sort) thy : theory =
   thy
   |> Sign.add_types_global [(b, length sorts, mx)]
-  |> Axclass.axiomatize_arity (Sign.full_name thy b, sorts, sort)
+  |> Axclass.arity_axiomatization (Sign.full_name thy b, sorts, sort)
 
 fun gen_add_tycon
     (prep_sort : theory -> 'a -> sort)
@@ -980,9 +980,9 @@ val add_tycon_cmd =
 (** outer syntax **)
 
 val dest_decl : (bool * binding option * string) parser =
-  Parse.$$$ "(" |-- Scan.optional (Parse.$$$ "lazy" >> K true) false --
-    (Parse.binding >> SOME) -- (Parse.$$$ "::" |-- Parse.typ)  --| Parse.$$$ ")" >> Parse.triple1
-    || Parse.$$$ "(" |-- Parse.$$$ "lazy" |-- Parse.typ --| Parse.$$$ ")"
+  @{keyword "("} |-- Scan.optional (@{keyword "lazy"} >> K true) false --
+    (Parse.binding >> SOME) -- (@{keyword "::"} |-- Parse.typ)  --| @{keyword ")"} >> Parse.triple1
+    || @{keyword "("} |-- @{keyword "lazy"} |-- Parse.typ --| @{keyword ")"}
     >> (fn t => (true,NONE,t))
     || Parse.typ >> (fn t => (false,NONE,t))
 
@@ -992,7 +992,7 @@ val cons_decl =
 val tycon_decl =
   (Parse.type_ident --| @{keyword "\<cdot>"} -- Parse.type_args_constrained --
     Parse.binding -- Parse.opt_mixfix) --
-    (Parse.$$$ "=" |-- Parse.enum1 "|" cons_decl)
+    (@{keyword "="} |-- Parse.enum1 "|" cons_decl)
 
 val tycons_decl =
   Parse.and_list1 tycon_decl

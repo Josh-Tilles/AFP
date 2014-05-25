@@ -23,20 +23,6 @@ lemma quotientI2:
   "\<lbrakk> x \<in> A; X = r `` {x} \<rbrakk> \<Longrightarrow> X \<in> A // r"
   by (simp add: quotientI)
 
-instantiation unit :: linorder
-begin
-
-definition less_eq_unit_def: "(x :: unit) \<le> y \<equiv> True"
-definition less_unit_def: "(x :: unit) < y \<equiv> False"
-
-instance
-  apply intro_classes
-  apply (unfold less_eq_unit_def less_unit_def)
-  apply auto
-  done
-
-end
-
 (*
 
 Concretely enumerate all the agent action functions. Can't be too
@@ -141,8 +127,6 @@ lemma listToFuns_ext:
    using map_id_clunky[OF xs]
    apply auto[1]
    apply (rule_tac x="f xa" in exI)
-   apply simp
-   apply (rule_tac x=xa in image_eqI)
     apply simp
    apply simp
   using d

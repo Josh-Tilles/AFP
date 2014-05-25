@@ -160,11 +160,11 @@ lemma cs_pop_rule:
   apply (sep_auto simp: cs_pop.simps)
 
   apply (cases l)
-  apply (sep_auto simp: cs_pop.simps dflt_simps: the.simps)
+  apply (sep_auto simp: cs_pop.simps dflt_simps: option.sel)
 
   apply (sep_auto 
     simp: cs_pop.simps 
-    dflt_simps: the.simps 
+    dflt_simps: option.sel 
     eintros del: exI)
   (* Some unfortunate quantifier fiddling :( *)
   apply (rule_tac x=aa in exI)
@@ -238,7 +238,7 @@ lemma "<emp> test <\<lambda>r. \<up>(r=test_result) * true>"
   apply (sep_auto)
   done
   
-export_code test in SML_imp file -
+export_code test in SML_imp
 
 ML_val {*
   val res = @{code test} ();

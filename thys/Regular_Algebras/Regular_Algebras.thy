@@ -761,7 +761,7 @@ lemma setsum_intro' [intro]:
   by (metis setsum_intro)  
 
 lemma boffa_aux2: "conway_assm1 x \<Longrightarrow> \<Sum>{x\<^bsub>i\<^esub>\<cdot>x\<^bsub>j \<^esub>| i j. i \<in> UNIV \<and> j \<in> UNIV} \<le> \<Sum>{x\<^bsub>i\<cdot>j\<^esub> | i j. i \<in> UNIV \<and> j \<in> UNIV}"
-  by (force simp add:conway_assm1_def)
+  by (fastforce simp add:conway_assm1_def)
 
 lemma boffa_aux3: 
   assumes "conway_assm1 x"
