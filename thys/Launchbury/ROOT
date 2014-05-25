@@ -21,3 +21,8 @@ session Launchbury (AFP) = "HOLCF-Nominal2" +
   options [timeout=300]
   theories
     "EverythingAdequacy"
+  document_files
+    "map.tex"
+    "mathpartir.sty"
+    "root.bib"
+    "root.tex"

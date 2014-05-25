@@ -12,10 +12,7 @@ section {*Predicates for atomic terms*}
 
 subsection {*Free Variables*}
 
-lemma name_of_nat_inject [simp]: "name_of_nat x = name_of_nat y \<longleftrightarrow> x=y"
-  by (metis nat_of_name_name_eq)
-
-definition is_Var :: "hf \<Rightarrow> bool" where "is_Var x \<equiv> Ord x \<and> 0 ⋿ x"
+definition is_Var :: "hf \<Rightarrow> bool" where "is_Var x \<equiv> Ord x \<and> 0 \<^bold>\<in> x"
 
 definition VarP :: "tm \<Rightarrow> fm" where "VarP x \<equiv> OrdP x AND Zero IN x"
 
@@ -69,12 +66,12 @@ definition is_Ind :: "hf \<Rightarrow> bool"
 abbreviation Q_Ind :: "tm \<Rightarrow> tm"
   where "Q_Ind k \<equiv> HPair (HTuple 6) k"
 
-nominal_primrec IndP :: "tm \<Rightarrow> fm"
+nominal_function IndP :: "tm \<Rightarrow> fm"
   where "atom m \<sharp> x \<Longrightarrow>
     IndP x = Ex m (OrdP (Var m) AND x EQ HPair (HTuple 6) (Var m))"
   by (auto simp: eqvt_def IndP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -109,22 +106,10 @@ definition decode_Ind :: "hf \<Rightarrow> nat"
 lemma is_Ind_pair_iff [simp]: "is_Ind \<langle>x, y\<rangle> \<longleftrightarrow> x = htuple 6 \<and> Ord y"
   by (auto simp: is_Ind_def)
 
-lemma decode_Ind_inject [simp]: "is_Ind x \<Longrightarrow> is_Ind x' \<Longrightarrow> decode_Ind x = decode_Ind x' \<longleftrightarrow> x=x'"
-  by (auto simp: is_Ind_def decode_Ind_def nat_of_ord_inject)
- 
 subsection {*Various syntactic lemmas*}
-
-lemma not_is_Var_Eats [simp]: "~ is_Var (q_Eats y z)"
-  by (simp add: is_Var_def q_Eats_def)
-
-lemma is_Ind_q_Ind: "Ord n \<Longrightarrow> is_Ind (q_Ind n)"
-  by (simp add: q_Ind_def)
 
 lemma eval_Var_q: "\<lbrakk>\<lceil>Var i\<rceil>\<rbrakk> e = q_Var i"
   by (simp add: quot_tm_def q_Var_def)
-
-lemma decode_quot_Var [simp]: "decode_Var \<lbrakk>\<lceil>Var i\<rceil>\<rbrakk>e = i"
-  by (metis decode_Var_q_Var eval_Var_q)
 
 lemma is_Var_eval_Var [simp]: "is_Var \<lbrakk>\<lceil>Var i\<rceil>\<rbrakk>e"
   by (metis decode_Var_q_Var is_Var_imp_decode_Var is_Var_q_Var)
@@ -136,7 +121,7 @@ section {*The predicate @{text SeqCTermP}, for Terms and Constants*}
 definition SeqCTerm :: "bool \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
   where "SeqCTerm vf s k t \<equiv> BuildSeq (\<lambda>u. u=0 \<or> vf \<and> is_Var u) (\<lambda>u v w. u = q_Eats v w) s k t"
 
-nominal_primrec SeqCTermP :: "bool \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqCTermP :: "bool \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,sl,m,n,sm,sn);  atom sl \<sharp> (s,m,n,sm,sn);
           atom m \<sharp> (s,n,sm,sn);  atom n \<sharp> (s,sm,sn);
           atom sm \<sharp> (s,sn);  atom sn \<sharp> (s)\<rbrakk> \<Longrightarrow>
@@ -149,7 +134,7 @@ nominal_primrec SeqCTermP :: "bool \<Rightarrow> tm \<Rightarrow> tm \<Rightarro
                        Var sl EQ Q_Eats (Var sm) (Var sn))))))))"
   by (auto simp: eqvt_def SeqCTermP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -236,12 +221,12 @@ subsection {*Definition*}
 definition CTerm :: "bool \<Rightarrow> hf \<Rightarrow> bool"
   where "CTerm vf t \<equiv> (\<exists>s k. SeqCTerm vf s k t)"
 
-nominal_primrec CTermP :: "bool \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function CTermP :: "bool \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom k \<sharp> (s,t); atom s \<sharp> t\<rbrakk> \<Longrightarrow>
     CTermP vf t = Ex s (Ex k (SeqCTermP vf (Var s) (Var k) t))"
   by (auto simp: eqvt_def CTermP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -352,7 +337,7 @@ where "AbstTerm v i x x' \<equiv> Ord i \<and> (\<exists>s k. SeqStTerm v (q_Ind
 
 subsection {*Defining the syntax: quantified body*}
 
-nominal_primrec SeqStTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqStTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,v,i,sl,sl',m,n,sm,sm',sn,sn');
           atom sl \<sharp> (s,v,i,sl',m,n,sm,sm',sn,sn'); atom sl' \<sharp> (s,v,i,m,n,sm,sm',sn,sn');
           atom m \<sharp> (s,n,sm,sm',sn,sn'); atom n \<sharp> (s,sm,sm',sn,sn');
@@ -370,7 +355,7 @@ nominal_primrec SeqStTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow
                        Var sl' EQ Q_Eats (Var sm') (Var sn')))))))))))"
   by (auto simp: eqvt_def SeqStTermP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -437,13 +422,13 @@ declare SeqStTermP.simps [simp del]
 
 subsection {*Defining the syntax: main predicate*}
 
-nominal_primrec AbstTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function AbstTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (v,i,t,u,k); atom k \<sharp> (v,i,t,u)\<rbrakk> \<Longrightarrow>
     AbstTermP v i t u =
      OrdP i AND Ex s (Ex k (SeqStTermP v (Q_Ind i) t u (Var s) (Var k)))"
   by (auto simp: eqvt_def AbstTermP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -473,14 +458,8 @@ declare AbstTermP.simps [simp del]
 
 subsection {*Correctness: It Coincides with Abstraction over real terms*}
 
-lemma not_is_Var_0 [iff]: "\<not> is_Var 0"
-  by (metis hmem_not_refl is_Var_def)
-
 lemma not_is_Var_is_Ind: "is_Var v \<Longrightarrow> \<not> is_Ind v"
   by (auto simp: is_Var_def is_Ind_def)
-
-lemma AbstTerm_0 [iff]: "AbstTerm (q_Var i) (ord_of n) 0 0"
-  by (auto simp: AbstTerm_def SeqStTerm_def q_Var_def intro!: BuildSeq2_exI)
 
 lemma AbstTerm_imp_abst_dbtm:
   assumes "AbstTerm v i x x'"
@@ -530,12 +509,12 @@ definition SubstTerm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \
 
 subsection {*Defining the syntax*}
 
-nominal_primrec SubstTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SubstTermP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (v,i,t,u,k); atom k \<sharp> (v,i,t,u)\<rbrakk> \<Longrightarrow>
     SubstTermP v i t u = TermP i AND Ex s (Ex k (SeqStTermP v i t u (Var s) (Var k)))"
   by (auto simp: eqvt_def SubstTermP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -570,9 +549,6 @@ lemma SubstTermP_cong:
   "\<lbrakk>H \<turnstile> v EQ v'; H \<turnstile> i EQ i'; H \<turnstile> t EQ t'; H \<turnstile> u EQ u'\<rbrakk>
    \<Longrightarrow> H \<turnstile> SubstTermP v i t u IFF SubstTermP v' i' t' u'"
   by (rule P4_cong) auto
-
-lemma ground_SubstTermP [simp]: "ground_fm (SubstTermP v y x x') \<longleftrightarrow> ground v \<and> ground y \<and> ground x \<and> ground x'"
-  by (auto simp: supp_conv_fresh ground_aux_def ground_fm_aux_def)
 
 declare SubstTermP.simps [simp del]
 
@@ -635,7 +611,7 @@ definition AbstAtomic :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf 
             (\<exists>t u t' u'. AbstTerm v i t t' \<and> AbstTerm v i u u' \<and>
              ((y = q_Eq t u \<and> y' = q_Eq t' u') \<or> (y = q_Mem t u \<and> y' = q_Mem t' u')))"
 
-nominal_primrec AbstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function AbstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom t \<sharp> (v,i,y,y',t',u,u'); atom t' \<sharp> (v,i,y,y',u,u');
           atom u \<sharp> (v,i,y,y',u'); atom u' \<sharp> (v,i,y,y')\<rbrakk> \<Longrightarrow>
     AbstAtomicP v i y y' =
@@ -645,7 +621,7 @@ nominal_primrec AbstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarro
                        (y EQ Q_Mem (Var t) (Var u) AND y' EQ Q_Mem (Var t') (Var u')))))))"
   by (auto simp: eqvt_def AbstAtomicP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -689,7 +665,7 @@ definition SeqAbstForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf
 where "SeqAbstForm v i x x' s k \<equiv>
        BuildSeq3 (AbstAtomic v) AbstMakeForm s k i x x'"
 
-nominal_primrec SeqAbstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqAbstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,v,sli,sl,sl',m,n,smi,sm,sm',sni,sn,sn');
           atom sli \<sharp> (s,v,sl,sl',m,n,smi,sm,sm',sni,sn,sn');
           atom sl \<sharp> (s,v,sl',m,n,smi,sm,sm',sni,sn,sn');
@@ -716,7 +692,7 @@ nominal_primrec SeqAbstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarr
                          Var sl EQ Q_Ex (Var sm) AND Var sl' EQ Q_Ex (Var sm'))))))))))))))))"
   by (auto simp: eqvt_def SeqAbstFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -778,13 +754,13 @@ subsection {*Defining the syntax: the main AbstForm predicate*}
 definition AbstForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
   where "AbstForm v i x x' \<equiv> is_Var v \<and> Ord i \<and> (\<exists>s k. SeqAbstForm v i x x' s k)"
 
-nominal_primrec AbstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function AbstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (v,i,x,x',k);
           atom k \<sharp> (v,i,x,x')\<rbrakk> \<Longrightarrow>
     AbstFormP v i x x' = VarP v AND OrdP i AND Ex s (Ex k (SeqAbstFormP v i x x' (Var s) (Var k)))"
   by (auto simp: eqvt_def AbstFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -870,7 +846,7 @@ definition SubstAtomic :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf
             (\<exists>t u t' u'. SubstTerm v tm t t' \<and> SubstTerm v tm u u' \<and>
              ((y = q_Eq t u \<and> y' = q_Eq t' u') \<or> (y = q_Mem t u \<and> y' = q_Mem t' u')))"
 
-nominal_primrec SubstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SubstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom t \<sharp> (v,tm,y,y',t',u,u');
           atom t' \<sharp> (v,tm,y,y',u,u');
           atom u \<sharp> (v,tm,y,y',u');
@@ -882,7 +858,7 @@ nominal_primrec SubstAtomicP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarr
                        (y EQ Q_Mem (Var t) (Var u) AND y' EQ Q_Mem (Var t') (Var u')))))))"
 by (auto simp: eqvt_def SubstAtomicP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -928,7 +904,7 @@ definition SubstMakeForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> 
 definition SeqSubstForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
   where "SeqSubstForm v u x x' s k \<equiv> BuildSeq2 (SubstAtomic v u) SubstMakeForm s k x x'"
 
-nominal_primrec SeqSubstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqSubstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,v,u,sl,sl',m,n,sm,sm',sn,sn');
           atom sl \<sharp> (s,v,u,sl',m,n,sm,sm',sn,sn');
           atom sl' \<sharp> (s,v,u,m,n,sm,sm',sn,sn');
@@ -948,7 +924,7 @@ nominal_primrec SeqSubstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightar
                         (Var sl EQ Q_Ex (Var sm) AND Var sl' EQ Q_Ex (Var sm')))))))))))))"
 by (auto simp: eqvt_def SeqSubstFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1014,13 +990,13 @@ subsection {*Defining the syntax: the main SubstForm predicate*}
 definition SubstForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
 where "SubstForm v u x x' \<equiv> is_Var v \<and> Term u \<and> (\<exists>s k. SeqSubstForm v u x x' s k)"
 
-nominal_primrec SubstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SubstFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (v,i,x,x',k); atom k \<sharp> (v,i,x,x')\<rbrakk> \<Longrightarrow>
     SubstFormP v i x x' =
       VarP v AND TermP i AND Ex s (Ex k (SeqSubstFormP v i x x' (Var s) (Var k)))"
   by (auto simp: eqvt_def SubstFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1127,14 +1103,14 @@ section {*The predicate @{text AtomicP}*}
 definition Atomic :: "hf \<Rightarrow> bool"
   where "Atomic y \<equiv>\<exists>t u. Term t \<and> Term u \<and> (y = q_Eq t u \<or> y = q_Mem t u)"
 
-nominal_primrec AtomicP :: "tm \<Rightarrow> fm"
+nominal_function AtomicP :: "tm \<Rightarrow> fm"
   where "\<lbrakk>atom t \<sharp> (u,y); atom u \<sharp> y\<rbrakk> \<Longrightarrow>
     AtomicP y = Ex t (Ex u (TermP (Var t) AND TermP (Var u) AND
                       (y EQ Q_Eq (Var t) (Var u) OR
                        y EQ Q_Mem (Var t) (Var u))))"
   by (auto simp: eqvt_def AtomicP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1156,14 +1132,14 @@ definition MakeForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
          y = q_Disj u w \<or> y = q_Neg u \<or>
          (\<exists>v u'. AbstForm v 0 u u' \<and> y = q_Ex u')"
 
-nominal_primrec MakeFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function MakeFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom v \<sharp> (y,u,w,au); atom au \<sharp> (y,u,w)\<rbrakk> \<Longrightarrow>
     MakeFormP y u w =
       y EQ Q_Disj u w OR y EQ Q_Neg u OR
       Ex v (Ex au (AbstFormP (Var v) Zero u (Var au) AND y EQ Q_Ex (Var au)))"
   by (auto simp: eqvt_def MakeFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1189,7 +1165,7 @@ section {*The predicate @{text SeqFormP} *}
 definition SeqForm :: "hf \<Rightarrow> hf \<Rightarrow> hf \<Rightarrow> bool"
   where "SeqForm s k y \<equiv> BuildSeq Atomic MakeForm s k y"
 
-nominal_primrec SeqFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,t,sl,m,n,sm,sn); atom sl \<sharp> (s,k,t,m,n,sm,sn);
           atom m \<sharp> (s,k,t,n,sm,sn); atom n \<sharp> (s,k,t,sm,sn);
           atom sm \<sharp> (s,k,t,sn); atom sn \<sharp> (s,k,t)\<rbrakk> \<Longrightarrow>
@@ -1201,11 +1177,8 @@ nominal_primrec SeqFormP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> 
                        MakeFormP (Var sn) (Var sm) (Var sl))))))))"
   by (auto simp: eqvt_def SeqFormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
-
-lemma exists_Term: "\<exists>x. Term x"
-  by (metis Term_quot_tm)
 
 lemma
   shows SeqFormP_fresh_iff [simp]:
@@ -1223,7 +1196,7 @@ proof -
     by auto
   show ?thesis2 using atoms
     by (simp cong: conj_cong add: LstSeq_imp_Ord SeqForm_def BuildSeq_def Builds_def
-             HBall_def HBex_def q_defs exists_Term
+             HBall_def HBex_def q_defs 
              Seq_iff_app [of "\<lbrakk>s\<rbrakk>e", OF LstSeq_imp_Seq_succ]
              Ord_trans [of _ _ "succ \<lbrakk>k\<rbrakk>e"])
 qed
@@ -1247,12 +1220,12 @@ subsection {*Definition*}
 definition Form :: "hf \<Rightarrow> bool"
   where "Form y \<equiv> (\<exists>s k. SeqForm s k y)"
 
-nominal_primrec FormP :: "tm \<Rightarrow> fm"
+nominal_function FormP :: "tm \<Rightarrow> fm"
   where "\<lbrakk>atom k \<sharp> (s,y); atom s \<sharp> y\<rbrakk> \<Longrightarrow>
     FormP y = Ex k (Ex s (SeqFormP (Var s) (Var k) y))"
   by (auto simp: eqvt_def FormP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1400,11 +1373,11 @@ subsection {*The predicate @{text VarNonOccFormP} (Derived from @{text SubstForm
 definition VarNonOccForm :: "hf \<Rightarrow> hf \<Rightarrow> bool"
 where "VarNonOccForm v x \<equiv> Form x \<and> SubstForm v 0 x x" 
 
-nominal_primrec VarNonOccFormP :: "tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function VarNonOccFormP :: "tm \<Rightarrow> tm \<Rightarrow> fm"
   where "VarNonOccFormP v x = FormP x AND SubstFormP v Zero x x"
   by (auto simp: eqvt_def VarNonOccFormP_graph_aux_def) 
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma

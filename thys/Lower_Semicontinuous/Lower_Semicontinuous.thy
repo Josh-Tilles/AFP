@@ -799,7 +799,7 @@ proof-
   hence xz_def: "ereal z >= (SUP e:{0<..}. INF y:ball x e. f y)"
     unfolding Epigraph_def min_Liminf_at by auto
   { fix e::real assume "e>0"
-    hence "e/sqrt 2>0" using `e>0` by (auto intro: divide_pos_pos)
+    hence "e/sqrt 2>0" using `e>0` by simp
     from this obtain e1 where e1_def: "e1<e/sqrt 2 & e1>0" using dense by auto
     hence "(SUP e:{0<..}. INF y:ball x e. f y) >= (INF y:ball x e1. f y)"
       by (auto intro: SUP_upper)
@@ -1075,10 +1075,9 @@ next
     have i2: "1 - ereal (a i) ~= \<infinity>" using ereal_minus(1)[of 1]
       by (simp add: zero_ereal_def[symmetric] one_ereal_def[symmetric])
     let "?a j" = "a j / (1 - a i)"
-    { fix j assume "j : s"
-      hence "?a j >= 0"
-        using i0 insert divide_nonneg_pos
-        by fastforce } note a_nonneg = this
+    have a_nonneg: "\<And>j. j \<in> s \<Longrightarrow> 0 \<le> a j / (1 - a i)"
+      using i0 insert
+      by (metis insert_iff divide_nonneg_pos)
     have "(SUM j : insert i s. a j) = 1" using insert by auto
     hence "(SUM j : s. a j) = 1 - a i" using setsum.insert insert by fastforce
     hence "(SUM j : s. a j) / (1 - a i) = 1" using i0 by auto
@@ -1331,8 +1330,8 @@ proof-
     using assms unfolding domain_def by auto
   moreover have "(%x. if x:S then (f x) else \<infinity>) = (%x. max (f x) (g x))"
     apply (subst fun_eq_iff) unfolding g_def apply auto
-    apply (metis ereal_less_eq(2) min_max.sup_absorb1)
-    by (metis ereal_less_eq(1) min_max.sup_absorb2)
+    apply (metis ereal_less_eq(2) max.absorb1)
+    by (metis ereal_less_eq(1) max.absorb2)
   ultimately show ?thesis using convex_ereal_max assms by auto
 qed
 
@@ -1621,7 +1620,7 @@ proof-
   hence "min (f x) (Liminf (at x) f) < \<infinity>" unfolding domain_def using lsc_hull_liminf_at[of f] by auto
   then obtain z where z_def: "min (f x) (Liminf (at x) f) < z & z < \<infinity>" by (metis dense)
   { fix e::real assume "e>0"
-    hence "INFI (ball x e) f <= min (f x) (Liminf (at x) f)"
+    hence "INFIMUM (ball x e) f <= min (f x) (Liminf (at x) f)"
       unfolding min_Liminf_at apply (subst SUP_upper) by auto
     hence "EX y. y : ball x e & f y <= z"
       using Inf_le_iff_less[of "ball x e" f "min (f x) (Liminf (at x) f)"] z_def by (auto simp: Bex_def)
@@ -1777,7 +1776,7 @@ proof-
   moreover
   { assume "a>=b-e" hence "a:cball b e" unfolding cball_def dist_norm using `a<b` by auto }
   ultimately have "max a (b-e):cball b e"
-    by (metis min_max.sup_absorb1 min_max.sup_absorb2 linear)
+    by (metis max.absorb1 max.absorb2 linear)
   hence "max a (b-e):T" using e_def by auto
   moreover have "max a (b-e):{a..<b}" using e_def `a<b` by auto
   ultimately have "EX y:{a..<b}. y : T & y ~= b" by auto

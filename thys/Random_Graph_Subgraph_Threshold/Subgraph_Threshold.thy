@@ -67,7 +67,7 @@ next
   ultimately have "(\<lambda>n. p n * n powr (?v / ?e)) ----> 0"
     unfolding subgraph_threshold_def by simp
   moreover have "\<And>n. 1 \<le> n \<Longrightarrow> 0 < p n * n powr (?v / ?e)"
-    by (rule mult_pos_pos) (auto simp: p_nz)
+    by (auto simp: p_nz)
   ultimately have "(\<lambda>n. (p n * n powr (?v / ?e)) powr ?e) ----> 0"
     using card(2) by (force intro: tendsto_zero_powrI[OF eventually_sequentiallyI])
   hence limit: "(\<lambda>n. p n powr ?e * n powr ?v) ----> 0"
@@ -213,12 +213,7 @@ next
         thus "real (n choose ?v) \<le> real (n ^ ?v)"
           by (metis real_of_nat_le_iff)
       next
-        have "0 \<le> real ((?v choose 2) choose ?e)"
-          by simp
-        moreover have "0 \<le> p n ^ ?e"
-          using p by simp
-        ultimately show "0 \<le> ?r"
-          by (fact mult_nonneg_nonneg)
+        show "0 \<le> ?r" using p by simp
       qed
     also have "\<dots> \<le> ((?v choose 2) choose ?e) * (p n ^ ?e * n ^ ?v)" (is "_ \<le> ?factor * _")
       by simp
@@ -248,10 +243,8 @@ next
   --{* We observe that several terms involving $|V(H)|$ are positive. *}
   have v_e_nz: "0 < real ?v" "0 < real ?e"
     using nonempty finite unfolding nonempty_graph_def finite_graph_def by auto
-  hence "0 < real ?v ^ ?v"
-    by simp
-  hence vpowv_inv_gr_z: "0 < 1 / ?v ^ ?v"
-    by (simp add: divide_pos_pos)
+  hence "0 < real ?v ^ ?v" by simp
+  hence vpowv_inv_gr_z: "0 < 1 / ?v ^ ?v" by simp
 
   --{* For a given $n$, let $A$ be a family of events indexed by a set $S$. Each $A$ contains the
        graphs whose induced subgraphs over $S$ contain the selected copy of @{term H} by @{term f}
@@ -554,7 +547,7 @@ next
                 hence "density (S \<inter> T, uedges (f S) \<inter> uedges (f T)) = 0"
                   unfolding density_def by simp
                 also have "0 \<le> density (f S)"
-                  unfolding density_def by (simp add: divide_nonneg_nonneg)
+                  unfolding density_def by simp
                 also have "density (f S) \<le> max_density (f S)"
                   using S by (simp add: max_density_is_max subgraph_refl)
                 finally show "density (S \<inter> T, uedges (f S) \<inter> uedges (f T)) \<le> max_density (f S)"
@@ -645,7 +638,7 @@ next
         proof (rule LIMSEQ_le_zero[OF _ eventually_sequentiallyI eventually_sequentiallyI])
           fix n
           show "0 \<le> 1 / (real n ^ ?v * p n ^ ?e)"
-            using p by (simp add: divide_nonneg_nonneg mult_nonneg_nonneg)
+            using p by simp
 
           assume n: "1 \<le> n"
           have "1 / (real n ^ ?v * p n ^ ?e) = 1 / (real n powr ?v * p n powr ?e)"
@@ -660,7 +653,7 @@ next
             by simp
           also have "\<dots> \<le> (real n powr -(1 / max_density H) * p n powr -1) powr ?e"
             apply (rule powr_mono2[OF _ _ mult_right_mono[OF powr_mono[OF le_imp_neg_le[OF divide_left_mono]]]])
-            using n v_e_nz by (auto simp: divide_pos_pos mult_pos_pos
+            using n v_e_nz by (auto simp:
               max_density_is_max[unfolded density_def, OF finite finite nonempty wellformed subgraph_refl]
               max_density_gr_zero[OF finite nonempty wellformed])
           also have "\<dots> = (real n powr -(1 / max_density H) * (1 / p n powr 1)) powr ?e"

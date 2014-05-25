@@ -5,12 +5,11 @@ session Incompleteness (AFP) = HOL +
   options [timeout = 600]
   theories [document = false]
     "~~/src/HOL/Library/Nat_Bijection"
-    "~~/src/HOL/Library/Wfrec"
     "../HereditarilyFinite/OrdArith"
     "../Nominal2/Nominal2"
   theories
     Goedel_I
     Goedel_II
-  files
-    "document/root.bib"
-    "document/root.tex"
+  document_files
+    "root.bib"
+    "root.tex"

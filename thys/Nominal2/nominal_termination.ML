@@ -92,7 +92,7 @@ fun gen_termination prep_term is_eqvt raw_term_opt lthy =
        [((Binding.empty, [Context_Rules.intro_bang (SOME 1)]), [([allI], [])])] |> snd
     |> Proof_Context.note_thmss ""
        [((Binding.name "termination", [Context_Rules.intro_bang (SOME 0)]),
-         [([Goal.norm_result termination], [])])] |> snd
+         [([Goal.norm_result lthy termination], [])])] |> snd
     |> Proof.theorem NONE (snd oo afterqed) [[(goal, [])]]
   end
 
@@ -103,14 +103,13 @@ val termination_cmd = gen_termination Syntax.read_term
 
 val option_parser =
   (Scan.optional (@{keyword "("} |-- Parse.!!! 
-    ((Parse.reserved "eqvt" >> K (true, true)) ||
-     (Parse.reserved "no_eqvt" >> K (true, false))) --| @{keyword ")"}) (false, false))
+    ((Parse.reserved "eqvt" >> K true) ||
+     (Parse.reserved "no_eqvt" >> K false)) --| @{keyword ")"}) (false))
 
 val _ =
-  Outer_Syntax.local_theory_to_proof @{command_spec "termination"}
-    "prove termination of a recursive function"
+  Outer_Syntax.local_theory_to_proof @{command_spec "nominal_termination"}
+    "prove termination of a recursive nominal function"
       (option_parser -- Scan.option Parse.term >> 
-        (fn ((is_nominal, is_eqvt), opt_trm) => 
-           if is_nominal then termination_cmd is_eqvt opt_trm else Function.termination_cmd opt_trm))
+        (fn (is_eqvt, opt_trm) => termination_cmd is_eqvt opt_trm))
 
 end

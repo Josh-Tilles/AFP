@@ -1,5 +1,4 @@
 (*  Title:      AVL Trees
-    ID:         $Id: AVL.thy,v 1.13 2008-06-12 06:57:14 lsf37 Exp $
     Author:     Tobias Nipkow and Cornelia Pusch,
                 converted to Isar by Gerwin Klein
                 contributions by Achim Brucker, Burkhart Wolff and Jan Smaus
@@ -288,7 +287,7 @@ proof (induct x rule: delete_max_induct)
     by (intro avl_mkt_bal_l) fastforce+
   then show ?case 
     by (auto simp: height_mkt_bal_l height_mkt_bal_l2
-      linorder_class.min_max.sup_absorb1 linorder_class.min_max.sup_absorb2
+      linorder_class.max.absorb1 linorder_class.max.absorb2
       split:prod.split simp del:mkt_bal_l.simps)
 next
   case (MKT n l rn rl rr rh h)

@@ -6,15 +6,15 @@ session Regex_Equivalence (AFP) = "HOL-Library" +
     "../Regular-Sets/Derivatives"
     "../Regular-Sets/Regular_Exp"
     "../Regular-Sets/NDerivative"
-    "~~/src/HOL/BNF/Ctr_Sugar"
-    "~~/src/HOL/ex/Interpretation_with_Defs"
+    "~~/src/Tools/Permanent_Interpretation"
   theories
     Regex_Equivalence
-  files
-    "document/root.tex"
-    "document/root.bib"
+  document_files
+    "root.tex"
+    "root.bib"
 
 session Regex_Equivalence_Examples (AFP) = Regex_Equivalence +
-  theories [document = false]
+  options [document = false]
+  theories
     Examples
     Benchmark

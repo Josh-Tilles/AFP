@@ -2,7 +2,7 @@ theory Girth_Chromatic_Misc
 imports
   "~~/src/HOL/Main"
   "~~/src/HOL/Library/Extended_Real"
-  "~~/src/HOL/Library/Binomial"
+  "~~/src/HOL/Number_Theory/Binomial"
 begin
 
 section {* Auxilliary lemmas and setup *}
@@ -50,7 +50,7 @@ lemma enat_in_INF:
   obtains x where "x \<in> S" and "(INF x: S. f x) = f x"
 proof -
   from assms have "(INF x: S. f x) \<in> f ` S"
-    unfolding INF_def using enat_in_Inf by auto
+    using enat_in_Inf [of "f ` S"] by auto
   then obtain x where "x \<in> S" "(INF x: S. f x) = f x" by auto
   then show ?thesis ..
 qed
@@ -84,7 +84,7 @@ next
   show ?thesis
   proof
     assume ?L
-    then have "\<lbrakk>enat k \<le> (if finite M then Big_Operators.Max M else \<infinity>); M \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>m\<in>M. enat k \<le> m"
+    then have "\<lbrakk>enat k \<le> (if finite M then Max M else \<infinity>); M \<noteq> {}\<rbrakk> \<Longrightarrow> \<exists>m\<in>M. enat k \<le> m"
       by (metis Max_in Sup_enat_def finite_enat_bounded linorder_linear)
     with `k \<noteq> 0` and `?L` show ?R
       unfolding Sup_enat_def
@@ -209,7 +209,7 @@ lemma LIMSEQ_inv_powr:
   assumes "0 < c" "0 < d"
   shows "(\<lambda>n :: nat. (c / n) powr d) ----> 0"
 proof (rule tendsto_zero_powrI)
-  from `0 < c` have "\<And>x. 0 < x \<Longrightarrow> 0 < c / x" by (rule divide_pos_pos) 
+  from `0 < c` have "\<And>x. 0 < x \<Longrightarrow> 0 < c / x" by simp
   then show "eventually (\<lambda>x. 0 < c / real x) sequentially"
      by (rule eventually_sequentiallyI[of 1]) simp
 

@@ -6,11 +6,11 @@ begin
 
 section {*The Subset Relation*}
 
-nominal_primrec Subset :: "tm \<Rightarrow> tm \<Rightarrow> fm"   (infixr "SUBS" 150)
+nominal_function Subset :: "tm \<Rightarrow> tm \<Rightarrow> fm"   (infixr "SUBS" 150)
   where "atom z \<sharp> (t, u) \<Longrightarrow> t SUBS u = All2 z t ((Var z) IN u)"
   by (auto simp: eqvt_def Subset_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 declare Subset.simps [simp del]
@@ -218,11 +218,11 @@ section {*The Disjointness Relation*}
 
 text{*The following predicate is defined in order to prove Lemma 2.3, Foundation*}
 
-nominal_primrec Disjoint :: "tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function Disjoint :: "tm \<Rightarrow> tm \<Rightarrow> fm"
   where "atom z \<sharp> (t, u) \<Longrightarrow> Disjoint t u = All2 z t (Neg ((Var z) IN u))"
   by (auto simp: eqvt_def Disjoint_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 declare Disjoint.simps [simp del]
@@ -405,12 +405,12 @@ lemma Mem_not_sym: "insert (x IN y) (insert (y IN x) H) \<turnstile> A"
   
 section {*The Ordinal Property*}
 
-nominal_primrec OrdP :: "tm \<Rightarrow> fm"
+nominal_function OrdP :: "tm \<Rightarrow> fm"
   where "\<lbrakk>atom y \<sharp> (x, z); atom z \<sharp> x\<rbrakk> \<Longrightarrow>
     OrdP x = All2 y x ((Var y) SUBS x AND  All2 z (Var y) ((Var z) SUBS (Var y)))"
   by (auto simp: eqvt_def OrdP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -507,12 +507,6 @@ qed
 
 lemma Ord_IN_Ord: "H \<turnstile> l IN k \<Longrightarrow> H \<turnstile> OrdP k \<Longrightarrow> H \<turnstile> OrdP l"
   by (metis Ord_IN_Ord0 cut_same)
-
-lemma OrdP_SUCC_D: "insert (OrdP (SUCC k)) H \<turnstile> OrdP k"
-  by (metis Mem_Eats_I2 Ord_IN_Ord0 Refl SUCC_def)
-
-lemma OrdP_SUCC_E [intro!]: "insert (OrdP k) H \<turnstile> A \<Longrightarrow> insert (OrdP (SUCC k)) H \<turnstile> A"
-  by (metis insert_commute thin1  cut_same [OF OrdP_SUCC_D])
 
 lemma OrdP_I:
   assumes "insert (Var y IN x) H \<turnstile> (Var y) SUBS x"
@@ -732,11 +726,11 @@ lemma Zero_In_SUCC: "{OrdP k} \<turnstile> Zero IN SUCC k"
 
 section {*The predicate @{text OrdNotEqP}*}
 
-nominal_primrec OrdNotEqP :: "tm \<Rightarrow> tm \<Rightarrow> fm"  (infixr "NEQ" 150)
+nominal_function OrdNotEqP :: "tm \<Rightarrow> tm \<Rightarrow> fm"  (infixr "NEQ" 150)
   where "OrdNotEqP x y = OrdP x AND OrdP y AND (x IN y OR y IN x)"
   by (auto simp: eqvt_def OrdNotEqP_graph_aux_def)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma OrdNotEqP_fresh_iff [simp]: "a \<sharp> OrdNotEqP x y \<longleftrightarrow> a \<sharp> x \<and> a \<sharp> y"
@@ -771,21 +765,6 @@ lemma OrdNotEqP_E: "H \<turnstile> x EQ y \<Longrightarrow> insert (x NEQ y) H \
   
 section {*Predecessor of an Ordinal*}
 
-lemma OrdP_Mem_SUCC_lemma: "{ OrdP x, y IN x } \<turnstile> SUCC y IN x OR x EQ SUCC y"
-  apply (rule OrdP_linear [of _ x "SUCC y"])
-  apply (auto intro!: Disj_CI Mem_SUCC_EH)
-    apply (metis Assume OrdP_SUCC_I Ord_IN_Ord0)
-   apply (metis Mem_not_sym insert_commute) 
-  apply (rule cut_same [where A="y IN y"], auto)
-  apply (metis Assume EQ_imp_SUBS Subset_D thin1)
-  done
-
-lemma OrdP_Mem_SUCC:
-  assumes "H \<turnstile> OrdP x" "H \<turnstile> y IN x" "insert (SUCC y IN x) H \<turnstile> A" "insert (x EQ SUCC y) H \<turnstile> A" 
-    shows "H \<turnstile> A"
-    using cut2 [OF OrdP_Mem_SUCC_lemma] assms
-    by (metis Disj_E cut_same)
-  
 lemma OrdP_set_max_lemma:
   assumes j: "atom (j::name) \<sharp> i" and k: "atom (k::name) \<sharp> (i,j)"
   shows "{} \<turnstile> (Neg (Var i EQ Zero) AND (All2 j (Var i) (OrdP (Var j)))) IMP 
@@ -831,12 +810,6 @@ proof -
     done
 qed
 
-lemma OrdP_set_max:
-  assumes "atom (j::name) \<sharp> i" "atom (k::name) \<sharp> (i,j)"
-          "insert (Var i EQ Zero) H \<turnstile> Fls" "H \<turnstile> (All2 j (Var i) (OrdP (Var j)))"
-    shows "H \<turnstile> Ex j (Var j IN Var i AND (All2 k (Var i) (Var k SUBS Var j)))"
-  by (metis Conj_I Neg_I OrdP_set_max_lemma [THEN MP_null] assms)
-  
 lemma OrdP_max_imp:
   assumes j: "atom j \<sharp> (x)" and k: "atom k \<sharp> (x,j)"
   shows  "{ OrdP x, Neg (x EQ Zero) } \<turnstile> Ex j (Var j IN x AND (All2 k x (Var k SUBS Var j)))"
@@ -859,12 +832,6 @@ proof -
   ultimately show ?thesis
    by (metis rcut1)
 qed
-
-lemma OrdP_max:
-  assumes ord: "H \<turnstile> OrdP x" and zero: "insert (x EQ Zero) H \<turnstile> Fls" 
-      and j: "atom j \<sharp> (x)" and k: "atom k \<sharp> (x,j)"
-    shows  "H \<turnstile> Ex j (Var j IN x AND (All2 k x (Var k SUBS Var j)))"
-by (metis Neg_I cut2 [OF OrdP_max_imp] assms)
 
 declare OrdP.simps [simp del]
 
@@ -944,12 +911,12 @@ text{*To characterise the concept of a function using only bounded universal qua
 text{*See the note after the proof of Lemma 2.3.*}
 
 definition hfun_sigma where
- "hfun_sigma r \<equiv> \<forall>z ⋿ r. \<forall>z' ⋿ r. \<exists>x y x' y'. z = \<langle>x,y\<rangle> \<and> z' = \<langle>x',y'\<rangle> \<and> (x=x' \<longrightarrow> y=y')"
+ "hfun_sigma r \<equiv> \<forall>z \<^bold>\<in> r. \<forall>z' \<^bold>\<in> r. \<exists>x y x' y'. z = \<langle>x,y\<rangle> \<and> z' = \<langle>x',y'\<rangle> \<and> (x=x' \<longrightarrow> y=y')"
 
 definition hfun_sigma_ord where
- "hfun_sigma_ord r \<equiv> \<forall>z ⋿ r. \<forall>z' ⋿ r. \<exists>x y x' y'. z = \<langle>x,y\<rangle> \<and> z' = \<langle>x',y'\<rangle> \<and> Ord x \<and> Ord x' \<and> (x=x' \<longrightarrow> y=y')"
+ "hfun_sigma_ord r \<equiv> \<forall>z \<^bold>\<in> r. \<forall>z' \<^bold>\<in> r. \<exists>x y x' y'. z = \<langle>x,y\<rangle> \<and> z' = \<langle>x',y'\<rangle> \<and> Ord x \<and> Ord x' \<and> (x=x' \<longrightarrow> y=y')"
 
-nominal_primrec HFun_Sigma :: "tm \<Rightarrow> fm"
+nominal_function HFun_Sigma :: "tm \<Rightarrow> fm"
   where "\<lbrakk>atom z \<sharp> (r,z',x,y,x',y'); atom z' \<sharp> (r,x,y,x',y'); 
           atom x \<sharp> (r,y,x',y'); atom y \<sharp> (r,x',y'); atom x' \<sharp> (r,y'); atom y' \<sharp> (r) \<rbrakk> \<Longrightarrow>
     HFun_Sigma r = 
@@ -959,7 +926,7 @@ nominal_primrec HFun_Sigma :: "tm \<Rightarrow> fm"
               ((Var x EQ Var x') IMP (Var y EQ Var y'))))))))"
 by (auto simp: eqvt_def HFun_Sigma_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -986,9 +953,6 @@ proof -
   thus ?thesis 
     by (auto simp: HFun_Sigma.simps [of z _ z' x y x' y'])
 qed
-
-lemma HFun_Sigma_cong: "H \<turnstile> r EQ r' \<Longrightarrow> H \<turnstile> HFun_Sigma r IFF HFun_Sigma r'"
-  by (rule P1_cong) auto
 
 lemma HFun_Sigma_Zero: "H \<turnstile> HFun_Sigma Zero"
 proof -
@@ -1045,14 +1009,14 @@ qed
     
 section {*The predicate @{text HDomain_Incl}*}
 
-text {*This is an internal version of @{term "\<forall>x ⋿ d. \<exists>y z. z ⋿ r \<and> z = \<langle>x,y\<rangle>"}. *}
+text {*This is an internal version of @{term "\<forall>x \<^bold>\<in> d. \<exists>y z. z \<^bold>\<in> r \<and> z = \<langle>x,y\<rangle>"}. *}
 
-nominal_primrec HDomain_Incl :: "tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function HDomain_Incl :: "tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom x \<sharp> (r,d,y,z); atom y \<sharp> (r,d,z); atom z \<sharp> (r,d)\<rbrakk> \<Longrightarrow>
     HDomain_Incl r d = All2 x d (Ex y (Ex z (Var z IN r AND Var z EQ HPair (Var x) (Var y))))"
   by (auto simp: eqvt_def HDomain_Incl_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -1095,9 +1059,6 @@ lemma HDomain_Incl_Subset: "H \<turnstile> HDomain_Incl r k \<Longrightarrow> H 
 lemma HDomain_Incl_Mem_Ord: "H \<turnstile> HDomain_Incl r k \<Longrightarrow> H \<turnstile> k' IN k \<Longrightarrow> H \<turnstile> OrdP k \<Longrightarrow> H \<turnstile> HDomain_Incl r k'"
   by (metis HDomain_Incl_Subset OrdP_Mem_imp_Subset)
 
-lemma HDomain_Incl_SUCC: "H \<turnstile> HDomain_Incl r (SUCC d) \<Longrightarrow> H \<turnstile> HDomain_Incl r d"
-  by (metis HDomain_Incl_Subset SUCC_def Subset_Eats_I)
-
 lemma HDomain_Incl_Zero [simp]: "H \<turnstile> HDomain_Incl r Zero"
 proof -
   obtain x::name and y::name and z::name 
@@ -1131,25 +1092,14 @@ lemma HDomain_Incl_Eats_I: "H \<turnstile> HDomain_Incl r d \<Longrightarrow> H 
 
 section {*@{term HPair} is Provably Injective*}
 
-lemma Doubleton_subset:
-  assumes "insert (X SUBS (Eats (Eats Zero d) c)) (insert (a EQ c) H) \<turnstile> A"
-      and "insert (X SUBS (Eats (Eats Zero d) c)) (insert (a EQ d) H) \<turnstile> A"
-    shows    "insert ((Eats X a) SUBS (Eats (Eats Zero d) c)) H \<turnstile> A"
-    apply (rule Subset_E [OF Assume])
-    apply (rule Mem_Eats_I2 [OF Refl])
-    by (metis (full_types) Eats_Subset_E Mem_Eats_E Mem_Zero_E assms insert_absorb2 insert_commute)
-
-lemma EQ_swap: "insert (a IN b) (insert (x EQ y) H) \<turnstile> A \<Longrightarrow> insert (x EQ y) (insert (a IN b) H) \<turnstile> A"
-  by (rule rotate2)
-
 lemma Doubleton_E:
   assumes "insert (a EQ c) (insert (b EQ d) H) \<turnstile> A"
           "insert (a EQ d) (insert (b EQ c) H) \<turnstile> A"
     shows    "insert ((Eats (Eats Zero b) a) EQ (Eats (Eats Zero d) c)) H \<turnstile> A"
 apply (rule Equality_E) using assms
-apply (auto intro!: Doubleton_subset Zero_SubsetE EQ_swap)
+apply (auto intro!: Zero_SubsetE rotate2 [of "a IN b"])
 apply (rule_tac [!] rotate3) 
-apply (auto intro!: Zero_SubsetE EQ_swap)
+apply (auto intro!: Zero_SubsetE rotate2 [of "a IN b"])
 apply (metis Sym_L insert_commute thin1)+
 done
   
@@ -1158,9 +1108,6 @@ lemma HFST: "{HPair a b EQ HPair c d} \<turnstile> a EQ c"
 
 lemma b_EQ_d_1: "{a EQ c, a EQ d, b EQ c} \<turnstile> b EQ d"
   by (metis Assume thin1 Sym Trans)
-
-lemma b_EQ_d_2: "{a EQ c, a EQ d, Eats (Eats Zero b) a EQ Eats (Eats Zero c) c} \<turnstile> b EQ d"
-  by (metis Doubleton_E [THEN rotate3] insert_absorb2 insert_commute b_EQ_d_1)
 
 lemma HSND: "{HPair a b EQ HPair c d} \<turnstile> b EQ d"
   unfolding HPair_def
@@ -1281,15 +1228,15 @@ lemma hfun_sigma_iff: "hfun_sigma r \<longleftrightarrow> hfunction r \<and> hre
 lemma Seq_iff: "Seq r d \<longleftrightarrow> d \<le> hdomain r \<and> hfun_sigma r"
   by (auto simp: Seq_def hfun_sigma_iff)
 
-lemma LstSeq_iff: "LstSeq s k y \<longleftrightarrow> succ k \<le> hdomain s \<and> \<langle>k,y\<rangle> ⋿ s \<and> hfun_sigma_ord s"
+lemma LstSeq_iff: "LstSeq s k y \<longleftrightarrow> succ k \<le> hdomain s \<and> \<langle>k,y\<rangle> \<^bold>\<in> s \<and> hfun_sigma_ord s"
   by (auto simp: OrdDom_def LstSeq_def Seq_iff hfun_sigma_ord_iff)
 
-nominal_primrec LstSeqP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function LstSeqP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where
     "LstSeqP s k y = OrdP k AND HDomain_Incl s (SUCC k) AND HFun_Sigma s AND HPair k y IN s"
   by (auto simp: eqvt_def LstSeqP_graph_aux_def)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma

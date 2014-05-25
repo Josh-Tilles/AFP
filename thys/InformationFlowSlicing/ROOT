@@ -2,7 +2,7 @@ chapter AFP
 
 (* dummy session; regression test wants one session with name of directory *)
 session InformationFlowSlicing (AFP) = InformationFlowSlicing_Inter +
-  options [timeout = 600, document_graph]
+  options [timeout = 600, document = false]
   theories
     LiftingInter
 
@@ -10,14 +10,14 @@ session InformationFlowSlicing_Inter (AFP) = "HRB-Slicing" +
   options [timeout = 600, document_graph]
   theories
     LiftingInter
-  files
-    "document/root.bib"
-    "document/root.tex"
+  document_files
+    "root.bib"
+    "root.tex"
 
 session InformationFlowSlicing_Intra (AFP) = "Slicing" +
   options [timeout = 600, document_graph]
   theories
     LiftingIntra
-  files
-    "document/root.bib"
-    "document/root.tex"
+  document_files
+    "root.bib"
+    "root.tex"

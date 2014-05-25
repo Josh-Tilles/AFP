@@ -3,7 +3,7 @@ imports
   Nominal2_Base Nominal2_Abs Nominal2_FCB
 keywords
   "nominal_datatype" :: thy_decl and
-  "nominal_primrec" "nominal_inductive" :: thy_goal and
+  "nominal_function" "nominal_inductive" "nominal_termination" :: thy_goal and
   "avoids" "binds"
 begin
 
@@ -47,8 +47,6 @@ val induct_attr = Attrib.internal (K Induct.induct_simp_add)
 *}
 
 section{* Interface for nominal_datatype *}
-
-ML {* print_depth 50 *}
 
 ML {*
 fun get_cnstrs dts =
@@ -180,9 +178,8 @@ let
   val raw_induct_thms = #inducts (hd dtinfos)
   val raw_exhaust_thms = map #exhaust dtinfos
   val raw_size_trms = map HOLogic.size_const raw_tys
-  val raw_size_thms = Size.size_thms (Proof_Context.theory_of lthy1) (hd raw_full_dt_names')
-    |> `(fn thms => (length thms) div 2)
-    |> uncurry drop
+  val raw_size_thms = these (Option.map ((fn ths => drop (length ths div 2) ths) o fst o snd)
+    (BNF_LFP_Size.lookup_size lthy1 (hd raw_full_dt_names')))
 
   val raw_result = RawDtInfo 
     {raw_dt_names = raw_full_dt_names',
@@ -271,7 +268,8 @@ let
     in
       raw_prove_eqvt raw_size_trms raw_induct_thms (raw_size_thms @ raw_perm_simps) 
         (Local_Theory.restore lthy_tmp)
-        |> map (rewrite_rule @{thms permute_nat_def[THEN eq_reflection]})
+        |> map (rewrite_rule (Local_Theory.restore lthy_tmp)
+            @{thms permute_nat_def[THEN eq_reflection]})
         |> map (fn thm => thm RS @{thm sym})
     end 
      
@@ -302,7 +300,7 @@ let
   val raw_funs_rsp_aux = 
     raw_fv_bn_rsp_aux lthy5 alpha_result raw_fvs raw_bns raw_fv_bns (raw_bn_defs @ raw_fv_defs) 
 
-  val raw_funs_rsp = map (Drule.eta_contraction_rule o mk_funs_rsp) raw_funs_rsp_aux
+  val raw_funs_rsp = map (Drule.eta_contraction_rule o mk_funs_rsp lthy5) raw_funs_rsp_aux
 
   fun match_const cnst th =
     (fst o dest_Const o snd o dest_comb o HOLogic.dest_Trueprop o prop_of) th =
@@ -315,12 +313,12 @@ let
 
   val raw_size_rsp = 
     raw_size_rsp_aux lthy5 alpha_result (raw_size_thms @ raw_size_eqvt)
-      |> map mk_funs_rsp
+      |> map (mk_funs_rsp lthy5)
 
   val raw_constrs_rsp = 
     raw_constrs_rsp lthy5 alpha_result raw_all_cns (alpha_bn_imp_thms @ raw_funs_rsp_aux) 
     
-  val alpha_permute_rsp = map mk_alpha_permute_rsp alpha_eqvt
+  val alpha_permute_rsp = map (mk_alpha_permute_rsp lthy5) alpha_eqvt
 
   val alpha_bn_rsp = 
     raw_alpha_bn_rsp alpha_result alpha_bn_equivp_thms alpha_bn_imp_thms
@@ -400,8 +398,8 @@ let
   val qperm_bns = map #qconst qperm_bns_info
 
   val _ = trace_msg (K "Lifting of theorems...")  
-  val eq_iff_simps = @{thms alphas permute_prod.simps prod_fv.simps prod_alpha_def prod_rel_def
-    prod.cases} 
+  val eq_iff_simps = @{thms alphas permute_prod.simps prod_fv.simps prod_alpha_def rel_prod_def
+    prod.case} 
 
   val ([ qdistincts, qeq_iffs, qfv_defs, qbn_defs, qperm_simps, qfv_qbn_eqvts, 
          qbn_inducts, qsize_eqvt, [qinduct], qexhausts, qsize_simps, qperm_bn_simps, 
@@ -447,7 +445,9 @@ let
         addsimps @{thms prod_fv_supp prod_alpha_eq Abs_eq_iff[symmetric]}))
 
   (* filters the theorems that are of the form "qfv = supp" *)
-  fun is_qfv_thm (@{term Trueprop} $ (Const (@{const_name HOL.eq}, _) $ lhs $ _)) = member (op=) qfvs lhs
+  val qfv_names = map (fst o dest_Const) qfvs
+  fun is_qfv_thm (@{term Trueprop} $ (Const (@{const_name HOL.eq}, _) $ Const (lhs, _) $ _)) = 
+    member (op=) qfv_names lhs
   | is_qfv_thm _ = false
 
   val qsupp_constrs = qfv_defs
@@ -568,7 +568,7 @@ let
   (* FIXME: local version *)
   (* val (_, spec_ctxt') = Proof_Context.add_fixes constr_trms spec_ctxt *)
 
-  val thy' = Sign.add_consts_i constr_trms (Proof_Context.theory_of spec_ctxt)
+  val thy' = Sign.add_consts constr_trms (Proof_Context.theory_of spec_ctxt)
 in
   (dts', thy')
 end
@@ -590,7 +590,7 @@ let
 
 in
   (Local_Theory.exit_global lthy')
-  |> Sign.add_consts_i bn_funs'
+  |> Sign.add_consts bn_funs'
   |> pair (bn_funs', bn_eqs) 
 end 
 *}
@@ -700,41 +700,38 @@ end
 ML {* 
 (* nominal datatype parser *)
 local
-  structure P = Parse;
-  structure S = Scan
-
   fun triple1 ((x, y), z) = (x, y, z)
   fun triple2 ((x, y), z) = (y, x, z)
   fun tuple2 (((x, y), z), u) = (x, y, u, z)
   fun tuple3 ((x, y), (z, u)) = (x, y, z, u)
 in
 
-val opt_name = Scan.option (P.binding --| Args.colon)
+val opt_name = Scan.option (Parse.binding --| Args.colon)
 
-val anno_typ = S.option (P.name --| @{keyword "::"}) -- P.typ
+val anno_typ = Scan.option (Parse.name --| @{keyword "::"}) -- Parse.typ
 
 val bind_mode = @{keyword "binds"} |--
-  S.optional (Args.parens 
+  Scan.optional (Args.parens 
     (Args.$$$ "list" >> K Lst || (Args.$$$ "set" -- Args.$$$ "+") >> K Res || Args.$$$ "set" >> K Set)) Lst
 
 val bind_clauses = 
-  P.enum "," (bind_mode -- S.repeat1 P.term -- (@{keyword "in"} |-- S.repeat1 P.name) >> triple1)
+  Parse.enum "," (bind_mode -- Scan.repeat1 Parse.term -- (@{keyword "in"} |-- Scan.repeat1 Parse.name) >> triple1)
 
 val cnstr_parser =
-  P.binding -- S.repeat anno_typ -- bind_clauses -- P.opt_mixfix >> tuple2
+  Parse.binding -- Scan.repeat anno_typ -- bind_clauses -- Parse.opt_mixfix >> tuple2
 
 (* datatype parser *)
 val dt_parser =
-  (P.type_args_constrained -- P.binding -- P.opt_mixfix >> triple2) -- 
-    (@{keyword "="} |-- P.enum1 "|" cnstr_parser)
+  (Parse.type_args_constrained -- Parse.binding -- Parse.opt_mixfix >> triple2) -- 
+    (@{keyword "="} |-- Parse.enum1 "|" cnstr_parser)
 
 (* binding function parser *)
 val bnfun_parser = 
-  S.optional (@{keyword "binder"} |-- P.fixes -- Parse_Spec.where_alt_specs) ([], [])
+  Scan.optional (@{keyword "binder"} |-- Parse.fixes -- Parse_Spec.where_alt_specs) ([], [])
 
 (* main parser *)
 val main_parser =
-  opt_name -- P.and_list1 dt_parser -- bnfun_parser >> tuple3
+  opt_name -- Parse.and_list1 dt_parser -- bnfun_parser >> tuple3
 
 end
 
@@ -746,6 +743,3 @@ val _ = Outer_Syntax.local_theory @{command_spec "nominal_datatype"}
 
 
 end
-
-
-
