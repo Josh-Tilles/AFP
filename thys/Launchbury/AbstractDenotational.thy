@@ -14,7 +14,7 @@ locale semantic_domain =
   fixes tick :: "'Value \<rightarrow> 'Value"
 begin
 
-nominal_primrec
+nominal_function
   ESem :: "exp \<Rightarrow> (var \<Rightarrow> 'Value) \<rightarrow> 'Value"
 where
   (* Restrict \<rho> to avoid having to demand atom x \<sharp> \<rho> *)
@@ -105,7 +105,7 @@ case (goal13 as body as' body')
 qed auto
 (* [eqvt] attributes do not surive instantiation, so we pass (no_eqvt) here. We don't need it
    anyways\<dots> *)
-termination (in semantic_domain) (no_eqvt) by lexicographic_order
+nominal_termination (in semantic_domain) (no_eqvt) by lexicographic_order
 
 sublocale has_ESem ESem.
 

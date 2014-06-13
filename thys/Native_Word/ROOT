@@ -1,19 +1,22 @@
 chapter AFP
 
 session "Native_Word" (AFP) = "HOL-Word" +
-  theories [document=false]
+  theories [document = false]
     "~~/src/HOL/Library/Code_Target_Int"
+    "~~/src/HOL/Library/Code_Char"
 
   theories
-    Bits_Int
+    More_Bits_Int
     Bits_Integer
     Code_Target_Bits_Int
     Word_Misc
     Uint32
     Uint16_Test
     Uint8_Test
+    Uint
+    Native_Cast
     Uint_Userguide
 
-  files
-    "./document/root.tex"
-    "./document/root.bib"
+  document_files
+    "root.tex"
+    "root.bib"

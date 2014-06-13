@@ -6,7 +6,7 @@ header {* More about words *}
 
 theory Word_Misc imports
   "~~/src/HOL/Word/Word"
-  "Bits_Int"
+  More_Bits_Int
 begin
 
 text {*
@@ -14,15 +14,19 @@ text {*
   code generator that PolyML does not provide.
 *}
 
-setup {* Code_Target.extend_target ("SML_word", (Code_ML.target_SML, K I)) *}
+setup {* Code_Target.extend_target ("SML_word", (Code_ML.target_SML, I)) *}
 
 code_identifier code_module Word_Misc \<rightharpoonup>
   (SML) Word and (Haskell) Word and (OCaml) Word and (Scala) Word
 
+context
+includes integer.lifting
+begin
 lift_definition word_of_integer :: "integer \<Rightarrow> 'a :: len0 word" is word_of_int .
 
 lemma word_of_integer_code [code]: "word_of_integer n = word_of_int (int_of_integer n)"
 by(simp add: word_of_integer.rep_eq)
+end
 
 lemma shiftr_zero_size: "size x \<le> n \<Longrightarrow> x >> n = (0 :: 'a :: len0 word)"
 by(rule word_eqI)(auto simp add: nth_shiftr dest: test_bit_size)
@@ -39,6 +43,14 @@ lemma word_of_int_code [code abstract]:
 by(simp add: uint_word_of_int and_bin_mask_conv_mod)
 
 
+context begin interpretation lifting_syntax .
+
+lemma shiftl_transfer [transfer_rule]:
+  "(pcr_word ===> op = ===> pcr_word) op << op <<"
+by(auto intro!: rel_funI word_eqI simp add: word.pcr_cr_eq cr_word_def word_size nth_shiftl)
+
+end
+
 lemma set_bits_K_False [simp]: "set_bits (\<lambda>_. False) = (0 :: 'a :: len0 word)"
 by(rule word_eqI)(simp add: test_bit.eq_norm)
 
@@ -50,6 +62,32 @@ by(simp add: Word.mask_def)
 
 lemma shiftl0 [simp]: "x << 0 = (x :: 'a :: len0 word)"
 by (metis shiftl_rev shiftr_x_0 word_rev_gal)
+
+lemma mask_1: "mask 1 = 1"
+by(simp add: mask_def)
+
+lemma mask_Suc_0: "mask (Suc 0) = 1"
+by(simp add: mask_def)
+
+lemma mask_numeral: "mask (numeral n) = 2 * mask (pred_numeral n) + 1"
+unfolding mask_def by transfer(simp, simp add: shiftl_int_def)
+
+lemma bin_last_bintrunc: "bin_last (bintrunc l n) = (l > 0 \<and> bin_last n)"
+by(cases l) simp_all
+
+lemma word_and_1:
+  fixes n :: "_ word"
+  shows "n AND 1 = (if n !! 0 then 1 else 0)"
+by transfer(rule bin_rl_eqI, simp_all add: bin_rest_trunc bin_last_bintrunc)
+
+lemma bintrunc_shiftl: "bintrunc n (m << i) = bintrunc (n - i) m << i"
+proof(induct i arbitrary: n)
+  case (Suc i)
+  thus ?case by(cases n) simp_all
+qed simp
+
+lemma uint_shiftl: "uint (n << i) = bintrunc (size n) (uint n << i)"
+unfolding word_size by transfer(simp add: bintrunc_shiftl)
 
 context fixes f :: "nat \<Rightarrow> bool" begin
 
@@ -328,5 +366,99 @@ proof -
     ultimately show ?thesis using False by(simp add: Let_def i'_def)
   qed
 qed
+
+lemma word_and_mask_or_conv_and_mask:
+  "n !! index \<Longrightarrow> (n AND mask index) OR (1 << index) = n AND mask (index + 1)"
+by(rule word_eqI)(auto simp add: word_ao_nth word_size nth_shiftl simp del: shiftl_1)
+
+lemma uint_and_mask_or_full:
+  fixes n :: "'a :: len word"
+  assumes "n !! (len_of TYPE('a) - 1)"
+  and "mask1 = mask (len_of TYPE('a) - 1)"
+  and "mask2 = 1 << len_of TYPE('a) - 1"
+  shows "uint (n AND mask1) OR mask2 = uint n"
+proof -
+  have "mask2 = uint (1 << len_of TYPE('a) - 1 :: 'a word)" using assms
+    by(simp add: uint_shiftl word_size bintrunc_shiftl del: shiftl_1)(metis One_nat_def Suc_diff_Suc bintrunc_minus bintrunc_shiftl diff_self_eq_0 len_gt_0 len_num1 lessI uint_1 uint_word_arith_bintrs(8))
+  hence "uint (n AND mask1) OR mask2 = uint (n AND mask1 OR (1 << len_of TYPE('a) - 1 :: 'a word))"
+    by(simp add: uint_or)
+  also have "\<dots> = uint (n AND mask (len_of TYPE('a) - 1 + 1))"
+    using assms by(simp only: word_and_mask_or_conv_and_mask)
+  also have "\<dots> = uint n" by simp
+  finally show ?thesis .
+qed
+
+section {* Quickcheck conversion functions *}
+
+notation scomp (infixl "\<circ>\<rightarrow>" 60)
+
+definition qc_random_cnv :: 
+  "(natural \<Rightarrow> 'a::term_of) \<Rightarrow> natural \<Rightarrow> Random.seed
+    \<Rightarrow> ('a \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
+  where "qc_random_cnv a_of_natural i = Random.range (i + 1) \<circ>\<rightarrow> (\<lambda>k. Pair (
+       let n = a_of_natural k
+       in (n, \<lambda>_. Code_Evaluation.term_of n)))"
+
+no_notation scomp (infixl "\<circ>\<rightarrow>" 60)
+
+definition qc_exhaustive_cnv :: "(natural \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> (bool \<times> term list) option)
+  \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
+where
+  "qc_exhaustive_cnv a_of_natural f d =
+   Quickcheck_Exhaustive.exhaustive (%x. f (a_of_natural x)) d"
+
+definition qc_full_exhaustive_cnv ::
+  "(natural \<Rightarrow> ('a::term_of)) \<Rightarrow> ('a \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option)
+  \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
+where
+  "qc_full_exhaustive_cnv a_of_natural f d = Quickcheck_Exhaustive.full_exhaustive 
+  (%(x, xt). f (a_of_natural x, %_. Code_Evaluation.term_of (a_of_natural x))) d"
+
+declare [[quickcheck_narrowing_ghc_options = "-XTypeSynonymInstances"]]
+
+definition qc_narrowing_drawn_from :: "'a list \<Rightarrow> integer \<Rightarrow> _"
+where
+  "qc_narrowing_drawn_from xs =
+   foldr Quickcheck_Narrowing.sum (map Quickcheck_Narrowing.cons (butlast xs)) (Quickcheck_Narrowing.cons (last xs))"
+
+locale quickcheck_narrowing_samples =
+  fixes a_of_integer :: "integer \<Rightarrow> 'a \<times> 'a :: {partial_term_of, term_of}"
+  and zero :: "'a"
+  and tr :: "typerep"
+begin
+
+function narrowing_samples :: "integer \<Rightarrow> 'a list"
+where
+  "narrowing_samples i = 
+   (if i > 0 then let (a, a') = a_of_integer i in narrowing_samples (i - 1) @ [a, a'] else [zero])"
+by pat_completeness auto
+termination including integer.lifting
+proof(relation "measure nat_of_integer")
+  fix i :: integer
+  assume "0 < i"
+  thus "(i - 1, i) \<in> measure nat_of_integer"
+    by simp(transfer, simp)
+qed simp
+
+definition partial_term_of_sample :: "integer \<Rightarrow> 'a"
+where
+  "partial_term_of_sample i =
+  (if i < 0 then undefined
+   else if i = 0 then zero 
+   else if i mod 2 = 0 then snd (a_of_integer (i div 2))
+   else fst (a_of_integer (i div 2 + 1)))"
+
+lemma partial_term_of_code:
+  "partial_term_of (ty :: 'a itself) (Quickcheck_Narrowing.Narrowing_variable p t) \<equiv>
+    Code_Evaluation.Free (STR ''_'') tr"
+  "partial_term_of (ty :: 'a itself) (Quickcheck_Narrowing.Narrowing_constructor i []) \<equiv>
+   Code_Evaluation.term_of (partial_term_of_sample i)"
+by (rule partial_term_of_anything)+
+
+end
+
+lemmas [code] =
+  quickcheck_narrowing_samples.narrowing_samples.simps
+  quickcheck_narrowing_samples.partial_term_of_sample_def
 
 end

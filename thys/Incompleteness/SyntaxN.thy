@@ -42,14 +42,14 @@ declare tm.supp [simp] fm.supp [simp]
 
 subsection{*Substitution*}
 
-nominal_primrec subst :: "name \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm"
+nominal_function subst :: "name \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm"
   where
    "subst i x Zero       = Zero"
  | "subst i x (Var k)    = (if i=k then x else Var k)"
  | "subst i x (Eats t u) = Eats (subst i x t) (subst i x u)"
 by (auto simp: eqvt_def subst_graph_aux_def) (metis tm.strong_exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma fresh_subst_if [simp]:
@@ -62,12 +62,6 @@ lemma forget_subst_tm [simp]: "atom a \<sharp> tm \<Longrightarrow> subst a x tm
 lemma subst_tm_id [simp]: "subst a (Var a) tm = tm"
   by (induct tm rule: tm.induct) simp_all
 
-lemma fresh_subst: "j \<sharp> (x,t) \<Longrightarrow> j \<sharp> subst i x t"
-  by simp
-
-lemma fresh_subst_self [simp]: "atom i \<sharp> x \<Longrightarrow> atom i \<sharp> subst i x t"
-  by (induct t rule: tm.induct) auto
-
 lemma subst_tm_commute [simp]:
   "atom j \<sharp> tm \<Longrightarrow> subst j u (subst i t tm) = subst i (subst j u t) tm"
   by (induct tm rule: tm.induct) (auto simp: fresh_Pair)
@@ -79,7 +73,7 @@ lemma subst_tm_commute2 [simp]:
 lemma repeat_subst_tm [simp]: "subst i u (subst i t tm) = subst i (subst i u t) tm"
   by (induct tm rule: tm.induct) auto
 
-nominal_primrec  subst_fm :: "fm \<Rightarrow> name \<Rightarrow> tm \<Rightarrow> fm" ("_'(_::=_')" [1000, 0, 0] 200)
+nominal_function  subst_fm :: "fm \<Rightarrow> name \<Rightarrow> tm \<Rightarrow> fm" ("_'(_::=_')" [1000, 0, 0] 200)
   where
     Mem:  "(Mem t u)(i::=x)  = Mem (subst i x t) (subst i x u)"
   | Eq:   "(Eq t u)(i::=x)   = Eq  (subst i x t) (subst i x u)"
@@ -93,7 +87,7 @@ apply (auto simp: eqvt_at_def fresh_star_def fresh_Pair fresh_at_base)
 apply (metis flip_at_base_simps(3) flip_fresh_fresh)
 done
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma size_subst_fm [simp]: "size (A(i::=x)) = size A"
@@ -109,19 +103,9 @@ lemma fresh_subst_fm_if [simp]:
   "j \<sharp> (A(i::=x)) \<longleftrightarrow> (atom i \<sharp> A \<and> j \<sharp> A) \<or> (j \<sharp> x \<and> (j \<sharp> A \<or> j = atom i))"
   by (nominal_induct A avoiding: i x rule: fm.strong_induct) (auto simp: fresh_at_base)
 
-lemma fresh_subst_fm: "j \<sharp> (x,A) \<Longrightarrow> j \<sharp> (A(i::=x))"
-  by simp
-
-lemma fresh_subst_fm_self [simp]: "atom i \<sharp> x \<Longrightarrow> atom i \<sharp> A(i::=x)"
-  by (nominal_induct A avoiding: i x rule: fm.strong_induct) auto
-
 lemma subst_fm_commute [simp]:
   "atom j \<sharp> A \<Longrightarrow> (A(i::=t))(j::=u) = A(i ::= subst j u t)"
   by (nominal_induct A avoiding: i j t u rule: fm.strong_induct) (auto simp: fresh_at_base)
-
-lemma subst_fm_commute2 [simp]:
-  "\<lbrakk>atom j \<sharp> t; atom i \<sharp> u; i \<noteq> j\<rbrakk> \<Longrightarrow> (A(i::=t))(j::=u) = (A(j::=u))(i::=t)"
-  by (nominal_induct A avoiding: i j t u rule: fm.strong_induct) auto
 
 lemma repeat_subst_fm [simp]: "(A(i::=t))(i::=u) = A(i ::= subst i u t)"
   by (nominal_induct A avoiding: i t u rule: fm.strong_induct) auto
@@ -161,14 +145,14 @@ subsection{*Semantics*}
 definition e0 :: "(name, hf) finfun"    --{*the null environment*}
   where "e0 \<equiv> finfun_const 0"
 
-nominal_primrec eval_tm :: "(name, hf) finfun \<Rightarrow> tm \<Rightarrow> hf"
+nominal_function eval_tm :: "(name, hf) finfun \<Rightarrow> tm \<Rightarrow> hf"
   where
    "eval_tm e Zero = 0"
  | "eval_tm e (Var k) = finfun_apply e k"
  | "eval_tm e (Eats t u) = eval_tm e t \<triangleleft> eval_tm e u"
 by (auto simp: eqvt_def eval_tm_graph_aux_def) (metis tm.strong_exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 syntax
@@ -177,9 +161,9 @@ syntax
 translations
   "\<lbrakk>tm\<rbrakk>e"    == "CONST eval_tm e tm"
 
-nominal_primrec eval_fm :: "(name, hf) finfun \<Rightarrow> fm \<Rightarrow> bool"
+nominal_function eval_fm :: "(name, hf) finfun \<Rightarrow> fm \<Rightarrow> bool"
   where
-   "eval_fm e (t IN u) \<longleftrightarrow> \<lbrakk>t\<rbrakk>e ⋿ \<lbrakk>u\<rbrakk>e"
+   "eval_fm e (t IN u) \<longleftrightarrow> \<lbrakk>t\<rbrakk>e \<^bold>\<in> \<lbrakk>u\<rbrakk>e"
  | "eval_fm e (t EQ u) \<longleftrightarrow> \<lbrakk>t\<rbrakk>e = \<lbrakk>u\<rbrakk>e"
  | "eval_fm e (A OR B) \<longleftrightarrow> eval_fm e A \<or> eval_fm e B"
  | "eval_fm e (Neg A) \<longleftrightarrow> (~ eval_fm e A)"
@@ -196,7 +180,7 @@ apply (simp_all add: eqvt_at_def)
 apply (simp_all add: perm_supp_eq)
 done
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma eval_tm_rename:
@@ -306,14 +290,8 @@ abbreviation Imp :: "fm \<Rightarrow> fm \<Rightarrow> fm"   (infixr "IMP" 125)
 abbreviation All :: "name \<Rightarrow> fm \<Rightarrow> fm"
   where "All i A \<equiv> Neg (Ex i (Neg A))"
 
-text{*the bounded universal quantifier, for creating Sigma formulas*}
-
-abbreviation All2 :: "name \<Rightarrow> tm \<Rightarrow> fm \<Rightarrow> fm"
+abbreviation All2 :: "name \<Rightarrow> tm \<Rightarrow> fm \<Rightarrow> fm" --{*bounded universal quantifier, for Sigma formulas*}
   where "All2 i t A \<equiv> All i ((Var i IN t) IMP A)"
-
-lemma eval_fm_All2 [simp]:
-   "atom i \<sharp> t \<Longrightarrow> eval_fm e (All2 i t A) \<longleftrightarrow> (\<forall>x. x ⋿ \<lbrakk>t\<rbrakk>e \<longrightarrow> eval_fm (finfun_update e i x) A)"
-  by simp
 
 subsubsection{*Conjunction*}
 
@@ -425,14 +403,14 @@ abbreviation
 
 subsection{*The HF axioms*}
 
-definition HF1 :: fm where  --{*the axiom @{term"z=0 \<longleftrightarrow> (\<forall>x. \<not> x ⋿ z)"}*}
+definition HF1 :: fm where  --{*the axiom @{term"z=0 \<longleftrightarrow> (\<forall>x. \<not> x \<^bold>\<in> z)"}*}
   "HF1 = (Var X0 EQ Zero) IFF (All X1 (Neg (Var X1 IN Var X0)))"
 
 lemma HF1_holds: "eval_fm e HF1"
   by (auto simp: HF1_def)
 
 
-definition HF2 :: fm where  --{*the axiom @{term"z = x \<triangleleft> y \<longleftrightarrow> (\<forall>u. u ⋿ z \<longleftrightarrow> u ⋿ x | u=y)"}*}
+definition HF2 :: fm where  --{*the axiom @{term"z = x \<triangleleft> y \<longleftrightarrow> (\<forall>u. u \<^bold>\<in> z \<longleftrightarrow> u \<^bold>\<in> x | u=y)"}*}
   "HF2 \<equiv> Var X0 EQ Eats (Var X1) (Var X2) IFF
           All X3 (Var X3 IN Var X0 IFF Var X3 IN Var X1 OR Var X3 EQ Var X2)"
 
@@ -847,10 +825,6 @@ proof -
     by (metis cut_same assms thin2)
 qed
 
-lemma Imp_mono:
-  assumes A:"insert B H \<turnstile> A" and B: "insert C H \<turnstile> D" shows "insert (A IMP C) H \<turnstile> B IMP D"
-  by (metis A B Disj_mono Neg_mono)
-
 lemma Disj_E:
   assumes A: "insert A H \<turnstile> C" and B: "insert B H \<turnstile> C" shows "insert (A OR B) H \<turnstile> C"
   by (metis A B Disj_mono NegNeg_I Peirce)
@@ -926,9 +900,6 @@ lemma Iff_MP_left: "H \<turnstile> A IFF B \<Longrightarrow> insert A H \<turnst
 
 lemma Iff_MP_left': "H \<turnstile> A IFF B \<Longrightarrow> insert B H \<turnstile> C \<Longrightarrow> insert A H \<turnstile> C"
   by (metis Iff_MP_left Iff_sym)
-
-lemma Neg_Neg_iff: "H \<turnstile> Neg (Neg A) IFF A"
-  by (metis Assume Iff_I NegNeg_E NegNeg_I)
 
 lemma Swap: "insert (Neg B) H \<turnstile> A \<Longrightarrow> insert (Neg A) H \<turnstile> B"
   by (metis NegNeg_D Neg_mono)
@@ -1007,9 +978,6 @@ lemma All_E: "insert (A(i::=x)) H \<turnstile> B \<Longrightarrow> insert (All i
 
 lemma All_E': "H \<turnstile> All i A \<Longrightarrow> insert (A(i::=x)) H \<turnstile> B \<Longrightarrow> H \<turnstile> B"
   by (metis All_D cut_same)
-
-lemma All_mono: "insert A H \<turnstile> B \<Longrightarrow> \<forall>C \<in> H. atom i \<sharp> C \<Longrightarrow> insert (All i A) H \<turnstile> (All i B)"
-  by (metis Ex_mono Neg_mono)
 
 lemma All2_E: "\<lbrakk>atom i \<sharp> t; H \<turnstile> x IN t; insert (A(i::=x)) H \<turnstile> B\<rbrakk> \<Longrightarrow> insert (All2 i t A) H \<turnstile> B"
   apply (rule All_E [where x=x], auto)
@@ -1240,12 +1208,6 @@ proof -
     by (metis Assume cut1)
 qed
 
-lemma Eq_imp_subst_fm_Iff: "H \<turnstile> t EQ u \<Longrightarrow> H \<turnstile> A(i::=t) IFF A(i::=u)"
-  by (metis Eq_subst_fm_Iff cut_same)
-
-lemma Var_Eq_subst_Eq: "insert (Var i EQ t) H \<turnstile> subst i t u EQ u"
-  by (metis Assume Eq_subst_tm_Iff Sym cut1 subst_tm_id)
-
 lemma Var_Eq_subst_Iff: "insert (Var i EQ t) H \<turnstile> A(i::=t) IFF A"
   by (metis Eq_subst_fm_Iff Iff_sym subst_fm_id)
 
@@ -1423,12 +1385,6 @@ lemma truth_provable: "H \<turnstile> (Neg Fls)"
 
 lemma ExFalso: "H \<turnstile> Fls \<Longrightarrow> H \<turnstile> A"
   by (metis Neg_D truth_provable)
-
-lemma Neg_Iff_Iff: "H \<turnstile> Neg A IFF (A IMP Fls)"
-  by (metis (full_types) Disj_E Disj_I1 Fls_E Hyp Iff_I insertI1)
-
-lemma Neg_Iff: "H \<turnstile> Neg A IFF (A IFF Fls)"
-  by (auto simp: Iff_def)
 
 subsection{*More properties of @{term Zero}*}
 

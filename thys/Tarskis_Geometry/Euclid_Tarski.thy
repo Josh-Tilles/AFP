@@ -48,17 +48,14 @@ proof
       assume "q \<noteq> a"
       hence "norm_dist q a > 0" by simp
       let ?k = "norm_dist b c / norm_dist q a"
-      from `norm_dist q a > 0`
-        and divide_nonneg_pos [of "norm_dist b c" "norm_dist q a"]
-      have "?k \<ge> 0" by simp
       let ?x = "a + ?k *\<^sub>R (a - q)"
       have "B\<^sub>\<real> q a ?x"
       proof -
         let ?l = "1 / (1 + ?k)"
-        from `?k \<ge> 0` have "?l > 0" by simp
+        have "?l > 0" by (simp add: add_pos_nonneg)
         note real_euclid_B_def [of q a ?x]
         moreover
-          from `?k \<ge> 0` have "?l \<ge> 0" and "?l \<le> 1" by auto
+          have "?l \<ge> 0" and "?l \<le> 1" by (auto simp add: add_pos_nonneg)
         moreover
           from scaleR_left_distrib [of 1 ?k "a - q"]
             have "(1 + ?k) *\<^sub>R (a - q) = ?x - q" by simp
@@ -72,8 +69,8 @@ proof
         proof -
           from norm_scaleR [of ?k "a - q"] have
             "norm_dist a ?x = \<bar>?k\<bar> * norm (a - q)" by simp
-          also from `?k \<ge> 0` have
-            "\<dots> = ?k * norm (a - q)" by arith
+          also have
+            "\<dots> = ?k * norm (a - q)" by simp
           also from norm_metric.symm [of q a] have
             "\<dots> = ?k * norm_dist q a" by simp
           finally have
@@ -276,7 +273,7 @@ proof
         obtain j where "j \<ge> 0" and "j \<le> 1" and "q - b = j *\<^sub>R (c - b)" by auto
       from `i \<ge> 0` and `i \<le> 1`
         have "1 - i \<ge> 0" and "1 - i \<le> 1" by auto
-      from `j \<ge> 0` and `1 - i \<ge> 0` and mult_nonneg_nonneg
+      from `j \<ge> 0` and `1 - i \<ge> 0`
         have "j * (1 - i) \<ge> 0" by auto
       with `i \<ge> 0` and `i \<noteq> 0` have "i + j * (1 - i) > 0" by simp
       hence "i + j * (1 - i) \<noteq> 0" by simp
@@ -628,7 +625,7 @@ proof -
         with scaleR_left_distrib [of "-(r/s)" 1 "a - c"] have
           "b - c = (-(r/s) + 1) *\<^sub>R (a - c)" by simp
         moreover from `r/s < 0` have "-(r/s) + 1 > 1" by simp
-        ultimately have "a - c = (1 / (-(r/s) + 1)) *\<^sub>R (b - c)" by simp
+        ultimately have "a - c = (1 / (-(r/s) + 1)) *\<^sub>R (b - c)" by auto
         let ?l = "1 / (-(r/s) + 1)"
         from `-(r/s) + 1 > 1` and le_imp_inverse_le [of 1 "-(r/s) + 1"] have
           "?l \<le> 1" by simp

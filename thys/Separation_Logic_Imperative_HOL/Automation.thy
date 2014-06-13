@@ -280,7 +280,7 @@ lemma frame_rule_left:
 
 lemmas deconstruct_rules = 
   bind_rule if_rule false_rule return_sp_rule let_rule 
-  prod_case_rule list_case_rule option_case_rule sum_case_rule
+  case_prod_rule case_list_rule case_option_rule case_sum_rule
 
 lemmas heap_rules = 
   ref_rule
@@ -440,9 +440,7 @@ structure Seplogic_Auto = struct
 
       fun normalize_core t = let 
         val ((has_true,pures,ptrs),rt) = normalizer t;
-        (*val _ = tracing (PolyML.makestring ptrs);*)
         val similar = find_similar ptrs_key ptrs;
-        (*val _ = tracing (PolyML.makestring similar);*)
         val true_t = if has_true then SOME @{term "Assertions.top_assn"} 
           else NONE;
         val pures' = case pures of 
@@ -483,9 +481,11 @@ structure Seplogic_Auto = struct
 
   in 
     result
-  end handle exc => 
-    (tracing ("assn_simproc failed with exception: "^PolyML.makestring exc); 
-      NONE) (* Fail silently *);
+  end handle exc =>
+    if Exn.is_interrupt exc then reraise exc
+    else
+      (tracing ("assn_simproc failed with exception\n:" ^ Runtime.exn_message exc);
+        NONE) (* Fail silently *);
   
   val assn_simproc = Simplifier.make_simproc {
     lhss = [@{cpat "?h\<Turnstile>?P"},@{cpat "?P \<Longrightarrow>\<^sub>A ?Q"},

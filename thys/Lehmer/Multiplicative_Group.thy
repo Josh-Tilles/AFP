@@ -31,7 +31,7 @@ lemma deg_add_eq:
 proof -
   let ?m = "max (deg R p) (deg R q)"
   from assms have "coeff P p ?m = \<zero> \<longleftrightarrow> coeff P q ?m \<noteq> \<zero>"
-    by (metis deg_belowI lcoeff_nonzero[OF deg_nzero_nzero] linear min_max.le_iff_sup min_max.sup_absorb1)
+    by (metis deg_belowI lcoeff_nonzero[OF deg_nzero_nzero] linear max.absorb_iff2 max.absorb1)
   then have "coeff P (p \<oplus>\<^bsub>P\<^esub> q) ?m \<noteq> \<zero>"
     using assms by auto
   then have "deg R (p \<oplus>\<^bsub>P\<^esub> q) \<ge> ?m"
@@ -120,7 +120,6 @@ text{*
 
 (* XXX Remove when we remove the Number_Theory import *)
 hide_const (open) Multiset.mult
-declare Cong.induct'_nat[induct del]
 
 lemma dvd_div_ge_1 :
   fixes a b :: nat
@@ -918,8 +917,8 @@ theorem residue_prime_mult_group_has_gen :
  shows "\<exists>a \<in> {1 .. p - 1}. {1 .. p - 1} = {a^i mod p|i . i \<in> UNIV}"
 proof -
   have "p\<ge>2" using prime_gt_1_nat[OF prime_p] by simp
-  interpret R:residues_prime "int p" "residue_ring (int p)" unfolding residues_prime_def
-    by (simp add: transfer_int_nat_prime prime_p)
+  interpret R:residues_prime "p" "residue_ring p" unfolding residues_prime_def
+    by (simp add: prime_p)
   have car: "carrier (residue_ring (int p)) - {\<zero>\<^bsub>residue_ring (int p)\<^esub>} =  {1 .. int p - 1}"
     by (auto simp add: R.zero_cong R.res_carrier_eq)
   obtain a where a:"a \<in> {1 .. int p - 1}"
@@ -956,6 +955,5 @@ proof -
   have "nat a \<in> {1 .. p - 1}" using a by force
   ultimately show ?thesis ..
 qed
-
 
 end

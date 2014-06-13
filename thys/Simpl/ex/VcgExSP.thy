@@ -108,9 +108,7 @@ lemma (in state_space)
 
 lemma (in state_space)
   shows "\<Gamma>\<turnstile> \<lbrace>True\<rbrace> \<acute>M :== a;; \<acute>N :== b \<lbrace>\<acute>M = a \<and> \<acute>N = b\<rbrace>"
-  apply vcg 
-  apply simp
-  done
+  by vcg
 
 lemma (in state_space)
   shows "\<Gamma>\<turnstile> \<lbrace>\<acute>M = a \<and> \<acute>N = b\<rbrace>
@@ -651,7 +649,7 @@ do this work:
 
 
 
-ML {* bind_thm ("ProcRec2", Hoare.gen_proc_rec @{context} Hoare.Partial 2) *}
+ML {* ML_Thms.bind_thm ("ProcRec2", Hoare.gen_proc_rec @{context} Hoare.Partial 2) *}
 
 
 lemma (in odd_even_clique)

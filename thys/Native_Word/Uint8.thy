@@ -16,7 +16,7 @@ text {*
   is imported, the type @{text uint8} is emulated via @{typ "8 word"}.
 *}
 
-declare Quotient_prod[transfer_rule]
+declare prod.Quotient[transfer_rule]
 
 section {* Type definition and primitive operations *}
 
@@ -84,7 +84,18 @@ lift_definition sshiftr_uint8 :: "uint8 \<Rightarrow> nat \<Rightarrow> uint8" (
 
 lift_definition uint8_of_int :: "int \<Rightarrow> uint8" is "word_of_int" .
 
+definition uint8_of_nat :: "nat \<Rightarrow> uint8"
+where "uint8_of_nat = uint8_of_int \<circ> int"
+
+lift_definition int_of_uint8 :: "uint8 \<Rightarrow> int" is "uint" .
+lift_definition nat_of_uint8 :: "uint8 \<Rightarrow> nat" is "unat" .
+
+definition integer_of_uint8 :: "uint8 \<Rightarrow> integer"
+where "integer_of_uint8 = integer_of_int o int_of_uint8"
+
 text {* Use pretty numerals from integer for pretty printing *}
+
+context includes integer.lifting begin
 
 lift_definition Uint8 :: "integer \<Rightarrow> uint8" is "word_of_int" .
 
@@ -92,28 +103,19 @@ lemma Rep_uint8_numeral [simp]: "Rep_uint8 (numeral n) = numeral n"
 by(induction n)(simp_all add: one_uint8_def Abs_uint8_inverse numeral.simps plus_uint8_def)
 
 lemma numeral_uint8_transfer [transfer_rule]:
-  "(fun_rel op = cr_uint8) numeral numeral"
+  "(rel_fun op = cr_uint8) numeral numeral"
 by(auto simp add: cr_uint8_def)
 
 lemma numeral_uint8 [code_unfold]: "numeral n = Uint8 (numeral n)"
 by transfer simp
 
-lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (neg_numeral n) = neg_numeral n"
-by(simp only: neg_numeral_def uminus_uint8_def)(simp add: Abs_uint8_inverse)
+lemma Rep_uint8_neg_numeral [simp]: "Rep_uint8 (- numeral n) = - numeral n"
+by(simp only: uminus_uint8_def)(simp add: Abs_uint8_inverse)
 
-context begin interpretation lifting_syntax .
-
-lemma [transfer_rule]: "(op = ===> cr_uint8 ===> op =) (\<lambda>n m. cr_uint8 m n) op ="
-by(auto 4 3 simp add: cr_uint8_def Rep_uint8_inject)
-
-lemma uint8_neg_numeral_transfer [transfer_rule]:
-  "(op = ===> cr_uint8) neg_numeral neg_numeral"
-by(auto simp add: cr_uint8_def)
+lemma neg_numeral_uint8 [code_unfold]: "- numeral n = Uint8 (- numeral n)"
+by transfer(simp add: cr_uint8_def)
 
 end
-
-lemma neg_numeral_uint8 [code_unfold]: "neg_numeral n = Uint8 (neg_numeral n)"
-by transfer(simp add: cr_uint8_def)
 
 lemma Abs_uint8_numeral [code_post]: "Abs_uint8 (numeral n) = numeral n"
 by(induction n)(simp_all add: one_uint8_def numeral.simps plus_uint8_def Abs_uint8_inverse)
@@ -213,12 +215,23 @@ text {*
   If code generation raises Match, some equation probably contains @{term Rep_uint8} 
   ([code abstract] equations for @{typ uint8} may use @{term Rep_uint8} because
   these instances will be folded away.)
+
+  To convert @{typ "8 word"} values into @{typ uint8}, use @{term "Abs_uint8'"}.
 *}
 
 definition Rep_uint8' where [simp]: "Rep_uint8' = Rep_uint8"
 
+lemma Rep_uint8'_transfer [transfer_rule]:
+  "rel_fun cr_uint8 op = (\<lambda>x. x) Rep_uint8'"
+unfolding Rep_uint8'_def by(rule uint8.rep_transfer)
+
 lemma Rep_uint8'_code [code]: "Rep_uint8' x = (BITS n. x !! n)"
-unfolding Rep_uint8'_def by transfer simp
+by transfer simp
+
+lift_definition Abs_uint8' :: "8 word \<Rightarrow> uint8" is "\<lambda>x :: 8 word. x" .
+
+lemma Abs_uint8'_code [code]: "Abs_uint8' x = Uint8 (integer_of_int (uint x))"
+including integer.lifting by transfer simp
 
 lemma [code, code del]: "term_of_class.term_of = (term_of_class.term_of :: uint8 \<Rightarrow> _)" ..
 
@@ -239,6 +252,7 @@ code_printing type_constructor uint8 \<rightharpoonup>
 | constant Uint8 \<rightharpoonup> 
   (SML) "Word8.fromInt" and
   (Haskell) "(Prelude.fromInteger _ :: Uint8.Word8)" and
+  (Haskell_Quickcheck) "(Prelude.fromInteger (Prelude.toInteger _) :: Uint8.Word8)" and
   (Scala) "_.byteValue"
 | constant "0 :: uint8" \<rightharpoonup>
   (SML) "(Word8.fromInt 0)" and
@@ -321,11 +335,11 @@ where
 
 definition div0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "div0_uint8 x = undefined (op div :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort div0_uint8
+declare [[code abort: div0_uint8]]
 
 definition mod0_uint8 :: "uint8 \<Rightarrow> uint8"
 where [code del]: "mod0_uint8 x = undefined (op mod :: uint8 \<Rightarrow> _) x (0 :: uint8)"
-code_abort mod0_uint8
+declare [[code abort: mod0_uint8]]
 
 lemma uint8_divmod_code [code]:
   "uint8_divmod x y =
@@ -368,7 +382,7 @@ where [code del]:
 
 lemma test_bit_uint8_code [code]:
   "test_bit x n \<longleftrightarrow> n < 8 \<and> uint8_test_bit x (integer_of_nat n)"
-including undefined_transfer unfolding uint8_test_bit_def
+including undefined_transfer integer.lifting unfolding uint8_test_bit_def
 by transfer(auto cong: conj_cong dest: test_bit_size simp add: word_size)
 
 lemma uint8_test_bit_code [code]:
@@ -389,7 +403,7 @@ where [code del]:
 
 lemma set_bit_uint8_code [code]:
   "set_bit x n b = (if n < 8 then uint8_set_bit x (integer_of_nat n) b else x)"
-including undefined_transfer unfolding uint8_set_bit_def
+including undefined_transfer integer.lifting unfolding uint8_set_bit_def
 by(transfer)(auto cong: conj_cong simp add: not_less set_bit_beyond word_size)
 
 lemma uint8_set_bit_code [code abstract]:
@@ -426,7 +440,7 @@ where [code del]:
   "uint8_shiftl x n = (if n < 0 \<or> 8 \<le> n then undefined (shiftl :: uint8 \<Rightarrow> _) x n else x << (nat_of_integer n))"
 
 lemma shiftl_uint8_code [code]: "x << n = (if n < 8 then uint8_shiftl x (integer_of_nat n) else 0)"
-including undefined_transfer unfolding uint8_shiftl_def
+including undefined_transfer integer.lifting unfolding uint8_shiftl_def
 by transfer(simp add: not_less shiftl_zero_size word_size)
 
 lemma uint8_shiftl_code [code abstract]:
@@ -445,7 +459,7 @@ where [code del]:
   "uint8_shiftr x n = (if n < 0 \<or> 8 \<le> n then undefined (shiftr :: uint8 \<Rightarrow> _) x n else x >> (nat_of_integer n))"
 
 lemma shiftr_uint8_code [code]: "x >> n = (if n < 8 then uint8_shiftr x (integer_of_nat n) else 0)"
-including undefined_transfer unfolding uint8_shiftr_def
+including undefined_transfer integer.lifting unfolding uint8_shiftr_def
 by transfer(simp add: not_less shiftr_zero_size word_size)
 
 lemma uint8_shiftr_code [code abstract]:
@@ -471,7 +485,7 @@ by(rule word_eqI)(simp add: nth_sshiftr word_size)
 lemma sshiftr_uint8_code [code]:
   "x >>> n = 
   (if n < 8 then uint8_sshiftr x (integer_of_nat n) else if x !! 7 then -1 else 0)"
-including undefined_transfer unfolding uint8_sshiftr_def
+including undefined_transfer integer.lifting unfolding uint8_sshiftr_def
 by transfer (simp add: not_less sshiftr_beyond word_size)
 
 lemma uint8_sshiftr_code [code abstract]:
@@ -492,8 +506,65 @@ by transfer(simp add: msb_nth)
 lemma msb_uint16_code [code]: "msb x \<longleftrightarrow> uint8_test_bit x 7"
 by(simp add: uint8_test_bit_def uint8_msb_test_bit)
 
-lemma uint8_of_int_code [code]: "uint8_of_int i = (BITS n. i !! n)"
-by transfer(simp add: word_of_int_conv_set_bits test_bit_int_def[abs_def])
+lemma uint8_of_int_code [code]: "uint8_of_int i = Uint8 (integer_of_int i)"
+including integer.lifting by transfer simp
+
+lemma int_of_uint8_code [code]:
+  "int_of_uint8 x = int_of_integer (integer_of_uint8 x)"
+by(simp add: integer_of_uint8_def)
+
+lemma nat_of_uint8_code [code]:
+  "nat_of_uint8 x = nat_of_integer (integer_of_uint8 x)"
+unfolding integer_of_uint8_def including integer.lifting by transfer (simp add: unat_def)
+
+definition integer_of_uint8_signed :: "uint8 \<Rightarrow> integer"
+where
+  "integer_of_uint8_signed n = (if n !! 7 then undefined integer_of_uint8 n else integer_of_uint8 n)"
+
+lemma integer_of_uint8_signed_code [code]:
+  "integer_of_uint8_signed n =
+  (if n !! 7 then undefined integer_of_uint8 n else integer_of_int (uint (Rep_uint8' n)))"
+unfolding integer_of_uint8_signed_def integer_of_uint8_def
+including undefined_transfer by transfer simp
+
+lemma integer_of_uint8_code [code]:
+  "integer_of_uint8 n =
+  (if n !! 7 then integer_of_uint8_signed (n AND 0x7F) OR 0x80 else integer_of_uint8_signed n)"
+unfolding integer_of_uint8_def integer_of_uint8_signed_def o_def
+including undefined_transfer integer.lifting
+by transfer(auto simp add: word_ao_nth uint_and_mask_or_full mask_numeral mask_Suc_0 intro!: uint_and_mask_or_full[symmetric])
+
+code_printing
+  constant "integer_of_uint8" \<rightharpoonup>
+  (SML) "Word8.toInt _ : IntInf.int" and
+  (Haskell) "Prelude.toInteger"
+| constant "integer_of_uint8_signed" \<rightharpoonup>
+  (Scala) "BigInt"
+
+section {* Quickcheck setup *}
+
+definition uint8_of_natural :: "natural \<Rightarrow> uint8"
+where "uint8_of_natural x \<equiv> Uint8 (integer_of_natural x)"
+
+instantiation uint8 :: "{random, exhaustive, full_exhaustive}" begin
+definition "random_uint8 \<equiv> qc_random_cnv uint8_of_natural"
+definition "exhaustive_uint8 \<equiv> qc_exhaustive_cnv uint8_of_natural"
+definition "full_exhaustive_uint8 \<equiv> qc_full_exhaustive_cnv uint8_of_natural"
+instance ..
+end
+
+instantiation uint8 :: narrowing begin
+
+interpretation quickcheck_narrowing_samples
+  "\<lambda>i. let x = Uint8 i in (x, 0xFF - x)" "0"
+  "Typerep.Typerep (STR ''Uint8.uint8'') []" .
+
+definition "narrowing_uint8 d = qc_narrowing_drawn_from (narrowing_samples d) d"
+declare [[code drop: "partial_term_of :: uint8 itself \<Rightarrow> _"]]
+lemmas partial_term_of_uint8 [code] = partial_term_of_code
+
+instance ..
+end
 
 section {* Tests *}
 
@@ -542,10 +613,13 @@ definition test_uint8 where
    , True, False, False, True
    , True, False, False
    , True, False, True, False
-   ]
-  )"
+   ]) \<and>
+  ([integer_of_uint8 0, integer_of_uint8 0x7F, integer_of_uint8 0x80, integer_of_uint8 0xAA]
+  =
+   [0, 0x7F, 0x80, 0xAA])"
 
 export_code test_uint8 checking SML Haskell? Scala
+
 notepad begin
 have test_uint8 by eval
 have test_uint8 by code_simp
@@ -556,6 +630,19 @@ ML_val {* val true = @{code test_uint8} *}
 definition test_uint8' :: uint8
 where "test_uint8' = 0 + 10 - 14 * 3 div 6 mod 3 << 3 >> 2"
 ML {* val 0wx12 = @{code test_uint8'} *}
+
+lemma "x AND y = x OR (y :: uint8)"
+quickcheck[random, expect=counterexample]
+quickcheck[exhaustive, expect=counterexample]
+oops
+
+lemma "(x :: uint8) AND x = x OR x"
+quickcheck[narrowing, expect=no_counterexample]
+by transfer simp
+
+lemma "(f :: uint8 \<Rightarrow> unit) = g"
+quickcheck[narrowing, size=3, expect=no_counterexample]
+by(simp add: fun_eq_iff)
 
 hide_const test_uint8 test_uint8'
 hide_fact test_uint8_def test_uint8'_def

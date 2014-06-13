@@ -167,16 +167,15 @@ lemma clock_simVal:
 
 lemma clock_sim_f:
   "sim_f Clock.MC clock_simMC clock_sim"
-  apply (rule sim_fI)
-  apply (simp add: clock_simRels_def clock_sim_def)
-  apply (intro conjI)
+apply (rule sim_fI)
+apply (simp add: clock_simRels_def clock_sim_def)
+apply (intro conjI)
+   apply (fastforce intro!: imageI)
   apply (fastforce intro!: imageI)
-  apply (fastforce intro!: imageI)
-  apply (fastforce dest: Clock.mkM_simps(2))
-  apply (fastforce intro!: imageI dest: Clock.mkM_simps(2))
-  apply (rule_tac x=v in image_eqI)
-  apply simp_all
-  done
+ apply (fastforce dest: Clock.mkM_simps(2))
+apply (rule_tac x=v in image_eqI)
+ apply simp_all
+done
 
 lemma clock_sim_r:
   "sim_r Clock.MC clock_simMC clock_sim"
@@ -933,14 +932,14 @@ lemma clock_simAction_jAction:
   apply clarsimp
   apply rule
    apply clarsimp
-   apply (rule_tac x=aa in bexI)
+   apply (rule_tac x=xa in bexI)
     apply simp
    apply clarsimp
    apply (subst eval_models[OF tC aec cec, symmetric])
      using tC aec cec subj
      apply simp_all
   apply clarsimp
-  apply (rule_tac x=aa in bexI)
+  apply (rule_tac x=xa in bexI)
    apply (rule refl)
   apply clarsimp
   apply (subst eval_models[OF tC aec cec])
@@ -1081,7 +1080,7 @@ lemma clock_trans_aux:
       and ec: "clock_simAbs ec = Clock.sim_equiv_class a' t'"
       and tC: "t \<in> Clock.jkbpCn (tLength t')"
       and eact: "eact \<in> set (envAction (tLast t))"
-  shows "(aact \<in> set (listToFuns (\<lambda>a. local.clock_simAction a (fst ec, clock_knowledge envObs (fst ec) a (tLast t)))
+  shows "(aact \<in> set (listToFuns (\<lambda>a. clock_simAction a (fst ec, clock_knowledge envObs (fst ec) a (tLast t)))
                             (toList agents)))
      \<longleftrightarrow> (\<forall>a. aact a \<in> set (jAction (Clock.MCn (tLength t')) t a))"
   using assms
@@ -1120,7 +1119,7 @@ proof
   show "?lhs \<subseteq> ?rhs"
     unfolding clock_trans_def
     apply (clarsimp simp: toSet_def[symmetric] common_abs[OF assms] common_abs_def)
-    apply (rule_tac x=a in exI)
+    apply (rule_tac x=xa in exI)
     apply clarsimp
     apply (rule Clock.jkbpCn_jkbpC_inc[where n="Suc (tLength t)"])
     apply (auto simp: Let_def iff: clock_trans_aux[OF tC ec])
@@ -1268,7 +1267,7 @@ next
     apply (clarsimp simp: toSet_def[symmetric] Set.image_def clock_simAbs_def
                 simp del: split_paired_Ex)
 
-    apply (rule_tac x="clock_mkSuccs (envObs a) (envObs a s) (local.clock_trans aa aa)" in exI)
+    apply (rule_tac x="clock_mkSuccs (envObs a) (envObs a s) (clock_trans aa aa)" in exI)
     apply safe
       apply auto[1]
      apply (rule_tac x="tLast x" in exI)

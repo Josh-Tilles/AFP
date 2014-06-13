@@ -4,12 +4,9 @@ header "Connection Between Derivatives and Partial Derivatives"
 
 (*<*)
 theory Deriv_PDeriv
-imports Derivatives_Finite "~~/src/HOL/BNF/Ctr_Sugar"
+imports Derivatives_Finite
 begin
 (*>*)
-
-wrap_free_constructors (rep_compat) [Zero, One, Atom, Plus, Times, Star] rexp_case
-  by pat_completeness auto
 
 lemma pderiv_not_is_Zero_is_Plus[simp]: "\<forall>x \<in> pderiv a r. \<not> is_Zero x \<and> \<not> is_Plus x"
   by (induct r) auto
@@ -285,7 +282,7 @@ proof (induction w arbitrary: s)
   qed (simp add: pnorm_def pset_deriv)
 qed simp
 
-fun
+primrec
   pnderiv :: "'a :: linorder \<Rightarrow> 'a rexp \<Rightarrow> 'a rexp"
 where
   "pnderiv c (Zero) = Zero"

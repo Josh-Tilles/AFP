@@ -197,7 +197,7 @@ lemma meet_cont2:
   shows "cont (\<lambda>y. (x \<sqinter> y))" by (subst meet_comm, rule meet_cont1)
 
 lemma meet_cont[cont2cont,simp]:"cont f \<Longrightarrow> cont g \<Longrightarrow> cont (\<lambda>x. (f x \<sqinter> (g x::'a::cont_binary_meet)))"
-  apply (rule cont2cont_prod_case[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<sqinter> y", simplified])
+  apply (rule cont2cont_case_prod[where g = "\<lambda> x. (f x, g x)" and f = "\<lambda> p x y . x \<sqinter> y", simplified])
   apply (rule meet_cont1)
   apply (rule meet_cont2)
   apply (metis cont2cont_Pair)

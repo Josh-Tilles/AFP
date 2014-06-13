@@ -238,7 +238,7 @@ fun rexp_ewp :: "'a rexp \<Rightarrow> bool" where
 
 abbreviation "ro(s) \<equiv> (if (rexp_ewp s) then 1\<^sub>r else 0\<^sub>r)"
 
-lift_definition r_ewp :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" ..
+lift_definition r_ewp :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
 
 lift_definition r_lang :: "'a rexp \<Rightarrow> 'a reg_lan"  is "lang"
   by (simp)
@@ -335,7 +335,7 @@ qed
 instantiation reg_lan :: (type) Sr_algebra
 begin
 
-lift_definition ewp_reg_lan :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" ..
+lift_definition ewp_reg_lan :: "'a reg_lan \<Rightarrow> bool" is "l_ewp" .
 
 instance proof
   fix x :: "'a reg_lan"
@@ -392,6 +392,6 @@ theorem arden_regexp_r:
   assumes "ro(y) = 0\<^sub>r" "x \<sim> x \<cdot>\<^sub>r y +\<^sub>r z" 
   shows "x \<sim> z \<cdot>\<^sub>r y\<^sup>\<star>\<^sub>r"
   using assms
-  by (transfer, metis arden_r lang.simps(4) lang.simps(5) lang.simps(6) rexp.distinct(1) rexp_ewp_l_ewp assms)
+  by transfer (metis lan_salomaa_r.Ar lang.simps(4) lang.simps(5) lang.simps(6) rexp.distinct(1) rexp_ewp_l_ewp)
 
 end
