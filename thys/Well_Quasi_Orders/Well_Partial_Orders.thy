@@ -240,18 +240,6 @@ qed
 
 subsection {* Higman's Lemma for Well-Partial-Orders *}
 
-lemma irreflp_on_list_hemb:
-  "irreflp_on (list_hemb P) (lists A)"
-  by (auto simp: irreflp_on_def list_hemb_def)
-
-lemma wpo_on_lists:
-  assumes "wpo_on P A" shows "wpo_on (list_hemb P) (lists A)"
-  using assms
-    and irreflp_on_list_hemb
-    and almost_full_on_list_hemb
-    and transp_on_list_hemb
-    unfolding po_on_def wpo_on_def by auto
-
 text {*Every irreflexive and transitive relation on a finite set is a wpo.*}
 lemma finite_wpo_on:
   assumes "finite A"
@@ -274,9 +262,6 @@ next
     using finite_almost_full_on [OF finite reflp_on_reflclp, of ?P A]
     by (simp add: almost_full_on_def)
 qed
-
-lemmas wpo_on_lists_over_finite_sets =
-  finite_wpo_on [THEN wpo_on_lists]
 
 (*TODO: move*)
 lemma nat_le_less_eq [simp]:
@@ -337,9 +322,9 @@ proof
 
   from `wpo_on P A` have "transp_on P A"
     by (rule wpo_on_imp_transp_on)
-  then have "transp_on P\<^sup>=\<^sup>= A" by (metis transp_on_imp_transp_on_reflclp)
+  then have "transp_on P\<^sup>=\<^sup>= A" by (metis transp_on_reflclp)
   from `wpo_on Q B` have "transp_on Q\<^sup>=\<^sup>= B"
-    by (metis transp_on_imp_transp_on_reflclp wpo_on_imp_transp_on)
+    by (metis transp_on_reflclp wpo_on_imp_transp_on)
   from transp_on_map [OF this subset]
     have "transp_on ?Q A" .
 
@@ -354,12 +339,12 @@ proof
   show "almost_full_on P'\<^sup>=\<^sup>= A"
   proof
     fix f
-    presume *: "\<And>i::nat. f i \<in> A"
-    from almost_full_on_imp_subchain [OF `almost_full_on P\<^sup>=\<^sup>= A` this, of id] obtain g :: "nat \<Rightarrow> nat"
+    assume *: "\<forall>i::nat. f i \<in> A"
+    from almost_full_on_imp_homogeneous_subseq [OF `almost_full_on P\<^sup>=\<^sup>= A` this]
+      obtain g :: "nat \<Rightarrow> nat"
       where g: "\<And>i j. i < j \<Longrightarrow> g i < g j"
       and **: "\<forall>i. f (g i) \<in> A \<and> P\<^sup>=\<^sup>= (f (g i)) (f (g (Suc i)))"
-      using *
-      by auto
+      using * by auto
     from chain_on_transp_on_less [OF ** `transp_on P\<^sup>=\<^sup>= A`]
       have **: "\<And>i j. i < j \<Longrightarrow> P\<^sup>=\<^sup>= (f (g i)) (f (g j))" .
     let ?g = "\<lambda>i. h (f (g i))"
@@ -370,8 +355,26 @@ proof
     with ** [OF `i < j`] have "P'\<^sup>=\<^sup>= (f (g i)) (f (g j))"
       by (auto simp: P'_def)
     with g [OF `i < j`] show "good P'\<^sup>=\<^sup>= f" by (auto simp: good_def)
-  qed simp
+  qed
 qed
+
+(*
+
+lemma irreflp_on_list_hemb:
+  "irreflp_on (list_hemb P) (lists A)"
+  by (auto simp: irreflp_on_def list_hemb_def)
+
+lemma wpo_on_lists:
+  assumes "wpo_on P A" shows "wpo_on (list_hemb P) (lists A)"
+  using assms
+    and irreflp_on_list_hemb
+    and almost_full_on_list_hemb
+    and transp_on_list_hemb
+    unfolding po_on_def wpo_on_def by auto
+
+lemmas wpo_on_lists_over_finite_sets =
+  finite_wpo_on [THEN wpo_on_lists]
+*)
 
 end
 
