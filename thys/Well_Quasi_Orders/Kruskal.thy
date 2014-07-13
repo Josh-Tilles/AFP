@@ -38,19 +38,6 @@ proof -
       and args_mk [OF assms(1)] and args_mk [OF assms(2)] by auto
 qed
 
-lemma wf_size:
-  "wf {(x, y). size x < size y}"
-proof -
-  have "measure size = {(x, y). size x < size y}" by auto
-  moreover have "wf (measure size)" by (rule wf_measure)
-  ultimately show ?thesis by simp
-qed
-
-lemma wfp_on_size:
-  "wfp_on (\<lambda>x y. size x < size y) A"
-  using wf_size [to_pred, unfolded wfp_on_UNIV [symmetric]]
-    and wfp_on_subset [of A UNIV] by blast
-
 (*TODO: move*)
 lemma reflclp_mono:
   assumes "\<And>x y. P x y \<longrightarrow> Q x y"
@@ -59,12 +46,12 @@ lemma reflclp_mono:
 
 inductive emb for P
 where
-  arg: "\<lbrakk>(f, m) \<in> F; length ts = m; \<forall>t\<in>set ts. t \<in> trees; t \<in> set ts; (emb P)\<^sup>=\<^sup>= s t\<rbrakk>
+  arg: "\<lbrakk>(f, m) \<in> F; length ts = m; \<forall>t\<in>set ts. t \<in> trees; t \<in> set ts; emb P s t\<rbrakk>
     \<Longrightarrow> emb P s (mk f ts)" |
   list_emb: "\<lbrakk>(f, m) \<in> F; (g, n) \<in> F; P (f, m) (g, n); length ss = m; length ts = n;
     \<forall>s \<in> set ss. s \<in> trees; \<forall>t \<in> set ts. t \<in> trees; list_emb (emb P) ss ts\<rbrakk>
     \<Longrightarrow> emb P (mk f ss) (mk g ts)"
-monos list_emb_mono  reflclp_mono
+monos list_emb_mono reflclp_mono
 
 lemma almost_full_on_trees:
   assumes "almost_full_on P F"
@@ -121,7 +108,7 @@ proof (rule ccontr)
         with bad_s have False by auto }
       moreover
       { assume "i < n" and "n \<le> j"
-        with `i < j` and emb have *: "?P\<^sup>=\<^sup>= (m i) (s (k + (j - n)))" by (auto simp: m'_less m'_geq)
+        with `i < j` and emb have *: "?P (m i) (s (k + (j - n)))" by (auto simp: m'_less m'_geq)
         with args obtain l where "l \<ge> n" and **: "s (k + (j - n)) \<in> set (a l)" by blast
         from emb.arg [OF sig [of l] _ a_trees [of l] ** *]
           have "?P (m i) (m l)" by (simp add: m)
