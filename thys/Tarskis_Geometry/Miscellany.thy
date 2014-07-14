@@ -208,7 +208,7 @@ proof -
     and "sqrt (4 * a * b) = a + b \<longleftrightarrow> a = b" by simp+
   with real_sqrt_abs2 [of 2] and real_sqrt_mult [of 4 "a * b"] show
     "sqrt (a * b) \<le> (a + b) / 2"
-    and "sqrt (a * b) = (a + b) / 2 \<longleftrightarrow> a = b" by (simp add: mult_ac)+
+    and "sqrt (a * b) = (a + b) / 2 \<longleftrightarrow> a = b" by (simp add: ac_simps)+
 qed
 
 lemma refl_on_allrel: "refl_on A (A \<times> A)"
@@ -297,7 +297,7 @@ lemma vector_matrix_left_distrib:
   fixes x y :: "real^('n::finite)" and A :: "real^('m::finite)^'n"
   shows "(x + y) v* A = x v* A + y v* A"
   unfolding vector_matrix_mult_def
-  by (simp add: algebra_simps setsum_addf vec_eq_iff)
+  by (simp add: algebra_simps setsum.distrib vec_eq_iff)
 
 lemma times_zero_vector [simp]: "A *v 0 = 0"
   unfolding matrix_vector_mult_def
@@ -406,7 +406,7 @@ lemma setsum_forall_cong:
   shows "(\<Sum> x\<in>A. f x) = (\<Sum> x\<in>A. g x)"
 proof -
   from `\<forall> x\<in>A. f x = g x` have "\<And> x. x \<in> A \<Longrightarrow> f x = g x" ..
-  with setsum_cong show "(\<Sum> x\<in>A. f x) = (\<Sum> x\<in>A. g x)" by simp
+  with setsum.cong show "(\<Sum> x\<in>A. f x) = (\<Sum> x\<in>A. g x)" by simp
 qed
 
 lemma partition_Image_element:

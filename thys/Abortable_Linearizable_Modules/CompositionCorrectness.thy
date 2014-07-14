@@ -182,7 +182,7 @@ proof  (induct xs, force)
     fix ys
     assume "a # xs = ys @ zs \<and> hd zs = x \<and> zs \<noteq> [] \<and> x \<notin> set ys" and "a = x"
     hence "x # xs = ys @ zs" and "x \<notin> set ys" and "hd zs = x" and "zs \<noteq> []" by auto
-    from `x # xs = ys @ zs` and `x \<notin> set ys` have "ys = []"   by (metis hd.simps hd_append hd_in_set)
+    from `x # xs = ys @ zs` and `x \<notin> set ys` have "ys = []"   by (metis list.sel(1) hd_append hd_in_set)
     with `a = x` and `x # xs = ys @ zs` show "dropWhile (\<lambda>x'. x' \<noteq> x) (a # xs) = zs" by auto
   next
     fix ys
@@ -190,7 +190,7 @@ proof  (induct xs, force)
     hence "a # xs = ys @ zs" and "hd zs = x" and "zs \<noteq> []" and "x \<notin> set ys" by auto
     obtain ys' where "xs = ys' @ zs" and "x \<notin> set ys'"
     proof -
-      from `a # xs = ys @ zs` and `hd zs = x` and `a \<noteq> x` obtain ys' where "ys = a # ys'" apply clarify by (metis Cons_eq_append_conv hd.simps)
+      from `a # xs = ys @ zs` and `hd zs = x` and `a \<noteq> x` obtain ys' where "ys = a # ys'" apply clarify by (metis Cons_eq_append_conv list.sel(1))
       moreover with `x \<notin> set ys` have "x \<notin> set ys'" by auto
       moreover from `ys = a # ys'` and `a # xs = ys @ zs` have "xs = ys' @ zs" by auto
       ultimately show "(\<And>ys'. \<lbrakk>xs = ys' @ zs; x \<notin> set ys'\<rbrakk> \<Longrightarrow> thesis) \<Longrightarrow> thesis" by auto
@@ -871,7 +871,7 @@ proof -
                 moreover
                 {
                   assume "s1' = s1" and "s2' = s2"
-                  with in_invoke have pre_s1:"~(phase s1 c = Ready & request_snd r = c & r \<notin> set (hist s1))"  and pre_s2:"~(phase s2 c = Ready & request_snd r = c & r \<notin> set (hist s2))" apply (auto simp add: is_exec_frag_def composeALMs_def trans_of_def hide_def  ALM_ioa_def ALM_asig_def par_def actions_def asig_outputs_def asig_inputs_def asig_internals_def asig_of_def) apply(simp_all add:ALM_trans_def) apply (drule_tac[!] arg_cong[where f = "phase"]) apply simp_all apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) done (*TODO: how to deal with records automatically?*)
+                  with in_invoke have pre_s1:"~(phase s1 c = Ready & request_snd r = c & r \<notin> set (hist s1))"  and pre_s2:"~(phase s2 c = Ready & request_snd r = c & r \<notin> set (hist s2))" using [[hypsubst_thin]] apply (auto simp add: is_exec_frag_def composeALMs_def trans_of_def hide_def  ALM_ioa_def ALM_asig_def par_def actions_def asig_outputs_def asig_inputs_def asig_internals_def asig_of_def) apply(simp_all add:ALM_trans_def) apply (drule_tac[!] arg_cong[where f = "phase"]) apply simp_all apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) apply (metis phase.simps(8) fun_upd_idem_iff) done (*TODO: how to deal with records automatically?*)
                   hence  "~(phase ?t c = Ready & request_snd r = c & r \<notin> set (hist ?t))" using `P14 (s1, s2)` by (auto simp add:ref_mapping_def P14_def)
                   hence ?thesis using `id1 \<noteq> 0`  and `s1' = s1` and `s2' = s2` apply (simp add: is_exec_frag_def composeALMs_def trans_of_def hide_def  ALM_ioa_def ALM_asig_def par_def actions_def asig_outputs_def asig_inputs_def asig_internals_def asig_of_def) apply(simp_all add:ALM_trans_def) apply force done 
                 }
@@ -1064,7 +1064,7 @@ proof -
                     qed
                     moreover have "h = dropWhile (\<lambda> r . r \<noteq> pending ?t c) (hist ?t)"
                     proof -
-                      from `pending s1 c \<in> set (hist s1)` obtain rs1 rs2 where "hist s1 = rs2 @ rs1" and "hd rs1 = pending s1 c" and "rs1 \<noteq> []" and "pending s1 c \<notin> set rs2"  by (metis hd.simps in_set_conv_decomp_first list.simps(3))
+                      from `pending s1 c \<in> set (hist s1)` obtain rs1 rs2 where "hist s1 = rs2 @ rs1" and "hd rs1 = pending s1 c" and "rs1 \<noteq> []" and "pending s1 c \<notin> set rs2"  by (metis list.sel(1) in_set_conv_decomp_first list.simps(3))
                       with `pending ?t c = pending s1 c` and dropWhile_lemma[of "hist s1" rs1 "pending s1 c"] and pre_s1 have "h = rs1" by auto
                       moreover have "dropWhile (\<lambda> r . r \<noteq> pending ?t c) (hist ?t) = rs1"
                       proof -

@@ -194,7 +194,7 @@ end
 
 
 lemma lprefix_lappend2I: "lprefix xs ys \<Longrightarrow> lprefix xs (lappend ys zs)"
-by(auto simp add: lappend_assoc lprefix_def)
+by(auto simp add: lappend_assoc lprefix_conv_lappend)
 
 locale known_addrs_typing' =
   h!: known_addrs_typing
@@ -268,7 +268,7 @@ proof -
 
   from ns E'
   have ns: "non_speculative P (vs_type_all P) (lmap snd (ldropn (length (lift_start_obs h.start_tid h.start_heap_obs)) (ltake (enat w) E)))"
-    by(subst (asm) lappend_ltake_ldrop[where n="enat (length (lift_start_obs h.start_tid h.start_heap_obs))", symmetric])(simp add: non_speculative_lappend min_def ltake_lappend1 w_values_vs_type_all_start_heap_obs[OF wfP] split: split_if_asm)
+    by(subst (asm) lappend_ltake_ldrop[where n="enat (length (lift_start_obs h.start_tid h.start_heap_obs))", symmetric])(simp add: non_speculative_lappend min_def ltake_lappend1 w_values_vs_type_all_start_heap_obs[OF wfP] ldrop_enat split: split_if_asm)
 
   show ?thesis
   proof(cases "w < length ?start_obs")
@@ -326,7 +326,7 @@ proof -
       apply(simp_all add: split_beta plus_enat_simps(1)[symmetric] add_Suc_right[symmetric] del: plus_enat_simps(1) add_Suc_right)
       apply(subst setsum_hom[symmetric, where f=enat])
       apply(simp_all add: zero_enat_def min_def le_Suc_eq)
-      apply(rule setsum_cong)
+      apply(rule setsum.cong)
       apply(auto simp add: lnth_ltake less_trans[where y="enat m_w"])
       done
     have prefix: "lprefix ?EE'' (lmap snd E')" unfolding E''
@@ -452,7 +452,7 @@ proof(induction a arbitrary: ad al v rule: less_induct)
         moreover
         with nth_i i `i < ws a`
         have "action_obs E i = NormalAction (ReadMem ad' al' v')"
-          by(simp add: action_obs_def lnth_ltake add_ac)
+          by(simp add: action_obs_def lnth_ltake ac_simps)
         ultimately have "\<exists>T. P \<turnstile> ad'@al' : T \<and> P \<turnstile> v' :\<le> T" by(rule less.IH)
         hence "v' \<in> vs_type_all P (ad', al')" by(simp add: vs_type_all.simps)
         thus "v' \<in> w_values P (vs_type_all P) (list_of (ltake (enat i) ?EE'')) (ad', al')"
@@ -828,7 +828,7 @@ proof -
           moreover
           from i_nth i `i < w` w_len
           have "action_obs (?E n') i = NormalAction (ReadMem ad al v)"
-            by(simp add: action_obs_def add_ac less_trans[where y="enat w"] lnth_ltake)
+            by(simp add: action_obs_def ac_simps less_trans[where y="enat w"] lnth_ltake)
           moreover from n'' have "0 < n'" by simp
           ultimately have "\<exists>T. P \<turnstile> ad@al : T \<and> P \<turnstile> v :\<le> T" by(rule Suc.IH)
           hence "v \<in> vs_type_all P (ad, al)" by(simp add: vs_type_all.simps)

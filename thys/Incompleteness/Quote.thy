@@ -16,7 +16,7 @@ where "SeqQuote x x' s k \<equiv>
 
 subsection {*Defining the syntax: quantified body*}
 
-nominal_primrec SeqQuoteP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqQuoteP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (s,k,sl,sl',m,n,sm,sm',sn,sn'); 
           atom sl \<sharp> (s,sl',m,n,sm,sm',sn,sn'); atom sl' \<sharp> (s,m,n,sm,sm',sn,sn'); 
           atom m \<sharp> (s,n,sm,sm',sn,sn');  atom n \<sharp> (s,sm,sm',sn,sn');  
@@ -33,7 +33,7 @@ nominal_primrec SeqQuoteP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow>
                        Var sl' EQ Q_Eats (Var sm') (Var sn')))))))))))"
 by (auto simp: eqvt_def SeqQuoteP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma
@@ -147,12 +147,12 @@ definition Quote :: "hf \<Rightarrow> hf \<Rightarrow> bool"
 
 subsection {*Defining the syntax*}
 
-nominal_primrec QuoteP :: "tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function QuoteP :: "tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (t,u,k); atom k \<sharp> (t,u)\<rbrakk> \<Longrightarrow>
     QuoteP t u = Ex s (Ex k (SeqQuoteP t u (Var s) (Var k)))"
 by (auto simp: eqvt_def QuoteP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 
@@ -654,7 +654,7 @@ proof -
             using atoms assms 
             by (auto simp: p_def V_def F_def make_F_def fresh_star_def fresh_finite_insert)
           show "-p = p"  using assms atoms
-            by (simp add: p_def add_assoc perm_self_inverseI fresh_swap fresh_plus_perm)
+            by (simp add: p_def add.assoc perm_self_inverseI fresh_swap fresh_plus_perm)
           show "F \<equiv> make_F V p"
             by (rule F_def)
         qed
@@ -1014,7 +1014,7 @@ proof -
       show "F' \<equiv> make_F V' p'"
         by (rule F'_def)
       show "- p' = p'" using atoms atoms' pinv
-        by (simp add: p'_def add_assoc perm_self_inverseI fresh_swap fresh_plus_perm)
+        by (simp add: p'_def add.assoc perm_self_inverseI fresh_swap fresh_plus_perm)
     qed
   have All2_Zero: "{} \<turnstile> All2 i Zero \<alpha>"
     by auto
@@ -1121,7 +1121,7 @@ proof -
   have subst_i_star: "quote_all p' V' \<turnstile> \<alpha>(i::=Var sn) IMP PfP (ssubst \<lfloor>\<alpha>(i::=Var sn)\<rfloor>V' V' F')"
     apply (rule thin [OF star0])
     using atoms'
-    apply (force simp: V'_def p'_def fresh_swap fresh_plus_perm fresh_at_base_permI add_assoc 
+    apply (force simp: V'_def p'_def fresh_swap fresh_plus_perm fresh_at_base_permI add.assoc 
                        quote_all_perm_eq)
     done
   have "insert (OrdP (Var k)) (quote_all p (Vs-{j}))
@@ -1350,7 +1350,7 @@ proof (nominal_induct avoiding: p arbitrary: V F rule: ss_fm.strong_induct)
     have ss: "(quote_all p' (insert i V))
               \<turnstile> PfP (ssubst \<lfloor>A\<rfloor>(insert i V) (insert i V) F') IMP 
                 PfP (ssubst \<lfloor>Ex i A\<rfloor>(insert i V) (insert i V) F')" 
-      apply (rule local.qp'.quote_all_MonPon_PfP_ssubst [OF SpecI])
+      apply (rule qp'.quote_all_MonPon_PfP_ssubst [OF SpecI])
       using ExI  apply auto
       done
     hence "insert A (quote_all p' (insert i V)) 
@@ -1366,12 +1366,12 @@ proof (nominal_induct avoiding: p arbitrary: V F rule: ss_fm.strong_induct)
       by (auto simp: insert_commute ss_simp qa_p')
     hence Exi': "insert (Ex i' (QuoteP (Var i) (Var i'))) (insert A (quote_all p V)) 
                  \<turnstile> PfP (ssubst \<lfloor>Ex i A\<rfloor>V V F)"
-      by (auto intro!: local.qp.fresh_ssubst_fm) (auto simp: ExI i' fresh_quote_all_mem)
+      by (auto intro!: qp.fresh_ssubst_fm) (auto simp: ExI i' fresh_quote_all_mem)
     have "insert A (quote_all p V) \<turnstile> PfP (ssubst \<lfloor>Ex i A\<rfloor>V V F)" 
       using i'  by (auto intro: cut0 [OF exists_QuoteP Exi']) 
     thus "insert (Ex i A) (quote_all p V) \<turnstile> PfP (ssubst \<lfloor>Ex i A\<rfloor>V V F)"
       apply (rule Ex_E, simp)
-      apply (rule local.qp.fresh_ssubst_fm)  using i ExI
+      apply (rule qp.fresh_ssubst_fm)  using i ExI
       apply (auto simp: fresh_quote_all_mem)
       done
    next

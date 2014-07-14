@@ -23,7 +23,7 @@ lemma double_sum_equiv:
   shows
   "(\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. f k * g j)) =
    (\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. f j * g k))"
-  by (rule setsum_commute)
+  by (rule setsum.commute)
 
 (*>*)
 
@@ -128,7 +128,7 @@ proof -
   also have
     "\<dots> =
     (\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. f k * g j + f j * g k))"
-    by (auto simp add: setsum_addf)
+    by (auto simp add: setsum.distrib)
   finally have
     "2 * (\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. f k * g j)) =
     (\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. f k * g j + f j * g k))" .
@@ -139,7 +139,7 @@ proof -
   also have
     "\<dots> =
      (\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. (f k * g j + f j * g k)*(1/2)))"
-    by (simp add: setsum_right_distrib mult_commute)
+    by (simp add: setsum_right_distrib mult.commute)
   finally show ?thesis by (auto simp add: inverse_eq_divide)
 qed
 
@@ -229,17 +229,17 @@ proof -
         "\<dots> =
          (\<Sum>k\<in>{1..n}.  (\<Sum>j\<in>{1..n}. (inverse 2)*(2*
         (((x\<^bsub>k\<^esub>^2*y\<^bsub>j\<^esub>^2) + (x\<^bsub>j\<^esub>^2*y\<^bsub>k\<^esub>^2))*(1/2) - (x\<^bsub>k\<^esub>*y\<^bsub>k\<^esub>)*(x\<^bsub>j\<^esub>*y\<^bsub>j\<^esub>)))))"
-        by (simp only: mult_assoc)
+        by (simp only: mult.assoc)
       also have
         "\<dots> =
          (\<Sum>k\<in>{1..n}.  (\<Sum>j\<in>{1..n}. (inverse 2)*
         ((((x\<^bsub>k\<^esub>^2*y\<^bsub>j\<^esub>^2) + (x\<^bsub>j\<^esub>^2*y\<^bsub>k\<^esub>^2))*2*(inverse 2) - 2*(x\<^bsub>k\<^esub>*y\<^bsub>k\<^esub>)*(x\<^bsub>j\<^esub>*y\<^bsub>j\<^esub>)))))"
-        by (auto simp add: distrib_right mult_assoc mult_ac)
+        by (auto simp add: distrib_right mult.assoc ac_simps)
       also have
         "\<dots> =
         (\<Sum>k\<in>{1..n}.  (\<Sum>j\<in>{1..n}. (inverse 2)*
         ((((x\<^bsub>k\<^esub>^2*y\<^bsub>j\<^esub>^2) + (x\<^bsub>j\<^esub>^2*y\<^bsub>k\<^esub>^2)) - 2*(x\<^bsub>k\<^esub>*y\<^bsub>k\<^esub>)*(x\<^bsub>j\<^esub>*y\<^bsub>j\<^esub>)))))"
-        by (simp only: mult_assoc, simp)
+        by (simp only: mult.assoc, simp)
       also have
         "\<dots> =
          (inverse 2)*(\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}.
@@ -248,7 +248,7 @@ proof -
       also have
         "\<dots> =
          (inverse 2)*(\<Sum>k\<in>{1..n}. (\<Sum>j\<in>{1..n}. (x\<^bsub>k\<^esub>*y\<^bsub>j\<^esub> - x\<^bsub>j\<^esub>*y\<^bsub>k\<^esub>)^2))"
-        by (simp only: power2_diff real_sq_exp, auto simp add: mult_ac)
+        by (simp only: power2_diff real_sq_exp, auto simp add: ac_simps)
       also have "\<dots> \<ge> 0"
       proof -
         {
@@ -266,7 +266,7 @@ proof -
     thus ?thesis by simp
   qed
   moreover have "0 \<le> \<parallel>x\<parallel>*\<parallel>y\<parallel>"
-    by (auto simp add: norm_pos intro: mult_nonneg_nonneg)
+    by (auto simp add: norm_pos)
   ultimately show ?thesis by (rule power2_le_imp_le)
 qed
 

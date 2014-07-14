@@ -22,7 +22,7 @@ lemmas assn_aci =
   sup_aci[where 'a=assn] 
   mult.left_ac[where 'a=assn] 
 
-lemmas star_assoc = mult_assoc[where 'a=assn] 
+lemmas star_assoc = mult.assoc[where 'a=assn] 
 lemmas assn_assoc = 
   mult.left_assoc inf_assoc[where 'a=assn] sup_assoc[where 'a=assn] 
 
@@ -30,7 +30,8 @@ lemma merge_true_star_ctx: "true * (true * P) = true * P"
   by (simp add: mult.left_ac)
   
 lemmas star_aci = 
-  mult_ac[where 'a=assn] assn_one_left mult_1_right[where 'a=assn]
+  mult.assoc[where 'a=assn] mult.commute[where 'a=assn] mult.left_commute[where 'a=assn]
+  assn_one_left mult_1_right[where 'a=assn]
   merge_true_star merge_true_star_ctx
 
 text {* Move existential quantifiers to the front of assertions *}
@@ -45,8 +46,8 @@ lemma ex_assn_move_out[simp]:
   "\<And>P Q. Q \<or>\<^sub>A (\<exists>\<^sub>Ax. P x) = (\<exists>\<^sub>Ax. (Q \<or>\<^sub>A P x))"
   apply -
   apply (simp add: ex_distrib_star)
-  apply (subst mult_commute)
-  apply (subst (2) mult_commute)
+  apply (subst mult.commute)
+  apply (subst (2) mult.commute)
   apply (simp add: ex_distrib_star)
 
   apply (simp add: ex_distrib_and)
@@ -280,7 +281,7 @@ lemma frame_rule_left:
 
 lemmas deconstruct_rules = 
   bind_rule if_rule false_rule return_sp_rule let_rule 
-  prod_case_rule list_case_rule option_case_rule sum_case_rule
+  case_prod_rule case_list_rule case_option_rule case_sum_rule
 
 lemmas heap_rules = 
   ref_rule
@@ -440,9 +441,7 @@ structure Seplogic_Auto = struct
 
       fun normalize_core t = let 
         val ((has_true,pures,ptrs),rt) = normalizer t;
-        (*val _ = tracing (PolyML.makestring ptrs);*)
         val similar = find_similar ptrs_key ptrs;
-        (*val _ = tracing (PolyML.makestring similar);*)
         val true_t = if has_true then SOME @{term "Assertions.top_assn"} 
           else NONE;
         val pures' = case pures of 
@@ -483,9 +482,11 @@ structure Seplogic_Auto = struct
 
   in 
     result
-  end handle exc => 
-    (tracing ("assn_simproc failed with exception: "^PolyML.makestring exc); 
-      NONE) (* Fail silently *);
+  end handle exc =>
+    if Exn.is_interrupt exc then reraise exc
+    else
+      (tracing ("assn_simproc failed with exception\n:" ^ Runtime.exn_message exc);
+        NONE) (* Fail silently *);
   
   val assn_simproc = Simplifier.make_simproc {
     lhss = [@{cpat "?h\<Turnstile>?P"},@{cpat "?P \<Longrightarrow>\<^sub>A ?Q"},
@@ -833,7 +834,7 @@ lemma ent_wand_frameI:
   assumes "Q*X \<Longrightarrow>\<^sub>A R"
   shows "P \<Longrightarrow>\<^sub>A S"
   using assms
-  by (metis ent_frame_fwd ent_wandI mult_commute)
+  by (metis ent_frame_fwd ent_wandI mult.commute)
 
 subsubsection {* Manual Frame Inference *}
 

@@ -1,12 +1,12 @@
 (*  Title:      RSAPSS/Pdifference.thy
 
     Author:     Christina Lindenberg, Kai Wirt, Technische Universität Darmstadt
-    Copyright:  2005 - Technische Universität Darmstadt 
+    Copyright:  2005 - Technische Universität Darmstadt
 *)
 header "Positive differences"
 
 theory Pdifference
-imports "~~/src/HOL/Old_Number_Theory/Primes" Mod
+imports "~~/src/HOL/Number_Theory/Primes" Mod
 begin
 
 definition
@@ -26,7 +26,7 @@ lemma invers: "a \<le> x \<Longrightarrow> (x::nat) = x - a + a"
 lemma invers2: "\<lbrakk>a \<le> b; (b-a) = p*q\<rbrakk> \<Longrightarrow> (b::nat) = a+p*q"
   apply (subst addconst [symmetric])
   apply (assumption)
-  apply (subst add_commute, rule invers, simp)
+  apply (subst add.commute, rule invers, simp)
   done
 
 lemma modadd: "\<lbrakk>b = a+p*q\<rbrakk> \<Longrightarrow> (a::nat) mod p = b mod p"
@@ -57,20 +57,21 @@ lemma equalmodstrick2: "a mod p = b mod p \<Longrightarrow> pdifference a b mod 
    apply (drule mod_eqD [simplified], auto)
    apply (subst mod_div_equality' [of b])
    apply (subst diff_add_assoc2)
-    apply (subst mult_commute, subst mult_div_cancel)
+    apply (subst mult.commute, subst mult_div_cancel)
     apply simp+
    apply (subst diff_mult_distrib [symmetric])
    apply simp
   apply (drule mod_eqD [simplified], auto)
   apply (subst mod_div_equality' [of b])
   apply (subst diff_add_diff)
-   apply (subst mult_commute, subst mult_div_cancel, auto)
+   apply (subst mult.commute, subst mult_div_cancel, auto)
   apply (subst diff_mult_distrib [symmetric])
   apply simp
   done
 
-lemma primekeyrewrite: "\<lbrakk>prime p; p dvd (a*b);~(p dvd a)\<rbrakk> \<Longrightarrow> p dvd b"
-  apply (drule prime_dvd_mult)
+lemma primekeyrewrite:
+  fixes p::nat shows "\<lbrakk>prime p; p dvd (a*b);~(p dvd a)\<rbrakk> \<Longrightarrow> p dvd b"
+  apply (drule prime_dvd_mult_nat)
   apply auto
   done
 

@@ -119,6 +119,9 @@ abstract =
   <p>
   Our results have been used to certify termination proofs which involve
   polynomial interpretations over the reals.
+extra-history =
+  Change history:
+  [2014-07-11]: Moved NthRoot_Impl to Sqrt-Babylonian.
 
 [ShortestPath]
 title = An Axiomatic Characterization of the Single-Source Shortest Path Problem
@@ -176,11 +179,15 @@ abstract = Psi-calculi are extensions of the pi-calculus, accommodating arbitrar
 [Circus]
 title = Isabelle/Circus
 author = Abderrahmane Feliachi <mailto:abderrahmane.feliachi@lri.fr>, Burkhart Wolff <mailto:wolff@lri.fr>, Marie-Claude Gaudel <mailto:mcg@lri.fr>
+contributors = Makarius Wenzel <mailto:Makarius.wenzel@lri.fr>
 date = 2012-05-27
 topic = Computer Science/Process Calculi, Computer Science/System Description Languages
 abstract = The Circus specification language combines elements for complex data and behavior specifications, using an integration of Z and CSP with a refinement calculus. Its semantics is based on Hoare and He's Unifying Theories of Programming (UTP). Isabelle/Circus is a formalization of the UTP and the Circus language in Isabelle/HOL. It contains proof rules and tactic support that allows for proofs of refinement for Circus processes (involving both data and behavioral aspects).
  <p>
  The Isabelle/Circus environment supports a syntax for the semantic definitions which is close to textbook presentations of Circus. This article contains an extended version of corresponding VSTTE Paper together with the complete formal development of its underlying commented theories.
+extra-history =
+  Change history:
+  [2014-06-05]: More polishing, shorter proofs, added Circus syntax, added Makarius Wenzel as contributor.
 
 [Dijkstra_Shortest_Path]
 title = Dijkstra's Shortest Path Algorithm
@@ -199,7 +206,7 @@ title = Refinement for Monadic Programs
 author = Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>
 topic = Computer Science/Programming Languages/Logics
 date = 2012-01-30
-depends-on = Collections
+depends-on = Automatic_Refinement
 abstract = We provide a framework for program and data refinement in Isabelle/HOL.
   The framework is based on a nondeterminism-monad with assertions, i.e.,
   the monad carries a set of results or an assertion failure.
@@ -633,6 +640,21 @@ abstract =
   check their correctness. Our theory contains a typical example of a
   refinement proof in the I/O-automata framework of Lynch and Tuttle.
 
+[Amortized_Complexity]
+title = Amortized Complexity Verified
+author = Tobias Nipkow <http://www.in.tum.de/~nipkow/>
+date = 2014-07-07
+topic = Computer Science/Data Structures
+abstract =
+  A framework for the analysis of the amortized complexity of (functional)
+  data structures is formalized in Isabelle/HOL and applied to a number of
+  standard examples and to two non-trivial ones: skew heaps and splay trees.
+  In the same spirit we show that the move-to-front algorithm for the list
+  update problem is 2-competitive.
+  <p>
+  A preliminary paper describing this research has been presented at the
+  Isabelle Workshop 2014.
+
 [AVL-Trees]
 title = AVL Trees
 author = Tobias Nipkow <http://www.in.tum.de/~nipkow/>, Cornelia Pusch <>
@@ -696,7 +718,7 @@ abstract =
  the main operation is to split the sequence at the point where a
  <em>monotone predicate</em> over the sum of the left part of the sequence
  becomes true for the first time.
- The implementation follows the paper of Hintze and Paterson.
+ The implementation follows the paper of Hinze and Paterson.
  The code generator can be used to get efficient, verified code.
 
 [FinFun]
@@ -725,7 +747,7 @@ contributors = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>, T
 date = 2009-11-25
 topic = Computer Science/Data Structures
 abstract = This development provides an efficient, extensible, machine checked collections framework. The library adopts the concepts of interface, implementation and generic algorithm from object-oriented programming and implements them in Isabelle/HOL. The framework features the use of data refinement techniques to refine an abstract specification (using high-level concepts like sets) to a more concrete implementation (using collection datastructures, like red-black-trees). The code-generator of Isabelle/HOL can be used to generate efficient code.
-depends-on = Binomial-Heaps, Finger-Trees
+depends-on = Binomial-Heaps, Finger-Trees, Refine_Monadic
 extra-history =
   Change history:
   [2010-10-08]: New Interfaces: OrderedSet, OrderedMap, List.
@@ -760,7 +782,8 @@ extra-history =
   [2013-07-11]: add pretty printing for sets (revision 7f3f52c5f5fa)<br>
   [2013-09-20]:
         provide generators for canonical type class instantiations
-        (revision 159f4401f4a8 by René Thiemann)
+        (revision 159f4401f4a8 by René Thiemann)<br>
+  [2014-07-08]: add support for going from partial functions to mappings (revision 7a6fc957e8ed)
 
 [FileRefinement]
 title = File Refinement
@@ -843,6 +866,7 @@ abstract = We provide a wrapper around the partial-function command that support
 title = Coinductive
 topic = Computer Science/Functional Programming
 author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>
+contributors = Johannes Hölzl <mailto:hoelzl@in.tum.de>
 date = 2010-02-12
 abstract = This article collects formalisations of general-purpose coinductive data types and sets. Currently, it contains coinductive natural numbers, coinductive lists, i.e. lazy lists or streams, infinite streams, coinductive terminated lists, coinductive resumptions, a library of operations on coinductive lists, and a version of König's lemma as an application for coinductive lists.<br>The initial theory was contributed by Paulson and Wenzel. Extensions and other coinductive formalisations of general interest are welcome.
 extra-history =
@@ -876,6 +900,11 @@ extra-history =
   [2013-09-20]:
         stream theory uses type and operations from HOL/BNF/Examples/Stream
         (revision 692809b2b262)<br>
+  [2014-04-03]:
+        ccpo structure on codatatypes used to define ldrop, ldropWhile, lfilter, lconcat as least fixpoint;
+        ccpo topology on coinductive lists contributed by Johannes Hölzl;
+        added examples
+        (revision 23cd8156bd42)<br>
 
 [Stream-Fusion]
 title = Stream Fusion
@@ -1566,6 +1595,17 @@ topic = Mathematics/Algebra
 date = 2013-01-16
 abstract = In this article we present a proof of the result known in Linear Algebra as the ``rank nullity Theorem'', which states that, given any linear form f from a finite dimensional vector space V to a vector space W, then the dimension of V is equal to the dimension of the kernel of f (which is a subspace of V) and the dimension of the range of f (which is a subspace of W). The proof presented here is based on the one given by Sheldon Axler in his book <i>Linear Algebra Done Right</i>. It makes use of the HOL-Multivariate-Analysis session of Isabelle, and of several of its results and definitions. As a corollary of the previous theorem, and taking advantage of the relationship between linear forms and matrices, we prove that, for every matrix A (which has associated a linear form between finite dimensional vector spaces), the sum of its null space and its column space (which is equal to the range of the linear form) is equal to the number of columns of A.
 
+[Affine_Arithmetic]
+title = Affine Arithmetic
+author = Fabian Immler <http://home.in.tum.de/~immler/>
+date = 2014-02-07
+topic = Mathematics/Analysis
+abstract =
+ We give a formalization of affine forms as abstract representations of zonotopes.
+ We provide affine operations as well as overapproximations of some non-affine operations like multiplication and division.
+ Expressions involving those operations can automatically be turned into (executable) functions approximating the original
+ expression in affine arithmetic.
+
 [Cauchy]
 title = Cauchy's Mean Theorem and the Cauchy-Schwarz Inequality
 author = Benjamin Porter <>
@@ -1587,6 +1627,9 @@ author = Fabian Immler <http://home.in.tum.de/~immler>, Johannes Hölzl <http://
 topic = Mathematics/Analysis
 date = 2012-04-26
 abstract = We formalize initial value problems (IVPs) of ODEs and prove the existence of a unique solution, i.e. the Picard-Lindelöf theorem. We introduce general one-step methods for numerical approximation of the solution and provide an analysis regarding the local and global error of one-step methods. We give an executable specification of the Euler method to approximate the solution of IVPs and prove an explicit bound for the global error. We use arbitrary-precision floating-point numbers and also handle rounding errors when we truncate the numbers for efficiency reasons.
+extra-history =
+  Change history:
+  [2014-02-13]: added an implementation of the Euler method based on affine arithmetic
 
 [Polynomials]
 title = Executable Multivariate Polynomials
@@ -1612,20 +1655,20 @@ extra-history =
   [2010-09-17]: Moved theories on arbitrary (ordered) semirings to Abstract Rewriting.
 
 [Sqrt_Babylonian]
-title = Computing Square Roots using the Babylonian Method
+title = Computing N-th Roots using the Babylonian Method
 author = René Thiemann <mailto:rene.thiemann@uibk.ac.at>
 date = 2013-01-03
 topic = Mathematics/Analysis
 license = LGPL
 abstract =
-  We implement the Babylonian method to compute square roots of numbers.
+  We implement the Babylonian method to compute n-th roots of numbers.
   We provide precise algorithms for naturals, integers and rationals, and
-  offer an approximation algorithm for linear ordered fields. Moreover, there
-  are precise algorithms to compute the floor and the ceiling of the square root
-  of an integer.
+  offer an approximation algorithm for square roots over linear ordered fields. Moreover, there
+  are precise algorithms to compute the floor and the ceiling of n-th roots.
 extra-history =
   Change history:
   [2013-10-16]: Added algorithms to compute floor and ceiling of sqrt of integers.
+  [2014-07-11]: Moved NthRoot_Impl from Real-Impl to this entry. 
 
 [Sturm_Sequences]
 title = Sturm's Theorem
@@ -1654,6 +1697,7 @@ abstract = This is a formalization of Markov models in Isabelle/HOL. It
   As application of these models we formalize probabilistic model
   checking of pCTL formulas, analysis of IPv4 address allocation in
   ZeroConf and an analysis of the anonymity of the Crowds protocol.
+  <a href="http://arxiv.org/abs/1212.3870">See here for the corresponding paper.</a>
 
 [CAVA_Automata]
 title = The CAVA Automata Library
@@ -1685,6 +1729,7 @@ abstract =
  <p>
  The CAVA Automata Library is described in the paper: Peter Lammich, The
  CAVA Automata Library, Isabelle Workshop 2014.
+depends-on = Collections
 
 [LTL_to_GBA]
 title = Converting Linear-Time Temporal Logic to Generalized Büchi Automata
@@ -1703,6 +1748,7 @@ abstract =
  We use the Isabelle Refinement and Collection framework, as well as the
  Autoref tool, to obtain a refined version of our algorithm, from which
  efficiently executable code can be extracted.
+depends-on = CAVA_Automata
 
 [Gabow_SCC]
 title = Verified Efficient Implementation of Gabow's Strongly Connected Components Algorithm
@@ -1718,6 +1764,7 @@ abstract =
  when defining variants of the algorithm. We demonstrate this by
  verifying an algorithm for the emptiness check of generalized Büchi
  automata, re-using most of the existing proofs.
+depends-on = CAVA_Automata
 
 [Promela]
 title = Promela Formalization
@@ -1735,6 +1782,7 @@ abstract =
  generated from an SML parser, removes syntactic sugar and enriches it
  with type information. This further gets translated into a transition
  system, on which the semantic engine (read: successor function) operates.
+depends-on = CAVA_Automata
 
 [CAVA_LTL_Modelchecker]
 title = A Fully Verified Executable LTL Model Checker
@@ -1763,6 +1811,7 @@ abstract =
  An early version of this model checker is described in the
  <a href="http://www.in.tum.de/~nipkow/pubs/cav13.html">CAV 2013 paper</a>
  with the same title.
+depends-on = Gabow_SCC, Promela, LTL_to_GBA
 
 [Fermat3_4]
 title = Fermat's Last Theorem for Exponents 3 and 4 and the Parametrisation of Pythagorean Triples
@@ -1875,15 +1924,21 @@ title = Flyspeck I: Tame Graphs
 author = Gertrud Bauer <>, Tobias Nipkow <http://www.in.tum.de/~nipkow>
 date = 2006-05-22
 topic = Mathematics/Graph Theory
-abstract = These theories present the verified enumeration of <i>tame</i> plane graphs as defined by Thomas C. Hales in his <i>revised</i> proof of the Kepler Conjecture. The revison concerns the definition of tameness. The <a href="http://www.in.tum.de/~nipkow/pubs/Flyspeck/">IJCAR 2006 paper by Nipkow, Bauer and Schultz</a> refers to the original version of Hales' proof.
+abstract =
+ These theories present the verified enumeration of <i>tame</i> plane graphs
+ as defined by Thomas C. Hales in his proof of the Kepler Conjecture in his
+ book <i>Dense Sphere Packings. A Blueprint for Formal Proofs.</i> [CUP 2012].
+ The values of the constants in the definition of tameness are identical to
+ those in the <a href="https://code.google.com/p/flyspeck/">Flyspeck project</a>.
+ The <a href="http://www.in.tum.de/~nipkow/pubs/Flyspeck/">IJCAR 2006 paper by Nipkow, Bauer and Schultz</a> refers to the original version of Hales' proof.
 extra-history =
   Change history:
-  [2010-11-02]: modified theories to reflect the modified
-  definition of tameness in Hales' revised proof.
+  [2010-11-02]: modified theories to reflect the modified definition of tameness in Hales' revised proof.<br>
+  [2014-07-03]: modified constants in def of tameness and Archive according to the final state of the Flyspeck proof.
 
 [Well_Quasi_Orders]
 title = Well-Quasi-Orders
-author = Christian Sternagel <mailto:c-sterna@jaist.ac.jp>
+author = Christian Sternagel <mailto:c.sternagel@gmail.com>
 date = 2012-04-13
 topic = Mathematics/Combinatorics
 abstract = Based on Isabelle/HOL's type class for preorders,
@@ -1906,7 +1961,9 @@ extra-history =
   [2012-12-19]: New variant of Kruskal's tree theorem for terms (as opposed to
   variadic terms, i.e., trees), plus finite version of the tree theorem as
   corollary.<br>
-  [2013-05-16]: Simplified construction of minimal bad sequences.
+  [2013-05-16]: Simplified construction of minimal bad sequences.<br>
+  [2014-07-09]: Simplified proofs of Higman's lemma and Kruskal's tree theorem,
+  based on homogeneous sequences.
 
 [Marriage]
 title = Hall's Marriage Theorem
@@ -2014,9 +2071,18 @@ abstract = This development provides a formal model of IEEE-754 floating-point a
 [Native_Word]
 title = Native Word
 author = Andreas Lochbihler <http://www.infsec.ethz.ch/people/andreloc>
+contributors = Peter Lammich <http://cs.uni-muenster.de/sev/staff/lammich/>
 date = 2013-09-17
 topic = Computer Science/Data Structures
 abstract = This entry makes machine words and machine arithmetic available for code generation from Isabelle/HOL.  It provides a common abstraction that hides the differences between the different target languages.  The code generator maps these operations to the APIs of the target languages.  Apart from that, we extend the available bit operations on types int and integer, and map them to the operations in the target languages.
+extra-history =
+  Change history:
+  [2013-11-06]:
+        added conversion function between native words and characters
+        (revision fd23d9a7fe3a)
+  [2014-03-31]:
+        added words of default size in the target language (by Peter Lammich)
+        (revision 25caf5065833)
 
 [HereditarilyFinite]
 title = The Hereditarily Finite Sets

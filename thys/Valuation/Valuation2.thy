@@ -547,8 +547,8 @@ apply (frule vals_nonequiv_valuation[of "Suc n" "vv" "0"], simp) apply (
 apply (frule_tac a = aa and x = x in Approximation1_5Tr7[of _ "vv" _ "n"],
        simp, assumption,
        simp, erule exE,
-       cut_tac y = "Suc l" in le_maxI1[of "2"],
-       cut_tac y = "Suc l" in le_maxI2[of _ "2"],
+       cut_tac b = "Suc l" in max.cobounded1[of "2"],
+       cut_tac b = "Suc l" in max.cobounded2[of _ "2"],
        cut_tac n = l in lessI,
        frule_tac x = l and y = "Suc l" and z = "max 2 (Suc l)" in 
          less_le_trans, assumption+,
@@ -974,7 +974,7 @@ apply (        frule_tac a = "0 < j" and b = "int 0 < int j" in a_b_exchange,
         assumption+, thin_tac "0 < j", thin_tac "(0 < j) = (int 0 < int j)",
         frule_tac z = "int 0" and z' = "int j" in zless_imp_zle,
         frule_tac i = "int 0" and j = "int j" and k = z in int_mult_le,
-         assumption+, simp add:mult_commute )
+         assumption+, simp add:mult.commute )
  apply assumption
 done
 

@@ -79,7 +79,7 @@ next
           moreover
           { assume "i' \<ge> i"
             then obtain i'' where i'_eq: "i' = i + i''" and "i'\<ge>i''"
-              by (metis Nat.diff_le_self le_add_diff_inverse2 nat_add_commute)
+              by (metis Nat.diff_le_self le_add_diff_inverse2 add.commute)
             hence "suffix i' \<xi> \<Turnstile>\<^sub>n \<mu> \<or> (\<exists>j<i'. suffix j \<xi> \<Turnstile>\<^sub>n \<nu>)" 
               using V_suf_i by auto }
           ultimately have "suffix i' \<xi> \<Turnstile>\<^sub>n \<mu> \<or> (\<exists>j<i'. suffix j \<xi> \<Turnstile>\<^sub>n \<nu>)" 
@@ -159,8 +159,7 @@ next
       moreover
       { assume "suffix i \<xi> \<Turnstile>\<^sub>n \<box>\<^sub>n \<mu>"
         hence \<psi>_suf_i: "suffix i \<xi> \<Turnstile>\<^sub>n \<phi> V\<^sub>n ?\<psi>" 
-          by auto (metis ab_semigroup_add_class.add_ac(1) ltln_expand_Until
-            ltln_semantics.simps)
+          by auto (metis ac_simps ltln_expand_Until ltln_semantics.simps)
         from \<nu>_less_i have \<psi>_less_i: "\<forall>j<i. suffix j \<xi> \<Turnstile>\<^sub>n ?\<psi>"
         proof(clarify)
           case (goal1 j)
@@ -168,7 +167,7 @@ next
             hence "suffix j' (suffix j \<xi>) \<Turnstile>\<^sub>n \<mu>" 
               and "\<forall>k<j'. suffix k (suffix j \<xi>) \<Turnstile>\<^sub>n \<nu>"
             using \<mu>_suf_i by auto (metis \<nu>_less_i `i = j + j'` 
-              add_less_cancel_right nat_add_commute)
+              add_less_cancel_right add.commute)
             thus ?case by auto
         qed
         have "\<xi> \<Turnstile>\<^sub>n \<phi> V\<^sub>n ?\<psi>"

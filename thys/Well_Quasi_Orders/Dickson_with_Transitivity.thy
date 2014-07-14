@@ -1,4 +1,8 @@
-(* Author: Christian Sternagel, JAIST *)
+(*  Title:      Well-Quasi-Orders
+    Author:     Christian Sternagel <c.sternagel@gmail.com>
+    Maintainer: Christian Sternagel
+    License:    LGPL
+*)
 
 header {* Nash-Williams' Proof of Dickson's Lemma *}
 
@@ -42,7 +46,7 @@ proof
   moreover have "infinite {m. ?P m}"
   proof -
     have UNIV: "UNIV = ?T \<union> {m. ?P m}" by blast
-    show ?thesis using `finite ?T` and nat_infinite by (auto simp: UNIV)
+    show ?thesis using `finite ?T` and infinite_UNIV_nat by (auto simp: UNIV)
   qed
   ultimately obtain N where "\<forall>m\<ge>N. \<exists>n>m. q m \<le>\<^sub>1 q n"
     by (auto simp: finite_nat_set_iff_bounded) (metis not_less)
@@ -52,7 +56,7 @@ proof
     by (simp add: f_def)
   from le1.enumchain_mono have f_mono: "\<And>i. f i < f (Suc i)" by (simp add: f_def)+
   obtain i j where "i < j" and "q' (f i) \<le>\<^sub>2 q' (f j)"
-    using af2 [unfolded almost_full_on_def, THEN spec, of "\<lambda>i. q' (f i)"] and q'
+    using af2 [unfolded almost_full_on_def, THEN bspec, of "\<lambda>i. q' (f i)"] and q'
     by (auto simp: good_def)
   moreover have "f i < f j" using f_mono and `i < j` by (metis lift_Suc_mono_less)
   moreover have "q (f i) \<le>\<^sub>1 q (f j)"

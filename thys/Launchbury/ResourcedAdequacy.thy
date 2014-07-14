@@ -158,7 +158,7 @@ proof-
   have "r \<sqsubseteq> C\<^bsup>n\<^esup>" unfolding r_def not_bot_demand by simp
 
   from assms(1)
-  have [simp]: "the (map_of \<Gamma> x) = e" by (metis the.simps)
+  have [simp]: "the (map_of \<Gamma> x) = e" by (metis option.sel)
 
   from assms(1)
   have [simp]: "x \<in> domA \<Gamma>" by (metis domIff dom_map_of_conv_domA not_Some_eq)

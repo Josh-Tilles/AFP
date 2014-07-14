@@ -48,14 +48,14 @@ lemma lookup_inject [iff]: "(lookup e n x = lookup e n y) \<longleftrightarrow> 
 apply (induct e n x arbitrary: y rule: lookup.induct, force, simp)
 by (metis Suc_n_not_le_n dbtm.distinct(7) dbtm.eq_iff(3) lookup_in lookup_notin)
 
-nominal_primrec trans_tm :: "name list \<Rightarrow> tm \<Rightarrow> dbtm"
+nominal_function trans_tm :: "name list \<Rightarrow> tm \<Rightarrow> dbtm"
   where
    "trans_tm e Zero = DBZero"
  | "trans_tm e (Var k) = lookup e 0 k"
  | "trans_tm e (Eats t u) = DBEats (trans_tm e t) (trans_tm e u)"
 by (auto simp: eqvt_def trans_tm_graph_aux_def) (metis tm.strong_exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma fresh_trans_tm_iff [simp]: "i \<sharp> trans_tm e t \<longleftrightarrow> i \<sharp> t \<or> i \<in> atom ` set e"
@@ -64,7 +64,7 @@ lemma fresh_trans_tm_iff [simp]: "i \<sharp> trans_tm e t \<longleftrightarrow> 
 lemma trans_tm_forget: "atom i \<sharp> t \<Longrightarrow> trans_tm [i] t = trans_tm [] t"
   by (induct t rule: tm.induct, auto simp: fresh_Pair)
 
-nominal_primrec (invariant "\<lambda>(xs, _) y. atom ` set xs \<sharp>* y")
+nominal_function (invariant "\<lambda>(xs, _) y. atom ` set xs \<sharp>* y")
   trans_fm :: "name list \<Rightarrow> fm \<Rightarrow> dbfm"
   where
    "trans_fm e (Mem t u) = DBMem (trans_tm e t) (trans_tm e u)"
@@ -84,7 +84,7 @@ apply (simp_all add: fresh_star_Pair perm_supp_eq)
 apply (simp add: fresh_star_def)
 done
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma fresh_trans_fm [simp]: "i \<sharp> trans_fm e A \<longleftrightarrow> i \<sharp> A \<or> i \<in> atom ` set e"
@@ -216,7 +216,7 @@ lemma wf_dbtm_trans_tm: "wf_dbtm (trans_tm [] t)"
 theorem wf_dbtm_iff_is_tm: "wf_dbtm x \<longleftrightarrow> (\<exists>t::tm. x = trans_tm [] t)"
   by (metis wf_dbtm_imp_is_tm wf_dbtm_trans_tm)
 
-nominal_primrec abst_dbtm :: "name \<Rightarrow> nat \<Rightarrow> dbtm \<Rightarrow> dbtm"
+nominal_function abst_dbtm :: "name \<Rightarrow> nat \<Rightarrow> dbtm \<Rightarrow> dbtm"
   where
    "abst_dbtm name i DBZero = DBZero"
  | "abst_dbtm name i (DBVar name') = (if name = name' then DBInd i else DBVar name')"
@@ -226,10 +226,10 @@ apply (simp add: eqvt_def abst_dbtm_graph_aux_def, auto)
 apply (metis dbtm.exhaust)
 done
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
-nominal_primrec subst_dbtm :: "dbtm \<Rightarrow> name \<Rightarrow> dbtm \<Rightarrow> dbtm"
+nominal_function subst_dbtm :: "dbtm \<Rightarrow> name \<Rightarrow> dbtm \<Rightarrow> dbtm"
   where
    "subst_dbtm u i DBZero = DBZero"
  | "subst_dbtm u i (DBVar name) = (if i = name then u else DBVar name)"
@@ -237,7 +237,7 @@ nominal_primrec subst_dbtm :: "dbtm \<Rightarrow> name \<Rightarrow> dbtm \<Righ
  | "subst_dbtm u i (DBEats t1 t2) = DBEats (subst_dbtm u i t1) (subst_dbtm u i t2)"
 by (auto simp: eqvt_def subst_dbtm_graph_aux_def) (metis dbtm.exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma fresh_iff_non_subst_dbtm: "subst_dbtm DBZero i t = t \<longleftrightarrow> atom i \<sharp> t"
@@ -251,7 +251,7 @@ lemma trans_tm_abs: "trans_tm (e@[name]) t = abst_dbtm name (length e) (trans_tm
 
 subsection{*Well-Formed Formulas*}
 
-nominal_primrec abst_dbfm :: "name \<Rightarrow> nat \<Rightarrow> dbfm \<Rightarrow> dbfm"
+nominal_function abst_dbfm :: "name \<Rightarrow> nat \<Rightarrow> dbfm \<Rightarrow> dbfm"
   where
    "abst_dbfm name i (DBMem t1 t2) = DBMem (abst_dbtm name i t1) (abst_dbtm name i t2)"
  | "abst_dbfm name i (DBEq t1 t2) =  DBEq (abst_dbtm name i t1) (abst_dbtm name i t2)"
@@ -262,10 +262,10 @@ apply (simp add: eqvt_def abst_dbfm_graph_aux_def, auto)
 apply (metis dbfm.exhaust)
 done
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
-nominal_primrec subst_dbfm :: "dbtm \<Rightarrow> name \<Rightarrow> dbfm \<Rightarrow> dbfm"
+nominal_function subst_dbfm :: "dbtm \<Rightarrow> name \<Rightarrow> dbfm \<Rightarrow> dbfm"
   where
    "subst_dbfm u i (DBMem t1 t2) = DBMem (subst_dbtm u i t1) (subst_dbtm u i t2)"
  | "subst_dbfm u i (DBEq t1 t2) =  DBEq (subst_dbtm u i t1) (subst_dbtm u i t2)"
@@ -274,7 +274,7 @@ nominal_primrec subst_dbfm :: "dbtm \<Rightarrow> name \<Rightarrow> dbfm \<Righ
  | "subst_dbfm u i (DBEx A) = DBEx (subst_dbfm u i A)"
 by (auto simp: eqvt_def subst_dbfm_graph_aux_def) (metis dbfm.exhaust)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma fresh_iff_non_subst_dbfm: "subst_dbfm DBZero i t = t \<longleftrightarrow> atom i \<sharp> t"
@@ -357,34 +357,12 @@ lemma wf_dbfm_trans_fm: "wf_dbfm (trans_fm [] A)"
 lemma wf_dbfm_iff_is_fm: "wf_dbfm x \<longleftrightarrow> (\<exists>A::fm. x = trans_fm [] A)"
   by (metis wf_dbfm_imp_is_fm wf_dbfm_trans_fm)
 
-lemma wf_subst_dbtm:
-  assumes t: "wf_dbtm t" and u: "wf_dbtm u"
-    shows "wf_dbtm (subst_dbtm u i t)"
-  using t  by (induct rule: wf_dbtm.induct) (auto simp: u)
-
 lemma dbtm_abst_ignore [simp]:
   "abst_dbtm name i (abst_dbtm name j t) = abst_dbtm name j t"
   by (induct t rule: dbtm.induct) auto
 
-lemma dbfm_abst_ignore [simp]:
-  "abst_dbfm name i (abst_dbfm name j A) = abst_dbfm name j A"
-  by (nominal_induct A arbitrary: i j rule: dbfm.strong_induct) auto
-
 lemma abst_dbtm_fresh_ignore [simp]: "atom name \<sharp> u \<Longrightarrow> abst_dbtm name j u = u"
   by (induct u rule: dbtm.induct) auto
-
-lemma abst_dbfm_fresh_ignore [simp]: "atom name \<sharp> A \<Longrightarrow> abst_dbfm name j A = A"
-  by (induct A arbitrary: j rule: dbfm.induct) auto
-
-lemma dbtm_abst_swap:
-  "name \<noteq> name' \<Longrightarrow> i\<noteq>j \<Longrightarrow>
-   abst_dbtm name i (abst_dbtm name' j t) = abst_dbtm name' j (abst_dbtm name i t)"
-  by (induct t rule: dbtm.induct) auto
-
-lemma dbfm_abst_swap:
-  "name \<noteq> name' \<Longrightarrow> i\<noteq>j \<Longrightarrow>
-   abst_dbfm name i (abst_dbfm name' j A) = abst_dbfm name' j (abst_dbfm name i A)"
-  by (induct A arbitrary: i j rule: dbfm.induct) (auto simp: dbtm_abst_swap)
 
 lemma dbtm_subst_ignore [simp]:
   "subst_dbtm u name (abst_dbtm name j t) = abst_dbtm name j t"
@@ -417,27 +395,6 @@ lemma subst_fm_trans_commute [simp]:
 lemma subst_fm_trans_commute_eq:
   "du = trans_tm [] u \<Longrightarrow> subst_dbfm du i (trans_fm [] A) = trans_fm [] (A(i::=u))"
   by (metis subst_fm_trans_commute)
-
-lemma wf_subst_dbfm:
-  assumes "wf_dbfm A" and "wf_dbtm u"
-  shows "wf_dbfm (subst_dbfm u name A)"
-using assms
-proof (nominal_induct avoiding: name u rule: wf_dbfm.strong_induct)
-  case (Eq tm1 tm2) thus ?case
-    by (auto simp: wf_subst_dbtm)
-next
-  case (Mem tm1 tm2) thus ?case
-    by (auto simp: wf_subst_dbtm)
-next
-  case (Disj fm1 fm2) thus ?case
-    by auto
-next
-  case (Neg fm) thus ?case
-    by auto
-next
-  case (Ex fm name j) thus ?case
-    by (auto simp: dbfm_abst_swap_subst)
-qed
 
 
 section{*Quotations*}
@@ -490,15 +447,6 @@ lemma nat_of_name_name_eq [simp]: "nat_of_name (name_of_nat n) = n"
 
 lemma name_of_nat_nat_of_name [simp]: "name_of_nat (nat_of_name i) = i"
   by (metis nat_of_name_inject nat_of_name_name_eq)
-
-lemma ORD_OF_inject [simp]: "(ORD_OF i = ORD_OF j) = (i = j)"
-proof (induct i arbitrary: j)
-  case 0 show ?case
-    by (metis ORD_OF.simps SUCC_def nat.exhaust tm.distinct(4))
-next
-  case (Suc i) thus ?case
-    by (cases j) (auto simp: SUCC_def)
-qed
 
 lemma HPair_neq_ORD_OF [simp]: "HPair x y \<noteq> ORD_OF i"
   by (metis Not_Ord_hpair Ord_ord_of eval_tm_HPair eval_tm_ORD_OF)
@@ -574,9 +522,6 @@ next
     by (induct B rule: dbfm.induct) (simp_all add: htuple_minus_1)
 qed
 
-lemma quot_dbfm_inject [iff]: "quot_dbfm A = quot_dbfm B \<longleftrightarrow> A=B"
-  by (metis quot_dbfm_inject_lemma)
-
 
 class quot =
   fixes quot :: "'a \<Rightarrow> tm"  ("\<lceil>_\<rceil>")
@@ -595,9 +540,6 @@ lemma quot_dbtm_fresh [simp]: "s \<sharp> (quot_dbtm t)"
 lemma quot_tm_fresh [simp]: fixes t::tm shows "s \<sharp> \<lceil>t\<rceil>"
   by (simp add: quot_tm_def)
 
-lemma quot_tm_permute [simp]: fixes t:: tm shows "p \<bullet> \<lceil>t\<rceil> = \<lceil>t\<rceil>"
-  by (metis fresh_star_def perm_supp_eq quot_tm_fresh)
-
 lemma quot_Zero [simp]: "\<lceil>Zero\<rceil> = Zero"
   by (simp add: quot_tm_def)
 
@@ -605,9 +547,6 @@ lemma quot_Var: "\<lceil>Var x\<rceil> = SUCC (ORD_OF (nat_of_name x))"
   by (simp add: quot_tm_def)
 
 lemma quot_Eats: "\<lceil>Eats x y\<rceil> = HPair (HTuple 1) (HPair \<lceil>x\<rceil> \<lceil>y\<rceil>)"
-  by (simp add: quot_tm_def)
-
-lemma quot_tm_inject [iff]: fixes t :: tm shows "quot t = quot u \<longleftrightarrow> t=u"
   by (simp add: quot_tm_def)
 
 text{*irrelevance of the environment for quotations, because they are ground terms*}
@@ -651,12 +590,6 @@ lemma quot_Neg: "\<lceil>Neg A\<rceil> = HPair (HTuple 4) (\<lceil>A\<rceil>)"
 
 lemma quot_Ex: "\<lceil>Ex i A\<rceil> = HPair (HTuple 5) (quot_dbfm (trans_fm [i] A))"
   by (simp add: quot_fm_def)
-
-lemma quot_fm_inject [iff]: fixes A :: fm  shows "quot A = quot B \<longleftrightarrow> A=B"
-by (simp add: quot_fm_def)
-
-lemma eval_quot_tm_ignore: fixes t:: tm shows "\<lbrakk>\<lceil>t\<rceil>\<rbrakk>e = \<lbrakk>\<lceil>t\<rceil>\<rbrakk>e'"
-  by (metis eval_quot_dbtm_ignore quot_tm_def)
 
 lemma eval_quot_fm_ignore: fixes A:: fm shows "\<lbrakk>\<lceil>A\<rceil>\<rbrakk>e = \<lbrakk>\<lceil>A\<rceil>\<rbrakk>e'"
   by (metis eval_quot_dbfm_ignore quot_fm_def)
@@ -753,10 +686,6 @@ lemma q_Eats_iff [iff]: "q_Eats x y = q_Eats x' y' \<longleftrightarrow> x=x' \<
 lemma quot_subst_eq: "\<lceil>A(i::=t)\<rceil> = quot_dbfm (subst_dbfm (trans_tm [] t) i (trans_fm [] A))"
   by (metis quot_fm_def subst_fm_trans_commute)
 
-lemma quot_Ex_abst_eq:
-  "\<lceil>Ex i A\<rceil> = Q_Ex (quot_dbfm (abst_dbfm i 0 (trans_fm [] A)))"
-  by (metis abst_trans_fm quot_Ex)
-
 lemma Q_Succ_cong: "H \<turnstile> x EQ x' \<Longrightarrow> H \<turnstile> Q_Succ x EQ Q_Succ x'"
   by (metis HPair_cong Refl)
 
@@ -827,9 +756,6 @@ lemma quot_dbtm_coding [simp]: "coding_tm (quot_dbtm t)"
   apply (metis ORD_OF.simps(2) Ord)
   done
 
-lemma quot_tm_coding [simp]: fixes t::tm shows "coding_tm \<lceil>t\<rceil>"
-  by (metis quot_dbtm_coding quot_tm_def)
-
 lemma quot_dbfm_coding [simp]: "coding_tm (quot_dbfm fm)"
   by (induct fm rule: dbfm.induct, auto)
 
@@ -845,9 +771,6 @@ declare coding_hf.intros [intro]
 
 lemma coding_hf_0 [intro]: "coding_hf 0"
   by (metis coding_hf.Ord ord_of.simps(1))
-
-lemma coding_hf_htuple [intro]: "coding_hf (htuple k)"
-  by (induct k) auto
 
 inductive_simps coding_hf_hpair [simp]: "coding_hf (\<langle>x,y\<rangle>)"
 
@@ -873,25 +796,6 @@ termination
 lemma fresh_vquot_dbtm [simp]: "i \<sharp> vquot_dbtm V tm \<longleftrightarrow> i \<sharp> tm \<or> i \<notin> atom ` V"
   by (induct tm rule: dbtm.induct) (auto simp: fresh_at_base pure_fresh)
 
-lemma vquot_dbtm_inject [simp]: "vquot_dbtm V t = vquot_dbtm V u \<longleftrightarrow> t=u"
-proof (induct t arbitrary: u rule: dbtm.induct)
-  case DBZero show ?case
-    by (induct u rule: dbtm.induct) (auto simp: HPair_def SUCC_def)
-next
-  case (DBVar name) show ?case
-    by (induct u rule: dbtm.induct) (auto simp: HPair_def SUCC_def)
-next
-  case (DBInd k) show ?case
-      apply (induct u rule: dbtm.induct)
-      apply(auto simp: HPair_def HTuple_minus_1 SUCC_def)
-      by (metis tm.distinct(3) tm.eq_iff(3))
-next
-  case (DBEats t1 t2) thus ?case
-      apply (induct u rule: dbtm.induct)
-      apply(auto simp: HPair_def HTuple_minus_1 SUCC_def)
-      by (metis tm.distinct(3) tm.eq_iff(3))
-qed
-
 text{*Infinite support, so we cannot use nominal primrec.*}
 function vquot_dbfm :: "name set \<Rightarrow> dbfm \<Rightarrow> tm"
   where
@@ -908,24 +812,6 @@ termination
 lemma fresh_vquot_dbfm [simp]: "i \<sharp> vquot_dbfm V fm \<longleftrightarrow> i \<sharp> fm \<or> i \<notin> atom ` V"
   by (induct fm rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
 
-lemma vquot_dbfm_inject_lemma [simp]: "vquot_dbfm V A = vquot_dbfm V B \<longleftrightarrow> A=B"
-proof (induct A arbitrary: B rule: dbfm.induct)
-  case (DBMem t u) show ?case
-    by (induct B rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
-next
-  case (DBEq t u) show ?case
-    by (induct B rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
-next
-  case (DBDisj A B') thus ?case
-    by (induct B rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
-next
-  case (DBNeg A) thus ?case
-    by (induct B rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
-next
-  case (DBEx A) thus ?case
-    by (induct B rule: dbfm.induct) (auto simp: HPair_def HTuple_minus_1)
-qed
-
 class vquot =
   fixes vquot :: "'a \<Rightarrow> name set \<Rightarrow> tm"  ("\<lfloor>_\<rfloor>_"  [0,1000]1000)
 
@@ -935,9 +821,6 @@ begin
     where "vquot_tm t V = vquot_dbtm V (trans_tm [] t)"
   instance ..
 end
-
-lemma vquot_tm_fresh [simp]: fixes t::tm shows "i \<sharp> \<lfloor>t\<rfloor>V \<longleftrightarrow> i \<sharp> t \<or> i \<notin> atom ` V"
-  by (simp add: vquot_tm_def)
 
 lemma vquot_dbtm_empty [simp]: "vquot_dbtm {} t = quot_dbtm t"
   by (induct t rule: dbtm.induct) auto
@@ -970,10 +853,6 @@ lemma vquot_dbfm_eq: "atom ` V \<inter> supp A = atom ` W \<inter> supp A \<Long
 lemma vquot_fm_insert:
   fixes A::fm shows "atom i \<notin> supp A \<Longrightarrow> \<lfloor>A\<rfloor>(insert i V) = \<lfloor>A\<rfloor>V"
   by (auto simp: vquot_fm_def supp_conv_fresh intro: vquot_dbfm_eq)
-
-lemma subst_fresh_vquot_dbfm:
-  "atom j \<sharp> (e,\<alpha>) \<Longrightarrow> subst j u (vquot_dbfm V (trans_fm e \<alpha>)) = vquot_dbfm V (trans_fm e \<alpha>)"
-  by (simp add: fresh_Pair)
 
 declare HTuple.simps [simp del]
 

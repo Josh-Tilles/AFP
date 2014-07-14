@@ -593,7 +593,8 @@ lemma net_ips_netgmap [simp]:
 lemma some_the_fst_netgmap:
   assumes "i \<in> net_ips s"
     shows "Some (the (fst (netgmap sr s) i)) = fst (netgmap sr s) i"
-  using assms by (metis domD fst_conv netgmap_pair_dom the.simps)
+  using assms by (metis domIff dom_fst_netgmap option.collapse)
+
 
 lemma fst_netgmap_none [simp]:
   assumes "i \<notin> net_ips s"
@@ -728,23 +729,23 @@ lemma netgmap_subnet_split2:
   qed simp
 
 lemma netmap_fst_netgmap_rel:
-  shows "(\<lambda>i. Option.map (fst o sr) (netmap s i)) = fst (netgmap sr s)"
+  shows "(\<lambda>i. map_option (fst o sr) (netmap s i)) = fst (netgmap sr s)"
   proof (induction s)
     fix ii s R
-    show "(\<lambda>i. Option.map (fst \<circ> sr) (netmap (NodeS ii s R) i)) = fst (netgmap sr (NodeS ii s R))"
+    show "(\<lambda>i. map_option (fst \<circ> sr) (netmap (NodeS ii s R) i)) = fst (netgmap sr (NodeS ii s R))"
       by auto
   next
     fix s1 s2
-    assume a1: "(\<lambda>i. Option.map (fst \<circ> sr) (netmap s1 i)) = fst (netgmap sr s1)"
-       and a2: "(\<lambda>i. Option.map (fst \<circ> sr) (netmap s2 i)) = fst (netgmap sr s2)"
-    show "(\<lambda>i. Option.map (fst \<circ> sr) (netmap (SubnetS s1 s2) i)) = fst (netgmap sr (SubnetS s1 s2))"
+    assume a1: "(\<lambda>i. map_option (fst \<circ> sr) (netmap s1 i)) = fst (netgmap sr s1)"
+       and a2: "(\<lambda>i. map_option (fst \<circ> sr) (netmap s2 i)) = fst (netgmap sr s2)"
+    show "(\<lambda>i. map_option (fst \<circ> sr) (netmap (SubnetS s1 s2) i)) = fst (netgmap sr (SubnetS s1 s2))"
     proof (rule ext)
       fix i
-      from a1 a2 have "Option.map (fst \<circ> sr) ((netmap s1 ++ netmap s2) i)
+      from a1 a2 have "map_option (fst \<circ> sr) ((netmap s1 ++ netmap s2) i)
                                     = (fst (netgmap sr s1) ++ fst (netgmap sr s2)) i"
-        by (metis (no_types) domIff map_add_dom_app_simps(1) map_add_dom_app_simps(3)
-                             option_map_is_None)
-      thus "Option.map (fst \<circ> sr) (netmap (SubnetS s1 s2) i) = fst (netgmap sr (SubnetS s1 s2)) i"
+        by (metis fst_conv map_add_dom_app_simps(1) map_add_dom_app_simps(3)
+                  net_ips_is_dom_netmap netgmap_pair_dom)
+      thus "map_option (fst \<circ> sr) (netmap (SubnetS s1 s2) i) = fst (netgmap sr (SubnetS s1 s2)) i"
         by simp
     qed
   qed
@@ -763,16 +764,28 @@ lemma fst_netgmap_pair_fst [simp]:
   "fst (netgmap (\<lambda>(p, q). (fst p, snd p, q)) s) = fst (netgmap fst s)"
   by (induction s) auto
 
-text {* Introduce a streamlined alternative to netgmap to simplify certain property
+text {* Introduce streamlined alternatives to netgmap to simplify certain property
         statements and thus make them easier to understand and to present. *}
 
 fun netlift :: "('s \<Rightarrow> 'g \<times> 'l) \<Rightarrow> 's net_state \<Rightarrow> (nat \<Rightarrow> 'g option)"
   where
-    "netlift sr (NodeS i p R) = [i \<mapsto> fst (sr p)]"
+    "netlift sr (NodeS i s R) = [i \<mapsto> fst (sr s)]"
   | "netlift sr (SubnetS s t) = (netlift sr s) ++ (netlift sr t)"
 
 lemma fst_netgmap_netlift:
   "fst (netgmap sr s) = netlift sr s"
   by (induction s) simp_all
+
+fun netliftl :: "('s \<Rightarrow> 'g \<times> 'l) \<Rightarrow> 's net_state \<Rightarrow> 'l net_state"
+  where
+    "netliftl sr (NodeS i s R) = NodeS i (snd (sr s)) R"
+  | "netliftl sr (SubnetS s t) = SubnetS (netliftl sr s) (netliftl sr t)"
+
+lemma snd_netgmap_netliftl:
+  "snd (netgmap sr s) = netliftl sr s"
+  by (induction s) simp_all
+ 
+lemma netgmap_netlift_netliftl: "netgmap sr s = (netlift sr s, netliftl sr s)"
+  by rule (simp_all add: fst_netgmap_netlift snd_netgmap_netliftl)
 
 end

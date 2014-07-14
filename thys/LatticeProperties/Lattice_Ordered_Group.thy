@@ -29,17 +29,16 @@ lemma add_order_preserving_right: "a \<le> b \<Longrightarrow> a + v \<le> b + v
 
 lemma minus_order: "-a \<le> -b \<Longrightarrow> b \<le> a"
   apply (cut_tac a = "-a" and b = "-b" and u = a and v = b in add_order_preserving)
-  apply simp_all
-  by (simp add: add_assoc)
+  by simp_all
 
 
 lemma right_move_to_left: "a + - c \<le> b \<Longrightarrow> a \<le> b + c"  
   apply (drule_tac v = "c" in add_order_preserving_right)
-  by (simp add: add_assoc)
+  by (simp add: add.assoc)
  
 lemma right_move_to_right: "a \<le> b + -c \<Longrightarrow> a + c \<le> b"  
   apply (drule_tac v = "c" in add_order_preserving_right)
-  by (simp add: add_assoc)
+  by (simp add: add.assoc)
  
 
 lemma [simp]: "(a \<sqinter> b) + c = (a + c) \<sqinter> (b + c)"
@@ -53,22 +52,23 @@ lemma [simp]: "(a \<sqinter> b) + c = (a + c) \<sqinter> (b + c)"
   apply (rule right_move_to_left)
   apply simp
   apply safe
+  apply (simp_all only: diff_conv_add_uminus)
   apply (rule right_move_to_right)
   apply simp
   apply (rule right_move_to_right)
   by simp
 
 lemma [simp]: "(a \<sqinter> b) - c = (a - c) \<sqinter> (b - c)"
-  by (simp add: diff_minus)
+  by (simp add: diff_conv_add_uminus del: add_uminus_conv_diff)
 
 
 lemma left_move_to_left: "-c + a \<le> b \<Longrightarrow> a \<le> c + b"  
   apply (drule_tac u = "c" in add_order_preserving_left)
-  by (simp add: add_assoc [THEN sym])
+  by (simp add: add.assoc [THEN sym])
  
 lemma left_move_to_right: "a \<le> - c + b \<Longrightarrow> c + a \<le> b"  
   apply (drule_tac u = "c" in add_order_preserving_left)
-  by (simp add: add_assoc [THEN sym])
+  by (simp add: add.assoc [THEN sym])
 
 lemma [simp]: "c + (a \<sqinter> b) = (c + a) \<sqinter> (c + b)"
   apply (rule antisym)
@@ -107,6 +107,7 @@ lemma [simp]: "(a \<squnion> b) + c = (a + c) \<squnion> (b + c)"
   apply (rule right_move_to_right)
   apply simp
   apply safe
+  apply (simp_all only: diff_conv_add_uminus)
   apply (rule right_move_to_left)
   apply simp
   apply (rule right_move_to_left)
@@ -135,10 +136,10 @@ lemma [simp]: "c + (a \<squnion> b) = (c + a) \<squnion> (c + b)"
   by simp
 
 lemma [simp]: "c - (a \<sqinter> b) = (c - a) \<squnion> (c - b)"
-  by (simp add: diff_minus)
+  by (simp add: diff_conv_add_uminus del: add_uminus_conv_diff)
 
 lemma [simp]: "(a \<squnion> b) - c = (a - c) \<squnion>  (b - c)"
-  by (simp add: diff_minus)
+  by (simp add: diff_conv_add_uminus del: add_uminus_conv_diff)
 
 lemma [simp]: "- (a \<squnion> b) = (- a) \<sqinter> (- b)"
   apply (rule antisym)
@@ -152,7 +153,7 @@ lemma [simp]: "- (a \<squnion> b) = (- a) \<sqinter> (- b)"
   by simp
   
 lemma [simp]: "c - (a \<squnion> b) = (c - a) \<sqinter> (c - b)"
-  by (simp add: diff_minus)
+  by (simp add: diff_conv_add_uminus del: add_uminus_conv_diff)
   
 lemma add_pos: "0 \<le> a \<Longrightarrow> b \<le> b + a"
   apply (cut_tac a = 0 and b = a and u = b and v = 0 in add_order_preserving)
@@ -163,15 +164,15 @@ lemma add_pos_left: "0 \<le> a \<Longrightarrow> b \<le> a + b"
   by simp
 
 lemma inf_sup: "a - (a \<sqinter> b) + b = a \<squnion> b"
-  by (simp add: diff_minus add_assoc sup_commute)
+  by (simp add: add.assoc sup_commute)
 
 lemma inf_sup_2: "b = (a \<sqinter> b) - a + (a \<squnion> b)"
   apply (unfold inf_sup [THEN sym])
   proof -
     fix a b:: 'a
     have "b = (a \<sqinter> b) + (- a + a) + - (a \<sqinter> b) + b" by (simp only: right_minus left_minus add_0_right add_0_left)
-    also have "\<dots> = (a \<sqinter> b) + - a + (a + - (a \<sqinter> b) + b)" by (unfold add_assoc, simp) 
-    also have "\<dots> = (a \<sqinter> b) - a + (a - (a \<sqinter> b) + b)" by (unfold diff_minus, simp)
+    also have "\<dots> = (a \<sqinter> b) + - a + (a + - (a \<sqinter> b) + b)" by (unfold add.assoc, simp) 
+    also have "\<dots> = (a \<sqinter> b) - a + (a - (a \<sqinter> b) + b)" by simp
     finally show "b = (a \<sqinter> b) - a + (a - (a \<sqinter> b) + b)" .
   qed
 

@@ -25,7 +25,8 @@ header {* Prime products *}
 
 theory Prime_Product
 imports 
-  NthRoot_Impl
+  Real_Impl_Auxiliary
+  "../Sqrt_Babylonian/Sqrt_Babylonian"
 begin
 
 text {*
@@ -138,7 +139,7 @@ proof (induct factor_sq factor_pr limit n i rule: prime_product_factor_main.indu
           assume "2 \<le> j" "j < i"
           from prems(6)[OF this] have "\<not> j dvd n" by auto
           thus "\<not> j dvd n div i div i" 
-            by (metis dvd_mult n n'_def nat_mult_assoc nat_mult_commute)
+            by (metis dvd_mult n n'_def mult.assoc mult.commute)
         next
           show "\<not> (\<exists> s. s * s = n div i div i)"
           proof
@@ -160,7 +161,7 @@ proof (induct factor_sq factor_pr limit n i rule: prime_product_factor_main.indu
           hence "m dvd n" unfolding n by auto
           with prems(6)[of m] have choice: "m \<le> 1 \<or> m \<ge> i" by arith
           from m prems(5) have "m > 0"
-            by (metis dvd.order.not_eq_order_implies_strict dvd_0_right neq_zero_eq_gt_zero_nat not_numeral_le_zero)
+            by (metis dvd_0_left_iff le0 le_antisym neq0_conv zero_neq_numeral)
           with choice have choice: "m = 1 \<or> m \<ge> i" by arith
           from m prems(5) have "m \<le> i" 
             by (metis False div_by_0 dvd.dual_order.refl dvd_imp_le gr0I)
@@ -207,7 +208,7 @@ proof (induct factor_sq factor_pr limit n i rule: prime_product_factor_main.indu
               with * have "2 \<le> j" "j < i" by auto
               from prems(6)[OF this] j
               show False unfolding n
-                by (metis dvd_mult n n'_def nat_mult_commute)
+                by (metis dvd_mult n n'_def mult.commute)
             qed
           next
             fix j
@@ -327,7 +328,7 @@ next
   case Nil
   from arg_cong[OF Nil, of set] have nsq: "\<not> (\<exists>s. s * s = n)" by auto
   show ?thesis
-    by (rule prime_product_factor_main[OF nsq refl, of _ 1 1 2], unfold multiplicity_one_nat,
+    by (rule prime_product_factor_main[OF nsq refl, of _ 1 1 2], unfold multiplicity_one_nat',
     insert pf[unfolded prime_product_factor_def Nil], auto)
 qed
 

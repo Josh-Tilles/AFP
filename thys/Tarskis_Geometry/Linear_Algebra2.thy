@@ -135,7 +135,7 @@ proof -
     by simp
   also from setsum_right_distrib [where ?A = S and ?'b = real]
   have "\<dots> = (\<Sum> i\<in>UNIV. \<Sum> j\<in>S. v$i * (w j)$i)" by simp
-  also from setsum_commute [of "\<lambda> i j. v$i * (w j)$i" S UNIV]
+  also from setsum.commute [of "\<lambda> i j. v$i * (w j)$i" S UNIV]
   have "\<dots> = (\<Sum> j\<in>S. \<Sum> i\<in>UNIV. v$i * (w j)$i)" by simp
   finally show "v \<bullet> (\<Sum> j\<in>S. w j) = (\<Sum> j\<in>S. v \<bullet> (w j))"
     unfolding inner_vec_def
@@ -217,7 +217,7 @@ proof
     by auto
   let ?u' = "\<lambda> v. if v \<in> S' then u v else 0"
   from `S' \<subseteq> S` and `\<exists> v\<in>S'. u v \<noteq> 0` have "\<exists> v\<in>S. ?u' v \<noteq> 0" by auto
-  moreover from setsum_mono_zero_cong_right [of S S' "\<lambda> v. ?u' v *\<^sub>R v"]
+  moreover from setsum.mono_neutral_cong_right [of S S' "\<lambda> v. ?u' v *\<^sub>R v"]
     and `S' \<subseteq> S` and `(\<Sum> v\<in>S'. u v *\<^sub>R v) = 0` and `finite S`
   have "(\<Sum> v\<in>S. ?u' v *\<^sub>R v) = 0" by simp
   ultimately show "(\<exists> u. (\<exists> v\<in>S. u v \<noteq> 0) \<and> (\<Sum> v\<in>S. u v *\<^sub>R v) = 0)" by auto
@@ -279,7 +279,7 @@ lemma vector_matrix_row:
   fixes x :: "('a::comm_semiring_1)^'m" and A :: "('a^'n^'m)"
   shows "x v* A = (\<Sum> i\<in>UNIV. (x$i) *s (A$i))"
   unfolding vector_matrix_mult_def
-  by (simp add: vec_eq_iff mult_commute)
+  by (simp add: vec_eq_iff mult.commute)
 
 lemma invertible_mult:
   fixes A B :: "real^('n::finite)^'n"

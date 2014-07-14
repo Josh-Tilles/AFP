@@ -49,11 +49,11 @@ qed
 
 section {*NotInDom*}
 
-nominal_primrec NotInDom :: "tm \<Rightarrow> tm \<Rightarrow> fm" 
+nominal_function NotInDom :: "tm \<Rightarrow> tm \<Rightarrow> fm" 
   where "atom z \<sharp> (t, r) \<Longrightarrow> NotInDom t r = All z (Neg (HPair t (Var z) IN r))"
 by (auto simp: eqvt_def NotInDom_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma NotInDom_fresh_iff [simp]: "a \<sharp> NotInDom t r \<longleftrightarrow> a \<sharp> (t, r)"
@@ -102,7 +102,7 @@ by (rule NotInDom_Fls [THEN cut2, THEN ExFalso])
 
 section {*Restriction of a Sequence to a Domain*}
 
-nominal_primrec RestrictedP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function RestrictedP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom x \<sharp> (y,f,k,g); atom y \<sharp> (f,k,g)\<rbrakk> \<Longrightarrow>
     RestrictedP f k g =
       g SUBS f AND
@@ -110,7 +110,7 @@ nominal_primrec RestrictedP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarro
                     (Var x) IN k AND HPair (Var x) (Var y) IN f))"
 by (auto simp: eqvt_def RestrictedP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma RestrictedP_fresh_iff [simp]: "a \<sharp> RestrictedP f k g \<longleftrightarrow> a \<sharp> f \<and> a \<sharp> k \<and> a \<sharp> g"       
@@ -384,7 +384,7 @@ section{*Ordinal Addition*}
 
 subsection{*Predicate form, defined on sequences*}
 
-nominal_primrec SeqHaddP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqHaddP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom l \<sharp> (sl,s,k,j); atom sl \<sharp> (s,j)\<rbrakk> \<Longrightarrow>
     SeqHaddP s j k y = LstSeqP s k y AND
           HPair Zero j IN s AND
@@ -392,7 +392,7 @@ nominal_primrec SeqHaddP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> 
                            HPair (SUCC (Var l)) (SUCC (Var sl)) IN s))"
 by (auto simp: eqvt_def SeqHaddP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma SeqHaddP_fresh_iff [simp]: "a \<sharp> SeqHaddP s j k y \<longleftrightarrow> a \<sharp> s \<and> a \<sharp> j \<and> a \<sharp> k \<and> a \<sharp> y"
@@ -414,12 +414,12 @@ qed
 
 declare SeqHaddP.simps [simp del]
 
-nominal_primrec HaddP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function HaddP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom s \<sharp> (x,y,z)\<rbrakk> \<Longrightarrow>
     HaddP x y z = Ex s (SeqHaddP (Var s) x y z)"
 by (auto simp: eqvt_def HaddP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma HaddP_fresh_iff [simp]: "a \<sharp> HaddP x y z \<longleftrightarrow> a \<sharp> x \<and> a \<sharp> y \<and> a \<sharp> z" 
@@ -601,17 +601,6 @@ proof -
     done
   thus ?thesis
     by (metis assms(1) cut1)
-qed
-
-lemma HaddP_SUCC_D2: "{ HaddP x (SUCC y) (SUCC z) } \<turnstile> HaddP x y z"
-proof -
-  obtain z'::name where z': "atom z' \<sharp> (x,y,z)" 
-    by (metis obtain_fresh)
-  show ?thesis
-    apply (rule cut_same [OF HaddP_SUCC_Ex2 [where z'=z']], blast)
-    using z' apply auto
-    apply (blast intro: HaddP_cong [OF Refl Refl, THEN Iff_MP2_same])
-    done
 qed
 
 lemma HaddP_SUCC1: "{ HaddP x y z } \<turnstile> HaddP (SUCC x) y (SUCC z)" (*<*)
@@ -997,49 +986,10 @@ proof -
     by (rule cut2) (auto intro: assms)
 qed
 
-lemma HaddP_Subset1: "{ HaddP x y z } \<turnstile> x SUBS z"
-proof -
-  obtain i::name and j::name and z'::name
-   where atoms: "atom i \<sharp> (x,y,z)"  "atom j \<sharp> (i,x,y,z)"  "atom z' \<sharp> (x,i,j)"
-    by (metis obtain_fresh)
-  have "{OrdP (Var i)} \<turnstile> All j (HaddP x (Var i) (Var j) IMP x SUBS (Var j))"
-       (is "_ \<turnstile> ?scheme")
-    proof (rule OrdInd2H)
-      show "{} \<turnstile> ?scheme(i::=Zero)"
-        using atoms apply auto
-        by (metis EQ_imp_SUBS HaddP_Zero_D2 rcut1)
-    next
-      show "{} \<turnstile> All i (OrdP (Var i) IMP ?scheme IMP ?scheme(i::=SUCC (Var i)))"
-        using atoms
-        apply auto
-        apply (rule cut_same [OF HaddP_SUCC_Ex2 [where z'=z']], auto)
-        apply (rule Ex_I [where x="Var z'"], auto)
-        apply (rule Var_Eq_subst_Iff [THEN Iff_MP_same, THEN rotate3], simp)
-        apply (metis AssumeH(2) Subset_SUCC Subset_trans)
-        done
-    qed
-  hence "{OrdP (Var i)} \<turnstile> (HaddP x (Var i) (Var j) IMP x SUBS (Var j))(j::=z)"
-    by (rule All_D)
-  hence "{OrdP (Var i)} \<turnstile>(HaddP x (Var i) z IMP x SUBS z)"
-    using atoms by auto
-  hence "{} \<turnstile> HaddP x (Var i) z IMP x SUBS z"
-    by (metis HaddP_imp_OrdP Imp_cut)
-  hence "{} \<turnstile> (HaddP x (Var i) z IMP x SUBS z)(i::=y)"
-    using atoms by (force intro!: Subst)
-  thus ?thesis
-    using atoms by simp (metis anti_deduction)
-qed
-
-lemma HaddP_Subset2: "{ HaddP x y z, OrdP x } \<turnstile> y SUBS z"
-  by (metis HaddP_Subset1 HaddP_commute cut_same thin2)
-
-lemma HaddP_mono: "{y' IN y, HaddP x y z, OrdP x} \<turnstile> y' IN z"
-  by (blast intro: Subset_D HaddP_Subset2 [THEN cut2])
-
 
 section {*A Shifted Sequence*}
 
-nominal_primrec ShiftP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function ShiftP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom x \<sharp> (x',y,z,f,del,g,k); atom x' \<sharp> (y,z,f,del,g,k); atom y \<sharp> (z,f,del,g,k); atom z \<sharp> (f,del,g,k)\<rbrakk> \<Longrightarrow>
     ShiftP f k del g =
       All z (Var z IN g IFF 
@@ -1048,7 +998,7 @@ nominal_primrec ShiftP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm
                           HPair (Var x) (Var y) IN f AND Var x IN k)))))"
 by (auto simp: eqvt_def ShiftP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma ShiftP_fresh_iff [simp]: "a \<sharp> ShiftP f k del g \<longleftrightarrow> a \<sharp> f \<and> a \<sharp> k \<and> a \<sharp> del \<and> a \<sharp> g"       
@@ -1251,11 +1201,11 @@ qed (*>*)
 
 section {*Union of Two Sets*}
 
-nominal_primrec UnionP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function UnionP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "atom i \<sharp> (x,y,z) \<Longrightarrow> UnionP x y z = All i (Var i IN z IFF (Var i IN x OR Var i IN y))"
 by (auto simp: eqvt_def UnionP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma UnionP_fresh_iff [simp]: "a \<sharp> UnionP x y z \<longleftrightarrow> a \<sharp> x \<and> a \<sharp> y \<and> a \<sharp> z"
@@ -1363,7 +1313,7 @@ lemma UnionP_Mem_E:
   
 section {*Append on Sequences*}
 
-nominal_primrec SeqAppendP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
+nominal_function SeqAppendP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow> fm"
   where "\<lbrakk>atom g1 \<sharp> (g2,f1,k1,f2,k2,g); atom g2 \<sharp> (f1,k1,f2,k2,g)\<rbrakk> \<Longrightarrow>
     SeqAppendP f1 k1 f2 k2 g =
       (Ex g1 (Ex g2 (RestrictedP f1 k1 (Var g1) AND 
@@ -1371,7 +1321,7 @@ nominal_primrec SeqAppendP :: "tm \<Rightarrow> tm \<Rightarrow> tm \<Rightarrow
                      UnionP (Var g1) (Var g2) g)))"
 by (auto simp: eqvt_def SeqAppendP_graph_aux_def flip_fresh_fresh) (metis obtain_fresh)
 
-termination (eqvt)
+nominal_termination (eqvt)
   by lexicographic_order
 
 lemma SeqAppendP_fresh_iff [simp]: 

@@ -139,11 +139,11 @@ begin
     Inf_Assertion_def: "Inf (A::('a Assertion) set) = - (Sup (uminus ` A))"
 
 lemma Sup1: "(x::'a Assertion) \<in> A \<Longrightarrow> x \<le> Sup A"
-    apply (simp add: Sup_Assertion_def less_eq_Assertion_def Abs_Assertion_inverse)
+    apply (simp add: Sup_Assertion_def less_eq_Assertion_def Abs_Assertion_inverse del: Sup_image_eq)
     by (rule Sup_upper, simp)
 
 lemma Sup2: "(\<And>x::'a Assertion . x \<in> A \<Longrightarrow> x \<le> z) \<Longrightarrow> Sup A \<le> z"
-    apply (simp add: Sup_Assertion_def less_eq_Assertion_def Abs_Assertion_inverse)
+    apply (simp add: Sup_Assertion_def less_eq_Assertion_def Abs_Assertion_inverse del: Sup_image_eq)
     apply (rule Sup_least)
     by blast
 
@@ -179,13 +179,18 @@ lemma assert_top [simp]: "{\<cdot>\<top>} = 1"
   by (simp add: top_Assertion_def)
 
 lemma assert_Sup: "{\<cdot>Sup A} = Sup (assert ` A)"
-    by (simp add: Sup_Assertion_def  Abs_Assertion_inverse)
+  by (simp add: Sup_Assertion_def Abs_Assertion_inverse del: Sup_image_eq)
 
+ 
 lemma assert_Inf: "{\<cdot>Inf A} = (Inf (assert ` A)) \<sqinter> 1"
-  apply (case_tac "A = {}")
-  apply simp
+proof (cases "A = {}")
+  case True then show ?thesis by simp
+next
+  note strong_INF_cong [cong del] strong_SUP_cong [cong del]
+  case False then show ?thesis
   apply (simp add: Inf_Assertion_def uminus_Assertion_def)
-  apply (simp add: neg_assert_def assert_Sup dual_Sup INF_def Inf_comp inf_commute inf_Inf)
+  apply (simp add: neg_assert_def assert_Sup dual_Sup Inf_comp inf_commute inf_Inf comp_def INF_def SUP_def
+    del: Inf_image_eq Sup_image_eq)
   apply (rule_tac f = Inf in fun_eq)
   apply safe
   apply simp
@@ -199,7 +204,9 @@ lemma assert_Inf: "{\<cdot>Inf A} = (Inf (assert ` A)) \<sqinter> 1"
   apply (simp add: uminus_Assertion_def)
   apply (subst inf_commute)
   apply (simp add: neg_assert_def dual_comp dual_inf sup_comp assertion_prop)
-  by auto
+  apply auto
+  done
+qed
 
 lemma assert_Inf_ne: "A \<noteq> {} \<Longrightarrow> {\<cdot>Inf A} = Inf (assert ` A)"
   apply (unfold assert_Inf)
@@ -208,7 +215,7 @@ lemma assert_Inf_ne: "A \<noteq> {} \<Longrightarrow> {\<cdot>Inf A} = Inf (asse
   apply safe
   apply (erule notE)
   apply (rule_tac y = "{\<cdot>x}" in order_trans)
-  by (simp_all add: Inf_lower)
+  by (simp_all add: INF_lower)
  
   
 lemma assert_Sup_range: "{\<cdot>Sup (range p)} = Sup (range (assert o p))"
@@ -219,4 +226,5 @@ lemma assert_Sup_less: "{\<cdot> Sup_less p w } = Sup_less (assert o p) w"
   apply (simp add: Sup_less_def)
   apply (subst assert_Sup)
   by (rule_tac f = "Sup" in fun_eq, auto)
+
 end

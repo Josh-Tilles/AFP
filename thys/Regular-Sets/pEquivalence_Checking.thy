@@ -142,7 +142,7 @@ proof-
   { fix st
     have "pre_Bisim as R S st \<Longrightarrow> test st \<Longrightarrow> pre_Bisim as R S (step as st)"
     unfolding pre_Bisim_def
-    proof(split prod.splits, elim prod_caseE conjE, intro allI impI conjI)
+    proof(split prod.splits, elim case_prodE conjE, intro allI impI conjI)
       case goal1 thus ?case by(auto split: list.splits)
     next
       case (goal2 ws ps ws' ps')
@@ -160,7 +160,8 @@ proof-
       ultimately show ?case by simp blast
     next
       case goal3 thus ?case
-        by(clarsimp simp: image_iff split: prod.splits list.splits) metis
+        apply (clarsimp simp: image_iff split: prod.splits list.splits)
+        by hypsubst_thin metis
     qed
   }
   moreover

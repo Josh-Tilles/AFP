@@ -33,8 +33,8 @@ sig
   val raw_alpha_bn_rsp: alpha_result -> thm list -> thm list -> thm list
   val raw_perm_bn_rsp: Proof.context -> alpha_result -> term list -> thm list -> thm list
   
-  val mk_funs_rsp: thm -> thm
-  val mk_alpha_permute_rsp: thm -> thm 
+  val mk_funs_rsp: Proof.context -> thm -> thm
+  val mk_alpha_permute_rsp: Proof.context -> thm -> thm 
 end
 
 structure Nominal_Dt_Alpha: NOMINAL_DT_ALPHA =
@@ -463,7 +463,7 @@ val exi_zero = @{lemma "P (0::perm) ==> (? x. P x)" by auto}
 
 fun cases_tac intros ctxt =
   let
-    val prod_simps = @{thms split_conv prod_alpha_def prod_rel_def}
+    val prod_simps = @{thms split_conv prod_alpha_def rel_prod_def}
 
     val unbound_tac = REPEAT o (etac @{thm conjE}) THEN' atac  
 
@@ -504,7 +504,7 @@ fun prem_bound_tac pred_names alpha_eqvt ctxt =
         in
           resolve_tac prems' 1
         end) ctxt
-    val prod_simps = @{thms split_conv permute_prod.simps prod_alpha_def prod_rel_def alphas}
+    val prod_simps = @{thms split_conv permute_prod.simps prod_alpha_def rel_prod_def alphas}
   in
     EVERY' 
       [ etac exi_neg,
@@ -556,7 +556,7 @@ val perm_inst_tac =
 
 fun non_trivial_cases_tac pred_names intros alpha_eqvt ctxt = 
   let
-    val prod_simps = @{thms split_conv alphas permute_prod.simps prod_alpha_def prod_rel_def}
+    val prod_simps = @{thms split_conv alphas permute_prod.simps prod_alpha_def rel_prod_def}
   in
     resolve_tac intros
     THEN_ALL_NEW (asm_simp_tac (put_simpset HOL_basic_ss ctxt) THEN' 
@@ -570,7 +570,7 @@ fun non_trivial_cases_tac pred_names intros alpha_eqvt ctxt =
           eqvt_tac ctxt (eqvt_relaxed_config addpres alpha_eqvt) THEN' rtac @{thm refl},
           asm_full_simp_tac (put_simpset HOL_ss ctxt addsimps prod_simps) ])
   end
-			  
+
 fun prove_trans_tac alpha_result raw_dt_thms alpha_eqvt ctxt =
   let
     val AlphaResult {alpha_names, alpha_bn_names, alpha_intros, alpha_cases, ...} = alpha_result
@@ -623,9 +623,9 @@ fun raw_prove_equivp ctxt alpha_result refl symm trans =
   let
     val AlphaResult {alpha_trms, alpha_bn_trms, ...} = alpha_result 
 
-    val refl' = map (fold_rule [reflp_def'] o atomize) refl
-    val symm' = map (fold_rule [symp_def'] o atomize) symm
-    val trans' = map (fold_rule [transp_def'] o atomize) trans
+    val refl' = map (fold_rule ctxt [reflp_def'] o atomize ctxt) refl
+    val symm' = map (fold_rule ctxt [symp_def'] o atomize ctxt) symm
+    val trans' = map (fold_rule ctxt [transp_def'] o atomize ctxt) trans
 
     fun prep_goal t = 
       HOLogic.mk_Trueprop (Const (@{const_name "equivp"}, fastype_of t --> @{typ bool}) $ t) 
@@ -685,7 +685,7 @@ fun raw_fv_bn_rsp_aux ctxt alpha_result fvs bns fv_bns simps =
     val prop3 = map2 (fn t1 => fn t2 => (t1, fn (x, y) => mk_eq' t2 x y)) alpha_bn_trms fv_bns
 
     val simpset =
-      put_simpset HOL_ss ctxt addsimps (simps @ @{thms alphas prod_fv.simps set.simps append.simps} 
+      put_simpset HOL_ss ctxt addsimps (simps @ @{thms alphas prod_fv.simps set_simps append.simps} 
       @ @{thms Un_assoc Un_insert_left Un_empty_right Un_empty_left}) 
   in
     alpha_prove (alpha_trms @ alpha_bn_trms) (prop1 @ prop2 @ prop3) alpha_raw_induct 
@@ -706,8 +706,8 @@ fun raw_size_rsp_aux ctxt alpha_result simps =
     val props = (alpha_trms @ alpha_bn_trms) ~~ (map mk_prop (alpha_tys @ alpha_bn_tys)) 
   
     val simpset =
-      put_simpset HOL_ss ctxt addsimps (simps @ @{thms alphas prod_alpha_def prod_rel_def 
-      permute_prod_def prod.cases prod.recs})
+      put_simpset HOL_ss ctxt addsimps (simps @ @{thms alphas prod_alpha_def rel_prod_def 
+      permute_prod_def prod.case prod.rec})
 
     val tac = (TRY o REPEAT o etac @{thm exE}) THEN' asm_full_simp_tac simpset
   in
@@ -719,9 +719,9 @@ fun raw_size_rsp_aux ctxt alpha_result simps =
 
 fun raw_constr_rsp_tac ctxt alpha_intros simps = 
   let
-    val pre_simpset = put_simpset HOL_ss ctxt addsimps @{thms fun_rel_def}
-    val post_simpset = put_simpset HOL_ss ctxt addsimps @{thms alphas prod_alpha_def prod_rel_def 
-      prod_fv.simps fresh_star_zero permute_zero prod.cases} @ simps
+    val pre_simpset = put_simpset HOL_ss ctxt addsimps @{thms rel_fun_def}
+    val post_simpset = put_simpset HOL_ss ctxt addsimps @{thms alphas prod_alpha_def rel_prod_def 
+      prod_fv.simps fresh_star_zero permute_zero prod.case} @ simps
   in
     asm_full_simp_tac pre_simpset
     THEN' REPEAT o (resolve_tac @{thms allI impI})
@@ -738,15 +738,15 @@ fun raw_constrs_rsp ctxt alpha_result constrs simps =
         NONE => HOLogic.eq_const ty
       | SOME alpha => alpha 
   
-    fun fun_rel_app (t1, t2) = 
-      Const (@{const_name "fun_rel"}, dummyT) $ t1 $ t2
+    fun rel_fun_app (t1, t2) = 
+      Const (@{const_name "rel_fun"}, dummyT) $ t1 $ t2
 
     fun prep_goal trm =
       trm
       |> strip_type o fastype_of
       |> (fn (tys, ty) => tys @ [ty])
       |> map lookup
-      |> foldr1 fun_rel_app
+      |> foldr1 rel_fun_app
       |> (fn t => t $ trm $ trm)
       |> Syntax.check_term ctxt
       |> HOLogic.mk_Trueprop
@@ -762,7 +762,7 @@ fun raw_constrs_rsp ctxt alpha_result constrs simps =
 
 val rsp_equivp =
   @{lemma "[|equivp Q; !!x y. R x y ==> Q x y|] ==> (R ===> R ===> op =) Q Q"
-    by (simp only: fun_rel_def equivp_def, metis)}
+    by (simp only: rel_fun_def equivp_def, metis)}
 
 
 (* we have to reorder the alpha_bn_imps theorems in order
@@ -791,7 +791,7 @@ fun raw_alpha_bn_rsp alpha_result alpha_bn_equivp alpha_bn_imps =
 (* rsp for permute_bn functions *)
 
 val perm_bn_rsp = @{lemma "(!x y p. R x y --> R (f p x) (f p y)) ==> (op= ===> R ===> R) f f"
- by (simp add: fun_rel_def)}
+ by (simp add: rel_fun_def)}
 
 fun raw_prove_perm_bn_tac alpha_result simps ctxt = 
   SUBPROOF (fn {prems, context, ...} => 
@@ -819,7 +819,7 @@ fun raw_perm_bn_rsp ctxt alpha_result perm_bns simps =
     val perm_bn_ty = range_type o range_type o fastype_of
     val ty_assoc = (alpha_tys @ alpha_bn_tys) ~~ (alpha_trms @ alpha_bn_trms)
 
-    val ([p], ctxt') = Variable.variant_fixes ["p"] ctxt		   
+    val ([p], ctxt') = Variable.variant_fixes ["p"] ctxt
     val p = Free (p, @{typ perm})
 
     fun mk_prop t =
@@ -834,7 +834,7 @@ fun raw_perm_bn_rsp ctxt alpha_result perm_bns simps =
     alpha_prove (alpha_trms @ alpha_bn_trms) goals alpha_raw_induct 
       (raw_prove_perm_bn_tac alpha_result simps) ctxt
      |> Proof_Context.export ctxt' ctxt
-     |> map atomize
+     |> map (atomize ctxt)
      |> map single
      |> map (curry (op OF) perm_bn_rsp)
   end
@@ -844,22 +844,22 @@ fun raw_perm_bn_rsp ctxt alpha_result perm_bns simps =
 (* transformation of the natural rsp-lemmas into standard form *)
 
 val fun_rsp = @{lemma
-  "(!x y. R x y --> f x = f y) ==> (R ===> (op =)) f f" by (simp add: fun_rel_def)}
+  "(!x y. R x y --> f x = f y) ==> (R ===> (op =)) f f" by (simp add: rel_fun_def)}
 
-fun mk_funs_rsp thm = 
+fun mk_funs_rsp ctxt thm = 
   thm
-  |> atomize
+  |> atomize ctxt
   |> single
   |> curry (op OF) fun_rsp
 
 
 val permute_rsp = @{lemma 
   "(!x y p. R x y --> R (permute p x) (permute p y)) 
-     ==> ((op =) ===> R ===> R) permute permute"  by (simp add: fun_rel_def)}
+     ==> ((op =) ===> R ===> R) permute permute"  by (simp add: rel_fun_def)}
 
-fun mk_alpha_permute_rsp thm = 
+fun mk_alpha_permute_rsp ctxt thm = 
   thm
-  |> atomize
+  |> atomize ctxt
   |> single
   |> curry (op OF) permute_rsp
 

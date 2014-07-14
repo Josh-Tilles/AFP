@@ -242,7 +242,7 @@ proof -
       unfolding red_mthr.if.\<E>_conv_Runs by blast
     from divfin.simulation_\<tau>Runs1[OF bisim E']
     obtain E'' where E'': "execd_mthr.if.mthr.\<tau>Runs cs E''"
-      and tlsim: "tllist_all2 if_tlsimJ2JVM (Lifting_Option.option_rel if_bisimJ2JVM) E' E''"
+      and tlsim: "tllist_all2 if_tlsimJ2JVM (option.rel_option if_bisimJ2JVM) E' E''"
       unfolding J2JVM_def o_apply by blast
     let ?E = "lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of_tllist E''))"
     from tlsim have "llist_all2 if_tlsimJ2JVM (llist_of_tllist E') (llist_of_tllist E'')"
@@ -251,7 +251,7 @@ proof -
                              (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of_tllist E''))"
       unfolding llist_all2_lmap1 llist_all2_lmap2
       by(rule llist_all2_mono)(auto simp add: if_tlsimJ2JVM_def FWbisimulation_base.mta_bisim_def ta_bisim_def)
-    hence "?E = E" unfolding llist_all2_eq E by simp
+    hence "?E = E" unfolding llist.rel_eq E by simp
     also from E'' have "?E \<in> ?rhs" unfolding J2JVM_def o_apply execd_mthr.if.\<E>_conv_Runs by blast
     finally (subst) show "E \<in> ?rhs" .
   next
@@ -262,7 +262,7 @@ proof -
       unfolding execd_mthr.if.\<E>_conv_Runs J2JVM_def o_apply by blast
     from divfin.simulation_\<tau>Runs2[OF bisim, unfolded J2JVM_def o_apply, OF E']
     obtain E'' where E'': "red_mthr.if.mthr.\<tau>Runs s E''"
-      and tlsim: "tllist_all2 if_tlsimJ2JVM (Lifting_Option.option_rel if_bisimJ2JVM) E'' E'" by blast
+      and tlsim: "tllist_all2 if_tlsimJ2JVM (option.rel_option if_bisimJ2JVM) E'' E'" by blast
     let ?E = "lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of_tllist E''))"
     from tlsim have "llist_all2 if_tlsimJ2JVM (llist_of_tllist E'') (llist_of_tllist E')"
       by(rule tllist_all2D_llist_all2_llist_of_tllist)
@@ -270,7 +270,7 @@ proof -
                              (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of_tllist E'))"
       unfolding llist_all2_lmap1 llist_all2_lmap2
       by(rule llist_all2_mono)(auto simp add: if_tlsimJ2JVM_def FWbisimulation_base.mta_bisim_def ta_bisim_def)
-    hence "?E = E" unfolding llist_all2_eq E by simp
+    hence "?E = E" unfolding llist.rel_eq E by simp
     also from E'' have "?E \<in> ?lhs" unfolding red_mthr.if.\<E>_conv_Runs by blast
     finally (subst) show "E \<in> ?lhs" .
   qed

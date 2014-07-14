@@ -53,7 +53,7 @@ proof -
   have "0 + x < setsum f (I - {i}) + f i"
     using assms by (intro add_le_less_mono setsum_nonneg) auto
   also have "setsum f (I - {i}) + f i = setsum f I"
-    using assms by (simp add: setsum_diff1' ac_simps)
+    using assms by (simp add: setsum.remove ac_simps)
   finally show ?thesis by simp
 qed
 
@@ -65,7 +65,7 @@ proof -
   have "0 + x \<le> setsum f (I - {i}) + f i"
     using assms by (metis Diff_iff add_mono setsum_nonneg)
   also have "setsum f (I - {i}) + f i = setsum f I"
-    using assms by (simp add: setsum_diff1' ac_simps)
+    using assms by (simp add: setsum.remove ac_simps)
   finally show ?thesis by simp
 qed
 
@@ -223,7 +223,7 @@ next
   have "0 \<le> x'"
     using assms by simp
   moreover have "0 < y * y'"
-    using assms by (simp add: mult_pos_pos)
+    using assms by simp
   ultimately show "x' / y \<le> x' / y'"
     using assms by (simp add: divide_left_mono)
 qed
@@ -233,7 +233,7 @@ lemma less_fun_bounds:
   shows "f \<lless> g"
 proof (rule real_tendsto_sandwich)
   show "\<forall>\<^sup>\<infinity>n. 0 \<le> f n / g n"
-    using assms(4,5) by eventually_elim (simp add: divide_nonneg_pos)
+    using assms(4,5) by eventually_elim simp
 next
   show "\<forall>\<^sup>\<infinity>n. f n / g n \<le> f' n / g' n"
     using assms(2-) by eventually_elim (simp only: quot_bounds)
@@ -363,7 +363,7 @@ proof -
         by (rule finite_subset[rotated, OF finite_Collect_subsets]) blast
     qed
   also have "\<dots> = ?C"
-    proof (rule setsum_cong)
+    proof (rule setsum.cong)
       fix a
       assume "a \<in> {a. a \<subseteq> A \<and> card a = n}"
       hence "finite (f a)"
@@ -384,7 +384,7 @@ lemma setprod_cancel_nat:
   assumes "B \<subseteq> A" and "finite A" and "\<forall>x\<in>B. f x \<noteq> 0"
   shows "setprod f A / setprod f B = setprod f (A - B)" (is "?A / ?B = ?C")
 proof-
-  from setprod_subset_diff[OF assms(1,2)] have "?A = ?C * ?B" by auto
+  from setprod.subset_diff[OF assms(1,2)] have "?A = ?C * ?B" by auto
   moreover have "?B \<noteq> 0" using assms by (simp add: finite_subset)
   ultimately show ?thesis by simp
 qed
@@ -398,18 +398,18 @@ lemma setprod_id_cancel_nat:
 
 lemma (in prob_space) integrable_squareD:
   --"Contributed by Johannes Hölzl"
+  fixes X :: "_ \<Rightarrow> real"
   assumes "integrable M (\<lambda>x. (X x)^2)" "X \<in> borel_measurable M"
   shows "integrable M X"
 proof -
   have "integrable M (\<lambda>x. max 1 ((X x)^2))"
-    using assms by (auto simp: integrable_max)
+    using assms by auto
   then show "integrable M X"
-    proof (rule integrable_bound[OF _ always_eventually], clarify)
-      fix x
-      show "\<bar>X x\<bar> \<le> max 1 ((X x)^2)"
-        using real_abs_le_square_iff[of 1 "X x"] power_increasing[of 1 2 "abs (X x)"]
-        by (auto split: split_max)
-    qed (auto intro: assms)
+  proof (rule integrable_bound[OF _ _ always_eventually[OF allI]])
+    fix x show "norm (X x) \<le> norm (max 1 ((X x)^2))"
+      using real_abs_le_square_iff[of 1 "X x"] power_increasing[of 1 2 "abs (X x)"]
+      by (auto split: split_max)
+  qed fact
 qed
 
 end

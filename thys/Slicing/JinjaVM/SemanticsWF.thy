@@ -343,7 +343,7 @@ lemma locs_rev_stks:
   # rev (take z (stks x (\<lambda>a. stk(y, a))))"
 apply (rule nth_equalityI)
  apply (simp)
-apply (auto simp: nth_append nth_Cons' (* nth_locs *) less_Suc_eq min_max.inf_absorb2 min_max.sup_absorb2)
+apply (auto simp: nth_append nth_Cons' (* nth_locs *) less_Suc_eq min.absorb2 max.absorb2)
 done
 
 lemma locs_invoke_purge:
@@ -590,7 +590,7 @@ proof -
            apply (rule nth_equalityI)
             apply simp
            apply (cases ST,
-                  auto simp: nth_Cons' nth_append min_max.inf_absorb1 min_max.inf_absorb2)
+                  auto simp: nth_Cons' nth_append min.absorb1 min.absorb2)
           apply (rule nth_equalityI)
            apply simp
           by (auto simp: (* nth_locs *) (* nth_stks *) rev_nth nth_Cons' nth_append min_def)
@@ -657,7 +657,7 @@ proof -
     show ?thesis
       apply auto
       apply (erule JVM_CFG.cases, simp_all)
-      by (auto simp: bv_conform_def stks_purge' stkss_purge add_commute)
+      by (auto simp: bv_conform_def stks_purge' stkss_purge add.commute)
   next
     case CmpEq
     with stk_loc_succs sees_M reachable applicable
@@ -722,6 +722,7 @@ proof -
       apply (erule JVM_CFG.cases, auto)
       apply (drule sees_method_fun, fastforce, clarsimp)
       using sees_M'
+      apply hypsubst_thin
       apply (auto simp: wt_method_def)
       apply (erule_tac x="pc'" in allE)
       apply (auto simp: bv_conform_def correct_state_def not_less_eq less_Suc_eq)
@@ -751,6 +752,7 @@ proof -
       apply (erule JVM_CFG.cases, auto)
       apply (drule sees_method_fun, fastforce, clarsimp)
       using sees_M'
+      apply hypsubst_thin
       apply (auto simp: wt_method_def)
       apply (erule_tac x="pc'" in allE)
       apply (auto simp: wt_start_def)
@@ -968,7 +970,7 @@ lemma stkss_cong [cong]:
                      (snd(snd(cs ! (length cs - Suc a)))) \<rbrakk>
     \<Longrightarrow> stk (a, b) = stk' (a, b) \<rbrakk>
   \<Longrightarrow> stkss P cs stk = stkss P' cs' stk'"
-  by (auto, induct cs',
+  by (auto, hypsubst_thin, induct cs',
     auto intro!: nth_equalityI simp: nth_Cons' (* nth_stks *))
 
 lemma locss_cong [cong]:
@@ -980,7 +982,7 @@ lemma locss_cong [cong]:
                      (snd(snd(cs ! (length cs - Suc a)))) \<rbrakk>
     \<Longrightarrow> loc (a, b) = loc' (a, b) \<rbrakk>
   \<Longrightarrow> locss P cs loc = locss P' cs' loc'"
-  by (auto, induct cs',
+  by (auto, hypsubst_thin, induct cs',
     auto intro!: nth_equalityI simp: nth_Cons' (* nth_locs *))
 
 lemma hd_tl_equalityI:
@@ -2037,6 +2039,7 @@ proof(unfold_locales)
           apply (drule_tac p="n'" in list_all2_nthD)
            apply simp
           apply (auto simp: nth_Cons' split: split_if_asm)
+          apply hypsubst_thin
           by (induct STn, auto simp: nth_Cons' split: split_if_asm)
         with applicable ST Invoke sees_M
         obtain D' where D': "STs = Class D'"
@@ -2096,8 +2099,8 @@ proof(unfold_locales)
                 else arbitrary)"
           by (auto intro!: ext
                      simp: (* nth_locs *) nth_locss nth_Cons' nth_append rev_nth (* nth_stks *) 
-                           not_less_eq_eq Suc_le_eq less_Suc_eq add_commute
-                           min_max.inf_absorb1 min_max.inf_absorb2 min_max.sup_absorb1 min_max.sup_absorb2)
+                           not_less_eq_eq Suc_le_eq less_Suc_eq add.commute
+                           min.absorb1 min.absorb2 max.absorb1 max.absorb2)
         from frs' jvm_exec sem_step prog
         have c': "c' = (D,M',0)#c"
           by (auto elim!: sem.cases)

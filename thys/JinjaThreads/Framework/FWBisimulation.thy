@@ -56,7 +56,7 @@ by(auto simp add: ta_bisim_def elim!: List.list_all2_mono nta_bisim_mono intro: 
 
 lemma nta_bisim_flip [flip_simps]:
   "nta_bisim (\<lambda>t. flip (bisim t)) = flip (nta_bisim bisim)"
-by(auto simp add: fun_eq_iff flip_simps nta_bisim_def new_thread_action_case_def[symmetric] split: new_thread_action.splits)
+by(auto simp add: fun_eq_iff flip_simps nta_bisim_def case_new_thread_action_def[symmetric] split: new_thread_action.splits)
 
 lemma ta_bisim_flip [flip_simps]:
   "ta_bisim (\<lambda>t. flip (bisim t)) = flip (ta_bisim bisim)"
@@ -1126,7 +1126,7 @@ next
       by(auto simp add: in_set_conv_decomp)
     with tasim obtain tas2 X2 M2 tas2' where "\<lbrace>ta2\<rbrace>\<^bsub>t\<^esub> = tas2 @ NewThread T X2 M2 # tas2'"
       "length tas2 = length tas2" "length tas1' = length tas2'" and Bisim: "T \<turnstile> (X1, M1) \<approx> (X2, M2)"
-      by(auto simp add: list_all2_append1 list_all2_Cons1 ta_bisim_def, blast intro: sym)
+      by(auto simp add: list_all2_append1 list_all2_Cons1 ta_bisim_def)
     hence ntset': "NewThread T X2 M2 \<in> set \<lbrace>ta2\<rbrace>\<^bsub>t\<^esub>" by auto
     with tsT' `t \<noteq> T` aoe2 s2' have "thr s2' T = \<lfloor>(X2, no_wait_locks)\<rfloor>"
       by(auto intro: redT_updTs_new_thread_ts)

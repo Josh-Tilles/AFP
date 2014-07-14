@@ -174,7 +174,7 @@ case (Cons x xs)
       from nsx Cons
       have "obs_intra z S \<noteq> {} \<longrightarrow>
         (\<exists>x''\<in>set (zs @ [n]). \<exists>nx. call_of_return_node x'' nx \<and> nx \<notin> S)"
-        by clarsimp(erule_tac x="[]" in allE,auto)
+        by clarsimp
       with False have "\<exists>x''\<in>set (zs @ [n]). \<exists>nx. call_of_return_node x'' nx \<and> nx \<notin> S"
         by simp
       with `xs = zs@n#nsx'` 
@@ -265,7 +265,7 @@ proof(atomize_elim)
           from True imp Cons 
           have "\<forall>xs x xs'. nx#nsx = xs @ x # xs' \<and> obs_intra x S \<noteq> {} \<longrightarrow>
             (\<exists>x''\<in>set (xs' @ [n]). \<exists>nx. call_of_return_node x'' nx \<and> nx \<notin> S)"
-            by clarsimp(case_tac xs,clarsimp+,erule_tac x="list" in allE,auto)
+            by clarsimp (hypsubst_thin,case_tac xs,clarsimp+,erule_tac x="list" in allE,auto)
           with split Cons show ?thesis by auto
         next
           case False

@@ -427,7 +427,7 @@ proof -
           next
             assume "ta_seq_consist P (mrw_values P vs (list_of obs')) obs''"
             thus ?thesis using obs True
-              by cases(auto cong: action.case_cong obs_event.case_cong intro: exI[where x="LCons x LNil", standard])
+              by cases(auto cong: action.case_cong obs_event.case_cong intro: exI[where x="LCons x LNil" for x])
           qed
         next
           case False
@@ -479,7 +479,7 @@ proof(coinduction arbitrary: vs obs)
 qed
 
 lemma ta_seq_consist_into_non_speculative:
-  "\<lbrakk> ta_seq_consist P vs obs; \<forall>adal. Option.set (vs adal) \<subseteq> vs' adal \<times> UNIV \<rbrakk>
+  "\<lbrakk> ta_seq_consist P vs obs; \<forall>adal. set_option (vs adal) \<subseteq> vs' adal \<times> UNIV \<rbrakk>
   \<Longrightarrow> non_speculative P vs' obs"
 using assms
 proof(coinduction arbitrary: vs' obs vs)
@@ -657,7 +657,7 @@ proof(intro exI conjI)
           unfolding lset_conv_lnth by blast
         moreover hence i_wa_len: "enat (Suc (w + i_wa)) < llength E" by(cases "llength E") auto
         ultimately have wa': "wa = action_obs E (Suc (w + i_wa))"
-          by(simp_all add: lnth_ltake action_obs_def add_ac)
+          by(simp_all add: lnth_ltake action_obs_def ac_simps)
         with write_wa i_wa_len have "Suc (w + i_wa) \<in> write_actions E"
           by(auto intro: write_actions.intros simp add: actions_def)
         from most_recent_write_recent[OF mrw _ this, of "(ad, al)"] adal adal_wa wa'
@@ -853,7 +853,7 @@ proof(rule ta_seq_consist_nthI)
     moreover hence "Suc (ws i + w) < i" (is "?w < _") using i_len 
       by(cases "llength E")(simp_all add: length_list_of_conv_the_enat)
     ultimately have obs_w': "action_obs E ?w = wa" using i_len
-      by(simp add: action_obs_def lnth_ltake less_trans[where y="enat i"] add_ac)
+      by(simp add: action_obs_def lnth_ltake less_trans[where y="enat i"] ac_simps)
     from `?w < i` i_len have "?w \<in> actions E"
       by(simp add: actions_def less_trans[where y="enat i"])
     with `is_write_action wa` obs_w' `(ad, al) \<in> action_loc_aux P wa`
@@ -936,7 +936,7 @@ context jmm_multithreaded begin
 definition complete_sc :: "('l,'thread_id,'x,'m,'w) state \<Rightarrow> ('addr \<times> addr_loc \<rightharpoonup> 'addr val \<times> bool) \<Rightarrow> 
   ('thread_id \<times> ('l, 'thread_id, 'x, 'm, 'w, ('addr, 'thread_id) obs_event action) thread_action) llist"
 where
-  "complete_sc s vs = llist_unfold
+  "complete_sc s vs = unfold_llist
      (\<lambda>(s, vs). \<forall>t ta s'. \<not> s -t\<triangleright>ta\<rightarrow> s')
      (\<lambda>(s, vs). fst (SOME ((t, ta), s'). s -t\<triangleright>ta\<rightarrow> s' \<and> ta_seq_consist P vs (llist_of \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)))
      (\<lambda>(s, vs). let ((t, ta), s') = SOME ((t, ta), s'). s -t\<triangleright>ta\<rightarrow> s' \<and> ta_seq_consist P vs (llist_of \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)

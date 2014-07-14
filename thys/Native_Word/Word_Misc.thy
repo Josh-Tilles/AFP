@@ -6,7 +6,7 @@ header {* More about words *}
 
 theory Word_Misc imports
   "~~/src/HOL/Word/Word"
-  "Bits_Int"
+  More_Bits_Int
 begin
 
 text {*
@@ -14,15 +14,19 @@ text {*
   code generator that PolyML does not provide.
 *}
 
-setup {* Code_Target.extend_target ("SML_word", (Code_ML.target_SML, K I)) *}
+setup {* Code_Target.extend_target ("SML_word", (Code_ML.target_SML, I)) *}
 
 code_identifier code_module Word_Misc \<rightharpoonup>
   (SML) Word and (Haskell) Word and (OCaml) Word and (Scala) Word
 
+context
+includes integer.lifting
+begin
 lift_definition word_of_integer :: "integer \<Rightarrow> 'a :: len0 word" is word_of_int .
 
 lemma word_of_integer_code [code]: "word_of_integer n = word_of_int (int_of_integer n)"
 by(simp add: word_of_integer.rep_eq)
+end
 
 lemma shiftr_zero_size: "size x \<le> n \<Longrightarrow> x >> n = (0 :: 'a :: len0 word)"
 by(rule word_eqI)(auto simp add: nth_shiftr dest: test_bit_size)
@@ -39,6 +43,14 @@ lemma word_of_int_code [code abstract]:
 by(simp add: uint_word_of_int and_bin_mask_conv_mod)
 
 
+context begin interpretation lifting_syntax .
+
+lemma shiftl_transfer [transfer_rule]:
+  "(pcr_word ===> op = ===> pcr_word) op << op <<"
+by(auto intro!: rel_funI word_eqI simp add: word.pcr_cr_eq cr_word_def word_size nth_shiftl)
+
+end
+
 lemma set_bits_K_False [simp]: "set_bits (\<lambda>_. False) = (0 :: 'a :: len0 word)"
 by(rule word_eqI)(simp add: test_bit.eq_norm)
 
@@ -50,6 +62,32 @@ by(simp add: Word.mask_def)
 
 lemma shiftl0 [simp]: "x << 0 = (x :: 'a :: len0 word)"
 by (metis shiftl_rev shiftr_x_0 word_rev_gal)
+
+lemma mask_1: "mask 1 = 1"
+by(simp add: mask_def)
+
+lemma mask_Suc_0: "mask (Suc 0) = 1"
+by(simp add: mask_def)
+
+lemma mask_numeral: "mask (numeral n) = 2 * mask (pred_numeral n) + 1"
+unfolding mask_def by transfer(simp, simp add: shiftl_int_def)
+
+lemma bin_last_bintrunc: "bin_last (bintrunc l n) = (l > 0 \<and> bin_last n)"
+by(cases l) simp_all
+
+lemma word_and_1:
+  fixes n :: "_ word"
+  shows "n AND 1 = (if n !! 0 then 1 else 0)"
+by transfer(rule bin_rl_eqI, simp_all add: bin_rest_trunc bin_last_bintrunc)
+
+lemma bintrunc_shiftl: "bintrunc n (m << i) = bintrunc (n - i) m << i"
+proof(induct i arbitrary: n)
+  case (Suc i)
+  thus ?case by(cases n) simp_all
+qed simp
+
+lemma uint_shiftl: "uint (n << i) = bintrunc (size n) (uint n << i)"
+unfolding word_size by transfer(simp add: bintrunc_shiftl)
 
 context fixes f :: "nat \<Rightarrow> bool" begin
 
@@ -98,14 +136,14 @@ lemma sdiv_smod_id: "(a sdiv b) * b + (a smod b) = a"
 proof -
   note [simp] = word_sdiv_def word_smod_def
   have F5: "\<forall>u\<Colon>'a word. - (- u) = u" by (metis word_sint.Rep_inverse' minus_minus wi_hom_neg)
-  have F7: "\<forall>v u\<Colon>'a word. u + v = v + u" by(metis add_left_commute add_0_right)
+  have F7: "\<forall>v u\<Colon>'a word. u + v = v + u" by(metis add.left_commute add_0_right)
   have F8: "\<forall>(w\<Colon>'a word) (v\<Colon>int) u\<Colon>int. word_of_int u + word_of_int v * w = word_of_int (u + v * sint w)"
     by (metis word_sint.Rep_inverse wi_hom_syms(1) wi_hom_syms(3))
   have "\<exists>u. u = - sint b \<and> word_of_int (sint a mod u + - (- u * (sint a div u))) = a"
-    using F5 by (metis minus_minus word_sint.Rep_inverse' mult_minus_left add_commute zmod_zdiv_equality)
+    using F5 by (metis minus_minus word_sint.Rep_inverse' mult_minus_left add.commute zmod_zdiv_equality)
   hence "word_of_int (sint a mod - sint b + - (sint b * (sint a div - sint b))) = a" by (metis equation_minus_iff)
   hence "word_of_int (sint a mod - sint b) + word_of_int (- (sint a div - sint b)) * b = a"
-    using F8 by(metis mult_commute mult_minus_left)
+    using F8 by(metis mult.commute mult_minus_left)
   hence eq: "word_of_int (- (sint a div - sint b)) * b + word_of_int (sint a mod - sint b) = a" using F7 by metis
 
   show ?thesis
@@ -130,13 +168,13 @@ proof -
       with a eq show ?thesis by simp
     next
       case False with a show ?thesis
-        by simp (metis wi_hom_add wi_hom_mult add_commute mult_commute word_sint.Rep_inverse add_commute zmod_zdiv_equality)
+        by simp (metis wi_hom_add wi_hom_mult add.commute mult.commute word_sint.Rep_inverse add.commute zmod_zdiv_equality)
     qed
   qed
 qed
 
 lemma nat_div_eq_Suc_0_iff: "n div m = Suc 0 \<longleftrightarrow> n \<ge> m \<and> n < 2 * (m :: nat)"
-by(metis div_less n_not_Suc_n not_leE Suc_1 div_by_0 lessI td_gal_lt One_nat_def Suc_1 comm_semiring_1_class.normalizing_semiring_rules(11) less_nat_zero_code mult_0 nat_mult_commute neq0_conv sdl)
+by(metis div_less n_not_Suc_n not_leE Suc_1 div_by_0 lessI td_gal_lt One_nat_def Suc_1 comm_semiring_1_class.normalizing_semiring_rules(11) less_nat_zero_code mult_0 mult.commute neq0_conv sdl)
 
 lemma word_div_lt_eq_0: 
   fixes x :: "'a :: len word" 
@@ -162,10 +200,10 @@ lemma div_half_nat:
 proof -
   let ?q = "2 * (x div 2 div y)"
   have q: "?q = x div y - x div y mod 2"
-    by(metis div_mult2_eq nat_mult_commute mult_div_cancel)
+    by(metis div_mult2_eq mult.commute mult_div_cancel)
   let ?r = "x - ?q * y"
   have r: "?r = x mod y + x div y mod 2 * y" 
-    by(simp add: q diff_mult_distrib div_mod_equality')(metis diff_diff_cancel mod_less_eq_dividend mod_mult2_eq nat_add_commute nat_mult_commute)
+    by(simp add: q diff_mult_distrib div_mod_equality')(metis diff_diff_cancel mod_less_eq_dividend mod_mult2_eq add.commute mult.commute)
   
   show ?thesis
   proof(cases "y \<le> x - ?q * y")
@@ -173,14 +211,14 @@ proof -
     hence "x div y mod 2 \<noteq> 0" unfolding r
       by(metis Divides.mod_div_equality' True assms diff_is_0_eq div_le_mono mod_by_0 mod_div_trivial mod_self mod_simps(1) mult_div_cancel q)
     hence "x div y = ?q + 1" unfolding q
-      by(metis le_add_diff_inverse mod_2_not_eq_zero_eq_one_nat mod_less_eq_dividend nat_add_commute)
+      by(metis le_add_diff_inverse mod_2_not_eq_zero_eq_one_nat mod_less_eq_dividend add.commute)
     moreover hence "x mod y = ?r - y"
       by simp(metis Divides.mod_div_equality' diff_commute diff_diff_left mult_Suc)
     ultimately show ?thesis using True by(simp add: Let_def)
   next
     case False
     hence "x div y mod 2 = 0" unfolding r
-      by(simp add: not_le)(metis Nat.add_0_right assms div_less div_mult_self2 mod_div_trivial nat_mult_commute)
+      by(simp add: not_le)(metis Nat.add_0_right assms div_less div_mult_self2 mod_div_trivial mult.commute)
     hence "x div y = ?q" unfolding q by simp
     moreover hence "x mod y = ?r" by (metis mod_div_equality') 
     ultimately show ?thesis using False by(simp add: Let_def)
@@ -203,12 +241,12 @@ proof -
   from assms have "m \<noteq> 0" using m by -(rule notI, simp)
   
   from n have "2 * (n div 2 div m) < 2 ^ len_of TYPE('a)"
-    by(metis mult_commute div_mult2_eq mult_div_cancel less_imp_diff_less of_nat_inverse unat_lt2p uno_simps(2))
+    by(metis mult.commute div_mult2_eq mult_div_cancel less_imp_diff_less of_nat_inverse unat_lt2p uno_simps(2))
   moreover
   have "2 * (n div 2 div m) * m < 2 ^ len_of TYPE('a)" using n unfolding div_mult2_eq[symmetric]
-    by(subst (2) mult_commute)(simp add: div_mod_equality' diff_mult_distrib mult_div_cancel div_mult2_eq)
+    by(subst (2) mult.commute)(simp add: div_mod_equality' diff_mult_distrib mult_div_cancel div_mult2_eq)
   moreover have "2 * (n div 2 div m) * m \<le> n"
-    by(metis div_mult2_eq div_mult_le nat_mult_assoc nat_mult_commute)
+    by(metis div_mult2_eq div_mult_le mult.assoc mult.commute)
   ultimately
   have r: "x - ?q * y = of_nat (n - ?q' * m)" 
     and "y \<le> x - ?q * y \<Longrightarrow> of_nat (n - ?q' * m) - y = of_nat (n - ?q' * m - m)" 
@@ -328,5 +366,99 @@ proof -
     ultimately show ?thesis using False by(simp add: Let_def i'_def)
   qed
 qed
+
+lemma word_and_mask_or_conv_and_mask:
+  "n !! index \<Longrightarrow> (n AND mask index) OR (1 << index) = n AND mask (index + 1)"
+by(rule word_eqI)(auto simp add: word_ao_nth word_size nth_shiftl simp del: shiftl_1)
+
+lemma uint_and_mask_or_full:
+  fixes n :: "'a :: len word"
+  assumes "n !! (len_of TYPE('a) - 1)"
+  and "mask1 = mask (len_of TYPE('a) - 1)"
+  and "mask2 = 1 << len_of TYPE('a) - 1"
+  shows "uint (n AND mask1) OR mask2 = uint n"
+proof -
+  have "mask2 = uint (1 << len_of TYPE('a) - 1 :: 'a word)" using assms
+    by(simp add: uint_shiftl word_size bintrunc_shiftl del: shiftl_1)(metis One_nat_def Suc_diff_Suc bintrunc_minus bintrunc_shiftl diff_self_eq_0 len_gt_0 len_num1 lessI uint_1 uint_word_arith_bintrs(8))
+  hence "uint (n AND mask1) OR mask2 = uint (n AND mask1 OR (1 << len_of TYPE('a) - 1 :: 'a word))"
+    by(simp add: uint_or)
+  also have "\<dots> = uint (n AND mask (len_of TYPE('a) - 1 + 1))"
+    using assms by(simp only: word_and_mask_or_conv_and_mask)
+  also have "\<dots> = uint n" by simp
+  finally show ?thesis .
+qed
+
+section {* Quickcheck conversion functions *}
+
+notation scomp (infixl "\<circ>\<rightarrow>" 60)
+
+definition qc_random_cnv :: 
+  "(natural \<Rightarrow> 'a::term_of) \<Rightarrow> natural \<Rightarrow> Random.seed
+    \<Rightarrow> ('a \<times> (unit \<Rightarrow> Code_Evaluation.term)) \<times> Random.seed"
+  where "qc_random_cnv a_of_natural i = Random.range (i + 1) \<circ>\<rightarrow> (\<lambda>k. Pair (
+       let n = a_of_natural k
+       in (n, \<lambda>_. Code_Evaluation.term_of n)))"
+
+no_notation scomp (infixl "\<circ>\<rightarrow>" 60)
+
+definition qc_exhaustive_cnv :: "(natural \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> (bool \<times> term list) option)
+  \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
+where
+  "qc_exhaustive_cnv a_of_natural f d =
+   Quickcheck_Exhaustive.exhaustive (%x. f (a_of_natural x)) d"
+
+definition qc_full_exhaustive_cnv ::
+  "(natural \<Rightarrow> ('a::term_of)) \<Rightarrow> ('a \<times> (unit \<Rightarrow> term) \<Rightarrow> (bool \<times> term list) option)
+  \<Rightarrow> natural \<Rightarrow> (bool \<times> term list) option"
+where
+  "qc_full_exhaustive_cnv a_of_natural f d = Quickcheck_Exhaustive.full_exhaustive 
+  (%(x, xt). f (a_of_natural x, %_. Code_Evaluation.term_of (a_of_natural x))) d"
+
+declare [[quickcheck_narrowing_ghc_options = "-XTypeSynonymInstances"]]
+
+definition qc_narrowing_drawn_from :: "'a list \<Rightarrow> integer \<Rightarrow> _"
+where
+  "qc_narrowing_drawn_from xs =
+   foldr Quickcheck_Narrowing.sum (map Quickcheck_Narrowing.cons (butlast xs)) (Quickcheck_Narrowing.cons (last xs))"
+
+locale quickcheck_narrowing_samples =
+  fixes a_of_integer :: "integer \<Rightarrow> 'a \<times> 'a :: {partial_term_of, term_of}"
+  and zero :: "'a"
+  and tr :: "typerep"
+begin
+
+function narrowing_samples :: "integer \<Rightarrow> 'a list"
+where
+  "narrowing_samples i = 
+   (if i > 0 then let (a, a') = a_of_integer i in narrowing_samples (i - 1) @ [a, a'] else [zero])"
+by pat_completeness auto
+termination including integer.lifting
+proof(relation "measure nat_of_integer")
+  fix i :: integer
+  assume "0 < i"
+  thus "(i - 1, i) \<in> measure nat_of_integer"
+    by simp(transfer, simp)
+qed simp
+
+definition partial_term_of_sample :: "integer \<Rightarrow> 'a"
+where
+  "partial_term_of_sample i =
+  (if i < 0 then undefined
+   else if i = 0 then zero 
+   else if i mod 2 = 0 then snd (a_of_integer (i div 2))
+   else fst (a_of_integer (i div 2 + 1)))"
+
+lemma partial_term_of_code:
+  "partial_term_of (ty :: 'a itself) (Quickcheck_Narrowing.Narrowing_variable p t) \<equiv>
+    Code_Evaluation.Free (STR ''_'') tr"
+  "partial_term_of (ty :: 'a itself) (Quickcheck_Narrowing.Narrowing_constructor i []) \<equiv>
+   Code_Evaluation.term_of (partial_term_of_sample i)"
+by (rule partial_term_of_anything)+
+
+end
+
+lemmas [code] =
+  quickcheck_narrowing_samples.narrowing_samples.simps
+  quickcheck_narrowing_samples.partial_term_of_sample_def
 
 end

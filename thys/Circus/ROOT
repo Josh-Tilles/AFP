@@ -1,27 +1,31 @@
 chapter AFP
 
 session Circus (AFP) = HOLCF +
+  description {* Circus Denotational Semantics and Refinements *}
   options [timeout = 600, document_graph]
   theories [document = false]
     "~~/src/HOL/Library/Sublist"
   theories
-    Refinement_Example
-  files
-    "document/acronym.sty"
-    "document/bigfoot.sty"
-    "document/circus.sty"
-    "document/comment.sty"
-    "document/csp.sty"
-    "document/fixme.sty"
-    "document/fmde-acronyms.sty"
-    "document/hol-ocl-isar.sty"
-    "document/lstisar-mbt.sty"
-    "document/marginnote.sty"
-    "document/perpage.sty"
-    "document/proof.sty"
-    "document/prooftree.sty"
-    "document/root.bib"
-    "document/root.tex"
-    "document/suffix.sty"
-    "document/xcolor.sty"
-    "document/zed.sty"
+    "Refinement_Example"
+  document_files
+    "acronym.sty"
+    "bigfoot.sty"
+    "circus.sty"
+    "comment.sty"
+    "csp.sty"
+    "fixisa.sty"
+    "fixme.sty"
+    "fmde-acronyms.sty"
+    "hol-ocl-isar.sty"
+    "lstisar-mbt.sty"
+    "marginnote.sty"
+    "perpage.sty"
+    "proof.sty"
+    "prooftree.sty"
+    "railsetup.sty"
+    "root.bib"
+    "root.tex"
+    "suffix.sty"
+    "xcolor.sty"
+    "zed.sty"
+

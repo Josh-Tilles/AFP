@@ -318,7 +318,7 @@ lemma containsNotTerminal: "[| branch subs gamma f; !n . ~proofTree (tree subs (
   apply(case_tac "SATAxiom (sequent (f n))")
   apply(blast dest: SATAxiomEq[THEN iffD2])
   apply(drule_tac x=n in spec)
-  apply (simp add:  subs_def subs_def subsFAtom_def subsFConj_def subsFAll_def Let_def contains_def terminal_def nforms_def split_beta branch_def split: list.split signs.split expand_formula_case, force)
+  apply (simp add:  subs_def subs_def subsFAtom_def subsFConj_def subsFAll_def Let_def contains_def terminal_def nforms_def split_beta branch_def split: list.split signs.split expand_case_formula, force)
   done
 
 lemma containsPropagates: "!!f.
@@ -609,7 +609,7 @@ lemma lemma2:
   ==> ? n . P A n & P B n"
   apply (rule exI[of _ "n+m"], rule)
   apply(blast intro!: lemma1)
-  apply(rule subst[OF add_commute]) 
+  apply(rule subst[OF add.commute]) 
   apply(blast intro!: lemma1)
   done
 
@@ -797,7 +797,7 @@ lemma notEvContainsBothAtoms:
   apply(erule_tac exE)+
   apply(drule_tac x=na in spec) back
   apply(drule_tac x=n in spec) back
-  apply(simp add: add_ac)
+  apply(simp add: ac_simps)
   apply(subgoal_tac "SATAxiom (sequent (f (n+na)))")
   apply(force dest: SATAxiomProofTree)
   apply(force simp add: SATAxiom_def) done

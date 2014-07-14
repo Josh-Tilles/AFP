@@ -242,7 +242,7 @@ proof -
   then obtain as bs where "ls = as @ x # y # bs" by (auto simp: is_sublist_def)
   then have "(length as) < length ls \<and> (Suc (length as)) < length ls \<and> ls!(length as) = x
        \<and> ls!(Suc (length as)) = y \<and> Suc (length as) = (Suc (length as))"
-    apply auto apply (induct as) by auto
+    apply auto apply hypsubst_thin apply (induct as) by auto
   then show ?thesis by auto
 qed
 
@@ -693,7 +693,7 @@ proof -
     proof (elim exE ex1E)
       fix a b c s
       assume vs: "vs = a @ r1 # b @ r2 # c" and "\<forall>y. vs = fst y @ r1 # snd y \<longrightarrow> y = s"
-      then have  "\<And> y. vs = fst y @ r1 # snd y \<longrightarrow> y = s" by auto
+      then have  "\<And> y. vs = fst y @ r1 # snd y \<longrightarrow> y = s" by (clarify, hypsubst_thin, auto)
       then have single: "\<And> y. vs = fst y @ r1 # snd y \<Longrightarrow> y = s" by auto
       def bc \<equiv> "b @ r2 # c"
       with vs have vs2: "vs = a @ r1 # bc" by auto
@@ -720,7 +720,7 @@ proof -
     proof (elim exE ex1E)
       fix a b c s
       assume vs: "vs = a @ r1 # b @ r2 # c" and "\<forall>y. vs = fst y @ r2 # snd y \<longrightarrow> y = s"
-      then have  "\<And> y. vs = fst y @ r2 # snd y \<longrightarrow> y = s" by auto
+      then have  "\<And> y. vs = fst y @ r2 # snd y \<longrightarrow> y = s" by (clarify, hypsubst_thin, auto)
       then have single: "\<And> y. vs = fst y @ r2 # snd y \<Longrightarrow> y = s" by auto
       def ab \<equiv> "a @ r1 # b"
       with vs have vs2: "vs = ab @ r2 # c" by auto
@@ -2275,7 +2275,7 @@ apply(erule disjE)
  apply(simp (no_asm) add:is_sublist_def)
  apply(rule_tac x = "as @ v # bs" in exI)
  apply simp
-apply(rule_tac m = "|as|+1" in is_nextElem_rotate_eq[THEN iffD1,standard])
+apply(rule_tac m1 = "|as|+1" in is_nextElem_rotate_eq[THEN iffD1])
 apply simp
 apply(simp add:rotate_drop_take)
 apply(rule is_nextElem_sublistI)
@@ -4592,7 +4592,7 @@ next
     apply (case_tac "vol!Suc i") apply simp+
     apply (subgoal_tac "\<not> is_duplicateEdge g f a aa")
      apply (thin_tac "\<forall>i<|vol| - Suc 0. \<not> (case vol ! i of None \<Rightarrow> False
-        | Some a \<Rightarrow> option_case False (is_duplicateEdge g f a) (vol ! (i+1)))")
+        | Some a \<Rightarrow> case_option False (is_duplicateEdge g f a) (vol ! (i+1)))")
      apply (simp add: is_duplicateEdge_def)
      apply (subgoal_tac "a \<in> set (removeNones vol) \<and> aa \<in> set (removeNones vol)")
       apply (rule conjI)

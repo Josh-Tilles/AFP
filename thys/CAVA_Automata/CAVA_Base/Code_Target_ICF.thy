@@ -1,3 +1,4 @@
+*** Obsolete ***
 header {* Default Code Generator Setup for the Isabelle Collection Framework *}
 theory Code_Target_ICF
 imports   

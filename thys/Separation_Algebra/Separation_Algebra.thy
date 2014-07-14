@@ -675,7 +675,7 @@ lemma sep_list_conj_Nil [simp]: "\<And>* [] = \<box>"
 (* apparently these two are rarely used and had to be removed from List.thy *)
 lemma (in semigroup_add) foldl_assoc:
 shows "foldl op+ (x+y) zs = x + (foldl op+ y zs)"
-by (induct zs arbitrary: y) (simp_all add:add_assoc)
+by (induct zs arbitrary: y) (simp_all add:add.assoc)
 
 lemma (in monoid_add) foldl_absorb0:
 shows "x + (foldl op+ 0 zs) = foldl op+ x zs"
@@ -705,10 +705,10 @@ next
     by (simp, subst foldl_absorb0[symmetric], rule refl)
 
   { assume "P x"
-    hence ?case by (auto simp del: foldl_Cons simp add: foldl_Cons' IH add_ac)
+    hence ?case by (auto simp del: foldl_Cons simp add: foldl_Cons' IH ac_simps)
   } moreover {
     assume "\<not> P x"
-    hence ?case by (auto simp del: foldl_Cons simp add: foldl_Cons' IH add_ac)
+    hence ?case by (auto simp del: foldl_Cons simp add: foldl_Cons' IH ac_simps)
   }
   ultimately show ?case by blast
 qed

@@ -1,10 +1,11 @@
-chapter AFP
+chapter AFP 
 
-session "HyperCTL" (AFP) = "HOL-BNF" +
+session "HyperCTL" (AFP) = "HOL" +
+  options [timeout = 600]
   theories [document = false]
-    "~~/src/HOL/BNF/Examples/Stream"
+    "~~/src/HOL/BNF_Examples/Stream"
   theories
     HyperCTL
-  files 
-    "document/root.tex"
-    "document/intro.tex"
+  document_files 
+    "root.tex"
+    "intro.tex"

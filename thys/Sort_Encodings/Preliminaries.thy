@@ -1,7 +1,7 @@
 header{* Preliminaries *}
 theory Preliminaries
 imports "~~/src/HOL/Cardinals/Cardinals"
-        "~~/src/HOL/BNF/Countable_Type"
+        "~~/src/HOL/Library/Countable_Set_Type"
 begin
 
 
@@ -108,7 +108,7 @@ by (metis set_empty2 set_list_set)
 
 lemma distinct_set_eq_Singl[simp]: "distinct al \<Longrightarrow> set al = {a} \<longleftrightarrow> al = [a]"
 apply(cases al, simp)
-by (metis (lifting) List.set.simps distinct.simps
+by (metis (lifting) List.set_simps distinct.simps
            distinct_singleton empty_not_insert insert_eq_iff set_empty2)
 
 lemma list_Singl[simp]: "list {b} = [b]"
@@ -220,7 +220,7 @@ assumes "\<And>x. x \<in> set xs \<Longrightarrow> \<exists>y. f x y"
 shows "\<exists> ys. list_all2 f xs ys"
 using assms apply(induct xs)
 apply fastforce
-by (metis set.simps insertCI list_all2_Cons)
+by (metis set_simps insertCI list_all2_Cons)
 
 lemma list_all2_cong[fundef_cong]:
 assumes "xs1 = ys1" and "xs2 = ys2"
@@ -231,15 +231,15 @@ by (metis assms list_all2_length)
 lemma list_all2_o: "list_all2 (P o f) al bl = list_all2 P (map f al) bl"
 unfolding list_all2_map1 comp_def ..
 
-lemma set_list_size:
+lemma set_size_list:
 assumes "x \<in> set xs"
-shows "f x \<le> list_size f xs"
-by (metis assms list_size_estimation' order_eq_refl)
+shows "f x \<le> size_list f xs"
+by (metis assms size_list_estimation' order_eq_refl)
 
-lemma nth_list_size:
+lemma nth_size_list:
 assumes "i < length xs"
-shows "f (xs!i) \<le> list_size f xs"
-by (metis assms nth_mem set_list_size)
+shows "f (xs!i) \<le> size_list f xs"
+by (metis assms nth_mem set_size_list)
 
 lemma list_all2_list_all[simp]:
 "list_all2 (\<lambda> x. f) xs ys \<longleftrightarrow>
@@ -253,7 +253,7 @@ by (metis (lifting) list_all2_length list_all_length)
 
 lemma list_all2_list_all_2[simp]:
 "list_all2 f xs xs \<longleftrightarrow> list_all (\<lambda> x. f x x) xs"
-unfolding list_all2_def list_all_iff
+unfolding list_all2_iff list_all_iff
 by (metis splitD splitI2 zip_same)
 
 lemma list_all2_map_map:

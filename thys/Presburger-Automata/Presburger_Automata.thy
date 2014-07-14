@@ -235,18 +235,18 @@ lemma add_leaves_binop_subset:
    (\<Union>x\<in>set (add_leaves b xs). \<Union>y\<in>set (add_leaves b' ys). {f x y})"
   apply (induct f b b' arbitrary: xs ys rule: bdd_binop.induct)
   apply auto
-  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> List.insert y ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> add_leaves l xs, y \<leftarrow> List.insert y ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
-  apply (drule_tac ys="[f x y. x \<leftarrow> List.insert x xs, y \<leftarrow> add_leaves l ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> List.insert x xs, y \<leftarrow> add_leaves l ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
-  apply (drule_tac ys="[f x y. x \<leftarrow> add_leaves l\<^sub>1 xs, y \<leftarrow> add_leaves l\<^sub>2 ys]" in
-    rev_subsetD [OF _ add_leaves_mono, standard])
+  apply (drule_tac ys1="[f x y. x \<leftarrow> add_leaves l\<^sub>1 xs, y \<leftarrow> add_leaves l\<^sub>2 ys]" in
+    rev_subsetD [OF _ add_leaves_mono])
   apply (simp add: image_eq_UN)
   apply (drule meta_spec, drule meta_spec, drule subsetD, assumption)
   apply (simp add: image_eq_UN)
@@ -840,7 +840,7 @@ next
           from Cons(7) show "ii < Suc jj" by simp
           from Cons(10) Suc show "j' < length xs" by simp
         qed
-        also from Suc H 0 have "\<dots> = (\<not> tr_lookup T (j + jj) ii \<and> \<not> tr_lookup T (i + jj) ii)" by (simp add: nat_add_commute) 
+        also from Suc H 0 have "\<dots> = (\<not> tr_lookup T (j + jj) ii \<and> \<not> tr_lookup T (i + jj) ii)" by (simp add: add.commute) 
         also have "\<dots> = (\<not> tr_lookup T (i + jj) (j + jj) \<and> \<not> tr_lookup T (i + jj) ii)" proof
           assume H': "\<not> tr_lookup T (j + jj) ii \<and> \<not> tr_lookup T (i + jj) ii"
           hence "\<not> tr_lookup T ii (j + jj)" by (auto simp: tr_lookup_def)
@@ -3107,7 +3107,7 @@ next
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. \<Union>i\<in>set_of_bv (nfa_steps N q (insertll v (butlast bs) xs)). set_of_bv (bdd_lookup (fst N ! i) (insertl v (last bs) x)))"
     by (simp add: UN_UN_lenset)
   also from N2 B have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_trans N (nfa_steps N q (insertll v (butlast bs) xs)) (insertl v (last bs) x)))" (is "?L = ?R")
-    by (simp add: subsetbdd_set_of_bv[folded nfa_trans_def] cong: strong_UN_cong)
+    by (simp add: subsetbdd_set_of_bv[folded nfa_trans_def])
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs) xs @ [insertl v (last bs) x])))"
     by simp
   also have "\<dots> = (\<Union>bs\<in>{x. length x = Suc (length xs)}. set_of_bv (nfa_steps N q (insertll v (butlast bs @ [last bs]) (xs @ [x]))))" by (auto simp: insertll_append)
@@ -3365,7 +3365,7 @@ proof (induct ks xs rule: eval_dioph.induct)
     by simp
   also have "\<dots> = (k * int (f x) + k * int (g x)) + eval_dioph ks (map (\<lambda>x. f x + g x) xs)"
     by (simp add: 1)
-  finally show ?case by (simp add: add_ac distrib_left)
+  finally show ?case by (simp add: ac_simps distrib_left)
 qed simp_all
 
 lemma eval_dioph_div_mult:
@@ -3720,10 +3720,9 @@ definition
           else length js) n []) js @ [Leaf (length js)],
         map (\<lambda>j. j = 0) js @ [False]))"
 
-primrec nat_of_bool :: "bool \<Rightarrow> nat"
+abbreviation (input) nat_of_bool :: "bool \<Rightarrow> nat"
 where
-  "nat_of_bool False = 0"
-| "nat_of_bool True = 1"
+  "nat_of_bool \<equiv> of_bool"
 
 lemma nat_of_bool_bound: "nat_of_bool b < 2"
   by (cases b) simp_all

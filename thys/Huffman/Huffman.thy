@@ -304,8 +304,8 @@ the default set of simplification rules.
 
 declare Int_Un_distrib [simp]
         Int_Un_distrib2 [simp]
-        min_max.sup_absorb1 [simp]
-        min_max.sup_absorb2 [simp]
+        max.absorb1 [simp]
+        max.absorb2 [simp]
 
 section {* Definition of Prefix Code Trees and Forests
            \label{trees-and-forests} *}
@@ -686,11 +686,11 @@ The weight of a tree is the sum of the frequencies of its symbols.
 lemma weight_eq_Sum_freq:
 "consistent t \<Longrightarrow> weight t = (\<Sum>a \<in> alphabet t. freq t a)"
 (*>*)
-by (induct t) (auto simp: setsum_Un_disjoint)
+by (induct t) (auto simp: setsum.union_disjoint)
 
 text {*
 The assumption @{term "consistent t"} is not necessary, but it simplifies the
-proof by letting us invoke the lemma @{thm [source] setsum_Un_disjoint}:
+proof by letting us invoke the lemma @{thm [source] setsum.union_disjoint}:
 $$@{text "\<lbrakk>finite A; finite B; A \<inter> B = {}\<rbrakk> \<Longrightarrow>"}~\!\sum_{x\in A} @{term "g x"}
 \vthinspace \mathrel{+} \sum_{x\in B} @{term "g x"}\vthinspace = %
  \!\!\sum_{x\in A \cup B}\! @{term "g x"}.$$
@@ -765,7 +765,7 @@ $$\begin{tabularx}{\textwidth}{@%
 \eq & \justif{definition of @{const freq}, consistency} \\[\extrah]
     & $\sum_{a\in A_1\,} @{term "freq t a * depth t a"} \mathrel{+}
        \sum_{a\in A_2\,} @{term "freq t a * depth t a"}$ \\[\extrah]
-\eq & \justif{@{thm [source] setsum_Un_disjoint}, consistency} \\
+\eq & \justif{@{thm [source] setsum.union_disjoint}, consistency} \\
     & $\sum_{a\in A_1\cup A_2\,} @{term "freq t a * depth t a"}$ \\
 \eq & \justif{definition of @{const alphabet}} \\
     & $\sum_{a\in A\,} @{term "freq t a * depth t a"}$.
@@ -800,7 +800,7 @@ next
                             - (\<Sum>a \<in> ?A\<^sub>1. freq t\<^sub>1 a) +
                   weight t\<^sub>2 + (\<Sum>a \<in> ?A\<^sub>2. freq t\<^sub>2 a * depth ?t a)
                             - (\<Sum>a \<in> ?A\<^sub>2. freq t\<^sub>2 a)"
-    using c d\<^sub>2 by (simp add: setsum_addf)
+    using c d\<^sub>2 by (simp add: setsum.distrib)
   also have "\<dots> = (\<Sum>a \<in> ?A\<^sub>1. freq t\<^sub>1 a * depth ?t a) +
                   (\<Sum>a \<in> ?A\<^sub>2. freq t\<^sub>2 a * depth ?t a)"
     using c by (simp add: weight_eq_Sum_freq)
@@ -808,7 +808,7 @@ next
                   (\<Sum>a \<in> ?A\<^sub>2. freq ?t a * depth ?t a)"
     using c by auto
   also have "\<dots> = (\<Sum>a \<in> ?A\<^sub>1 \<union> ?A\<^sub>2. freq ?t a * depth ?t a)"
-    using c by (simp add: setsum_Un_disjoint)
+    using c by (simp add: setsum.union_disjoint)
   also have "\<dots> = (\<Sum>a \<in> ?A. freq ?t a * depth ?t a)" by simp
   finally show ?case .
 qed
@@ -1569,7 +1569,7 @@ proof -
   have "?abba \<le> ?aabb" using assms(4-5)
     by (rule le_le_imp_sum_mult_le_sum_mult)
   have "cost (swapSyms t a b) + ?aabb = cost t + ?abba" using assms(1-3)
-    by (simp add: cost_swapSyms nat_add_assoc [THEN sym])
+    by (simp add: cost_swapSyms add.assoc [THEN sym])
   also have "\<dots> \<le> cost t + ?aabb" using `?abba \<le> ?aabb` by simp
   finally show ?thesis using assms(4-5) by simp
 qed

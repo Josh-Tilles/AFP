@@ -40,6 +40,14 @@ class join_semilattice = plus_ord +
   and add_idem [simp]: "x + x = x"
 begin
 
+lemma add_left_comm [simp]:
+  "b + (a + c) = a + (b + c)"
+  unfolding add_assoc' [symmetric] by simp
+
+lemma add_left_idem [simp]:
+  "a + (a + b) = a + b"
+  unfolding add_assoc' [symmetric] by simp
+
 text {* The definition @{term "x \<le> y \<longleftrightarrow> x + y = y"} of the order is
 hidden in class @{class plus_ord}.
 
@@ -119,7 +127,10 @@ class join_semilattice_zero = join_semilattice + zero +
 begin
 
 subclass comm_monoid_add
-  by (unfold_locales, auto, metis add_assoc' add_comm, metis add_comm add_zero_l)
+  apply unfold_locales
+  apply auto
+  apply (metis add_comm add_zero_l)
+  done
 
 lemma zero_least [simp]: "0 \<le> x"
   by (metis add_zero_l less_eq_def)
@@ -180,7 +191,7 @@ semigroup reduct of a near dioid is a semilattice. Near dioids are
 therefore ordered by the semilattice order. *}
 
 subclass join_semilattice
-by unfold_locales (auto simp add: add_commute add_left_commute)
+by unfold_locales (auto simp add: add.commute add.left_commute)
 
 text {* It follows that multiplication is right-isotone (but not
 necessarily left-isotone). *}
@@ -369,11 +380,11 @@ definition (in times) opp_mult (infixl "\<odot>" 70)
 
 lemma (in semiring_1) dual_semiring_1:
   "class.semiring_1 1 (op \<odot>) (op +) 0"
-by unfold_locales (auto simp add: opp_mult_def mult_assoc distrib_right distrib_left)
+by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 lemma (in dioid_one_zero) dual_dioid_one_zero:
   "class.dioid_one_zero (op +) (op \<odot>) 1 0 (op \<le>) (op <)"
-by unfold_locales (auto simp add: opp_mult_def mult_assoc distrib_right distrib_left)
+by unfold_locales (auto simp add: opp_mult_def mult.assoc distrib_right distrib_left)
 
 subsection {* Selective Near Semirings *}
 

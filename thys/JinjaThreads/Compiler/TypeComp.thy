@@ -10,6 +10,7 @@ imports
   "J1WellForm"
   "../BV/BVSpec"
   "~~/src/HOL/Library/Prefix_Order"
+  "~~/src/HOL/Library/Sublist"
 begin
 
 (*<*)
@@ -164,7 +165,7 @@ where
                             compTs E (A \<squnion> (\<A> e)) (ty E e # ST) es"
 by pat_completeness simp_all
 termination
-apply(relation "sum_case (\<lambda>p. size (snd (snd (snd p)))) (\<lambda>p. list_size size (snd (snd (snd p)))) <*mlex*> {}")
+apply(relation "case_sum (\<lambda>p. size (snd (snd (snd p)))) (\<lambda>p. size_list size (snd (snd (snd p)))) <*mlex*> {}")
 apply(rule wf_mlex[OF wf_empty])
 apply(rule mlex_less, simp)+
 done
@@ -539,7 +540,7 @@ apply(erule impE, arith)
 apply(drule_tac \<tau>s' = "\<tau>s\<^sub>1" in wt_instr_appL)
   apply arith
  apply simp
-apply(fastforce simp add:add_commute intro!: wt_instr_appLx)
+apply(fastforce simp add:add.commute intro!: wt_instr_appLx)
 done
 
 
@@ -1053,7 +1054,7 @@ next
   also from `PROP ?P e1 E U A ST` wt1 B1 `\<D> (sync\<^bsub>i\<^esub> (e1) e2) A` lenE lenST `set E \<subseteq> types P`
   have "\<turnstile> compE2 e1, compxE2 e1 0 (size ST) [::] ?\<tau>#?\<tau>s1@[?\<tau>1]"
     by(auto simp add: after_def)
-  finally show ?case using wt1 wt2 wt by(simp add: after_def add_ac shift_Cons_tuple hyperUn_assoc)
+  finally show ?case using wt1 wt2 wt by(simp add: after_def ac_simps shift_Cons_tuple hyperUn_assoc)
 next
   case new thus ?case by(auto simp add:after_def wt_New)
 next

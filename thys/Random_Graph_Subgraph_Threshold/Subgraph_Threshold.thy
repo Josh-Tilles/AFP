@@ -67,7 +67,7 @@ next
   ultimately have "(\<lambda>n. p n * n powr (?v / ?e)) ----> 0"
     unfolding subgraph_threshold_def by simp
   moreover have "\<And>n. 1 \<le> n \<Longrightarrow> 0 < p n * n powr (?v / ?e)"
-    by (rule mult_pos_pos) (auto simp: p_nz)
+    by (auto simp: p_nz)
   ultimately have "(\<lambda>n. (p n * n powr (?v / ?e)) powr ?e) ----> 0"
     using card(2) by (force intro: tendsto_zero_powrI[OF eventually_sequentiallyI])
   hence limit: "(\<lambda>n. p n powr ?e * n powr ?v) ----> 0"
@@ -187,14 +187,14 @@ next
           by (rule card_dep_pair_set[where A = "{1..n}" and n = "?v" and f = all_edges])
              (auto simp: finite_subset all_edges_finite)
         also have "\<dots> = (\<Sum>v | v \<subseteq> {1..n} \<and> card v = ?v. (?v choose 2) choose ?e)"
-          proof (rule setsum_cong2)
+          proof (rule setsum.cong)
             fix v
             assume "v \<in> {v. v \<subseteq> {1..n} \<and> card v = ?v}"
             hence "v \<subseteq> {1..n}" "card v = ?v"
               by auto
             thus "card (all_edges v) choose ?e = (?v choose 2) choose ?e"
               by (simp add: card_all_edges finite_subset)
-          qed
+          qed rule
         also have "\<dots> = card ({v. v \<subseteq> {1..n} \<and> card v = ?v}) * ((?v choose 2) choose ?e)"
           by simp
         also have "\<dots> = (n choose ?v) * ((?v choose 2) choose ?e)"
@@ -213,12 +213,7 @@ next
         thus "real (n choose ?v) \<le> real (n ^ ?v)"
           by (metis real_of_nat_le_iff)
       next
-        have "0 \<le> real ((?v choose 2) choose ?e)"
-          by simp
-        moreover have "0 \<le> p n ^ ?e"
-          using p by simp
-        ultimately show "0 \<le> ?r"
-          by (fact mult_nonneg_nonneg)
+        show "0 \<le> ?r" using p by simp
       qed
     also have "\<dots> \<le> ((?v choose 2) choose ?e) * (p n ^ ?e * n ^ ?v)" (is "_ \<le> ?factor * _")
       by simp
@@ -248,10 +243,8 @@ next
   --{* We observe that several terms involving $|V(H)|$ are positive. *}
   have v_e_nz: "0 < real ?v" "0 < real ?e"
     using nonempty finite unfolding nonempty_graph_def finite_graph_def by auto
-  hence "0 < real ?v ^ ?v"
-    by simp
-  hence vpowv_inv_gr_z: "0 < 1 / ?v ^ ?v"
-    by (simp add: divide_pos_pos)
+  hence "0 < real ?v ^ ?v" by simp
+  hence vpowv_inv_gr_z: "0 < 1 / ?v ^ ?v" by simp
 
   --{* For a given $n$, let $A$ be a family of events indexed by a set $S$. Each $A$ contains the
        graphs whose induced subgraphs over $S$ contain the selected copy of @{term H} by @{term f}
@@ -495,7 +488,7 @@ next
          (as they are nonempty) and at most $|V(H)|$ elements (by definition of $I$). In this step,
          we will partition this sum by cardinality of the intersections. *}
     also have "\<dots> = (\<Sum>S \<in> ?I. \<Sum>T \<in> (\<Union>k \<in> {1..?v}. {T \<in> ?I. card (S \<inter> T) = k}). prob (?A S \<inter> ?A T))"
-      proof (rule setsum_cong2, rule setsum_cong)
+      proof (rule setsum.cong, rule refl, rule setsum.cong)
         fix S
         assume "S \<in> ?I"
         note I(2,3)[OF this]
@@ -505,9 +498,9 @@ next
           by blast
       qed simp
     also have "\<dots> = (\<Sum>S \<in> ?I. \<Sum>k = 1..?v. \<Sum>T | T \<in> ?I \<and> card (S \<inter> T) = k. prob (?A S \<inter> ?A T))"
-      by (rule setsum_cong2, rule setsum_UN_disjoint) auto
+      by (rule setsum.cong, rule refl, rule setsum.UNION_disjoint) auto
     also have "\<dots> = (\<Sum>k = 1..?v. \<Sum>S \<in> ?I. \<Sum>T | T \<in> ?I \<and> card (S \<inter> T) = k. prob (?A S \<inter> ?A T))"
-      by (rule setsum_commute)
+      by (rule setsum.commute)
 
     --{* In this step, we compute an upper bound for the intersection probability and argue that
          it only depends on the cardinality of the intersection. *}
@@ -554,7 +547,7 @@ next
                 hence "density (S \<inter> T, uedges (f S) \<inter> uedges (f T)) = 0"
                   unfolding density_def by simp
                 also have "0 \<le> density (f S)"
-                  unfolding density_def by (simp add: divide_nonneg_nonneg)
+                  unfolding density_def by simp
                 also have "density (f S) \<le> max_density (f S)"
                   using S by (simp add: max_density_is_max subgraph_refl)
                 finally show "density (S \<inter> T, uedges (f S) \<inter> uedges (f T)) \<le> max_density (f S)"
@@ -586,9 +579,9 @@ next
 
     --{* Further rewriting the index sets. *}
     also have "\<dots> = (\<Sum>k = 1..?v. \<Sum>(S, T) \<in> (SIGMA S : ?I. {T \<in> ?I. card (S \<inter> T) = k}). p n powr (2 * ?e - max_density H * k))"
-      by (rule setsum_cong2, rule setsum_Sigma) auto
+      by (rule setsum.cong, rule refl, rule setsum.Sigma) auto
     also have "\<dots> = (\<Sum>k = 1..?v. card (SIGMA S : ?I. {T \<in> ?I. card (S \<inter> T) = k}) * p n powr (2 * ?e - max_density H * k))"
-      unfolding real_of_nat_def by (rule setsum_cong2) auto
+      unfolding real_of_nat_def by (rule setsum.cong) auto
 
     --{* Here, we compute the cardinality of the index sets and use the same upper bounds for
          the binomial coefficients as for the 0-statement. *}
@@ -645,7 +638,7 @@ next
         proof (rule LIMSEQ_le_zero[OF _ eventually_sequentiallyI eventually_sequentiallyI])
           fix n
           show "0 \<le> 1 / (real n ^ ?v * p n ^ ?e)"
-            using p by (simp add: divide_nonneg_nonneg mult_nonneg_nonneg)
+            using p by simp
 
           assume n: "1 \<le> n"
           have "1 / (real n ^ ?v * p n ^ ?e) = 1 / (real n powr ?v * p n powr ?e)"
@@ -660,7 +653,7 @@ next
             by simp
           also have "\<dots> \<le> (real n powr -(1 / max_density H) * p n powr -1) powr ?e"
             apply (rule powr_mono2[OF _ _ mult_right_mono[OF powr_mono[OF le_imp_neg_le[OF divide_left_mono]]]])
-            using n v_e_nz by (auto simp: divide_pos_pos mult_pos_pos
+            using n v_e_nz by (auto simp:
               max_density_is_max[unfolded density_def, OF finite finite nonempty wellformed subgraph_refl]
               max_density_gr_zero[OF finite nonempty wellformed])
           also have "\<dots> = (real n powr -(1 / max_density H) * (1 / p n powr 1)) powr ?e"
