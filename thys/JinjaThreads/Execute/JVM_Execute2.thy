@@ -88,7 +88,7 @@ where
 fun jvm_mstate_of_jvm_mstate' :: 
   "(addr,thread_id,addr jvm_thread_state',heap,addr) state \<Rightarrow> (addr,thread_id,addr jvm_thread_state,heap,addr) state"
 where
-  "jvm_mstate_of_jvm_mstate' (ls, (ts, m), ws) = (ls, (\<lambda>t. Option.map (map_pair jvm_thread_state_of_jvm_thread_state' id) (ts t), m), ws)"
+  "jvm_mstate_of_jvm_mstate' (ls, (ts, m), ws) = (ls, (\<lambda>t. map_option (map_prod jvm_thread_state_of_jvm_thread_state' id) (ts t), m), ws)"
 
 definition sc_jvm_state_invar :: "addr jvm_prog \<Rightarrow> ty\<^sub>P \<Rightarrow> (addr,thread_id,addr jvm_thread_state',heap,addr) state set"
 where
@@ -173,6 +173,7 @@ proof(rule invariant3pI)
       done
     from normal x invar show ?thesis
       apply(auto simp add: sc.exec_1_def final_thread.actions_ok_iff jvm_thread_action'_ok_def sc_jvm_state_invar_def)
+      apply hypsubst_thin
       apply(drule sc.exec_correct_state(3)[OF assms correct ok])
       apply(rule ts_okI)
       apply(clarsimp split: split_if_asm simp add: jvm_thread_action'_ok_def)

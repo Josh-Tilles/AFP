@@ -24,7 +24,7 @@ arithmetic mean and {\em gmean} to denote the geometric mean.
 {\em Informal Proof}:
 
 This proof is based on the proof presented in [1]. First we need an
-auxillary lemma (the proof of which is presented formally below) that
+auxiliary lemma (the proof of which is presented formally below) that
 states:
 
 Given two pairs of numbers of equal sum, the pair with the greater
@@ -263,7 +263,7 @@ next
   case (Cons a xs)
   have exp: "\<Prod>:(a#xs) = \<Prod>:xs * a" by simp
   with Cons have "a > 0" by simp
-  with exp Cons show ?case by (simp add: mult_pos_pos)
+  with exp Cons show ?case by simp
 qed
 
 
@@ -271,17 +271,15 @@ qed
 (* ============================================================================= *)
 (* ============================================================================= *)
 
-subsection {* Auxillary lemma *}
+subsection {* Auxiliary lemma *}
 
-text {* This section presents a proof of the auxillary lemma required
+text {* This section presents a proof of the auxiliary lemma required
 for this theorem. *}
 
 lemma prod_exp:
   fixes x::real
   shows "4*(x*y) = (x+y)^2 - (x-y)^2"
-apply (simp only: diff_minus)
-apply (simp add: power2_sum)
-done
+  by (simp add: power2_diff power2_sum)
 
 lemma abs_less_imp_sq_less [rule_format]:
   fixes x::real and y::real and z::real and w::real
@@ -404,10 +402,10 @@ proof
     apply (clarsimp simp:field_simps)
     done
   also from l1nez have "\<dots> = \<Sum>:xs / len"
-    apply (subst mult_commute [where a="len"])
+    apply (subst mult.commute [where a="len"])
     apply (drule mult_divide_mult_cancel_left
       [where c="len+1" and a="\<Sum>:xs" and b="len"])
-    by (simp add: mult_ac add_ac)
+    by (simp add: ac_simps ac_simps)
   finally show "mean ((mean xs)#xs) = mean xs" by (simp add: mean)
 qed
 
@@ -424,14 +422,14 @@ proof
     have "mean xs = \<Sum>:xs / real (length xs)" unfolding mean_def by simp
     hence "\<Sum>:xs = mean xs * real (length xs)" by simp
     moreover from lxsgt0 have "real (length xs) > 0" by simp
-    moreover with calculation lxsgt0 mgt0 show ?thesis by (auto intro: mult_pos_pos)
+    moreover with calculation lxsgt0 mgt0 show ?thesis by auto
   qed
   with xgt0 have "\<Sum>:(x#xs) > 0" by simp
   thus "0 < (mean (x#xs))"
   proof -
     assume "0 < \<Sum>:(x#xs)"
     moreover have "real (length (x#xs)) > 0" by simp
-    ultimately show ?thesis unfolding mean_def by (rule divide_pos_pos)
+    ultimately show ?thesis unfolding mean_def by simp
   qed
 qed
 
@@ -670,6 +668,17 @@ definition
 lemma het_gt_0_imp_noteq_ne: "het l > 0 \<Longrightarrow> list_neq l (mean l) \<noteq> []"
   unfolding het_def by simp
 
+lemma het_gt_0I: assumes a: "a \<in> set xs" and b: "b \<in> set xs" and neq: "a \<noteq> b"
+  shows "het xs > 0"
+proof (rule ccontr)
+  assume "\<not> ?thesis"
+  hence "het xs = 0" by auto
+  from this[unfolded het_def] have "list_neq xs (mean xs) = []" by simp
+  from arg_cong[OF this, of set] have mean: "\<And> x. x \<in> set xs \<Longrightarrow> x = mean xs" by auto
+  from mean[OF a] mean[OF b] neq show False by auto
+qed
+
+
 text {* @{text "\<gamma>-eq"}: Two lists are $\gamma$-equivalent if and only
 if they both have the same number of elements and the same arithmetic
 means. *}
@@ -851,9 +860,9 @@ text {* Furthermore we present an important result - that a
 homogeneous collection has equal geometric and arithmetic means. *}
 
 lemma het_base:
-  shows "pos x \<and> x\<noteq>[] \<and> het x = 0 \<Longrightarrow> gmean x = mean x"
+  shows "pos x \<and> het x = 0 \<Longrightarrow> gmean x = mean x"
 proof -
-  assume ass: "pos x \<and> x\<noteq>[] \<and> het x = 0"
+  assume ass: "pos x \<and> het x = 0"
   hence
     xne: "x\<noteq>[]" and
     hetx: "het x = 0" and
@@ -988,7 +997,7 @@ proof -
         ultimately have "\<Prod>:left_over * (\<alpha>*\<beta>) > 0" by simp
         moreover
         from pos_els \<alpha>_mem \<beta>_mem have "\<alpha> > 0" and "\<beta> > 0" by auto
-        hence "\<alpha>*\<beta> > 0" by (rule mult_pos_pos)
+        hence "\<alpha>*\<beta> > 0" by simp
         ultimately show "\<Prod>:left_over > 0"
           apply -
           apply (rule zero_less_mult_pos2 [where a="(\<alpha> * \<beta>)"])
@@ -1001,7 +1010,7 @@ proof -
     show "gmean new_list > gmean xs" by simp
   qed
 
-  -- "auxillary info"
+  -- "auxiliary info"
   from \<beta>_lt have \<beta>_ne_m: "\<beta> \<noteq> m" by simp
   from mem have
     \<beta>_mem_rmv_\<alpha>: "\<beta> : set (remove1 \<alpha> xs)" and rmv_\<alpha>_ne: "(remove1 \<alpha> xs) \<noteq> []" by auto
@@ -1167,5 +1176,45 @@ proof -
     thus ?thesis by simp
   qed
 qed
+
+text {* In the equality version we prove that the geometric mean
+  is identical to the arithmetic mean iff the collection is 
+  homogeneous. *}
+theorem CauchysMeanTheorem_Eq:
+  fixes z::"real list"
+  assumes "pos z"
+  shows "gmean z = mean z \<longleftrightarrow> het z = 0"
+proof 
+  assume "het z = 0"
+  with het_base[of z] `pos z` show "gmean z = mean z" by auto
+next
+  assume eq: "gmean z = mean z"
+  show "het z = 0"
+  proof (rule ccontr)
+    assume "het z \<noteq> 0"
+    hence "het z > 0" by auto
+    moreover obtain k where "k = het z" by simp
+    moreover with calculation `pos z` existence_of_het0 have
+      "\<exists>y. gmean y > gmean z \<and> \<gamma>_eq (z,y) \<and> het y = 0 \<and> pos y" by auto
+    then obtain \<alpha> where
+      "gmean \<alpha> > gmean z \<and> \<gamma>_eq (z,\<alpha>) \<and> het \<alpha> = 0 \<and> pos \<alpha>" ..
+    with het_base \<gamma>_eq_def pos_imp_ne have
+      "mean z = mean \<alpha>" and
+      "gmean \<alpha> > gmean z" and
+      "gmean \<alpha> = mean \<alpha>" by auto
+    hence "gmean z < mean z" by simp
+    thus False using eq by auto
+  qed
+qed
+ 
+corollary CauchysMeanTheorem_Less:
+  fixes z::"real list"
+  assumes "pos z" and "het z > 0"
+  shows "gmean z < mean z"
+  using 
+    CauchysMeanTheorem[OF `pos z`] 
+    CauchysMeanTheorem_Eq[OF `pos z`]
+    `het z > 0`
+    by auto
 
 end

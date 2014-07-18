@@ -11,16 +11,16 @@ fun subst_var :: "var \<Rightarrow> var \<Rightarrow> var \<Rightarrow> var" ("_
 
 lemma Projl_permute:
   assumes a: "\<exists>y. f = Inl y"
-  shows "(p \<bullet> (Sum_Type.Projl f)) = Sum_Type.Projl (p \<bullet> f)"
+  shows "(p \<bullet> (Sum_Type.projl f)) = Sum_Type.projl (p \<bullet> f)"
 using a by auto
 
 lemma Projr_permute:
   assumes a: "\<exists>y. f = Inr y"
-  shows "(p \<bullet> (Sum_Type.Projr f)) = Sum_Type.Projr (p \<bullet> f)"
+  shows "(p \<bullet> (Sum_Type.projr f)) = Sum_Type.projr (p \<bullet> f)"
 using a by auto
 
-nominal_primrec  (default "sum_case (\<lambda>x. Inl undefined) (\<lambda>x. Inr undefined)",
-                  invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> atom ` domA as \<sharp>* (y, z)) \<longrightarrow> map (\<lambda>x . atom (fst x))  (Sum_Type.Projr r) = map (\<lambda>x . atom (fst x)) as))")
+nominal_function  (default "case_sum (\<lambda>x. Inl undefined) (\<lambda>x. Inr undefined)",
+                  invariant "\<lambda> a r . (\<forall> as y z . ((a = Inr (as, y, z) \<and> atom ` domA as \<sharp>* (y, z)) \<longrightarrow> map (\<lambda>x . atom (fst x))  (Sum_Type.projr r) = map (\<lambda>x . atom (fst x)) as))")
   subst :: "exp \<Rightarrow> var \<Rightarrow> var \<Rightarrow> exp" ("_[_::=_]" [1000,100,100] 1000)
 and
   subst_heap :: "heap \<Rightarrow> var \<Rightarrow> var \<Rightarrow> heap" ("_[_::h=_]" [1000,100,100] 1000)
@@ -47,26 +47,26 @@ have eqvt_at_subst: "\<And> e y z . eqvt_at subst_subst_heap_sumC (Inl (e, y, z)
   apply simp
   apply(cases rule: subst_subst_heap_graph.cases)
   apply(assumption)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
+  apply(simp (no_asm) only: sum.sel)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
+  apply(simp (no_asm) only: sum.sel)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply blast 
-  apply(simp (no_asm) only: Projl.simps)
-  apply(rule_tac x="Sum_Type.Projl x" in exI)
+  apply(simp (no_asm) only: sum.sel)
+  apply(rule_tac x="Sum_Type.projl x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply blast 
-  apply(simp (no_asm) only: Projl.simps)
+  apply(simp (no_asm) only: sum.sel)
   apply (metis Inr_not_Inl)
   apply (metis Inr_not_Inl)
   apply(simp)
@@ -89,17 +89,17 @@ have eqvt_at_subst_heap: "\<And> as y z . eqvt_at subst_subst_heap_sumC (Inr (as
   apply(cases rule: subst_subst_heap_graph.cases)
   apply(assumption)
   apply (metis (mono_tags) Inr_not_Inl)+
-  apply(rule_tac x="Sum_Type.Projr x" in exI)
+  apply(rule_tac x="Sum_Type.projr x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply auto[1]
-  apply(simp (no_asm) only: Projr.simps)
+  apply(simp (no_asm) only: sum.sel)
   
-  apply(rule_tac x="Sum_Type.Projr x" in exI)
+  apply(rule_tac x="Sum_Type.projr x" in exI)
   apply(clarify)
   apply (rule the1_equality)
   apply auto[1]
-  apply(simp (no_asm) only: Projr.simps)
+  apply(simp (no_asm) only: sum.sel)
   
   apply(simp)
   apply(perm_simp)
@@ -172,7 +172,7 @@ next case (goal19 x2 y2 z2 e2 x y z e) thus ?case
 }
 qed(auto)
 
-termination (eqvt) by lexicographic_order
+nominal_termination (eqvt) by lexicographic_order
 
 lemma shows
   True and bn_subst[simp]: "domA (subst_heap as y z) = domA as"

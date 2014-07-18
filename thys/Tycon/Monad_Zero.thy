@@ -7,7 +7,7 @@ begin
 class zeroU = tycon +
   fixes zeroU :: "udom\<cdot>'a::tycon"
 
-class functor_zero = zeroU + functor +
+class functor_zero = zeroU + "functor" +
   assumes fmapU_zeroU [coerce_simp]:
     "fmapU\<cdot>f\<cdot>zeroU = zeroU"
 
@@ -33,8 +33,8 @@ by (simp add: coerce_simp)
 abbreviation mzero :: "'a\<cdot>'m::monad_zero"
   where "mzero \<equiv> fzero"
 
-lemmas mzero_def = fzero_def [where 'f="'m::monad_zero", standard]
-lemmas fmap_mzero = fmap_fzero [where 'f="'m::monad_zero", standard]
+lemmas mzero_def = fzero_def [where 'f="'m::monad_zero"] for f
+lemmas fmap_mzero = fmap_fzero [where 'f="'m::monad_zero"] for f
 
 lemma bindU_eq_bind: "bindU = bind"
 unfolding bind_def by simp

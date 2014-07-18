@@ -239,7 +239,7 @@ proof-
   proof-
     from PC_ie have Eq1: "\<bar> ?Bp - ?Bq \<bar> = ?Bp - ?Bq" by (simp add: abs_if)
     from corr_p ie rb1 have Eq2: "?Bp - ?Bq \<le> ?I*(1+\<rho>) - ?Bq" (is "?E1 \<le> ?E2")
-      by(simp add: diff_minus[symmetric] rho_bound1_def)
+      by(simp add: rho_bound1_def)
     from corr_q ie rb2 have "?I*(1 - \<rho>) \<le> ?Bq"
       by(simp add: rho_bound2_def)
     from this have Eq3: "?E2 \<le> ?I*(1+\<rho>) - ?I*(1 - \<rho>)"
@@ -546,7 +546,7 @@ proof-
     from posX posD A have absEq: "\<bar>?X - ?D\<bar> = ?X - ?D"
       by(simp add: abs_if)
     from bound1 have bound2: "?X - ?D \<le> ?D*\<rho>" 
-      by(simp add: mult_commute distrib_right)
+      by(simp add: mult.commute distrib_right)
     from D_beta absEq bound2 show ?thesis by simp
   next
     assume notA: "\<not> (?D \<le> ?X)"

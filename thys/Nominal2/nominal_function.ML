@@ -181,7 +181,8 @@ fun prepare_nominal_function do_print prep default_constraint fixspec eqns confi
           pinducts=snd pinducts', simps=NONE, inducts=NONE, termination=termination',
           fs=fs, R=R, defname=defname, is_partial=true, eqvts=eqvts}
 
-        val _ = Proof_Display.print_consts do_print lthy (K false) (map fst fixes)
+        val _ = Proof_Display.print_consts do_print
+          (Position.thread_data ()) lthy (K false) (map fst fixes)
       in
         (info, 
          lthy |> Local_Theory.declaration {syntax = false, pervasive = false} 
@@ -205,7 +206,7 @@ fun gen_add_nominal_function do_print prep default_constraint fixspec eqns confi
   end
 
 val add_nominal_function =
-  gen_add_nominal_function false Specification.check_spec (Type_Infer.anyT HOLogic.typeS)
+  gen_add_nominal_function false Specification.check_spec (Type_Infer.anyT @{sort type})
 fun add_nominal_function_cmd a b c d int = 
   gen_add_nominal_function int Specification.read_spec "_::type" a b c d
 
@@ -216,11 +217,11 @@ fun gen_nominal_function do_print prep default_constraint fixspec eqns config lt
   in
     lthy'
     |> Proof.theorem NONE (snd oo afterqed) [[(Logic.unprotect (concl_of goal_state), [])]]
-    |> Proof.refine (Method.primitive_text (K goal_state)) |> Seq.hd
+    |> Proof.refine (Method.primitive_text (K (K goal_state))) |> Seq.hd
   end
 
 val nominal_function =
-  gen_nominal_function false Specification.check_spec (Type_Infer.anyT HOLogic.typeS)
+  gen_nominal_function false Specification.check_spec (Type_Infer.anyT @{sort type})
 fun nominal_function_cmd a b c int = 
   gen_nominal_function int Specification.read_spec "_::type" a b c
 
@@ -264,7 +265,7 @@ local
      || ((Parse.reserved "invariant" |-- Parse.term) >> Invariant))
 
   fun config_parser default =
-    (Scan.optional (Parse.$$$ "(" |-- Parse.!!! (Parse.list1 option_parser) --| Parse.$$$ ")") [])
+    (Scan.optional (@{keyword "("} |-- Parse.!!! (Parse.list1 option_parser) --| @{keyword ")"}) [])
      >> (fn opts => fold apply_opt opts default)
 in
   fun nominal_function_parser default_cfg =
@@ -274,7 +275,7 @@ end
 
 (* nominal *)
 val _ =
-  Outer_Syntax.local_theory_to_proof' @{command_spec "nominal_primrec"}
+  Outer_Syntax.local_theory_to_proof' @{command_spec "nominal_function"}
     "define general recursive nominal functions"
        (nominal_function_parser nominal_default_config
           >> (fn ((config, fixes), statements) => nominal_function_cmd fixes statements config))

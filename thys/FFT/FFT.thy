@@ -22,11 +22,6 @@ text {* We formalise a functional implementation of the FFT algorithm
 
 section {* Preliminaries *}
 
-lemma of_nat_cplx:
-  "of_nat n = Complex (of_nat n) 0"
-  by (induct n) (simp_all add: complex_one_def)
-
-
 text {* The following two lemmas are useful for experimenting with the
   transformations, at a vector length of four. *}
 
@@ -52,7 +47,7 @@ lemma setsum_add_nat_ivl_singleton:
   shows "f m + setsum f {m<..<n} = setsum f {m..<n}"
 proof -
   have "f m + setsum f {m<..<n} = setsum f ({m} \<union> {m<..<n})"
-    by (simp add: setsum_Un_disjoint ivl_disj_int)
+    by (simp add: setsum.union_disjoint ivl_disj_int)
   also from less have "... = setsum f {m..<n}"
     by (simp only: ivl_disj_un)
   finally show ?thesis .
@@ -63,14 +58,14 @@ lemma setsum_add_split_nat_ivl_singleton:
     and g: "!!i. [| m < i; i < n |] ==> g i = f i"
   shows "f m + setsum g {m<..<n} = setsum f {m..<n}"
   using less g
-  by(simp add: setsum_add_nat_ivl_singleton cong: strong_setsum_cong)
+  by(simp add: setsum_add_nat_ivl_singleton cong: setsum.strong_cong)
 
 lemma setsum_add_split_nat_ivl:
   assumes le: "m <= (k::nat)" "k <= n"
     and g: "!!i. [| m <= i; i < k |] ==> g i = f i"
     and h: "!!i. [| k <= i; i < n |] ==> h i = f i"
   shows "setsum g {m..<k} + setsum h {k..<n} = setsum f {m..<n}"
-  using le g h by (simp add: setsum_add_nat_ivl cong: strong_setsum_cong)
+  using le g h by (simp add: setsum_add_nat_ivl cong: setsum.strong_cong)
 
 lemma ivl_splice_Un:
   "{0..<2*n::nat} = (op * 2 ` {0..<n}) \<union> ((%i. Suc (2*i)) ` {0..<n})"
@@ -96,10 +91,10 @@ lemma setsum_splice:
 proof -
   have "(\<Sum>i::nat = 0..<2*n. f i) =
     setsum f (op * 2 ` {0..<n}) + setsum f ((%i. 2*i+1) ` {0..<n})"
-    by (simp add: ivl_splice_Un ivl_splice_Int setsum_Un_disjoint)
+    by (simp add: ivl_splice_Un ivl_splice_Int setsum.union_disjoint)
   also have "... = (\<Sum>i = 0..<n. f (2*i)) + (\<Sum>i = 0..<n. f (2*i+1))"
-    by (simp add: setsum_reindex [OF double_inj_on]
-      setsum_reindex [OF Suc_double_inj_on])
+    by (simp add: setsum.reindex [OF double_inj_on]
+      setsum.reindex [OF Suc_double_inj_on])
   finally show ?thesis .
 qed
 
@@ -137,24 +132,13 @@ qed
 
 subsection {* Basic Lemmas *}
 
-lemma root_nonzero:
-  "root n ~= 0"
-  apply (unfold root_def)
-  apply (unfold cis_def)
-  apply auto
-  apply (drule sin_zero_abs_cos_one)
-  apply arith
-  done
+lemma root_nonzero: "root n \<noteq> 0"
+  by (auto simp add: complex_eq_iff root_def dest: sin_zero_abs_cos_one)
 
-lemma root_unity:
-  "root n ^ n = 1"
-  apply (unfold root_def)
-  apply (simp add: DeMoivre)
-  apply (simp add: cis_def)
-  done
+lemma root_unity: "root n ^ n = 1"
+  by (simp add: complex_eq_iff root_def DeMoivre)
 
-lemma root_cancel:
-  "0 < d ==> root (d * n) ^ (d * k) = root n ^ k"
+lemma root_cancel: "0 < d ==> root (d * n) ^ (d * k) = root n ^ k"
   apply (unfold root_def)
   apply (simp add: DeMoivre)
   done
@@ -173,14 +157,15 @@ proof -
   txt {* Main part of the proof *}
   have "(\<Sum>i=0..<n. (root n ^ k) ^ i) =
     ((root n ^ k) ^ n - 1) / (root n ^ k - 1)"
+    unfolding atLeast0LessThan
     apply (rule geometric_sum)
     apply (unfold root_def)
     apply (simp add: DeMoivre)
     using real0 realk sin_cos_between_zero_two_pi 
-    apply (auto simp add: cis_def complex_one_def)
+    apply (auto simp add: complex_eq_iff)
     done
   also have "... = ((root n ^ n) ^ k - 1) / (root n ^ k - 1)"
-    by (simp add: power_mult [THEN sym] mult_ac)
+    by (simp add: power_mult [THEN sym] ac_simps)
   also have "... = 0"
     by (simp add: root_unity)
   finally show ?thesis .
@@ -200,15 +185,16 @@ proof -
   txt {* Main part of the proof *}
   have "(\<Sum>i=0..<n. ((1 / root n) ^ k) ^ i) =
     (((1 / root n) ^ k) ^ n - 1) / ((1 / root n) ^ k - 1)"
+    unfolding atLeast0LessThan
     apply (rule geometric_sum)
     apply (simp add: nonzero_inverse_eq_divide [THEN sym] root_nonzero)
     apply (unfold root_def)
     apply (simp add: DeMoivre)
     using real0 realk sin_cos_between_zero_two_pi
-    apply (auto simp add: cis_def complex_one_def)
+    apply (auto simp add: complex_eq_iff)
     done
   also have "... = (((1 / root n) ^ n) ^ k - 1) / ((1 / root n) ^ k - 1)"
-    by (simp add: power_mult [THEN sym] mult_ac)
+    by (simp add: power_mult [THEN sym] ac_simps)
   also have "... = 0"
     by (simp add: power_divide root_unity)
   finally show ?thesis .
@@ -216,19 +202,19 @@ qed
 
 lemma root0 [simp]:
   "root 0 = 1"
-  by (simp add: root_def cis_def)
+  by (simp add: complex_eq_iff root_def)
 
 lemma root1 [simp]:
   "root 1 = 1"
-  by (simp add: root_def cis_def)
+  by (simp add: complex_eq_iff root_def)
 
 lemma root2 [simp]:
-  "root 2 = Complex -1 0"
-  by (simp add: root_def cis_def)
+  "root 2 = -1"
+  by (simp add: complex_eq_iff root_def)
 
 lemma root4 [simp]:
   "root 4 = ii"
-  by (simp add: root_def cis_def)
+  by (simp add: complex_eq_iff root_def)
 
 
 subsection {* Derived Lemmas *}
@@ -237,7 +223,7 @@ lemma root_cancel1:
   "root (2 * m) ^ (i * (2 * j)) = root m ^ (i * j)"
 proof -
   have "root (2 * m) ^ (i * (2 * j)) = root (2 * m) ^ (2 * (i * j))"
-    by (simp add: mult_ac)
+    by (simp add: ac_simps)
   also have "... = root m ^ (i * j)"
     by (simp add: root_cancel)
   finally show ?thesis .
@@ -247,9 +233,7 @@ lemma root_cancel2:
   "0 < n ==> root (2 * n) ^ n = - 1"
   txt {* Note the space between @{text "-"} and @{text "1"}. *}
   using root_cancel [where n = 2 and k = 1]
-  apply (simp only: mult_ac)
-  apply (simp add: complex_one_def)
-  done
+  by (simp add: complex_eq_iff ac_simps)
 
 
 section {* Discrete Fourier Transformation *}
@@ -294,7 +278,7 @@ proof (unfold DFT_def)
     apply (simp add: setsum_right_distrib)
     apply (simp add: power_add)
     apply (simp add: root_cancel1)
-    apply (simp add: mult_ac)
+    apply (simp add: ac_simps)
     done
   finally show "?s = ?t" .
 qed
@@ -324,7 +308,7 @@ proof (unfold DFT_def)
     apply (simp add: power_add)
     apply (simp add: root_cancel1)
     apply (simp add: power_mult)
-    apply (simp add: mult_ac)
+    apply (simp add: ac_simps)
     done
   finally show "?s = ?t" .
 qed
@@ -381,7 +365,7 @@ proof (unfold IDFT_def)
     apply (simp add: power_add)
     apply (simp add: root_cancel1)
     apply (simp add: power_mult)
-    apply (simp add: mult_ac)
+    apply (simp add: ac_simps)
     done
   finally show "?s = ?t" .
 qed
@@ -415,7 +399,7 @@ qed
 lemma power_divides_special:
   "(a::'a::field) ~= 0 ==>
   a ^ (i * j) / a ^ (k * i) = (a ^ j / a ^ k) ^ i"
-  by (simp add: nonzero_power_divide power_mult [THEN sym] mult_ac)
+  by (simp add: nonzero_power_divide power_mult [THEN sym] ac_simps)
 
 theorem DFT_inverse:
   assumes i_less: "i < n"
@@ -423,7 +407,7 @@ theorem DFT_inverse:
   using [[linarith_split_limit = 0]]
   apply (unfold DFT_def IDFT_def)
   apply (simp add: setsum_divide_distrib)
-  apply (subst setsum_commute)
+  apply (subst setsum.commute)
   apply (simp only: times_divide_eq_left [THEN sym])
   apply (simp only: power_divides_special [OF root_nonzero])
   apply (simp add: power_diff_rev_if root_nonzero)
@@ -451,11 +435,11 @@ theorem DFT_inverse:
       by (simp only: ivl_disj_un)
     also have "... =
       (?sum1 i i n + (\<Sum>j\<in>{i<..<n}. ?sum1 i j n))"
-      by (simp add: setsum_Un_disjoint ivl_disj_int)
+      by (simp add: setsum.union_disjoint ivl_disj_int)
     also from i_less diff_i have "... = ?sum1 i i n"
       by (simp add: root_summation nat_dvd_not_less)
     also from i_less have "... = of_nat n * a i" (is "_ = ?t")
-      by (simp add: of_nat_cplx)
+      by simp
     finally show "?s = ?t" .
   qed
 

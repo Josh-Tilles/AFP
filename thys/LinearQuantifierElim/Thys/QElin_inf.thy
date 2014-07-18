@@ -85,7 +85,7 @@ proof(induct f)
       moreover
       { assume "c\<noteq>0"
         hence ?thesis using `r = c*x + \<langle>cs,xs\<rangle>` Atom
-          by(auto simp: mult_ac depends\<^sub>R_def split:if_splits) }
+          by(auto simp: ac_simps depends\<^sub>R_def split:if_splits) }
       ultimately show ?thesis by force
     qed
   qed
@@ -142,7 +142,7 @@ next
     } ultimately show ?thesis by force
   next
     case 2 thus ?thesis using Atom
-      by(fastforce simp:nolb_def EQ2_def depends\<^sub>R_def field_simps split:split_if_asm)
+      by (fastforce simp: nolb_def EQ2_def depends\<^sub>R_def field_simps split: split_if_asm)
   qed (insert Atom, auto)
 next
   case Or thus ?case by(simp add:Ball_def)(metis order_refl innermost_intvl2)
@@ -167,7 +167,7 @@ next
       then obtain x where "?a < x" "x < ?b" by(metis dense)
       hence " \<forall>y. ?a < y \<and> y \<le> x \<longrightarrow> s < d*y + \<langle>ds,xs\<rangle>"
         using `d<0` by (simp add:field_simps)
-      (metis add_le_cancel_right mult_le_cancel_left order_antisym linear mult_commute xt1(8))
+      (metis add_le_cancel_right mult_le_cancel_left order_antisym linear mult.commute xt1(8))
       hence ?thesis using 1 `?a<x` by auto
     } moreover
     { let ?a = "s - d * r" let ?b = "\<langle>d *\<^sub>s cs + ds,xs\<rangle>"
@@ -178,7 +178,7 @@ next
         assume "?a = ?b"
         thus ?thesis using `d>0` Atom 1
           by(simp add:field_simps iprod_left_add_distrib)
-            (metis add_0_left add_less_cancel_right distrib_left mult_commute mult_strict_left_mono)
+            (metis add_0_left add_less_cancel_right distrib_left mult.commute mult_strict_left_mono)
       next
         assume "?a < ?b"
         { fix x assume "r+\<langle>cs,xs\<rangle> < x \<and> x \<le> r+\<langle>cs,xs\<rangle> + 1"
@@ -239,8 +239,7 @@ proof
   { assume "\<forall>x \<in> EQ f xs. \<not>R.I f (x#xs)"
            "\<not> R.I (inf\<^sub>- f) xs"
     with `?QE` `nqfree f` obtain r cs where "R.I (subst\<^sub>+ f (r,cs)) xs"
-      by(fastforce simp:qe_eps\<^sub>1_def set_ebounds diff_divide_distrib eval_def
-        diff_minus[symmetric] I_subst `nqfree f`)
+      by (fastforce simp: qe_eps\<^sub>1_def set_ebounds diff_divide_distrib eval_def I_subst `nqfree f`)
     then obtain leps where "R.I f (leps#xs)"
       using I_subst_peps[OF `nqfree f`] by fastforce
     hence ?EX .. }
@@ -257,8 +256,7 @@ next
   { assume "\<not> R.I (inf\<^sub>- f) xs"
     and "\<forall>rcs \<in> set ?ebs. \<not> R.I (subst f rcs) xs"
     hence noE: "\<forall>e \<in> EQ f xs. \<not> R.I f (e#xs)" using `nqfree f`
-      by (force simp:set_ebounds I_subst diff_divide_distrib eval_def
-        diff_minus[symmetric] split:split_if_asm)
+      by (force simp:set_ebounds I_subst diff_divide_distrib eval_def split:split_if_asm)
     hence "x \<notin> EQ f xs" using x by fastforce
     obtain l where "l \<in> LB f xs" "l < x"
       using LBex[OF `nqfree f` x `\<not> R.I(inf\<^sub>- f) xs` `x \<notin> EQ f xs`] ..

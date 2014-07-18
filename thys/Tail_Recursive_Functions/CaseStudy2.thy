@@ -151,9 +151,6 @@ record 'a t_type =
  item :: 'a
  subtrees :: "'a bintree list"
 
-rep_datatype t_type_ext
-by (fact t_type.ext_induct) (fact t_type.ext_inject)
-
 function (sequential) t_ins_aux :: "'a::linorder t_type \<Rightarrow> 'a t_type" where
 "t_ins_aux \<lparr>folding = False, item = x, subtrees = Branch y yl yr # ts\<rparr> =
   (if x \<le> y
@@ -670,14 +667,14 @@ next
          t_multiset (Branch y yl yr)" using I1 by simp
         thus "{#y#} + t_multiset zt + t_multiset yr =
          {#x#} + t_multiset (t_left ((ts @ [Branch x xt Leaf]) ! 0))" using I0
-         by (simp add: add_ac)
+         by (simp add: ac_simps)
       next
         assume "\<not> x \<le> t_val ((ts @ [Branch x xt Leaf]) ! 0)"
         hence "t_multiset (t_right ((ts @ [Branch x xt Leaf]) ! 0)) =
          t_multiset (Branch y yl yr)" using I1 by simp
         thus "{#y#} + t_multiset zt + t_multiset yr =
          {#x#} + t_multiset (t_right ((ts @ [Branch x xt Leaf]) ! 0))" using I0
-         by (simp add: add_ac)
+         by (simp add: ac_simps)
       qed
     next
       case (Suc m)
@@ -748,14 +745,14 @@ next
          t_multiset (Branch y yl yr)" using I1 by simp
         thus "{#y#} + t_multiset yl + t_multiset zt =
          {#x#} + t_multiset (t_left ((ts @ [Branch x xt Leaf]) ! 0))" using I0
-         by (simp add: add_ac)
+         by (simp add: ac_simps)
       next
         assume "\<not> x \<le> t_val ((ts @ [Branch x xt Leaf]) ! 0)"
         hence "t_multiset (t_right ((ts @ [Branch x xt Leaf]) ! 0)) =
          t_multiset (Branch y yl yr)" using I1 by simp
         thus "{#y#} + t_multiset yl + t_multiset zt =
          {#x#} + t_multiset (t_right ((ts @ [Branch x xt Leaf]) ! 0))" using I0
-         by (simp add: add_ac)
+         by (simp add: ac_simps)
       qed
     next
       case (Suc m)
@@ -796,4 +793,3 @@ proof -
 qed
 
 end
-

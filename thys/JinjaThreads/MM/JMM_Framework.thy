@@ -163,7 +163,7 @@ proof(intro equalityI subsetI)
   assume "E \<in> ?rhs"
   then obtain E' where E: "E = lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (llist_of_tllist E'))"
     and \<tau>Runs: "mthr.\<tau>Runs \<sigma> E'" by(blast)
-  obtain E'' where E': "E' = tmap (\<lambda>(tls, s', tl, s''). tl) (sum_case (\<lambda>(tls, s'). \<lfloor>s'\<rfloor>) Map.empty) E''"
+  obtain E'' where E': "E' = tmap (\<lambda>(tls, s', tl, s''). tl) (case_sum (\<lambda>(tls, s'). \<lfloor>s'\<rfloor>) Map.empty) E''"
     and \<tau>Runs': "mthr.\<tau>Runs_table2 \<sigma> E''"
     using \<tau>Runs by(rule mthr.\<tau>Runs_into_\<tau>Runs_table2)
   have "mthr.Runs \<sigma> (lconcat (lappend (lmap (\<lambda>(tls, s, tl, s'). llist_of (tls @ [tl])) (llist_of_tllist E'')) 
@@ -653,7 +653,7 @@ proof(rule thread_start_actions_okI)
 
       have "(\<Sum>i<k. llength (lnth (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) E') i)) =
             (\<Sum>i<k. (enat \<circ> (\<lambda>i. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>)) i)"
-        by(rule setsum_cong)(simp_all add: less_trans[where y="enat k"] split_beta k)
+        by(rule setsum.cong)(simp_all add: less_trans[where y="enat k"] split_beta k)
       also have "\<dots> = enat (\<Sum>i<k. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>)"
         by(rule setsum_hom)(simp_all add: zero_enat_def)
       finally have i_conv: "?i' = (\<Sum>i<k. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>) + l" using i_conv by simp
@@ -1655,7 +1655,7 @@ lemma if_redT_non_speculative_invar:
   and vs: "vs_conf P (shr s) vs"
   shows "ts_ok (init_fin_lift wfx) (thr s') (shr s')"
 proof -
-  let ?s = "\<lambda>s. (locks s, (\<lambda>t. Option.map (\<lambda>((status, x), ln). (x, ln)) (thr s t), shr s), wset s, interrupts s)"
+  let ?s = "\<lambda>s. (locks s, (\<lambda>t. map_option (\<lambda>((status, x), ln). (x, ln)) (thr s t), shr s), wset s, interrupts s)"
   
   from ts_ok have ts_ok': "ts_ok wfx (thr (?s s)) (shr (?s s))" by(auto intro!: ts_okI dest: ts_okD)
   from vs have vs': "vs_conf P (shr (?s s)) vs" by simp
@@ -1674,7 +1674,7 @@ proof -
 
       with tst NormalAction `redT_upd s t ta x' m s'` have "mthr.redT (?s s) (t, TA) (?s s')"
         using map_redT_updTs[of snd "thr s" "\<lbrace>ta\<rbrace>\<^bsub>t\<^esub>"]
-        by(auto intro!: mthr.redT.intros simp add: split_def map_pair_def o_def fun_eq_iff)
+        by(auto intro!: mthr.redT.intros simp add: split_def map_prod_def o_def fun_eq_iff)
       moreover note ts_ok' vs'
       moreover from `ta = convert_TA_initial (convert_obs_initial TA)` have "\<lbrace>ta\<rbrace>\<^bsub>o\<^esub> = map NormalAction \<lbrace>TA\<rbrace>\<^bsub>o\<^esub>" by(auto)
       with sc have "non_speculative P vs (llist_of (map NormalAction \<lbrace>TA\<rbrace>\<^bsub>o\<^esub>))" by simp
@@ -1703,7 +1703,7 @@ lemma if_redT_non_speculative_vs_conf:
   and vs: "vs_conf P (shr s) vs"
   shows "vs_conf P (shr s') (w_values P vs (take n \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>))"
 proof -
-  let ?s = "\<lambda>s. (locks s, (\<lambda>t. Option.map (\<lambda>((status, x), ln). (x, ln)) (thr s t), shr s), wset s, interrupts s)"
+  let ?s = "\<lambda>s. (locks s, (\<lambda>t. map_option (\<lambda>((status, x), ln). (x, ln)) (thr s t), shr s), wset s, interrupts s)"
   
   from ts_ok have ts_ok': "ts_ok wfx (thr (?s s)) (shr (?s s))" by(auto intro!: ts_okI dest: ts_okD)
   from vs have vs': "vs_conf P (shr (?s s)) vs" by simp
@@ -1722,7 +1722,7 @@ proof -
 
       with tst NormalAction `redT_upd s t ta x' m s'` have "mthr.redT (?s s) (t, TA) (?s s')"
         using map_redT_updTs[of snd "thr s" "\<lbrace>ta\<rbrace>\<^bsub>t\<^esub>"]
-        by(auto intro!: mthr.redT.intros simp add: split_def map_pair_def o_def fun_eq_iff)
+        by(auto intro!: mthr.redT.intros simp add: split_def map_prod_def o_def fun_eq_iff)
       moreover note ts_ok' vs'
       moreover from `ta = convert_TA_initial (convert_obs_initial TA)` have "\<lbrace>ta\<rbrace>\<^bsub>o\<^esub> = map NormalAction \<lbrace>TA\<rbrace>\<^bsub>o\<^esub>" by(auto)
       with sc have "non_speculative P vs (llist_of (take n (map NormalAction \<lbrace>TA\<rbrace>\<^bsub>o\<^esub>)))" by simp
@@ -1924,7 +1924,7 @@ proof -
   also have "enat (\<Sum>i<ra_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>) = (\<Sum>i<ra_m. enat (length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>))"
     by(subst setsum_hom[symmetric])(simp_all add: zero_enat_def)
   also have "\<dots> = (\<Sum>i<ra_m. llength (lnth (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) E') i))"
-    using ra_m by-(rule setsum_cong[OF refl], simp add: le_less_trans[where y="enat ra_m"] split_beta)
+    using ra_m by-(rule setsum.cong[OF refl], simp add: le_less_trans[where y="enat ra_m"] split_beta)
   also note ltake_plus_conv_lappend also note lconcat_ltake[symmetric]
   also note lmap_lappend_distrib
   also note non_speculative_lappend
@@ -1991,7 +1991,7 @@ proof -
       unfolding `list_of (ltake (enat ra_m) E') = ttas' @ (t', ta') # ttas''`[symmetric]
       by(simp add: ltake_lmap[symmetric] lconcat_ltake del: ltake_lmap)
     also have "\<dots> = enat (\<Sum>i<ra_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>)" using ra_m
-      by(subst setsum_hom[symmetric, where f="enat"])(auto intro: setsum_cong simp add: zero_enat_def less_trans[where y="enat ra_m"] split_beta)
+      by(subst setsum_hom[symmetric, where f="enat"])(auto intro: setsum.cong simp add: zero_enat_def less_trans[where y="enat ra_m"] split_beta)
     also have "\<dots> \<le> enat (ra - ?n)" unfolding ra_conv by simp
     finally have wa_ra: "?wa < ra" by simp
     with ra_len have "?wa \<in> actions E" by(cases "llength E")(simp_all add: actions_def)
@@ -2237,7 +2237,7 @@ proof -
 
       note this(2) also from r_m
       have r_m_sum_len_eq: "(\<Sum>i<r_m. llength (lnth (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) E') i)) = enat (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>)"
-        by(subst setsum_hom[symmetric, where f=enat])(auto simp add: zero_enat_def split_def less_trans[where y="enat r_m"] intro: setsum_cong)
+        by(subst setsum_hom[symmetric, where f=enat])(auto simp add: zero_enat_def split_def less_trans[where y="enat r_m"] intro: setsum.cong)
       hence "ltake (enat (?r - ?n)) E'' = 
             lappend (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) ?r_m_E')) 
                     (ltake (enat r_n) (ldrop (enat (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>)) E''))"
@@ -2245,7 +2245,7 @@ proof -
         unfolding E' by simp
       finally have "ta_seq_consist P ?vs (lmap snd (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) ?r_m_E')))"
         and sc_ta_r: "ta_seq_consist P (mrw_values P ?vs (map snd (list_of (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) ?r_m_E'))))) (lmap snd (ltake (enat r_n) (ldropn (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>) E'')))"
-        unfolding lmap_lappend_distrib by(simp_all add: ta_seq_consist_lappend split_def)
+        unfolding lmap_lappend_distrib by(simp_all add: ta_seq_consist_lappend split_def ldrop_enat)
       note this(1) also
       have "lmap snd (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) (ltake (enat r_m) E')))
             = llist_of (concat (map (\<lambda>(t, ta). \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>) (list_of ?r_m_E')))"
@@ -2278,7 +2278,7 @@ proof -
         and "P \<turnstile> (?E_sc, ws_sc) \<surd>" unfolding start_heap_obs_def[symmetric] by iprover
       moreover {
         have enat_sum_r_m_eq: "enat (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>) = llength (lconcat (lmap (\<lambda>(t, ta). llist_of (map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>)) ?r_m_E'))"
-          by(auto intro: setsum_cong simp add: less_trans[OF _ r_m] lnth_ltake llength_lconcat_lfinite_conv_sum setsum_hom[symmetric, where f=enat] zero_enat_def[symmetric] split_beta)
+          by(auto intro: setsum.cong simp add: less_trans[OF _ r_m] lnth_ltake llength_lconcat_lfinite_conv_sum setsum_hom[symmetric, where f=enat] zero_enat_def[symmetric] split_beta)
         also have "\<dots> \<le> llength E''" unfolding E'
           by(blast intro: lprefix_llength_le lprefix_lconcatI lmap_lprefix)
         finally have r_m_E: "ltake (enat (?n + (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>))) E = ltake (enat (?n + (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>))) ?E_sc"
@@ -2313,7 +2313,7 @@ proof -
         have take_r'_eq: "ltake (enat ?r) E = ltake (enat ?r) ?E_sc" unfolding r_conv'
           apply(subst (1 2) plus_enat_simps(1)[symmetric])
           apply(subst (1 2) ltake_plus_conv_lappend)
-          apply(simp add: lappend_eq_lappend_conv ltake_lappend1 take_map)
+          apply(simp add: lappend_eq_lappend_conv ltake_lappend1 ldrop_enat take_map)
           done
         hence take_r_eq: "ltake (enat r) E = ltake (enat r) ?E_sc"
           by(rule ltake_eq_ltake_antimono)(simp add: `?P ?r`)
@@ -2505,7 +2505,7 @@ proof -
           and ns': "non_speculative P (w_values P (w_values P (\<lambda>_. {}) (map snd ?start_heap_obs)) (map snd (concat (map (\<lambda>(t, ta). map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>) (list_of (ltake (enat r_m) E'))))))
                (lmap snd (ltake (enat r_n) (llist_of (map (Pair t_r) \<lbrace>ta_r\<rbrace>\<^bsub>o\<^esub>))))"
           using r r_conv r_m r_n
-          by(simp_all add: length_concat o_def split_def listsum_setsum_nth length_list_of_conv_the_enat less_min_eq1 atLeast0LessThan lnth_ltake split: split_if_asm cong: strong_setsum_cong)
+          by(simp_all add: length_concat o_def split_def listsum_setsum_nth length_list_of_conv_the_enat less_min_eq1 atLeast0LessThan lnth_ltake split: split_if_asm cong: setsum.strong_cong)
         hence ns: "non_speculative P (w_values P (\<lambda>_. {}) (map snd ?start_heap_obs)) 
                      (llist_of (concat (map (\<lambda>(t, ta). \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>) (list_of (ltake (enat r_m) E')))))"
           unfolding lconcat_llist_of[symmetric] lmap_lconcat lmap_llist_of[symmetric] llist.map_comp o_def split_def
@@ -2588,12 +2588,12 @@ proof -
 
         from r r_conv have r_conv': "r = (\<Sum>i<r_m. length \<lbrace>snd (lnth E' i)\<rbrace>\<^bsub>o\<^esub>) + r_n + length ?start_heap_obs" by auto
         hence len_EE: "llength EE = enat r" using r_m r_n
-          by(auto simp add: EE_def length_concat listsum_setsum_nth atLeast0LessThan lnth_ltake less_min_eq1 split_def min_def length_list_of_conv_the_enat cong: strong_setsum_cong)
+          by(auto simp add: EE_def length_concat listsum_setsum_nth atLeast0LessThan lnth_ltake less_min_eq1 split_def min_def length_list_of_conv_the_enat cong: setsum.strong_cong)
         
         from r_conv r_m
         have r_conv3: "llength (lconcat (lmap (\<lambda>x. llist_of (map (Pair (fst x)) \<lbrace>snd x\<rbrace>\<^bsub>o\<^esub>)) (ltake (enat r_m) E'))) = enat (r - Suc (length start_heap_obs) - r_n)" 
-          apply(simp add: llength_lconcat_lfinite_conv_sum lnth_ltake cong: strong_setsum_cong conj_cong)
-          apply(auto simp add: setsum_hom[where f=enat, symmetric] zero_enat_def less_trans[where y="enat r_m"] intro: setsum_cong)
+          apply(simp add: llength_lconcat_lfinite_conv_sum lnth_ltake cong: setsum.strong_cong conj_cong)
+          apply(auto simp add: setsum_hom[where f=enat, symmetric] zero_enat_def less_trans[where y="enat r_m"] intro: setsum.cong)
           done            
 
         have is_ws: "is_write_seen P EE ws"
@@ -2684,7 +2684,7 @@ proof -
           by(rule ta_hb_consistent_Read_hb)(rule jmm.\<E>_new_actions_for_fun[OF \<E>'[unfolded `?E = ?E'`]])
         also have r_conv'': "length (?start_heap_obs @ concat (map (\<lambda>(t, ta). map (Pair t) \<lbrace>ta\<rbrace>\<^bsub>o\<^esub>) (list_of (ltake (enat r_m) E'))) @ map (Pair t_r) (take r_n \<lbrace>ta_r\<rbrace>\<^bsub>o\<^esub>)) = r"
           using r_n r_m unfolding r_conv'
-          by(auto simp add: length_concat listsum_setsum_nth atLeast0LessThan lnth_ltake split_def o_def less_min_eq1 min_def length_list_of_conv_the_enat cong: strong_setsum_cong)
+          by(auto simp add: length_concat listsum_setsum_nth atLeast0LessThan lnth_ltake split_def o_def less_min_eq1 min_def length_list_of_conv_the_enat cong: setsum.strong_cong)
         finally obtain ws' where wf_exec': "P \<turnstile> (?E', ws') \<surd>" 
           and read_hb: "\<And>n. \<lbrakk> n \<in> read_actions ?E'; r \<le> n \<rbrakk> \<Longrightarrow> P,?E' \<turnstile> ws' n \<le>hb n"
           and read_same: "\<And>n. n < r \<Longrightarrow> ws' n = ws n" by blast
@@ -2727,7 +2727,7 @@ proof -
         hence "?read ?E' ws'" by blast
         moreover from r_m r_n r_n'
         have E'_r: "lnth ?E' r = (t_r, \<lbrace>ta'_r\<rbrace>\<^bsub>o\<^esub> ! r_n)" unfolding r_conv'
-          by(auto simp add: lnth_lappend nth_append length_concat listsum_setsum_nth atLeast0LessThan split_beta lnth_ltake less_min_eq1 length_list_of_conv_the_enat cong: strong_setsum_cong)
+          by(auto simp add: lnth_lappend nth_append length_concat listsum_setsum_nth atLeast0LessThan split_beta lnth_ltake less_min_eq1 length_list_of_conv_the_enat cong: setsum.strong_cong)
         from E_r r have E_r: "lnth E r = (t_r, \<lbrace>ta_r\<rbrace>\<^bsub>o\<^esub> ! r_n)"
           unfolding E by(simp add: lnth_lappend)
         have "r \<in> read_actions E \<longleftrightarrow> (\<exists>ad al v. \<lbrace>ta_r\<rbrace>\<^bsub>o\<^esub> ! r_n = NormalAction (ReadMem ad al v))" using True
@@ -2735,7 +2735,7 @@ proof -
         with sim E'_r E_r have "?tid ?E'" "?obs ?E'"
           by(auto simp add: action_tid_def action_obs_def)
         moreover have "?actions ?E'" using r_n r_m r_n' unfolding r_conv'
-          by(cases "llength ?E'")(auto simp add: actions_def less_min_eq2 length_concat listsum_setsum_nth atLeast0LessThan split_beta lnth_ltake less_min_eq1 length_list_of_conv_the_enat enat_plus_eq_enat_conv cong: strong_setsum_cong)
+          by(cases "llength ?E'")(auto simp add: actions_def less_min_eq2 length_concat listsum_setsum_nth atLeast0LessThan split_beta lnth_ltake less_min_eq1 length_list_of_conv_the_enat enat_plus_eq_enat_conv cong: setsum.strong_cong)
         ultimately show ?thesis using wf_exec' \<E>'
           unfolding `?E = ?E'` by blast
       qed
@@ -2746,13 +2746,13 @@ qed
 end
 
 lemma w_value_mrw_value_conf:
-  assumes "Option.set (vs' adal) \<subseteq> vs adal \<times> UNIV"
-  shows "Option.set (mrw_value P vs' ob adal) \<subseteq> w_value P vs ob adal \<times> UNIV"
+  assumes "set_option (vs' adal) \<subseteq> vs adal \<times> UNIV"
+  shows "set_option (mrw_value P vs' ob adal) \<subseteq> w_value P vs ob adal \<times> UNIV"
 using assms by(cases adal)(cases ob rule: w_value_cases, auto)
 
 lemma w_values_mrw_values_conf:
-  assumes "Option.set (vs' adal) \<subseteq> vs adal \<times> UNIV"
-  shows "Option.set (mrw_values P vs' obs adal) \<subseteq> w_values P vs obs adal \<times> UNIV"
+  assumes "set_option (vs' adal) \<subseteq> vs adal \<times> UNIV"
+  shows "set_option (mrw_values P vs' obs adal) \<subseteq> w_values P vs obs adal \<times> UNIV"
 using assms
 by(induct obs arbitrary: vs' vs)(auto del: subsetI intro: w_value_mrw_value_conf)
 
@@ -2950,7 +2950,7 @@ proof(rule if.cut_and_updateI)
     unfolding lappend_llist_of_llist_of[symmetric] vs_def
     by(simp add: non_speculative_lappend E_def non_speculative_start_heap_obs del: lappend_llist_of_llist_of)
 
-  have vs_vs'': "\<And>adal. Option.set (?vs' adal) \<subseteq> ?vs adal \<times> UNIV"
+  have vs_vs'': "\<And>adal. set_option (?vs' adal) \<subseteq> ?vs adal \<times> UNIV"
     by(rule w_values_mrw_values_conf)(auto simp add: vs'_def vs_def del: subsetI intro: w_values_mrw_values_conf)
   from Red wt ns vs
   have wt': "ts_ok (init_fin_lift wfx) (thr s') (shr s')"
@@ -3019,7 +3019,7 @@ proof(rule if.cut_and_updateI)
           by(rule subsetD[OF mrw_values_dom_mono])
         then obtain v' b where v': "mrw_values P ?vs' (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al) = \<lfloor>(v', b)\<rfloor>" by auto
         moreover from vs_vs''[of "(ad, al)"]
-        have "Option.set (mrw_values P ?vs' (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al)) \<subseteq> w_values P ?vs (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al) \<times> UNIV"
+        have "set_option (mrw_values P ?vs' (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al)) \<subseteq> w_values P ?vs (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al) \<times> UNIV"
           by(rule w_values_mrw_values_conf)
         ultimately have "v' \<in> w_values P ?vs (take i \<lbrace>ta'\<rbrace>\<^bsub>o\<^esub>) (ad, al)" by simp
         moreover from sc'
@@ -3292,7 +3292,7 @@ proof
                 by(rule thread_start_actions_ok_change)
                 
               from w'_writes j j' len len' have "P,llist_of E'' \<turnstile> w' \<le>hb length EE"
-                by(auto simp add: EE_def writes_def min_def add_ac)
+                by(auto simp add: EE_def writes_def min_def ac_simps)
               thus "P,llist_of E' \<turnstile> w' \<le>hb length EE" using tsa'' sim
                 by(rule happens_before_change_prefix)(simp add: w'_len, simp add: EE_def E'_def)
               
@@ -3313,7 +3313,7 @@ proof
                 have "P,llist_of E'' \<turnstile> w'' \<le>hb length EE"
                   by(rule happens_before_change_prefix)(simp add: w''_len, simp add: E'_def EE_def)
                 with w'' adal_w'' j j' len len' have "w'' \<in> writes"
-                  by(auto simp add: writes_def EE_def min_def add_ac split: split_if_asm)
+                  by(auto simp add: writes_def EE_def min_def ac_simps split: split_if_asm)
                 hence "llist_of E'' \<turnstile> w'' \<le>a w'" by(rule w'_maximal)
                 hence "llist_of E' \<turnstile> w'' \<le>a w'" using sim
                   by(rule action_order_change_prefix)(simp_all add: w'_len w''_len)

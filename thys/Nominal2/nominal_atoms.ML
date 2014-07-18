@@ -28,7 +28,7 @@ fun atom_decl_set (str : string) : term =
 
 fun add_atom_decl (name : binding, arg : binding option) (thy : theory) =
   let
-    val _ = Theory.requires thy "Nominal2_Base" "nominal logic";
+    val _ = Theory.requires thy (Context.theory_name @{theory}) "nominal logic";
     val str = Sign.full_name thy name;
 
     (* typedef *)
@@ -80,6 +80,6 @@ val _ =
   Outer_Syntax.command @{command_spec "atom_decl"}
     "declaration of a concrete atom type" 
       ((Parse.binding -- Scan.option (Args.parens (Parse.binding))) >>
-        (Toplevel.print oo (Toplevel.theory o add_atom_decl)))
+        (Toplevel.theory o add_atom_decl))
 
 end;

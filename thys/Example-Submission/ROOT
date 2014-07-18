@@ -17,7 +17,7 @@ session "Example-Submission" (AFP) = HOL +
   theories
     Submission
     
-(* Dependencies on non-Isabelle files: *)
-  files
-    "document/root.bib"
-    "document/root.tex"
+(* Dependencies on document source files: *)
+  document_files
+    "root.bib"
+    "root.tex"

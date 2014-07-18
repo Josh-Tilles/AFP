@@ -333,11 +333,10 @@ code_pred
   OverriderMethodDefs'
 apply(clarsimp simp add: OverriderMethodDefs'_def MinimalMethodDefs'_def MethodDefs'_def OverriderMethodDefs_def appendPath_def leq_path_unfold)
 apply(case_tac "last xb = hd Cs'")
- apply(simp, blast)
+ apply(simp)
 
 apply(thin_tac "PROP ?P")
 apply(simp add: leq_path1_def)
-apply blast
 done
 
 
@@ -412,7 +411,7 @@ proof -
       by(rule WTDynCast_new[OF refl, unfolded WTDynCast_ex_def, simplified])
   next
     case WTStaticCast thus ?thesis
-      unfolding subcls1_def rtrancl_def mem_Collect_eq prod.cases
+      unfolding subcls1_def rtrancl_def mem_Collect_eq prod.case
       by(rule WTStaticCast_new[OF refl, unfolded WTStaticCast_sub_def])
   next
     case WTBinOp thus ?thesis
@@ -1035,7 +1034,7 @@ proof -
     ultimately show ?thesis by(rule StaticDownCast'[OF refl])
   next
     case StaticCastFail thus ?thesis
-      unfolding rtrancl_def subcls1_def mem_Collect_eq prod.cases
+      unfolding rtrancl_def subcls1_def mem_Collect_eq prod.case
       by(rule StaticCastFail'[OF refl])
   next
     case (StaticDownDynCast E e s\<^sub>0 a Cs C Cs' s\<^sub>1)
@@ -1094,7 +1093,7 @@ qed
 
 subsection {* Examples *}
 
-declare [[values_timeout = 100]]
+declare [[values_timeout = 180]]
 
 values [expected "{Val (Intg 5)}"]
   "{fst (e', s') | e' s'. 

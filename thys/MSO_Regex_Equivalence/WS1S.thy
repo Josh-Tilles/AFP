@@ -4,7 +4,7 @@ header {* WS1S *}
 
 (*<*)
 theory WS1S
-imports Formula Pi_Regular_Operators Stream
+imports Formula Pi_Regular_Operators "~~/src/HOL/BNF_Examples/Stream"
 begin
 (*>*)
 
@@ -112,7 +112,7 @@ lemma less_length_cut_same_Inl:
   p < length (cut_same (any, replicate (length I) False) (stream_enc (w, I)))"
   unfolding cut_same_def length_stake
   by (erule LeastI2_ex[OF ex_Loop_stream_enc ccontr],
-    auto simp: smap2_alt list_eq_iff_nth_eq add_commute dest!: add_diff_inverse split: sum.splits,
+    auto simp: smap2_alt list_eq_iff_nth_eq add.commute dest!: add_diff_inverse split: sum.splits,
     metis)
 
 lemma less_length_cut_same_Inr:
@@ -120,7 +120,7 @@ lemma less_length_cut_same_Inr:
   \<forall>p \<in> P. p < length (cut_same (any, replicate (length I) False) (stream_enc (w, I)))"
   unfolding cut_same_def length_stake
   by (rule ballI, erule LeastI2_ex[OF ex_Loop_stream_enc ccontr],
-    auto simp: smap2_alt list_eq_iff_nth_eq add_commute dest!: add_diff_inverse split: sum.splits,
+    auto simp: smap2_alt list_eq_iff_nth_eq add.commute dest!: add_diff_inverse split: sum.splits,
     metis)
 
 fun enc :: "'a interp \<Rightarrow> ('a \<times> bool list) list set" where
@@ -339,7 +339,7 @@ definition "dec_word s = cut_same any (smap fst s)"
 lemma dec_word_stream_enc: "dec_word (stream_enc (w, I)) = cut_same any (w @- sconst any)"
   unfolding dec_word_def by (auto intro!: arg_cong[of _ _ "cut_same any"] simp: smap2_alt)
 
-definition "stream_dec n FO s = map (\<lambda>i.
+definition "stream_dec n FO (s :: ('a \<times> bool list) stream) = map (\<lambda>i.
   if i \<in> FO
   then Inl (the_elem (positions_in_row s i))
   else Inr (positions_in_row s i)) [0..<n]"
@@ -429,7 +429,7 @@ proof (intro equalityI subsetI)
       "z \<in> lang n (Atom (Arbitrary_Except m True))"
       "v \<in> star (lang n (Atom (Arbitrary_Except m False)))" unfolding ENC_def
       by (cases n)
-       (fast, auto simp: not_less max_idx_vars valid_ENC_def fin intro!: wf_rexp_valid_ENC finite_FOV
+       (auto simp: not_less max_idx_vars valid_ENC_def fin intro!: wf_rexp_valid_ENC finite_FOV
         dest!: iffD1[OF lang_flatten_INTERSECT, rotated -1], fast)
     with `m < n` have "\<exists>!p.  snd (x ! p) ! m \<and> p < length x"
     proof (intro ex1I[of _ "length u"])
@@ -889,7 +889,7 @@ next
       with FLess(1) obtain v v' where v: "x = u1 @ [v] @ u2 @ [v'] @ u3"
          "snd v ! m" "snd v' ! m'" "fst v \<in> set \<Sigma>" "fst v' \<in> set \<Sigma>"
         using Arbitrary_ExceptD[of u n m True] Arbitrary_ExceptD[of u' n m' True]
-          by simp (force simp: \<sigma>_def)
+          by simp (auto simp: \<sigma>_def)
       hence u: "length u1 < length x" and u': "Suc (length u1 + length u2) < length x" (is "?u' < _") by auto
       { from v have "snd (x ! length u1) ! m" by auto
         moreover
@@ -966,7 +966,7 @@ next
       "u \<in> lang n (Atom (Arbitrary_Except2 m M))"
       unfolding rexp_of.simps lang.simps rexp_of_list.simps using concE by fast
     with FIn(1) obtain v where v: "x = u1 @ [v] @ u2" "snd v ! m" "snd v ! M" and "fst v \<in> set \<Sigma>"
-      using Arbitrary_Except2D[of u n m M] by simp (force simp: \<sigma>_def)
+      using Arbitrary_Except2D[of u n m M] by simp (auto simp: \<sigma>_def)
     from v have u: "length u1 < length x" by auto
     { from v have "snd (x ! length u1) ! m" by auto
       moreover
@@ -1398,9 +1398,8 @@ proof -
     with assms(2) show "w \<in> lang n (ENC n ((\<lambda>x. x - 1) ` X))"
       unfolding lang_ENC[OF assms(3) subset_refl] lang_ENC[OF * subset_refl]
       by (auto simp: image_Union z_def length_Suc_conv simp del: enc.simps
-        intro!: exI[of _ "enc (w', I)", standard, OF conjI[of _ "x \<in> A", standard]]
-        exI[of "\<lambda>x. \<exists>y. f (x', y') = f (x, y) \<and> P x y", standard, of enc, OF exI, OF conjI[OF refl]])
-        (fastforce simp: nth_Cons in_pred_image_iff split: nat.splits sum.splits)+
+        intro!: exI[of _ "enc (w, I)" for w I, OF conjI[of _ "x \<in> A" for x A]])
+        (fastforce simp: nth_Cons image_iff split: nat.splits sum.splits)
   next
     fix w assume "w \<in> SAMEQUOT z (map \<pi> ` Z)" "w \<in> lang n (ENC n ((\<lambda>x. x - 1) ` X))"
     then show "w \<in> SAMEQUOT z (map \<pi> ` (Z \<inter> lang (n + 1) (ENC (n + 1) X)))"
@@ -1415,10 +1414,10 @@ proof -
         unfolding lang_ENC[OF assms(3) subset_refl] lang_ENC[OF * subset_refl]
         proof (safe, intro UnionI[OF _ project_enc_extend[rotated]] CollectI exI conjI)
           fix w and I :: "(nat + nat set) list"
-          assume "Ball (set I) (sum_case (\<lambda>a. True) finite)"
+          assume "Ball (set I) (case_sum (\<lambda>a. True) finite)"
           then show "Ball (set
              (Inr (positions_in_row (x @- sconst (any, replicate (Suc (length I)) False)) 0) #I))
-           (sum_case (\<lambda>a. True) finite)" by (auto simp del: replicate_Suc)
+           (case_sum (\<lambda>a. True) finite)" by (auto simp del: replicate_Suc)
         qed (auto simp add: nth_Cons' Ball_def in_pred_image_iff)
       qed (rule `x \<in> Z`)
     qed (rule refl)

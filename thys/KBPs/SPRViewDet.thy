@@ -1258,7 +1258,7 @@ lemma spr_action_jaction:
   apply clarsimp
   apply rule
    apply clarsimp
-   apply (rule_tac x=aa in bexI)
+   apply (rule_tac x=xa in bexI)
     apply simp
    apply clarsimp
    apply (subst eval_models[OF tC ec, symmetric])
@@ -1267,7 +1267,7 @@ lemma spr_action_jaction:
     apply (rule agent_absI)
     apply simp_all
   apply clarsimp
-  apply (rule_tac x=aa in bexI)
+  apply (rule_tac x=xa in bexI)
    apply simp
   apply clarsimp
   apply (subst eval_models[OF tC ec])
@@ -1469,8 +1469,7 @@ proof
       apply (auto iff: Let_def simp del: split_paired_Ex split_paired_All)
       apply (simp add: listToFuns_ext[OF agents[unfolded toSet_def]])
 
-      apply (rule_tac x=aa in exI)
-      apply (rule_tac x=x in exI)
+      apply (rule_tac x=xa in exI)
       apply simp
       apply (subst (asm) spr_simAction)
         apply assumption
@@ -1500,8 +1499,8 @@ proof
         apply (erule tObsC_absI)
          apply (erule spr_jview_tObsC)
         apply simp_all
-       apply (rule_tac x="tFirst xb" in exI)
-       apply (rule_tac x="tLast xb" in exI)
+       apply (rule_tac x="tFirst xc" in exI)
+       apply (rule_tac x="tLast xc" in exI)
        apply (simp add: spr_sim_def)
        apply rule
         apply (drule tObsC_abs_jview_eq)
@@ -1518,7 +1517,7 @@ proof
         apply (rule_tac x=t' in exI)
         apply simp
         apply (erule spr_jview_tObsC)
-       apply (rule_tac x=xb in exI)
+       apply (rule_tac x=xc in exI)
        apply simp
        apply (drule spr_jview_tObsC)
        apply (drule spr_jview_tObsC)
@@ -1613,8 +1612,7 @@ proof
       apply (auto iff: Let_def simp del: split_paired_Ex split_paired_All)
       apply (simp add: listToFuns_ext[OF agents[unfolded toSet_def]])
 
-      apply (rule_tac x=aa in exI)
-      apply (rule_tac x=x in exI)
+      apply (rule_tac x=xa in exI)
       apply simp
       apply (subst (asm) spr_simAction)
         apply assumption
@@ -1636,8 +1634,8 @@ proof
         apply (simp_all add: ec)
         apply (erule tObsC_absI)
         apply simp_all
-       apply (rule_tac x="tFirst xb" in exI)
-       apply (rule_tac x="tLast xb" in exI)
+       apply (rule_tac x="tFirst xc" in exI)
+       apply (rule_tac x="tLast xc" in exI)
        apply (simp add: spr_sim_def)
        apply rule
         apply (drule tObsC_abs_jview_eq)
@@ -1652,7 +1650,7 @@ proof
        apply rule
         apply (rule_tac x=t' in exI)
         apply simp
-       apply (rule_tac x=xb in exI)
+       apply (rule_tac x=xc in exI)
        apply simp
        apply (drule spr_jview_tObsC)
        apply simp
@@ -1772,7 +1770,7 @@ proof
         and tt': "spr_jview a t' = spr_jview a t"
         and aec': "toSet aec' = (rel_ext (envObs_rel (envObs a)) \<inter> set (spr_trans (fst ec) (snd ec))
                                                        \<times> set (spr_trans (fst ec) (snd ec))) `` {(tFirst t', s)}"
-        and cec': "cec' = ODList.filter (\<lambda>s. envObsC (es (snd s)) = spr_simObsC envObsC aec') (fromList (local.spr_trans (fst ec) (fst ec)))"
+        and cec': "cec' = ODList.filter (\<lambda>s. envObsC (es (snd s)) = spr_simObsC envObsC aec') (fromList (spr_trans (fst ec) (fst ec)))"
       unfolding spr_simTrans_def
       using spr_trans_aec[OF assms]
       apply (auto split: split_split_asm)
@@ -1853,7 +1851,6 @@ next
       by auto
     then have "(\<lambda>s. (sprFst s, sprLst s)) ` x \<in> set ` set (partition (envObs_rel (envObs a)) (spr_trans (fst ec) (snd ec)))"
       apply (simp add: partition[OF envObs_rel_equiv] spr_trans_aec[OF assms] spr_sim_def [abs_def])
-      apply clarsimp
       apply (rule_tac x="(tFirst t', s)" in quotientI2)
        apply auto[1]
       apply (auto dest: spr_jview_tStep_eq_inv)
@@ -1874,7 +1871,7 @@ next
     with t'sC tt' xt's show "x \<in> ?lhs"
       unfolding spr_simTrans_def
       apply clarsimp
-      apply (rule_tac x="(ODList.filter (\<lambda>s. envObsC (es (snd s)) = spr_simObsC envObsC (fromList rx)) (fromList (local.spr_trans (fst ec) (fst ec))), fromList rx)" in image_eqI)
+      apply (rule_tac x="(ODList.filter (\<lambda>s. envObsC (es (snd s)) = spr_simObsC envObsC (fromList rx)) (fromList (spr_trans (fst ec) (fst ec))), fromList rx)" in image_eqI)
        prefer 2
        apply (rule_tac x="rx" in image_eqI)
         apply simp
@@ -2189,7 +2186,7 @@ definition
 lemma (in FiniteDetBroadcastEnvironment)
   "mkSPRDetAuto agents jkbp envInit envAction envTrans envVal envObsC envObs
  = (\<lambda>a. alg_mk_auto acts_MapOps trans_MapOps
-           (local.spr_simInit a)
+           (spr_simInit a)
            (SPRDetAutoDFS agents jkbp envInit envAction envTrans envVal envObsC envObs a))"
   unfolding mkSPRDetAuto_def mkAlgAuto_def SPRDetAutoDFS_def alg_mk_auto_def by (simp add: Let_def)
 

@@ -16,15 +16,14 @@ text {*
   and include a timing for the whole algorithm.
 *}
 
-consts 
-  stat_newnode :: "unit => unit"   -- "Invoked if new node is visited"
-  stat_start :: "unit => unit"     -- "Invoked once if algorithm starts"
-  stat_stop :: "unit => unit"      -- "Invoked once if algorithm stops"
+definition stat_newnode :: "unit => unit"   -- "Invoked if new node is visited"
+  where [code]: "stat_newnode \<equiv> \<lambda>_. ()"
 
-defs
-  stat_newnode_def[code]: "stat_newnode \<equiv> \<lambda>_. ()"
-  stat_start_def[code]: "stat_start \<equiv> \<lambda>_. ()"
-  stat_stop_def[code]: "stat_stop \<equiv> \<lambda>_. ()"
+definition stat_start :: "unit => unit"     -- "Invoked once if algorithm starts"
+  where [code]: "stat_start \<equiv> \<lambda>_. ()"
+
+definition stat_stop :: "unit => unit"      -- "Invoked once if algorithm stops"
+  where [code]: "stat_stop \<equiv> \<lambda>_. ()"
 
 lemma [autoref_rules]: 
   "(stat_newnode,stat_newnode) \<in> unit_rel \<rightarrow> unit_rel"
@@ -1345,7 +1344,7 @@ begin
     show ?thesis
       unfolding skeleton_def select_edge_def select_def
       apply (refine_rcg 
-        WHILEIT_rule[where R="abs_wf_rel v0", standard] refine_vcg)
+        WHILEIT_rule[where R="abs_wf_rel v0" for v0] refine_vcg)
 
       apply (vc_solve solve: invar_preserve simp: pE_fin')
       done
@@ -1357,7 +1356,7 @@ begin
   begin
     theorem "skeleton \<le> SPEC (\<lambda>D. outer_invar {} D)"
       unfolding skeleton_def select_edge_def select_def
-      by (refine_rcg WHILEIT_rule[where R="abs_wf_rel v0", standard])
+      by (refine_rcg WHILEIT_rule[where R="abs_wf_rel v0" for v0])
          (vc_solve solve: invar_preserve simp: pE_fin')
   end
 

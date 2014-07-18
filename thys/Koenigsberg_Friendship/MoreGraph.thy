@@ -105,7 +105,7 @@ lemma del_edge_undirected_degree_plus': "finite (edges g) \<Longrightarrow> (v,e
 
 lemma del_edge_undirected_degree_minus[simp]: "finite (edges g) \<Longrightarrow> (v,e,v') \<in> edges g 
     \<Longrightarrow> (v',e,v) \<in> edges g \<Longrightarrow> degree v (del_unEdge v e v' g) =degree v g- (1::nat)" 
-  using del_edge_undirected_degree_plus by (metis add_diff_cancel_left' nat_add_commute);
+  using del_edge_undirected_degree_plus by (metis add_diff_cancel_left' add.commute);
 
 lemma del_edge_undirected_degree_minus'[simp]: "finite (edges g) \<Longrightarrow> (v,e,v') \<in> edges g 
     \<Longrightarrow> (v',e,v) \<in> edges g \<Longrightarrow> degree v' (del_unEdge v e v' g) =degree v' g- (1::nat)"
@@ -245,7 +245,7 @@ next
   also have "...=set (rev_path xs) \<union> {(x3,x2,x1)}" by auto
   finally have "set (rev_path (x # xs)) =set (rev_path xs) \<union> {(x3,x2,x1)}" .
   moreover have "set (x#xs)= set xs \<union> {(x1,x2,x3)}" 
-    by (metis List.set.simps(2) insert_is_Un sup_commute x)
+    by (metis List.set_simps(2) insert_is_Un sup_commute x)
   ultimately show ?case using Cons by auto
 qed
 
@@ -266,11 +266,11 @@ next
   also have "...=edges G - (set (x#xs) \<union> set (rev_path (x#xs)))"  
     proof -
       have "set (rev_path xs) \<union> {(x3,x2,x1)}=set ((rev_path xs)@[(x3,x2,x1)])" 
-        by (metis List.set.simps(2) empty_set set_append)
+        by (metis List.set_simps(2) empty_set set_append)
       also have "...=set (rev_path (x#xs))" unfolding rev_path_def using  x by auto
       finally have "set (rev_path xs) \<union> {(x3,x2,x1)}=set (rev_path (x#xs))" .
       moreover have "set xs \<union> {(x1,x2,x3)}=set (x#xs)" 
-        by (metis List.set.simps(2) insert_is_Un sup_commute x)
+        by (metis List.set_simps(2) insert_is_Un sup_commute x)
       moreover have "edges G - (set xs \<union> set (rev_path xs))-{(x1,x2,x3),(x3,x2,x1)} =
                       edges G - ((set xs \<union> {(x1,x2,x3)}) \<union> (set (rev_path xs) \<union> {(x3,x2,x1)}))" 
         by auto 
@@ -371,7 +371,7 @@ next
       ultimately have " (x1,x2,x3) \<noteq> (x3,x2,x1)\<and> (x3,x2,x1)\<notin>set xs 
                         \<longleftrightarrow> (x1,x2,x3)\<notin> set (rev_path (x#xs))"  by blast 
       thus ?thesis 
-        by (metis (mono_tags) Int_iff Int_insert_left_if0 List.set.simps(2) empty_iff insertI1 x)
+        by (metis (mono_tags) Int_iff Int_insert_left_if0 List.set_simps(2) empty_iff insertI1 x)
     qed
   finally have "is_trail v (x#xs) v'\<longleftrightarrow>(is_path v (x#xs) v'\<and> distinct (x#xs) 
                   \<and> (set (x#xs) \<inter> set (rev_path (x#xs))={}))" .
@@ -1268,7 +1268,7 @@ proof  (cases "even(degree v' G)")
   case True
   hence "?L = num_of_odd_nodes G + (if even (degree v G)\<and> v\<noteq>v' then 2 else 0)" 
     by (metis assms(1) assms(2) assms(3) rem_UnPath_even)
-  thus ?thesis by (metis (mono_tags) True assms(4) nat_add_commute plus_nat.add_0)
+  thus ?thesis by (metis (mono_tags) True assms(4) add.commute plus_nat.add_0)
 next
   case False
   hence "?L = num_of_odd_nodes G + (if odd (degree v G)\<and> v\<noteq>v' then -2 else 0)" 
@@ -1397,7 +1397,7 @@ qed
 lemma odd_card: 
   assumes "finite A" "odd(card A)"
   shows "\<exists>x. x\<in>A" 
-by (metis all_not_in_conv assms(2) card_empty even_zero_nat) 
+by (metis all_not_in_conv assms(2) card_empty even_zero) 
 
 lemma (in valid_unMultigraph) extend_distinct_path: 
   assumes "finite E"  "is_trail v' ps v" 
@@ -1529,7 +1529,7 @@ proof -
       assume"odd(degree v0 G)" "v0=v'"
       hence "\<exists>w v1. is_trail v1 (w#max_path) v'" 
         by (metis assms(3) extend_distinct_path max_path(1))
-      thus ?thesis by (metis (full_types) List.set.simps(2) insert_subset max_path(2) path_in_edges)
+      thus ?thesis by (metis (full_types) List.set_simps(2) insert_subset max_path(2) path_in_edges)
     qed
   moreover have "odd(degree v0 G)\<Longrightarrow>v0\<noteq>v'\<Longrightarrow>v0=v"
     proof (rule ccontr)
@@ -1709,12 +1709,12 @@ proof -
           moreover have "xs = takeWhile (\<lambda>x. x \<noteq> (v, w, v') \<and> x \<noteq> (v', w, v)) (tl nvs)" 
             using `x # xs = takeWhile (\<lambda>x. x \<noteq> (v, w, v') \<and> x \<noteq> (v', w, v)) nvs` 
             by (metis (lifting, no_types) append_Cons list.distinct(1) takeWhile.simps(2) 
-                takeWhile_dropWhile_id tl.simps(2))
+                takeWhile_dropWhile_id list.sel(3))
           ultimately have "valid_graph.is_path (del_unEdge v w v' G) x3 xs n'" 
             using Cons by auto
           moreover have "x\<noteq>(v,w,v') \<and> x\<noteq>(v',w,v)" 
             using Cons(3) set_takeWhileD[of x "(\<lambda>x. x \<noteq> (v, w, v') \<and> x \<noteq> (v', w, v))" nvs] 
-            by (metis List.set.simps(2) insertI1)
+            by (metis List.set_simps(2) insertI1)
           hence "x\<in>edges (del_unEdge v w v' G)" 
             by (metis Cons.prems(1) del_UnEdge_frame is_path.simps(2) x)
           ultimately show ?case using x 

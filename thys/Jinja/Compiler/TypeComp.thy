@@ -339,7 +339,7 @@ shows "\<And>pc pc' d. shift pc (compxE\<^sub>2 e pc' d) = compxE\<^sub>2 e (pc'
 and  "\<And>pc pc' d. shift pc (compxEs\<^sub>2 es pc' d) = compxEs\<^sub>2 es (pc' + pc) d"
 (*<*)
 apply(induct e and es)
-apply(auto simp:shift_def add_ac)
+apply(auto simp:shift_def ac_simps)
 done
 (*>*)
 
@@ -515,7 +515,7 @@ apply(erule impE, arith)
 apply(drule_tac \<tau>s' = "\<tau>s\<^sub>1" in wt_instr_appL)
   apply arith
  apply simp
-apply(fastforce simp add:add_commute intro!: wt_instr_appLx)
+apply(fastforce simp add:add.commute intro!: wt_instr_appLx)
 done
 (*>*)
 
@@ -764,7 +764,7 @@ apply(rule conjI)
  apply (simp add: nth_append is_relevant_entry_def split: split_if_asm)
   apply (drule_tac x="\<tau>s\<^sub>1!pc" in bspec)
    apply (blast intro: nth_mem) 
-  apply fastforce   
+  apply fastforce
 apply (rule conjI)
  apply clarsimp
  apply (erule disjE, blast)
@@ -1256,6 +1256,7 @@ apply (auto simp add: wt_start_def ty\<^sub>i'_def ty\<^sub>l_def list_all2_conv
 apply (frule (1) TC2.compT_wt_instrs [of P _ _ _ _ "[]" "max_stack e" "Suc (length Ts + max_vars e)" T\<^sub>r])
 apply simp_all
 apply (clarsimp simp: after_def)
+apply hypsubst_thin
 apply (rule conjI)
 apply (clarsimp simp: wt_instrs_def after_def mxl mxs)
 apply clarsimp

@@ -193,7 +193,7 @@ declare
   insert_iff [cterms_env]                                                
   Un_insert_right [cterms_env]
   sup_bot_right [cterms_env]
-  Product_Type.prod.cases [cterms_env]
+  Product_Type.prod_cases [cterms_env]
   ctermsl.simps [cterms_env]
 
 end

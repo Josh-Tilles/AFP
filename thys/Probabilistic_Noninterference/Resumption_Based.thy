@@ -195,7 +195,7 @@ using assms finite_UnionD unfolding part_def by auto
 lemma part_setsum:
   assumes P: "part {..<n::nat} P"
   shows "(\<Sum>i<n. f i) = (\<Sum>p\<in>P. \<Sum>i\<in>p. f i)"
-proof (subst setsum_Union_disjoint[symmetric])
+proof (subst setsum.Union_disjoint [symmetric, simplified])
   show "\<forall>p\<in>P. finite p"
   proof
     fix p assume "p \<in> P"
@@ -1206,7 +1206,7 @@ assumes *: "mC_C theta1 c d s t P F" and **: "mC_C theta2 d e t u (F ` P) G"
 shows "mC_C (theta1 O theta2) c e s u P (G o F)"
 unfolding mC_C_def proof (intro conjI)
   show "mC_C_part c e P (G \<circ> F)"
-  using assms unfolding mC_C_def mC_C_part_def by (auto simp add: image_compose)
+  using assms unfolding mC_C_def mC_C_part_def by (auto simp add: image_comp)
 next
   show "inj_on (G \<circ> F) P"
   using assms unfolding mC_C_def by (auto simp add: comp_inj_on)
@@ -1274,13 +1274,13 @@ next
       thus "F I \<inter> F J = {}" using * IJ unfolding mC_C_def mC_C_part_def part_def by auto
     qed
     have "setsum (wt c s) II = setsum (setsum (wt c s)) S"
-    unfolding II using S SS setsum_UN_disjoint[of S id "wt c s"] by simp
+    unfolding II using S SS setsum.UNION_disjoint[of S id "wt c s"] by simp
     also have "... = setsum (% I. setsum (wt d t) (F I)) S"
     apply(rule setsum.cong)
     using S apply force
     unfolding S_def using * unfolding mC_C_def mC_C_part_def mC_C_wt_def by auto
     also have "... = setsum (wt d t) (UN I : S . F I)"
-    unfolding lift_def using S setsum_UN_disjoint[of S F "wt d t"] S SS SSS by simp
+    unfolding lift_def using S setsum.UNION_disjoint[of S F "wt d t"] S SS SSS by simp
     also have "(UN I : S . F I) = lift P F II" unfolding lift_def S_def by auto
     finally show "setsum (wt c s) II = setsum (wt d t) (lift P F II)" .
   qed
@@ -1471,7 +1471,7 @@ next
   unfolding mC_ZOC_wt_def proof(intro conjI ballI impI)
     fix J assume "J \<in> F ` P - {F I0}" and le_1: "setsum (wt d t) (F I0) < 1 \<and> setsum (wt c s) (inv_into P F (F I0)) < 1"
     then obtain I where I: "I \<in> P - {I0}" and J: "J = F I"
-    by (metis DiffE image_iff mem_delete)
+      by (metis image_iff member_remove remove_def)
     have 2: "inv_into P F J = I" unfolding J using 0 I by simp
     have 3: "inv_into P F (F I0) = I0" using 0 by simp
     show
@@ -1486,7 +1486,7 @@ next
     fix i j J
     assume "J \<in> F ` P - {F I0}" and j: "j \<in> J" and i: "i \<in> inv_into P F J"
     then obtain I where J: "J = F I" and I: "I \<in> P - {I0}"
-    by (metis DiffE image_iff mem_delete)
+      by (metis image_iff member_remove remove_def)
     hence "i \<in> I" using assms i unfolding mC_ZOC_def by auto
     hence "eff c s i \<approx> eff d t j \<and> (cont c s i, cont d t j) \<in> theta"
     using assms I j unfolding mC_ZOC_def mC_ZOC_eff_cont_def J by auto

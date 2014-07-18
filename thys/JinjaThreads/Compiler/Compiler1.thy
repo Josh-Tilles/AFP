@@ -17,7 +17,7 @@ where "fresh_var Vs \<equiv> Auxiliary.concat (STR ''V'' # Vs)"
 
 lemma fresh_var_fresh: "fresh_var Vs \<notin> set Vs"
 proof -
-  have "\<forall>V \<in> set Vs. length (explode V) < length (explode (fresh_var Vs))"
+  have "\<forall>V \<in> set Vs. length (String.explode V) < length (String.explode (fresh_var Vs))"
     by(induct Vs)(auto simp add: fresh_var_def Auxiliary.concat_def STR_inverse implode_def)
   thus ?thesis by auto
 qed
@@ -54,7 +54,7 @@ where
 | "compEs1 Vs (e#es) = compE1 Vs e # compEs1 Vs es"
 by pat_completeness auto
 termination
-apply(relation "sum_case (\<lambda>p. size (snd p)) (\<lambda>p. list_size size (snd p)) <*mlex*> {}")
+apply(relation "case_sum (\<lambda>p. size (snd p)) (\<lambda>p. size_list size (snd p)) <*mlex*> {}")
 apply(rule wf_mlex[OF wf_empty])
 apply(rule mlex_less, simp)+
 done

@@ -130,7 +130,7 @@ next
     proof -
       from wf less loc have "P,h \<turnstile> loc [:\<le>\<^sub>\<top>] LT'" by simp blast
       moreover from D h have "P,h \<turnstile> Addr xcp :\<le> Class D" 
-        by (simp add: conf_def obj_ty_def prod_case_unfold)
+        by (simp add: conf_def obj_ty_def case_prod_unfold)
       with less stk
       have "P,h \<turnstile> Addr xcp # drop (length stk - d') stk  [:\<le>] ST'" 
         by (auto intro!: list_all2_dropI)
@@ -302,7 +302,7 @@ proof -
         by (blast dest: exec_instr_xcpt_h)
       ultimately
       show ?thesis using xt match
-        by (auto simp add: relevant_entries_def conf_def prod_case_unfold intro: that)
+        by (auto simp add: relevant_entries_def conf_def case_prod_unfold intro: that)
     next
       case Throw with xp match preh 
       have "is_relevant_entry P (ins!pc) pc (f,t,D,pc',d')"
@@ -312,7 +312,7 @@ proof -
         by (blast dest: exec_instr_xcpt_h)
       ultimately
       show ?thesis using xt match
-        by (auto simp add: relevant_entries_def conf_def prod_case_unfold intro: that)
+        by (auto simp add: relevant_entries_def conf_def case_prod_unfold intro: that)
     qed auto
 
     with eff obtain ST' LT' where
@@ -395,7 +395,7 @@ proof -
       \<Phi>':  "\<Phi> C M ! (pc+1) = Some (ST', LT')" and
       LT': "P \<turnstile> LT [\<le>\<^sub>\<top>] LT'" and
       ST': "P \<turnstile> (T # drop (n+1) ST) [\<le>] ST'"
-      by (clarsimp simp add: sup_state_opt_any_Some) blast
+      by (clarsimp simp add: sup_state_opt_any_Some)
 
     from frame obtain 
     stk: "P,h \<turnstile> stk [:\<le>] ST" and
@@ -519,7 +519,7 @@ proof -
       T': "P \<turnstile> T \<le> T'" and
       frame':   "conf_f P h (ST',LT') ins' f" and
       conf_fs:  "conf_fs P h \<Phi> M' (size Ts'') T'' frs'"
-      by clarsimp blast
+      by clarsimp
 
     from f frame' obtain
       stk': "P,h \<turnstile> stk' [:\<le>] ST'" and
@@ -535,7 +535,7 @@ proof -
       \<Phi>_suc:   "\<Phi> C' M' ! Suc pc' = Some (ST'', LT'')" and
       less:    "P \<turnstile> (T' # drop (size Ts+1) ST', LT') \<le>\<^sub>i (ST'', LT'')" and
       suc_pc': "Suc pc' < size ins'" 
-      by (clarsimp simp add: sup_state_opt_any_Some) blast
+      by (clarsimp simp add: sup_state_opt_any_Some)
 
     from hd_stk T' have hd_stk': "P,h \<turnstile> hd stk :\<le> T'"  ..
         
@@ -742,7 +742,7 @@ proof -
     pc': "pc+1 < size ins" and 
     \<Phi>': "\<Phi> C M!(pc+1) = Some (ST',LT')" and
     ST': "P \<turnstile> ST'' [\<le>] ST'" and LT': "P \<turnstile> LT [\<le>\<^sub>\<top>] LT'"
-    by clarsimp blast
+    by clarsimp
 
   from stk ST obtain v ref stk' where 
     stk': "stk = v#ref#stk'" and

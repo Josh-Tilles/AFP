@@ -188,10 +188,11 @@ subsection "Dijkstra's Algorithm"
     (* TODO/FIXME: Should we built in such massaging of the goal into 
         refine_rcg ?*)
     apply (simp_all split: prod.split_asm)
-    apply (tactic {* 
-      ALLGOALS (Hypsubst.bound_hyp_subst_tac @{context}
+    apply (tactic {*
+      ALLGOALS ((REPEAT_DETERM o Hypsubst.bound_hyp_subst_tac @{context})
       THEN' asm_full_simp_tac @{context}
       )*})
+
   proof -
     fix wl res v
     assume INV: "dinvar (wl,res)"
@@ -759,7 +760,7 @@ begin
   definition \<alpha>r::"('V,'W) mres \<Rightarrow> 'V \<rightharpoonup> ('V,'W) path" where 
     "\<alpha>r \<equiv> \<lambda>res v. case res v of None \<Rightarrow> None | Some (p,w) \<Rightarrow> Some (rev p)"
   definition \<alpha>s:: "('V,'W) mstate \<Rightarrow> ('V,'W) state" where
-    "\<alpha>s \<equiv> map_pair \<alpha>w \<alpha>r"
+    "\<alpha>s \<equiv> map_prod \<alpha>w \<alpha>r"
 
   text {* Additional invariants for the new state. They guarantee that
     the cached weights are consistent.*}
@@ -778,7 +779,7 @@ begin
     by (auto split: option.split option.split_asm)
 
   lemma mpath'_correct: "\<lbrakk>dinvarm (wl,res)\<rbrakk> \<Longrightarrow>
-    mpath' (res v) = Option.map rev (\<alpha>r res v)"
+    mpath' (res v) = map_option rev (\<alpha>r res v)"
     unfolding dinvarm_def \<alpha>r_def
     by (auto split: option.split option.split_asm)
 
@@ -911,7 +912,7 @@ begin
         unfolding \<alpha>w_def \<alpha>r_def by (auto split: option.split_asm)
     
       hence "\<And>x. \<alpha>w wl' = \<alpha>w (wl'(v'\<mapsto>x))" by (auto simp: \<alpha>w_def)
-      moreover have "mpath' (res v) = Option.map rev (\<alpha>r res v)" using DINV 
+      moreover have "mpath' (res v) = map_option rev (\<alpha>r res v)" using DINV 
         by (simp add: mpath'_correct)
       ultimately have
         "\<alpha>w wl' = \<alpha>w (wl'(v' \<mapsto> mpath_weight' (res v) + Num w')) 

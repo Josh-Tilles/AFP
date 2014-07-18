@@ -35,8 +35,8 @@ subsection "Definition"
       = take (Suc len) (drop si lsrc) @ x"
       apply simp
       by (metis Suc.prems(1) add_Suc_right drop_Suc_conv_tl 
-        less_Suc_eq_le nat_add_commute not_less_eq take_Suc_Cons 
-        termination_basic_simps(4))
+        less_Suc_eq_le add.commute not_less_eq take_Suc_Cons 
+        Nat.trans_le_add2)
 
     from Suc.prems show ?case
       by (sep_auto simp: take_update_last drop_upd_irrelevant)
@@ -61,7 +61,7 @@ subsection "Definition"
 ML_val Array.update
 
 subsection "Code Generator Setup"
-  code_include SML "array_blit"
+  code_printing code_module "array_blit" \<rightharpoonup> (SML)
     {*
     fun array_blit src si dst di len = 
       ArraySlice.copy {
@@ -86,9 +86,9 @@ subsection "Code Generator Setup"
           (integer_of_nat len)" by (simp add: blit'_def)
 
   (* TODO: Export to other languages: OCaml, Haskell, Scala *)
-  code_const blit' 
-    (SML "(fn/ ()/ => /array'_blit _ _ _ _ _)")
-    (Scala "('_: Unit)/=>/ System.arraycopy((_).array,(_).as'_Int,(_).array,(_).as'_Int,(_).as'_Int)")
+  code_printing constant blit' \<rightharpoonup>
+    (SML) "(fn/ ()/ => /array'_blit _ _ _ _ _)"
+    and (Scala) "('_: Unit)/=>/ System.arraycopy((_).array,(_).as'_Int,(_).array,(_).as'_Int,(_).as'_Int)"
   
   definition [code del]: "nth_oo' v a == nth_oo v a o nat_of_integer"
   definition [code del]: "upd_oo' f == upd_oo f o nat_of_integer"
@@ -102,8 +102,8 @@ subsection "Code Generator Setup"
   lemmas [code] = nth_oo'_def[unfolded nth_oo_def[abs_def]]
   lemmas [code] = upd_oo'_def[unfolded upd_oo_def[abs_def]]
 
-  code_const nth_oo' (SML "array'_nth'_oo _ _ _")
-  code_const upd_oo' (SML "array'_upd'_oo _ _ _ _")
+  code_printing constant nth_oo' \<rightharpoonup> (SML) "array'_nth'_oo _ _ _"
+    | constant upd_oo' \<rightharpoonup> (SML) "array'_upd'_oo _ _ _ _"
 
 subsection {* Derived Functions *}
   definition "array_shrink a s \<equiv> do {

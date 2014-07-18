@@ -48,10 +48,8 @@ definition "indep A B \<longleftrightarrow> prob (A \<inter> B) = prob A * prob 
 text{* The probability of an indicator variable is equal to its expectation: *}
 
 lemma expectation_indicator:
-  assumes "A \<in> events"
-  shows "expectation (rind A) = prob A"
-using integral_indicator(1)[OF assms]
-by (metis Sigma_Algebra.measure_def emeasure_finite)
+  "A \<in> events \<Longrightarrow> expectation (rind A) = prob A"
+  by simp
 
 text{* For a non-negative random variable @{term X}, the Markov inequality gives the following
 upper bound: \[ \Pr[X \ge a] \le \frac{\Ex[X]}{a} \] *}
@@ -63,25 +61,16 @@ proof -
   --{* proof adapted from @{thm [source] edge_space.Markov_inequality}, but generalized to arbitrary
        @{term prob_space}s *}
   have "(\<integral>\<^sup>+ x. ereal (X x) \<partial>M) = (\<integral>x. X x \<partial>M)"
-    using assms by (intro positive_integral_eq_integral) auto
+    using assms by (intro nn_integral_eq_integral) auto
   thus ?thesis
-    using assms positive_integral_Markov_inequality[of X M "space M" "1 / t"]
-    by (auto cong: positive_integral_cong simp: emeasure_eq_measure one_ereal_def)
+    using assms nn_integral_Markov_inequality[of X M "space M" "1 / t"]
+    by (auto cong: nn_integral_cong simp: emeasure_eq_measure one_ereal_def)
 qed
-
-definition variance :: "('a \<Rightarrow> real) \<Rightarrow> real" where
-"variance X = expectation (\<lambda>x. (X x - expectation X)^2)"
-
-text{* The following lemma is missing from @{thm [source] Lebesgue_Integration.integral_multc}. *}
-
-lemma integral_multc_1: "integrable M f \<Longrightarrow> integrable M (\<lambda>x. f x * c)" (* should be in integral_multc *)
-by (auto simp: ac_simps)
-
-lemmas integral_multc[simp] = integral_multc_1 Lebesgue_Integration.integral_multc
 
 text{* $\Var[X] = \Ex[X^2] - \Ex[X]^2 $ *}
 
 lemma variance_expectation:
+  fixes X :: "'a \<Rightarrow> real"
   assumes "integrable M (\<lambda>x. (X x)^2)" and "X \<in> borel_measurable M"
   shows
     "integrable M (\<lambda>x. (X x - expectation X)^2)" (is ?integrable)
@@ -95,7 +84,7 @@ proof -
   hence
     "variance X = expectation (\<lambda>x. (X x)^2) + (expectation X)^2 + expectation (\<lambda>x. - (2 * X x * expectation X))"
     ?integrable
-    unfolding variance_def using integral_add by (simp add: int assms prob_space)+
+    using integral_add by (simp add: int assms prob_space)+
 
   thus ?variance ?integrable
     by (simp add: int power2_eq_square)+
@@ -118,10 +107,8 @@ proof -
 
   have "0 < ?t"
     using s_pos by simp
-  hence "prob {a \<in> space M. ?t \<le> ?X a} \<le> expectation ?X / ?t"
-    using markov_inequality variance_expectation[OF Y_int Y_borel] by simp
   hence "prob {a \<in> space M. ?t \<le> ?X a} \<le> variance Y / s^2"
-    unfolding variance_def .
+    using markov_inequality variance_expectation[OF Y_int Y_borel] by (simp add: field_simps)
   moreover have "{a \<in> space M. ?t \<le> ?X a} = {a \<in> space M. s \<le> \<bar>Y a - expectation Y\<bar>}"
     using real_abs_le_square_iff s_pos by force
   ultimately show ?thesis
@@ -199,7 +186,7 @@ proof -
     hence "{j. j \<in> I \<and> ineq_dep i j} = {}"
       using assms by auto
     hence "(\<Sum>j | j \<in> I \<and> ineq_dep i j. prob (A i \<inter> A j)) = 0"
-      using setsum_empty by metis
+      using setsum.empty by metis
   }
   hence "\<Delta>\<^sub>d = (0 :: real) * card I"
     unfolding \<Delta>\<^sub>d_def by simp

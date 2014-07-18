@@ -21,20 +21,20 @@ lemma rtranclp_tranclpE:
 using assms
 by(cases)(blast dest: rtranclp_into_tranclp1)+
 
-lemma map_of_map2: "map_of (map (\<lambda>(k, v). (k, f k v)) xs) k = Option.map (f k) (map_of xs k)"
+lemma map_of_map2: "map_of (map (\<lambda>(k, v). (k, f k v)) xs) k = map_option (f k) (map_of xs k)"
 by(induct xs) auto
 
 lemma map_of_map_K: "map_of (map (\<lambda>k. (k, c)) xs) k = (if k \<in> set xs then Some c else None)"
 by(induct xs) auto
 
 lift_definition map_values :: "('a \<Rightarrow> 'b \<Rightarrow> 'c) \<Rightarrow> ('a, 'b) mapping \<Rightarrow> ('a, 'c) mapping"
-is "\<lambda>f m k. Option.map (f k) (m k)" .
+is "\<lambda>f m k. map_option (f k) (m k)" .
 
 lemma map_values_Mapping [simp]: 
-  "map_values f (Mapping.Mapping m) = Mapping.Mapping (\<lambda>k. Option.map (f k) (m k))"
+  "map_values f (Mapping.Mapping m) = Mapping.Mapping (\<lambda>k. map_option (f k) (m k))"
 by(rule map_values.abs_eq)
 
-lemma map_Mapping: "Mapping.map f g (Mapping.Mapping m) = Mapping.Mapping (Option.map g \<circ> m \<circ> f)"
+lemma map_Mapping: "Mapping.map f g (Mapping.Mapping m) = Mapping.Mapping (map_option g \<circ> m \<circ> f)"
 by(rule map.abs_eq)
 
 abbreviation subclst :: "'m prog \<Rightarrow> cname \<Rightarrow> cname \<Rightarrow> bool"
@@ -81,7 +81,7 @@ typedef 'm prog_impl = "{P :: 'm prog_impl'. wf_prog_impl' P}"
 proof
   show "([], Mapping.empty, Mapping.empty, Mapping.empty, Mapping.empty) \<in> ?prog_impl"
     apply clarsimp
-    by transfer (simp_all add: fun_eq_iff is_class_def fun_relI)
+    by transfer (simp_all add: fun_eq_iff is_class_def rel_funI)
 qed
 
 lemma impl_of_ProgImpl [simp]:
@@ -234,8 +234,8 @@ by(simp add: program_def fun_eq_iff tabulate_program_def)
 subsubsection {* @{term "class" } *}
 
 lemma tabulate_class_code [code]:
-  "tabulate_class = assoc_list_to_mapping"
-by(rule ext)(simp add: tabulate_class_def assoc_list_to_mapping_def)
+  "tabulate_class = Mapping.of_alist"
+  by transfer (simp add: fun_eq_iff)
 
 subsubsection {* @{term "subcls" } *}
 
@@ -293,7 +293,7 @@ where "check_acyclicity _ _ = ()"
 definition cyclic_class_hierarchy :: unit 
 where [code del]: "cyclic_class_hierarchy = ()"
 
-code_abort cyclic_class_hierarchy
+declare [[code abort: cyclic_class_hierarchy]]
 
 lemma check_acyclicity_code:
   "check_acyclicity mapping P =
@@ -390,7 +390,7 @@ by(auto dest: has_fields_fun)
 
 lemma tabulate_sees_field_code [code]:
   "tabulate_sees_field P =
-   Mapping.tabulate (map fst P) (\<lambda>C. assoc_list_to_mapping (map (\<lambda>((F, D), Tfm). (F, (D, Tfm))) (fields' P C)))"
+   Mapping.tabulate (map fst P) (\<lambda>C. Mapping.of_alist (map (\<lambda>((F, D), Tfm). (F, (D, Tfm))) (fields' P C)))"
 apply(simp add: tabulate_sees_field_def tabulate_def is_class_def fields'_def Fields'_eq_Fields Mapping_inject)
 apply(rule ext)
 apply clarsimp
@@ -398,7 +398,7 @@ apply(rule conjI)
  apply(clarsimp simp add: o_def)
  apply(subst map_of_map2[unfolded split_def])
  apply simp
- apply(clarsimp simp add: assoc_list_to_mapping_def Mapping_inject)
+ apply transfer
  apply(rule conjI)
   apply clarsimp
   apply(rule ext)
@@ -494,7 +494,7 @@ by(auto simp add: methods'_def)
 
 lemma tabulate_Method_code [code]:
   "tabulate_Method P =
-   Mapping.tabulate (map fst P) (\<lambda>C. assoc_list_to_mapping (map (\<lambda>(M, (rest, D)). (M, D, rest)) (methods' P C)))"
+   Mapping.tabulate (map fst P) (\<lambda>C. Mapping.of_alist (map (\<lambda>(M, (rest, D)). (M, D, rest)) (methods' P C)))"
 apply(simp add: tabulate_Method_def tabulate_def o_def lookup.rep_eq Mapping_inject)
 apply(rule ext)
 apply clarsimp
@@ -503,7 +503,7 @@ apply(rule conjI)
  apply(rule sym)
  apply(subst map_of_map2[unfolded split_def])
  apply(simp add: is_class_def)
- apply(simp add: assoc_list_to_mapping_def Mapping_inject)
+ apply transfer
  apply(rule ext)
  apply(simp add: map_of_map2)
  apply(rule conjI)

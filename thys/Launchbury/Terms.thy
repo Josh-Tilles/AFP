@@ -1,5 +1,5 @@
 theory Terms
-  imports "Nominal-Utils" Vars  "AList-Utils-Nominal"
+  imports "../Nominal2/Nominal2"  Vars  "AList-Utils-Nominal"
 begin
 
 subsubsection {* Expressions *}
@@ -43,7 +43,7 @@ text {*
 Conversion from @{typ assn} to @{typ heap}.
 *}
 
-nominal_primrec asToHeap :: "assn \<Rightarrow> heap" 
+nominal_function asToHeap :: "assn \<Rightarrow> heap" 
  where ANilToHeap: "asToHeap ANil = []"
  | AConsToHeap: "asToHeap (ACons v e as) = (v, e) # asToHeap as"
 unfolding eqvt_def asToHeap_graph_aux_def
@@ -53,7 +53,7 @@ apply rule
 apply(case_tac x rule: exp_assn.exhaust(2))
 apply auto
 done
-termination(eqvt) by lexicographic_order
+nominal_termination(eqvt) by lexicographic_order
 
 lemma asToHeap_eqvt: "eqvt asToHeap"
   unfolding eqvt_def
@@ -115,7 +115,7 @@ lemma fv_asToHeap: "fv (asToHeap \<Gamma>) = fv \<Gamma>"
 lemma fv_heapToAssn: "fv (heapToAssn \<Gamma>) = fv \<Gamma>"
   unfolding fv_def by (auto simp add: supp_heapToAssn)
 
-lemma [simp]: "size (heapToAssn \<Gamma>) = list_size (\<lambda> (v,e) . size e) \<Gamma>"
+lemma [simp]: "size (heapToAssn \<Gamma>) = size_list (\<lambda> (v,e) . size e) \<Gamma>"
   by (induct rule: heapToAssn.induct)
      (simp_all add: heapToAssn.simps)
 
@@ -136,7 +136,7 @@ text {*
 We rewrite all (relevant) lemmas about @{term LetA} in terms of @{term Let}.
 *}
 
-lemma size_Let[simp]: "size (Let \<Gamma> e) = list_size (\<lambda>p. size (snd p)) \<Gamma> + size e + Suc 0"
+lemma size_Let[simp]: "size (Let \<Gamma> e) = size_list (\<lambda>p. size (snd p)) \<Gamma> + size e + Suc 0"
   unfolding Let_def by (auto simp add: split_beta')
 
 lemma Let_distinct[simp]:
@@ -322,7 +322,7 @@ proof-
   have "fv (delete x \<Gamma>) \<subseteq> fv \<Gamma>" by (metis fv_delete_subset)
   moreover
   have "(x,e) \<in> set \<Gamma>" by (metis assms map_of_is_SomeD)
-  hence "fv e \<subseteq> fv \<Gamma>" by (metis assms domA_from_set map_of_fv_subset the.simps)
+  hence "fv e \<subseteq> fv \<Gamma>" by (metis assms domA_from_set map_of_fv_subset option.sel)
   moreover
   have "x \<in> fv (Var x)" by simp
   ultimately show ?thesis by auto

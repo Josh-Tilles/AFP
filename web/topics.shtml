@@ -82,6 +82,7 @@
 <h3>Data Structures</h3>
 
 <div class="list">
+<a href="entries/Amortized_Complexity.shtml">Amortized_Complexity</a> &nbsp;
 <a href="entries/AVL-Trees.shtml">AVL-Trees</a> &nbsp;
 <a href="entries/BDD.shtml">BDD</a> &nbsp;
 <a href="entries/BinarySearchTree.shtml">BinarySearchTree</a> &nbsp;
@@ -274,6 +275,7 @@
 <div class="list">
 <a href="entries/Real_Impl.shtml">Real_Impl</a> &nbsp;
 <a href="entries/Lower_Semicontinuous.shtml">Lower_Semicontinuous</a> &nbsp;
+<a href="entries/Affine_Arithmetic.shtml">Affine_Arithmetic</a> &nbsp;
 <a href="entries/Cauchy.shtml">Cauchy</a> &nbsp;
 <a href="entries/Integration.shtml">Integration</a> &nbsp;
 <a href="entries/Ordinary_Differential_Equations.shtml">Ordinary_Differential_Equations</a> &nbsp;

@@ -31,8 +31,7 @@ proof (rule finite_imageD[OF finite_subset])
   show "inj_on f {m. dom m = A \<and> ran m = B}"
     apply(rule inj_on_inverseI[of _ g])
     unfolding f_def g_def
-    apply (auto simp add: dom_def fun_eq_iff)
-    by (metis not_Some_eq)
+    by (auto simp add: dom_def fun_eq_iff)
 qed
 
 lemma perm_finite: "finite (dom m2) \<Longrightarrow> finite {m1. dom m1 = dom m2 \<and> ran m1 = ran m2}"
@@ -119,8 +118,7 @@ have "finite (ran m)" using assms by (rule finite_range)
   have "finite (\<Union> {{b. (x \<rightleftharpoons> b) \<bullet> m = m'} | m'. dom m' = dom m \<and> ran m' = ran m \<and> m' \<noteq> m})"
     by auto
   hence "finite {b. dom (?f b) = dom m \<and> ran (?f b) = ran m \<and> ?f b \<noteq> m}"
-    apply (auto elim!: finite_subset[rotated])
-    by (metis (lifting, full_types) mem_Collect_eq)
+    by (auto elim!: finite_subset[rotated])
  
   with `x \<notin> supp (ran m)` and `x \<notin> supp (dom m)`
   have "x \<notin> supp m" 
@@ -165,7 +163,7 @@ lemma the_lookup_eqvt:
   "x \<in> fdom m \<Longrightarrow> \<pi> \<bullet> (m f! x) = (\<pi> \<bullet> m) f! (\<pi> \<bullet> x)"
   apply (transfer fixing: x) 
   apply auto
-  by (metis Some_eqvt permute_fun_app_eq the.simps)
+  by (metis Some_eqvt permute_fun_app_eq option.sel)
 
 lemma fempty_eqvt[eqvt, simp]:
   "\<pi> \<bullet> fempty = fempty"

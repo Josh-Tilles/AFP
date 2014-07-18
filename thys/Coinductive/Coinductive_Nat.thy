@@ -3,12 +3,18 @@
     Maintainer:  Andreas Lochbihler
 *)
 
-header {* Coinductive natural numbers *}
+header {* Extended natural numbers as a codatatype *}
 
 theory Coinductive_Nat imports
   "~~/src/HOL/Library/Extended_Nat"
-  "~~/src/HOL/BNF/BNF"
+  Complete_Partial_Order2
 begin
+
+lemma inj_enat [simp]: "inj_on enat A"
+by(simp add: inj_on_def)
+
+lemma Sup_range_enat [simp]: "Sup (range enat) = \<infinity>"
+by(auto dest: finite_imageD simp add: Sup_enat_def)
 
 lemmas eSuc_plus = iadd_Suc
 
@@ -75,33 +81,37 @@ qed
 
 locale co begin
 
-wrap_free_constructors ["0::enat", eSuc] enat_case [=] [[], [epred]] [[epred: "0::enat"]]
+free_constructors (no_code) case_enat for
+    "0::enat"
+  | eSuc epred
+where
+  "epred 0 = 0"
   apply (erule enat_coexhaust, assumption)
  apply (rule eSuc_inject)
 by (rule zero_ne_eSuc)
 
 end
 
-lemma enat_cocase_0 [simp]: "co.enat_case z s 0 = z"
+lemma enat_cocase_0 [simp]: "co.case_enat z s 0 = z"
 by (rule co.enat.case(1))
 
-lemma enat_cocase_eSuc [simp]: "co.enat_case z s (eSuc n) = s n"
+lemma enat_cocase_eSuc [simp]: "co.case_enat z s (eSuc n) = s n"
 by (rule co.enat.case(2))
 
 lemma neq_zero_conv_eSuc: "n \<noteq> 0 \<longleftrightarrow> (\<exists>n'. n = eSuc n')"
 by(cases n rule: enat_coexhaust) simp_all
 
 lemma enat_cocase_cert:
-  assumes "CASE \<equiv> co.enat_case c d"
+  assumes "CASE \<equiv> co.case_enat c d"
   shows "(CASE 0 \<equiv> c) &&& (CASE (eSuc n) \<equiv> d n)"
   using assms by simp_all
 
 lemma enat_cosplit_asm:
-  "P (co.enat_case c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = eSuc m \<and> \<not> P (d m))))"
+  "P (co.case_enat c d n) = (\<not> (n = 0 \<and> \<not> P c \<or> (\<exists>m. n = eSuc m \<and> \<not> P (d m))))"
 by (rule co.enat.split_asm)
 
 lemma enat_cosplit:
-  "P (co.enat_case c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = eSuc m \<longrightarrow> P (d m)))"
+  "P (co.case_enat c d n) = ((n = 0 \<longrightarrow> P c) \<and> (\<forall>m. n = eSuc m \<longrightarrow> P (d m)))"
 by (rule co.enat.split)
 
 abbreviation epred :: "enat => enat" where "epred \<equiv> co.epred"
@@ -114,10 +124,10 @@ by(cases n rule: co.enat.exhaust)(simp_all)
 
 subsection {* Corecursion for @{typ enat} *}
 
-lemma enat_case_numeral [simp]: "enat_case f i (numeral v) = (let n = numeral v in f n)"
+lemma case_enat_numeral [simp]: "case_enat f i (numeral v) = (let n = numeral v in f n)"
 by(simp add: numeral_eq_enat)
 
-lemma enat_case_0 [simp]: "enat_case f i 0 = f 0"
+lemma case_enat_0 [simp]: "case_enat f i 0 = f 0"
 by(simp add: zero_enat_def)
 
 lemma [simp]:
@@ -154,11 +164,11 @@ lemma [simp]:
 by(simp_all add: numeral_eq_eSuc)
 
 lemma enat_cocase_numeral [simp]:
-  "co.enat_case a f (numeral v) = (let pv = epred_numeral v in f pv)"
+  "co.case_enat a f (numeral v) = (let pv = epred_numeral v in f pv)"
 by(simp add: numeral_eq_eSuc)
 
 lemma enat_cocase_add_eq_if [simp]:
-  "co.enat_case a f ((numeral v) + n) = (let pv = epred_numeral v in f (pv + n))"
+  "co.case_enat a f ((numeral v) + n) = (let pv = epred_numeral v in f (pv + n))"
 by(simp add: numeral_eq_eSuc iadd_Suc)
 
 
@@ -192,39 +202,13 @@ by(cases n rule: enat_coexhaust) simp_all
 lemma epred_inject: "\<lbrakk> x \<noteq> 0; y \<noteq> 0 \<rbrakk> \<Longrightarrow> epred x = epred y \<longleftrightarrow> x = y"
 by(cases x y rule: enat.exhaust[case_product enat.exhaust])(auto simp add: zero_enat_def)
 
+lemma monotone_fun_eSuc[partial_function_mono]:
+    "monotone (fun_ord (\<lambda>y x. x \<le> y)) (\<lambda>y x. x \<le> y) (\<lambda>f. eSuc (f x))"
+  by (auto simp: monotone_def fun_ord_def)
 
-
-definition enat_unfold :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> enat"
-where "enat_unfold stop next a =
-  (if \<exists>n. stop ((next ^^ n) a)
-   then enat (LEAST n. stop ((next ^^ n) a))
-   else \<infinity>)"
-
-lemma enat_unfold [code, nitpick_simp]:
-  "enat_unfold stop next a =
-  (if stop a then 0 else eSuc (enat_unfold stop next (next a)))"
-  (is "?lhs = ?rhs")
-proof(cases "\<exists>n. stop ((next ^^ n) a)")
-  case True
-  let ?P = "\<lambda>n. stop ((next ^^ n) a)"
-  let ?m = "Least ?P"
-  from True obtain n where n: "?P n" ..
-  hence "?P ?m" by(rule LeastI)
-  show ?thesis
-  proof(cases "stop a")
-    case True
-    thus ?thesis
-      by(auto simp add: enat_unfold_def zero_enat_def intro: Least_equality exI[where x=0])
-  next
-    case False
-    with n obtain n' where n': "n = Suc n'" by(cases n) auto
-    from n have "?lhs = enat ?m" by(auto simp add: enat_unfold_def)
-    also from n have "?m = Suc (LEAST n. ?P (Suc n))"
-      by(rule Least_Suc)(simp add: False)
-    finally show ?thesis using False n n'
-      by(auto simp add: eSuc_enat[symmetric] funpow_swap1 enat_unfold_def)
-  qed
-qed(auto simp add: enat_unfold_def funpow_swap1 elim: allE[where x=0] allE[where x="Suc n", standard])
+partial_function (gfp) enat_unfold :: "('a \<Rightarrow> bool) \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> enat" where
+  enat_unfold [code, nitpick_simp]:
+  "enat_unfold stop next a = (if stop a then 0 else eSuc (enat_unfold stop next (next a)))"
 
 lemma enat_unfold_stop [simp]: "stop a \<Longrightarrow> enat_unfold stop next a = 0"
 by(simp add: enat_unfold)
@@ -239,6 +223,24 @@ by(simp add: enat_unfold)
 lemma epred_enat_unfold [simp]:
   "epred (enat_unfold stop next a) = (if stop a then 0 else enat_unfold stop next (next a))"
 by(simp add: enat_unfold_next)
+
+lemma epred_max: "epred (max x y) = max (epred x) (epred y)"
+by(cases x y rule: enat.exhaust[case_product enat.exhaust]) simp_all
+
+lemma epred_Max:
+  assumes "finite A" "A \<noteq> {}"
+  shows "epred (Max A) = Max (epred ` A)"
+using assms
+proof induction
+  case (insert x A)
+  thus ?case by(cases "A = {}")(simp_all add: epred_max)
+qed simp
+
+lemma finite_imageD2: "\<lbrakk> finite (f ` A); inj_on f (A - B); finite B \<rbrakk> \<Longrightarrow> finite A"
+by (metis Diff_subset finite_Diff2 image_mono inj_on_finite)
+
+lemma epred_Sup: "epred (Sup A) = Sup (epred ` A)"
+by(auto 4 4 simp add: bot_enat_def Sup_enat_def epred_Max inj_on_def neq_zero_conv_eSuc dest: finite_imageD2[where B="{0}"])
 
 
 subsection {* Less as greatest fixpoint *}
@@ -412,6 +414,295 @@ lemma enat_unfold_unique:
   shows "h x = enat_unfold stop next x"
 by(coinduction arbitrary: x rule: enat_coinduct)(subst (1 3) h, auto)
 
+subsection {* Setup for partial\_function *}
+
+lemma enat_diff_cancel_left: "\<lbrakk> m \<le> x; m \<le> y \<rbrakk> \<Longrightarrow> x - m = y - m \<longleftrightarrow> x = (y :: enat)"
+by(cases x y m rule: enat.exhaust[case_product enat.exhaust[case_product enat.exhaust]])(simp_all, arith)
+
+lemma finite_lessThan_enatI: 
+  assumes "m \<noteq> \<infinity>"
+  shows "finite {..<m :: enat}"
+proof -
+  from assms obtain m' where m: "m = enat m'" by auto
+  have "{..<enat m'} \<subseteq> enat ` {..<m'}"
+    by(rule subsetI)(case_tac x, auto)
+  thus ?thesis unfolding m by(rule finite_subset) simp
+qed
+
+lemma infinite_lessThan_infty: "\<not> finite {..<\<infinity> :: enat}"
+proof
+  have "range enat \<subseteq> {..<\<infinity>}" by auto
+  moreover assume "finite {..<\<infinity> :: enat}"
+  ultimately have "finite (range enat)" by(rule finite_subset)
+  hence "finite (UNIV :: nat set)"
+    by(rule finite_imageD)(simp add: inj_on_def)
+  thus False by simp
+qed
+
+lemma finite_lessThan_enat_iff:
+  "finite {..<m :: enat} \<longleftrightarrow> m \<noteq> \<infinity>"
+by(cases m)(auto intro: finite_lessThan_enatI simp add: infinite_lessThan_infty)
+
+
+lemma eSuc_max: "eSuc (max x y) = max (eSuc x) (eSuc y)"
+by(cases x y rule: enat.exhaust[case_product enat.exhaust]) simp_all
+
+lemma eSuc_Max: 
+  assumes "finite A" "A \<noteq> {}"
+  shows "eSuc (Max A) = Max (eSuc ` A)"
+using assms proof induction
+  case (insert x A)
+  thus ?case by(cases "A = {}")(simp_all add: eSuc_max)
+qed simp
+
+lemma eSuc_Sup: "A \<noteq> {} \<Longrightarrow> eSuc (Sup A) = Sup (eSuc ` A)"
+by(auto simp add: Sup_enat_def eSuc_Max inj_on_def dest: finite_imageD)
+
+lemma enat_minus_mono1: "x \<le> y \<Longrightarrow> x - m \<le> y - (m :: enat)"
+by(cases m x y rule: enat.exhaust[case_product enat.exhaust[case_product enat.exhaust]]) simp_all
+
+lemma max_enat_minus1: "max n m - k = max (n - k) (m - k :: enat)"
+by(cases n m k rule: enat.exhaust[case_product enat.exhaust[case_product enat.exhaust]]) simp_all
+
+lemma Max_enat_minus1:
+  assumes "finite A" "A \<noteq> {}"
+  shows "Max A - m = Max ((\<lambda>n :: enat. n - m) ` A)"
+using assms proof induct
+  case (insert x A)
+  thus ?case by(cases "A = {}")(simp_all add: max_enat_minus1)
+qed simp
+
+lemma Sup_enat_minus1: 
+  assumes "m \<noteq> \<infinity>"
+  shows "\<Squnion>A - m = \<Squnion>((\<lambda>n :: enat. n - m) ` A)"
+proof -
+  from assms obtain m' where "m = enat m'" by auto
+  thus ?thesis
+    by(auto simp add: Sup_enat_def Max_enat_minus1 finite_lessThan_enat_iff enat_diff_cancel_left inj_on_def dest!: finite_imageD2[where B="{..<enat m'}"])
+qed
+
+lemma Sup_image_eadd1:
+  assumes "Y \<noteq> {}"
+  shows "Sup ((\<lambda>y :: enat. x + y) ` Y) = x + Sup Y"
+proof(cases "finite Y")
+  case True
+  have "op + x ` Y = {x + m |m. m \<in> Y}" by auto
+  thus ?thesis using True by(simp add: Sup_enat_def add_Max_commute assms)
+next
+  case False
+  thus ?thesis
+  proof(cases x)
+    case (enat x')
+    hence "\<not> finite (op + x ` Y)" using False
+      by(auto dest!: finite_imageD intro: inj_onI)
+    with False show ?thesis by(simp add: Sup_enat_def assms)
+  next
+    case infinity
+    hence "op + x ` Y = {\<infinity>}" using assms by auto
+    thus ?thesis using infinity by(simp add: image_constant_conv assms)
+  qed
+qed
+
+lemma Sup_image_eadd2:
+  "Y \<noteq> {} \<Longrightarrow> Sup ((\<lambda>y :: enat. y + x) ` Y) = Sup Y + x"
+by(subst (1 2) add.commute)(rule Sup_image_eadd1)
+
+
+lemma mono2mono_eSuc [THEN lfp.mono2mono, cont_intro, simp]:
+  shows monotone_eSuc: "monotone op \<le> op \<le> eSuc"
+by(rule monotoneI) simp
+
+lemma mcont2mcont_eSuc [THEN lfp.mcont2mcont, cont_intro, simp]:
+  shows mcont_eSuc: "mcont Sup op \<le> Sup op \<le> eSuc"
+by(intro mcontI contI)(simp_all add: monotone_eSuc eSuc_Sup)
+
+lemma mono2mono_epred [THEN lfp.mono2mono, cont_intro, simp]:
+  shows monotone_epred: "monotone op \<le> op \<le> epred"
+by(rule monotoneI)(simp add: epred_le_epredI)
+
+lemma mcont2mcont_epred [THEN lfp.mcont2mcont, cont_intro, simp]:
+  shows mcont_epred: "mcont Sup op \<le> Sup op \<le> epred"
+by(simp add: mcont_def monotone_epred cont_def epred_Sup)
+
+lemma enat_cocase_mono [partial_function_mono, cont_intro]: 
+  "\<lbrakk> monotone orda ordb zero; \<And>n. monotone orda ordb (\<lambda>f. esuc f n) \<rbrakk>
+  \<Longrightarrow> monotone orda ordb (\<lambda>f. co.case_enat (zero f) (esuc f) x)"
+by(cases x rule: co.enat.exhaust)(simp_all add: assms)
+
+lemma enat_cocase_mcont [cont_intro, simp]:
+  "\<lbrakk> mcont luba orda lubb ordb zero; \<And>n. mcont luba orda lubb ordb (\<lambda>f. esuc f n) \<rbrakk>
+  \<Longrightarrow> mcont luba orda lubb ordb (\<lambda>f. co.case_enat (zero f) (esuc f) x)"
+by(cases x rule: co.enat.exhaust)(simp_all add: assms)
+
+lemma eSuc_mono [partial_function_mono]:
+  "monotone (fun_ord op \<le>) op \<le> f \<Longrightarrow> monotone (fun_ord op \<le>) op \<le> (\<lambda>x. eSuc (f x))"
+by(rule mono2mono_eSuc)
+
+lemma mono2mono_enat_minus1 [THEN lfp.mono2mono, cont_intro, simp]:
+  shows monotone_enat_minus1: "monotone op \<le> op \<le> (\<lambda>n. n - m :: enat)"
+by(rule monotoneI)(rule enat_minus_mono1)
+
+lemma mcont2mcont_enat_minus [THEN lfp.mcont2mcont, cont_intro, simp]:
+  shows mcont_enat_minus: "m \<noteq> \<infinity> \<Longrightarrow> mcont Sup op \<le> Sup op \<le> (\<lambda>n. n - m :: enat)"
+by(rule mcontI)(simp_all add: monotone_enat_minus1 contI Sup_enat_minus1)
+
+lemma monotone_eadd1: "monotone op \<le> op \<le> (\<lambda>x. x + y :: enat)"
+by(auto intro!: monotoneI)
+
+lemma monotone_eadd2: "monotone op \<le> op \<le> (\<lambda>y. x + y :: enat)"
+by(auto intro!: monotoneI)
+
+lemma mono2mono_eadd[THEN lfp.mono2mono2, cont_intro, simp]:
+  shows monotone_eadd: "monotone (rel_prod op \<le> op \<le>) op \<le> (\<lambda>(x, y). x + y :: enat)"
+by(simp add: monotone_eadd1 monotone_eadd2)
+
+lemma mcont_eadd2: "mcont Sup op \<le> Sup op \<le> (\<lambda>y. x + y :: enat)"
+by(auto intro: mcontI monotone_eadd2 contI Sup_image_eadd1[symmetric])
+
+lemma mcont_eadd1: "mcont Sup op \<le> Sup op \<le> (\<lambda>x. x + y :: enat)"
+by(auto intro: mcontI monotone_eadd1 contI Sup_image_eadd2[symmetric])
+
+lemma mcont2mcont_eadd [cont_intro, simp]:
+  "\<lbrakk> mcont lub ord Sup op \<le> (\<lambda>x. f x);
+    mcont lub ord Sup op \<le> (\<lambda>x. g x) \<rbrakk>
+  \<Longrightarrow> mcont lub ord Sup op \<le> (\<lambda>x. f x + g x :: enat)"
+by(best intro: ccpo.mcont2mcont'[OF complete_lattice_ccpo] mcont_eadd1 mcont_eadd2 ccpo.mcont_const[OF complete_lattice_ccpo])
+
+lemma eadd_partial_function_mono [partial_function_mono]:
+  "\<lbrakk> monotone (fun_ord op \<le>) op \<le> f; monotone (fun_ord op \<le>) op \<le> g \<rbrakk>
+  \<Longrightarrow> monotone (fun_ord op \<le>) op \<le> (\<lambda>x. f x + g x :: enat)"
+by(rule mono2mono_eadd)
+
+lemma monotone_max_enat1: "monotone op \<le> op \<le> (\<lambda>x. max x y :: enat)"
+by(auto intro!: monotoneI simp add: max_def)
+
+lemma monotone_max_enat2: "monotone op \<le> op \<le> (\<lambda>y. max x y :: enat)"
+by(auto intro!: monotoneI simp add: max_def)
+
+lemma mono2mono_max_enat[THEN lfp.mono2mono2, cont_intro, simp]:
+  shows monotone_max_enat: "monotone (rel_prod op \<le> op \<le>) op \<le> (\<lambda>(x, y). max x y :: enat)"
+by(simp add: monotone_max_enat1 monotone_max_enat2)
+
+lemma max_Sup_enat2:
+  assumes "Y \<noteq> {}"
+  shows "max x (Sup Y) = Sup ((\<lambda>y :: enat. max x y) ` Y)"
+proof(cases "finite Y")
+  case True
+  hence "max x (Max Y) = Max (max x ` Y)" using assms
+  proof(induct)
+    case (insert y Y)
+    thus ?case
+      by(cases "Y = {}")(simp_all, metis max.assoc max.left_commute max.left_idem)
+  qed simp
+  thus ?thesis using True by(simp add: Sup_enat_def assms)
+next
+  case False
+  show ?thesis
+  proof(cases x)
+    case infinity
+    hence "max x ` Y = {\<infinity>}" using assms by auto
+    thus ?thesis using False by(simp add: Sup_enat_def assms)
+  next
+    case (enat x')
+    { assume "finite (max x ` Y)"
+      hence "finite (max x ` {y \<in> Y. y > x})"
+        by(rule finite_subset[rotated]) auto
+      hence "finite {y \<in> Y. y > x}"
+        by(rule finite_imageD)(auto intro!: inj_onI simp add: max_def split: split_if_asm)
+      moreover have "finite {y \<in> Y. y \<le> x}"
+        by(rule finite_enat_bounded)(auto simp add: enat)
+      ultimately have "finite ({y \<in> Y. y > x} \<union> {y \<in> Y. y \<le> x})" by simp
+      also have "{y \<in> Y. y > x} \<union> {y \<in> Y. y \<le> x} = Y" by auto
+      finally have "finite Y" . }
+    thus ?thesis using False by(auto simp add: Sup_enat_def assms)
+  qed
+qed
+
+lemma max_Sup_enat1:
+  "Y \<noteq> {} \<Longrightarrow> max (Sup Y) x = Sup ((\<lambda>y :: enat. max y x) ` Y)"
+by(subst (1 2) max.commute)(rule max_Sup_enat2)
+
+lemma mcont_max_enat1: "mcont Sup op \<le> Sup op \<le> (\<lambda>x. max x y :: enat)"
+by(auto intro!: mcontI contI max_Sup_enat1 simp add: monotone_max_enat1)
+
+lemma mcont_max_enat2: "mcont Sup op \<le> Sup op \<le> (\<lambda>y. max x y :: enat)"
+by(auto intro!: mcontI contI max_Sup_enat2 simp add: monotone_max_enat2)
+
+lemma mcont2mcont_max_enat [cont_intro, simp]:
+  "\<lbrakk> mcont lub ord Sup op \<le> (\<lambda>x. f x);
+    mcont lub ord Sup op \<le> (\<lambda>x. g x) \<rbrakk>
+  \<Longrightarrow> mcont lub ord Sup op \<le> (\<lambda>x. max (f x) (g x) :: enat)"
+by(best intro: ccpo.mcont2mcont'[OF complete_lattice_ccpo] mcont_max_enat1 mcont_max_enat2 ccpo.mcont_const[OF complete_lattice_ccpo])
+
+lemma max_enat_partial_function_mono [partial_function_mono]:
+  "\<lbrakk> monotone (fun_ord op \<le>) op \<le> f; monotone (fun_ord op \<le>) op \<le> g \<rbrakk>
+  \<Longrightarrow> monotone (fun_ord op \<le>) op \<le> (\<lambda>x. max (f x) (g x) :: enat)"
+by(rule mono2mono_max_enat)
+
+lemma chain_epredI:
+  "Complete_Partial_Order.chain op \<le> Y
+  \<Longrightarrow> Complete_Partial_Order.chain op \<le> (epred ` (Y \<inter> {x. x \<noteq> 0}))"
+by(auto intro: chainI dest: chainD)
+
+lemma monotone_enat_le_case:
+  fixes bot
+  assumes mono: "monotone op \<le> ord (\<lambda>x. f x (eSuc x))"
+  and ord: "\<And>x. ord bot (f x (eSuc x))"
+  and bot: "ord bot bot"
+  shows "monotone op \<le> ord (\<lambda>x. case x of 0 \<Rightarrow> bot | eSuc x' \<Rightarrow> f x' x)"
+proof -
+  have "monotone op \<le> ord (\<lambda>x. if x \<le> 0 then bot else f (epred x) x)"
+  proof(rule monotone_if_bot)
+    fix x y :: enat
+    assume "x \<le> y" "\<not> x \<le> 0"
+    thus "ord (f (epred x) x) (f (epred y) y)"
+      by(cases x y rule: co.enat.exhaust[case_product co.enat.exhaust])(auto intro: monotoneD[OF mono])
+  next
+    fix x :: enat
+    assume "\<not> x \<le> 0"
+    thus "ord bot (f (epred x) x)"
+      by(cases x rule: co.enat.exhaust)(auto intro: ord)
+  qed(rule bot)
+  also have "(\<lambda>x. if x \<le> 0 then bot else f (epred x) x) = (\<lambda>x. case x of 0 \<Rightarrow> bot | eSuc x' \<Rightarrow> f x' x)"
+    by(auto simp add: fun_eq_iff split: co.enat.split)
+  finally show ?thesis .
+qed
+
+lemma mcont_enat_le_case:
+  fixes bot
+  assumes ccpo: "class.ccpo lub ord (mk_less ord)"
+  and mcont: "mcont Sup op \<le> lub ord (\<lambda>x. f x (eSuc x))"
+  and ord: "\<And>x. ord bot (f x (eSuc x))"
+  shows "mcont Sup op \<le> lub ord (\<lambda>x. case x of 0 \<Rightarrow> bot | eSuc x' \<Rightarrow> f x' x)"
+proof -
+  from ccpo
+  have "mcont Sup op \<le> lub ord (\<lambda>x. if x \<le> 0 then bot else f (epred x) x)"
+  proof(rule mcont_if_bot)
+    fix x y :: enat
+    assume "x \<le> y" "\<not> x \<le> 0"
+    thus "ord (f (epred x) x) (f (epred y) y)"
+      by(cases x y rule: co.enat.exhaust[case_product co.enat.exhaust])(auto intro: mcont_monoD[OF mcont])
+  next
+    fix Y :: "enat set"
+    assume chain: "Complete_Partial_Order.chain op \<le> Y"
+      and Y: "Y \<noteq> {}" "\<And>x. x \<in> Y \<Longrightarrow> \<not> x \<le> 0"
+    from Y have Y': "Y \<inter> {x. x \<noteq> 0} \<noteq> {}" by auto
+    from Y(2) have eq: "Y = eSuc ` (epred ` (Y \<inter> {x. x \<noteq> 0}))"
+      by(fastforce intro: rev_image_eqI)
+    show "f (epred (Sup Y)) (Sup Y) = lub ((\<lambda>x. f (epred x) x) ` Y)"
+      by(subst (1 2 3) eq)(simp add: mcont[THEN mcont_contD] mcont_eSuc[THEN mcont_contD, symmetric] Y' chain_epredI[OF chain] del: Sup_image_eq, simp add: image_image)
+  next
+    fix x :: enat
+    assume "\<not> x \<le> 0"
+    thus "ord bot (f (epred x) x)"
+      by(cases x rule: co.enat.exhaust)(auto intro: ord)
+  qed
+  also have "(\<lambda>x. if x \<le> 0 then bot else f (epred x) x) = (\<lambda>x. case x of 0 \<Rightarrow> bot | eSuc x' \<Rightarrow> f x' x)"
+    by(auto simp add: fun_eq_iff split: co.enat.split)
+  finally show ?thesis .
+qed
+
+
 subsection {* Misc. *}
 
 lemma enat_add_mono [simp]:
@@ -419,10 +710,10 @@ lemma enat_add_mono [simp]:
 by(cases y)(case_tac [!] z, simp_all)
 
 lemma enat_add1_eq [simp]: "enat x + y = enat x + z \<longleftrightarrow> y = z"
-by (metis enat_add_mono add_commute neq_iff)
+by (metis enat_add_mono add.commute neq_iff)
 
 lemma enat_add2_eq [simp]: "y + enat x = z + enat x \<longleftrightarrow> y = z"
-by (metis enat_add1_eq add_commute)
+by (metis enat_add1_eq add.commute)
 
 lemma enat_less_enat_plusI: "x < y \<Longrightarrow> enat x < enat y + z"
 by(cases z) simp_all
@@ -434,5 +725,17 @@ by (metis enat_add_mono plus_enat_simps(1))
 lemma min_enat1_conv_enat: "\<And>a b. min (enat a) b = enat (case b of enat b' \<Rightarrow> min a b' | \<infinity> \<Rightarrow> a)"
   and min_enat2_conv_enat: "\<And>a b. min a (enat b) = enat (case a of enat a' \<Rightarrow> min a' b | \<infinity> \<Rightarrow> b)"
 by(simp_all split: enat.split)
+
+lemma eSuc_le_iff: "eSuc x \<le> y \<longleftrightarrow> (\<exists>y'. y = eSuc y' \<and> x \<le> y')"
+by(cases y rule: co.enat.exhaust) simp_all
+
+lemma eSuc_eq_infinity_iff: "eSuc n = \<infinity> \<longleftrightarrow> n = \<infinity>"
+by(cases n)(simp_all add: zero_enat_def eSuc_enat)
+
+lemma infinity_eq_eSuc_iff: "\<infinity> = eSuc n \<longleftrightarrow> n = \<infinity>"
+by(cases n)(simp_all add: zero_enat_def eSuc_enat)
+
+lemma enat_cocase_inf: "(case \<infinity> of 0 \<Rightarrow> a | eSuc b \<Rightarrow> f b) = f \<infinity>"
+by(auto split: co.enat.split simp add: infinity_eq_eSuc_iff)
 
 end

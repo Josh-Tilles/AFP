@@ -272,7 +272,7 @@ begin
 
 lemma permute_diff [simp]:
   shows "(p - q) \<bullet> x = p \<bullet> - q \<bullet> x"
-  unfolding diff_minus by simp
+  using permute_plus [of p "- q" x] by simp
 
 lemma permute_minus_cancel [simp]:
   shows "p \<bullet> - p \<bullet> x = x"
@@ -365,7 +365,7 @@ definition
 instance
 apply default
 apply (simp add: permute_perm_def)
-apply (simp add: permute_perm_def diff_minus minus_add add_assoc)
+apply (simp add: permute_perm_def algebra_simps)
 done
 
 end
@@ -373,12 +373,12 @@ end
 lemma permute_self: 
   shows "p \<bullet> p = p"
   unfolding permute_perm_def 
-  by (simp add: diff_minus add_assoc)
+  by (simp add: add.assoc)
 
 lemma pemute_minus_self:
   shows "- p \<bullet> p = p"
   unfolding permute_perm_def 
-  by (simp add: diff_minus add_assoc)
+  by (simp add: add.assoc)
 
 
 subsection {* Permutations for functions *}
@@ -618,7 +618,7 @@ subsection {* Permutations for @{typ "'a fset"} *}
 
 lemma permute_fset_rsp[quot_respect]:
   shows "(op = ===> list_eq ===> list_eq) permute permute"
-  unfolding fun_rel_def
+  unfolding rel_fun_def
   by (simp add: set_eqvt[symmetric])
 
 instantiation fset :: (pt) pt
@@ -870,7 +870,8 @@ lemma uminus_eqvt [eqvt]:
   fixes p q::"perm"
   shows "p \<bullet> (- q) = - (p \<bullet> q)"
   unfolding permute_perm_def
-  by (simp add: diff_minus minus_add add_assoc)
+  by (simp add: diff_add_eq_diff_diff_swap)
+
 
 subsubsection {* Equivariance of Logical Operators *}
 
@@ -1190,8 +1191,8 @@ by (induct xs) (simp_all add: permute_pure)
 
 subsubsection {* Equivariance for @{typ "'a option"} *}
 
-lemma option_map_eqvt[eqvt]:
-  shows "p \<bullet> (Option.map f x) = Option.map (p \<bullet> f) (p \<bullet> x)"
+lemma map_option_eqvt[eqvt]:
+  shows "p \<bullet> (map_option f x) = map_option (p \<bullet> f) (p \<bullet> x)"
   by (cases x) (simp_all)
 
 
@@ -1564,21 +1565,21 @@ proof
   proof -
     { assume "a \<notin> supp p" "a \<notin> supp q"
       then have "(p + q) \<bullet> a = (q + p) \<bullet> a" 
-	by (simp add: supp_perm)
+        by (simp add: supp_perm)
     }
     moreover
     { assume a: "a \<in> supp p" "a \<notin> supp q"
       then have "p \<bullet> a \<in> supp p" by (simp add: supp_perm)
       then have "p \<bullet> a \<notin> supp q" using asm by auto
       with a have "(p + q) \<bullet> a = (q + p) \<bullet> a" 
-	by (simp add: supp_perm)
+        by (simp add: supp_perm)
     }
     moreover
     { assume a: "a \<notin> supp p" "a \<in> supp q"
       then have "q \<bullet> a \<in> supp q" by (simp add: supp_perm)
       then have "q \<bullet> a \<notin> supp p" using asm by auto 
       with a have "(p + q) \<bullet> a = (q + p) \<bullet> a" 
-	by (simp add: supp_perm)
+        by (simp add: supp_perm)
     }
     ultimately show "(p + q) \<bullet> a = (q + p) \<bullet> a" 
       using asm by blast
@@ -2166,7 +2167,8 @@ lemma Union_included_multiset:
 proof -
   have "(\<Union>{supp x | x. x \<in># M}) = (\<Union>{supp x | x. x \<in> set_of M})" by simp
   also have "... \<subseteq> (\<Union>x \<in> set_of M. supp x)" by auto
-  also have "... = supp (set_of M)" by (simp add: subst supp_of_finite_sets)
+  also have "... = supp (set_of M)"
+    by (simp add: supp_of_finite_sets)
   also have " ... \<subseteq> supp M" by (rule supp_set_of)
   finally show "(\<Union>{supp x | x. x \<in># M}) \<subseteq> supp M" .
 qed
@@ -2792,19 +2794,19 @@ next
       by (auto simp: swap_atom)
     moreover 
     { have "{q \<bullet> a, p \<bullet> a} \<subseteq> insert a bs \<union> p \<bullet> insert a bs"
-	using ** 
-	apply (auto simp: supp_perm insert_eqvt)
-	apply (subgoal_tac "q \<bullet> a \<in> bs \<union> p \<bullet> bs")
-	apply(auto)[1]
-	apply(subgoal_tac "q \<bullet> a \<in> {a. q \<bullet> a \<noteq> a}")
-	apply(blast)
-	apply(simp)
-	done
+        using ** 
+        apply (auto simp: supp_perm insert_eqvt)
+        apply (subgoal_tac "q \<bullet> a \<in> bs \<union> p \<bullet> bs")
+        apply(auto)[1]
+        apply(subgoal_tac "q \<bullet> a \<in> {a. q \<bullet> a \<noteq> a}")
+        apply(blast)
+        apply(simp)
+        done
       then have "supp (q \<bullet> a \<rightleftharpoons> p \<bullet> a) \<subseteq> insert a bs \<union> p \<bullet> insert a bs" 
         unfolding supp_swap by auto
       moreover
       have "supp q \<subseteq> insert a bs \<union> p \<bullet> insert a bs" 
-	using ** by (auto simp: insert_eqvt)
+        using ** by (auto simp: insert_eqvt)
       ultimately 
       have "supp q' \<subseteq> insert a bs \<union> p \<bullet> insert a bs" 
         unfolding q'_def using supp_plus_perm by blast
@@ -2861,19 +2863,19 @@ proof (induct bs)
       unfolding q'_def using 2 * `a \<notin> set bs` by (auto simp: swap_atom)
     moreover 
     { have "{q \<bullet> a, p \<bullet> a} \<subseteq> set (a # bs) \<union> p \<bullet> (set (a # bs))"
-	using **
-	apply (auto simp: supp_perm insert_eqvt)
-	apply (subgoal_tac "q \<bullet> a \<in> set bs \<union> p \<bullet> set bs")
-	apply(auto)[1]
-	apply(subgoal_tac "q \<bullet> a \<in> {a. q \<bullet> a \<noteq> a}")
-	apply(blast)
-	apply(simp)
-	done
+        using **
+        apply (auto simp: supp_perm insert_eqvt)
+        apply (subgoal_tac "q \<bullet> a \<in> set bs \<union> p \<bullet> set bs")
+        apply(auto)[1]
+        apply(subgoal_tac "q \<bullet> a \<in> {a. q \<bullet> a \<noteq> a}")
+        apply(blast)
+        apply(simp)
+        done
       then have "supp (q \<bullet> a \<rightleftharpoons> p \<bullet> a) \<subseteq> set (a # bs) \<union> p \<bullet> set (a # bs)" 
         unfolding supp_swap by auto
       moreover
       have "supp q \<subseteq> set (a # bs) \<union> p \<bullet> (set (a # bs))" 
-	using ** by (auto simp: insert_eqvt)
+        using ** by (auto simp: insert_eqvt)
       ultimately 
       have "supp q' \<subseteq> set (a # bs) \<union> p \<bullet> (set (a # bs))" 
         unfolding q'_def using supp_plus_perm by blast
@@ -2950,13 +2952,12 @@ by (simp_all add: fresh_at_base)
 
 
 simproc_setup fresh_ineq ("x \<noteq> (y::'a::at_base)") = {* fn _ => fn ctxt => fn ctrm =>
-  case term_of ctrm of @{term "HOL.Not"} $ (Const ("HOL.eq", _) $ lhs $ rhs) =>
+  case term_of ctrm of @{term "HOL.Not"} $ (Const (@{const_name HOL.eq}, _) $ lhs $ rhs) =>
     let  
-
       fun first_is_neg lhs rhs [] = NONE
         | first_is_neg lhs rhs (thm::thms) =
           (case Thm.prop_of thm of
-             _ $ (@{term "HOL.Not"} $ (Const ("HOL.eq", _) $ l $ r)) =>
+             _ $ (@{term "HOL.Not"} $ (Const (@{const_name HOL.eq}, _) $ l $ r)) =>
                (if l = lhs andalso r = rhs then SOME(thm)
                 else if r = lhs andalso l = rhs then SOME(thm RS @{thm not_sym})
                 else first_is_neg lhs rhs thms)  
@@ -2975,8 +2976,6 @@ simproc_setup fresh_ineq ("x \<noteq> (y::'a::at_base)") = {* fn _ => fn ctxt =>
          |> map (simplify (put_simpset HOL_basic_ss  ctxt addsimps simp_thms))
          |> map HOLogic.conj_elims
          |> flat
-
-       
     in 
       case first_is_neg lhs rhs prems of
         SOME(thm) => SOME(thm RS @{thm Eq_TrueI})

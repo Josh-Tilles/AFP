@@ -4,7 +4,7 @@ imports
   Girth_Chromatic_Misc
   "~~/src/HOL/Probability/Probability"
 
-  "~~/src/HOL/Library/Binomial"
+  "~~/src/HOL/Number_Theory/Binomial"
   "~~/src/HOL/Decision_Procs/Approximation"
 begin
 
@@ -28,8 +28,8 @@ proof induct
   moreover have "\<And>x. x \<subseteq> S \<Longrightarrow> card (insert s x) = Suc (card x)"
     using insert(1-2) by (subst card.insert) (auto dest: finite_subset)
   ultimately show ?case
-    by (simp add: setsum_reindex setsum_right_distrib[symmetric] ac_simps
-                  insert.hyps setsum_Un_disjoint Pow_insert)
+    by (simp add: setsum.reindex setsum_right_distrib[symmetric] ac_simps
+                  insert.hyps setsum.union_disjoint Pow_insert)
 qed simp
 
 text {* Definition of the probability space on edges: *}
@@ -74,7 +74,7 @@ lemma emeasure_eq:
   by (simp add: P_def space_point_measure emeasure_point_measure_finite zero_le_mult_iff
                 zero_le_power_iff sets_point_measure emeasure_notin_sets)
 
-lemma integrable_P[intro, simp]: "integrable P f"
+lemma integrable_P[intro, simp]: "integrable P (f::_ \<Rightarrow> real)"
   using finite_edges by (simp add: integrable_point_measure_finite P_def)
 
 lemma borel_measurable_P[measurable]: "f \<in> borel_measurable P"
@@ -100,7 +100,7 @@ lemma prob_eq:
 
 lemma integral_finite_singleton: "integral\<^sup>L P f = (\<Sum>x\<in>Pow S_edges. f x * measure P {x})"
   using p_prob prob_eq unfolding P_def
-  by (subst lebesgue_integral_point_measure_finite) (auto intro!: setsum_cong mult_nonneg_nonneg)
+  by (subst lebesgue_integral_point_measure_finite) (auto intro!: setsum.cong)
 
 text {* Probability of cylinder sets: *}
 lemma cylinder_prob:
@@ -126,7 +126,7 @@ proof -
          "inj_on (\<lambda>x. x - A) (cylinder S_edges A B)"
          "finite (S_edges - A - B)"
       using assms by (auto simp: cylinder_def intro!: inj_onI)
-    with full_sum[of "S_edges - A - B"] show ?thesis by (simp add: setsum_reindex)
+    with full_sum[of "S_edges - A - B"] show ?thesis by (simp add: setsum.reindex)
   qed
   finally show ?thesis by (auto simp add: prob_eq cylinder_def)
 qed
@@ -137,10 +137,10 @@ lemma Markov_inequality:
   shows "prob {x \<in> space P. c \<le> f x} \<le> (\<integral>x. f x \<partial> P) / c"
 proof -
   from assms have "(\<integral>\<^sup>+ x. ereal (f x) \<partial>P) = (\<integral>x. f x \<partial>P)"
-    by (intro positive_integral_eq_integral) auto
+    by (intro nn_integral_eq_integral) auto
   with assms show ?thesis
-    using positive_integral_Markov_inequality[of f P "space P" "1 / c"]
-    by (simp cong: positive_integral_cong add: emeasure_eq_measure one_ereal_def)
+    using nn_integral_Markov_inequality[of f P "space P" "1 / c"]
+    by (simp cong: nn_integral_cong add: emeasure_eq_measure one_ereal_def)
 qed
 
 end
@@ -369,16 +369,16 @@ proof -
       by (simp add: powr_realpow power_real_of_nat binomial_le_pow del: real_of_nat_power)
     also have "\<dots> = n powr ?nr n * (1 - p n) powr (?nr n * (?nr n - 1) / 2)"
       by (cases "even (?nr n - 1)")
-         (auto simp: n_choose_2_nat nat_even_iff_2_dvd[symmetric] real_of_nat_div)
+        (auto simp add: n_choose_2_nat even_iff_2_dvd [symmetric] real_of_nat_div)
     also have "\<dots> = n powr ?nr n * ((1 - p n) powr ((?nr n - 1) / 2)) powr ?nr n"
       by (auto simp: powr_powr algebra_simps)
     also have "\<dots> \<le> (n * exp (- p n * (?nr n - 1) / 2)) powr ?nr n"
     proof -
       have "(1 - p n) powr ((?nr n - 1) / 2) \<le> exp (- p n) powr ((?nr n - 1) / 2)"
-        using A by (auto simp: powr_mono2 ab_diff_minus)
+        using A by (auto simp: powr_mono2 diff_conv_add_uminus simp del: add_uminus_conv_diff)
       also have "\<dots> = exp (- p n * (?nr n - 1) / 2)" by (auto simp: powr_def)
       finally show ?thesis
-        using A by (auto simp: mult_pos_pos powr_mono2 powr_mult)
+        using A by (auto simp: powr_mono2 powr_mult)
     qed
     finally show "probGn p n (\<lambda>es. ?nr n \<le> \<alpha> (edge_space.edge_ugraph n es))
       \<le> (n * exp (- p n * (real (?nr n) - 1) / 2)) powr ?nr n"
@@ -402,7 +402,7 @@ proof -
       finally show ?thesis using r_bound by (auto simp: field_simps)
     qed
     also have "\<dots> \<le> n * n powr (- 3 / 2) * exp 1 powr (1 / 2)"
-      using p_bound by (simp add: powr_def exp_add)
+      using p_bound by (simp add: powr_def exp_add [symmetric])
     also have "\<dots> \<le> n powr (-1 / 2) * exp 1 powr (1 / 2)" by (simp add: powr_mult_base)
     also have "\<dots> = (exp 1 / n) powr (1/2)"
       by (simp add: powr_divide powr_minus_divide)
@@ -435,7 +435,7 @@ proof -
       have "?prob_fun_raw n \<le> (n * exp (- p n * (real (?nr n) - 1) / 2)) powr (?nr n)"
         using prob_fun_raw_le by (simp add: r_def)
       also have "\<dots> \<le> ((exp 1 / n) powr (1 / 2)) powr ?nr n"
-        using expr_bound A by (auto simp: powr_mono2 mult_pos_pos)
+        using expr_bound A by (auto simp: powr_mono2)
       also have "\<dots> \<le> ((exp 1 / n) powr (1 / 2))"
         using nr_bounds ep_bound by (auto simp: powr_le_one_le)
       finally show "?prob_fun_raw n \<le> (exp 1 / n) powr (1 / 2)" .
@@ -473,12 +473,12 @@ proof -
     have "(\<Sum>x\<in>space P. card (XG x) * prob {x}) = (\<Sum>x\<in>space P. (\<Sum>c \<in> XG x. prob {x}))"
       by (simp add: real_eq_of_nat)
     also have "\<dots> = (\<Sum>x\<in>space P. (\<Sum>c \<in> C k. if c \<in> XG x then prob {x} else 0))"
-      using fin_C by (simp add: setsum_cases) (simp add: XG_Int_C)
+      using fin_C by (simp add: setsum.If_cases) (simp add: XG_Int_C)
     also have "\<dots> = (\<Sum>c \<in> C k. (\<Sum> x \<in> space P \<inter> XC c. prob {x}))"
-      using finite_edges by (subst setsum_commute) (simp add: setsum_restrict_set XG_def XC_def space_eq)
+      using finite_edges by (subst setsum.commute) (simp add: setsum.inter_restrict XG_def XC_def space_eq)
     also have "\<dots> = (\<Sum>c \<in> C k. prob (XC c))"
       using fin_XC XC_in_sets
-      by (auto simp add: prob_eq sets_eq space_eq intro!: setsum_cong)
+      by (auto simp add: prob_eq sets_eq space_eq intro!: setsum.cong)
     finally show ?thesis by (simp add: XC_cyl)
   qed
   also have "\<dots> = (\<Sum>c\<in>C k. p ^ k)"
