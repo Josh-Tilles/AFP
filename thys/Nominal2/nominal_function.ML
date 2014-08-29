@@ -106,10 +106,10 @@ fun nominal_check_defs ctxt fixes eqs =
 val simp_attribs = map (Attrib.internal o K)
   [Simplifier.simp_add,
    Code.add_default_eqn_attribute,
-   Nitpick_Simps.add]
+   Named_Theorems.add @{named_theorems nitpick_simp}]
 
 val psimp_attribs = map (Attrib.internal o K)
-  [Nitpick_Psimps.add]
+  [Named_Theorems.add @{named_theorems nitpick_psimp}]
 
 fun mk_defname fixes = fixes |> map (fst o fst) |> space_implode "_"
 
@@ -246,7 +246,6 @@ val setup =
     (Attrib.add_del Function_Ctx_Tree.cong_add Function_Ctx_Tree.cong_del)
     "declaration of congruence rule for function definitions"
   #> setup_case_cong
-  #> Function_Common.Termination_Simps.setup
 
 val get_congs = Function_Ctx_Tree.get_function_congs
 
